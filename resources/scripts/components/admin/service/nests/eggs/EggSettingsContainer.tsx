@@ -29,10 +29,6 @@ const IMPLEMENTED_FEATURE_OPTIONS = [
     { key: 'eula', name: 'EULA Popup', description: 'Prompts users to accept the Minecraft EULA when required.' },
 ] as const;
 
-const BLOCKED_FEATURE_OPTIONS = [
-    { key: 'fastdl', name: 'FastDL', description: 'Future Update: not wired to runtime behavior yet.' },
-] as const;
-
 const parseDenylist = (value: string): string[] => {
     return value
         .split('\n')
@@ -339,7 +335,7 @@ export function EggAdvancedContainer() {
     const submit = async (values: AdvancedValues, { setSubmitting }: FormikHelpers<AdvancedValues>) => {
         clearFlashes('egg');
 
-        const persistedFeatures = values.features.filter(feature => feature !== 'fastdl');
+        const persistedFeatures = values.features;
 
         updateEgg(egg.id, {
             forceOutgoingIp: values.forceOutgoingIp,
@@ -387,32 +383,6 @@ export function EggAdvancedContainer() {
 
                         <AdminBox icon={faShieldAlt} title={'Advanced'} css={tw`mb-6`}>
                             <SectionHint text={'Rarely used controls are grouped here so they do not clutter the About tab.'} />
-                            <SectionHint text={'Force Outgoing IP passes a node-level networking flag to Wings; the concrete source IP is determined by the node network configuration.'} />
-                            <SectionHint text={'Install Script Is Privileged controls whether the install script can run in privileged mode during provisioning.'} />
-
-                            <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-6 mb-6`}>
-                                <label css={tw`flex items-center gap-3`}>
-                                    <Field
-                                        type="checkbox"
-                                        // @ts-expect-error checkbox rendering
-                                        as={Checkbox}
-                                        id={'forceOutgoingIp'}
-                                        name={'forceOutgoingIp'}
-                                    />
-                                    <span css={tw`text-sm`}>Force Outgoing IP</span>
-                                </label>
-
-                                <label css={tw`flex items-center gap-3`}>
-                                    <Field
-                                        type="checkbox"
-                                        // @ts-expect-error checkbox rendering
-                                        as={Checkbox}
-                                        id={'scriptIsPrivileged'}
-                                        name={'scriptIsPrivileged'}
-                                    />
-                                    <span css={tw`text-sm`}>Install Script Is Privileged</span>
-                                </label>
-                            </div>
 
                             <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-3 mb-6`}>
                                 {IMPLEMENTED_FEATURE_OPTIONS.map(feature => (
@@ -433,21 +403,28 @@ export function EggAdvancedContainer() {
                                     </button>
                                 ))}
 
-                                {BLOCKED_FEATURE_OPTIONS.map(feature => (
-                                    <div
-                                        key={feature.key}
-                                        css={tw`text-left rounded border border-dashed border-neutral-700 px-3 py-3 bg-neutral-900/60`}
-                                    >
-                                        <div css={tw`flex items-center justify-between gap-2`}>
-                                            <div css={tw`text-sm font-medium text-neutral-200`}>{feature.name}</div>
-                                            <span css={tw`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-600`}>
-                                                Future Update
-                                            </span>
-                                        </div>
-                                        <div css={tw`text-xs text-neutral-400 mt-1`}>{feature.description}</div>
-                                        <div css={tw`text-xs mt-2 text-yellow-300`}>Blocked from input and not saved.</div>
-                                    </div>
-                                ))}
+                                <div css={tw`flex flex-col gap-4 justify-center px-1`}>
+                                    <label css={tw`flex items-center gap-3`}>
+                                        <Field
+                                            type="checkbox"
+                                            // @ts-expect-error checkbox rendering
+                                            as={Checkbox}
+                                            id={'forceOutgoingIp'}
+                                            name={'forceOutgoingIp'}
+                                        />
+                                        <span css={tw`text-sm text-neutral-200`}>Force Outgoing IP</span>
+                                    </label>
+                                    <label css={tw`flex items-center gap-3`}>
+                                        <Field
+                                            type="checkbox"
+                                            // @ts-expect-error checkbox rendering
+                                            as={Checkbox}
+                                            id={'scriptIsPrivileged'}
+                                            name={'scriptIsPrivileged'}
+                                        />
+                                        <span css={tw`text-sm text-neutral-200`}>Install Script Is Privileged</span>
+                                    </label>
+                                </div>
                             </div>
 
                             <TextareaField
