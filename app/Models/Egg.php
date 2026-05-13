@@ -67,7 +67,6 @@ class Egg extends Model
      * than leaving it null.
      */
     public const FEATURE_EULA_POPUP = 'eula';
-    public const FEATURE_FASTDL = 'fastdl';
 
     /**
      * The table associated with the model.
@@ -92,6 +91,7 @@ class Egg extends Model
         'config_stop',
         'config_from',
         'startup',
+        'update_url',
         'script_is_privileged',
         'script_install',
         'script_entry',
@@ -284,6 +284,15 @@ class Egg extends Model
      * Gets all variables associated with this egg.
      */
     public function variables(): HasMany
+    {
+        return $this->hasMany(EggVariable::class, 'egg_id');
+    }
+
+    /**
+     * Alias for variables() — required for Laravel scoped implicit route model binding
+     * on routes like /{egg}/variables/{eggVariable:id}.
+     */
+    public function eggVariables(): HasMany
     {
         return $this->hasMany(EggVariable::class, 'egg_id');
     }

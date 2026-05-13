@@ -1,6 +1,7 @@
 import { useContext, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import tw from 'twin.macro';
+
 import type { Filters } from '@/api/routes/admin/nests/getNests';
 import getNests, { Context as NestsContext } from '@/api/routes/admin/nests/getNests';
 import AdminContentBlock from '@/elements/AdminContentBlock';
@@ -25,7 +26,7 @@ const NestsContainer = () => {
     const { setPage, setFilters, sort, setSort, sortDirection } = useContext(NestsContext);
     const { colors } = useStoreState(state => state.theme.data!);
     const { clearFlashes, clearAndAddHttpError } = useFlash();
-    const { data: nests, error, isValidating } = getNests();
+    const { data: nests, error, isValidating } = getNests(['eggs']);
 
     useEffect(() => {
         if (!error) {
@@ -54,11 +55,7 @@ const NestsContainer = () => {
             <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>Nests</h2>
-                    <p
-                        css={tw`hidden md:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}
-                    >
-                        All nests currently available on this system.
-                    </p>
+                    <p css={tw`hidden md:block text-base text-neutral-400`}>Browse nests and jump directly into egg management.</p>
                 </div>
 
                 <div css={tw`flex ml-auto pl-4`}>
@@ -84,6 +81,7 @@ const NestsContainer = () => {
                                         direction={sort === 'name' ? (sortDirection ? 1 : 2) : null}
                                         onClick={() => setSort('name')}
                                     />
+                                    <TableHeader name={'Eggs'} />
                                     <TableHeader name={'Description'} />
                                 </TableHead>
 
@@ -113,18 +111,18 @@ const NestsContainer = () => {
                                                 </td>
 
                                                 <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                    {nest.description}
+                                                    {nest.relations.eggs?.length || 0}
+                                                </td>
+
+                                                <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
+                                                    {nest.description || <span css={tw`text-neutral-500`}>No description</span>}
                                                 </td>
                                             </TableRow>
                                         ))}
                                 </TableBody>
                             </table>
 
-                            {nests === undefined || (error && isValidating) ? (
-                                <Loading />
-                            ) : length < 1 ? (
-                                <NoItems />
-                            ) : null}
+                            {nests === undefined || (error && isValidating) ? <Loading /> : length < 1 ? <NoItems /> : null}
                         </div>
                     </Pagination>
                 </ContentWrapper>

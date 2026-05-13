@@ -1,6 +1,7 @@
 import { useContext, useEffect } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
 import tw from 'twin.macro';
+
 import type { Filters } from '@/api/routes/admin/nests/getEggs';
 import getEggs, { Context as EggsContext } from '@/api/routes/admin/nests/getEggs';
 import AdminTable, {
@@ -24,7 +25,7 @@ const EggsTable = () => {
     const { setPage, setFilters, sort, setSort, sortDirection } = useContext(EggsContext);
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const { colors } = useStoreState(state => state.theme.data!);
-    const { data: eggs, error, isValidating } = getEggs(Number(params.nestId));
+    const { data: eggs, error, isValidating } = getEggs(Number(params.nestId), ['variables', 'servers']);
 
     useEffect(() => {
         if (!error) {
@@ -65,6 +66,8 @@ const EggsTable = () => {
                                     direction={sort === 'name' ? (sortDirection ? 1 : 2) : null}
                                     onClick={() => setSort('name')}
                                 />
+                                <TableHeader name={'Variables'} />
+                                <TableHeader name={'Servers'} />
                                 <TableHeader name={'Description'} />
                             </TableHead>
 
@@ -94,7 +97,15 @@ const EggsTable = () => {
                                             </td>
 
                                             <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                {egg.description}
+                                                {egg.relations.variables?.length || 0}
+                                            </td>
+
+                                            <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
+                                                {egg.relations.servers?.length || 0}
+                                            </td>
+
+                                            <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
+                                                {egg.description || <span css={tw`text-neutral-500`}>No description</span>}
                                             </td>
                                         </TableRow>
                                     ))}

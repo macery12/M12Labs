@@ -16,58 +16,42 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 export default ({ className }: { className?: string }) => {
     const [visible, setVisible] = useState(false);
     const [file, setFile] = useState<File | null>(null);
+    const [mode, setMode] = useState<'upload' | 'paste'>('upload');
 
-    const { clearFlashes } = useFlash();
+    const { clearFlashes, clearAndAddHttpError } = useFlash();
 
     const params = useParams<'nestId'>();
     const { mutate } = getEggs(Number(params.nestId));
 
     let fetchFileContent: (() => Promise<string>) | null = null;
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = event.target.files ? event.target.files[0] : null;
-        if (selectedFile) {
-            setFile(selectedFile);
-        }
-    };
-
     const submit = async () => {
         clearFlashes('egg:import');
 
-        if (!fetchFileContent && !file) {
-            return;
-        }
+        try {
+            let jsonData: any;
 
-        if (file) {
-            const reader = new FileReader();
-
-            reader.onload = async e => {
-                console.log('reader loaded');
-                try {
-                    const jsonData = JSON.parse(e.target?.result as string);
-                    const egg = await importEgg(Number(params.nestId), jsonData);
-                    await mutate(data => ({ ...data!, items: [...data!.items!, egg] }));
-                    setVisible(false);
-                } catch (error) {
-                    console.error('Failed to parse or import egg:', error);
+            if (mode === 'upload') {
+                if (!file) {
+                    return;
                 }
-            };
 
-            reader.onerror = () => {
-                console.error('File could not be read:', reader.error);
-            };
+                const raw = await file.text();
+                jsonData = JSON.parse(raw);
+            } else {
+                if (!fetchFileContent) {
+                    return;
+                }
 
-            reader.readAsText(file);
-        } else if (fetchFileContent) {
-            try {
                 const jsonContent = await fetchFileContent();
-                const jsonData = JSON.parse(jsonContent);
-                const egg = await importEgg(Number(params.nestId), jsonData);
-                await mutate(data => ({ ...data!, items: [...data!.items!, egg] }));
-                setVisible(false);
-            } catch (error) {
-                console.error('Failed to import from editor content:', error);
+                jsonData = JSON.parse(jsonContent);
             }
+
+            const egg = await importEgg(Number(params.nestId), jsonData);
+            await mutate(data => ({ ...data!, items: [...data!.items!, egg] }));
+            setVisible(false);
+        } catch (error) {
+            clearAndAddHttpError({ key: 'egg:import', error });
         }
     };
 
@@ -78,14 +62,37 @@ export default ({ className }: { className?: string }) => {
 
                 <h2 css={tw`mb-6 text-2xl text-neutral-100`}>Import Egg</h2>
 
-                <Editor
-                    childClassName={tw`h-64 rounded`}
-                    initialContent={''}
-                    fetchContent={value => {
-                        fetchFileContent = value;
-                    }}
-                    language={LanguageDescription.of({ name: 'json', support: json() })}
-                />
+                <div css={tw`flex gap-2 mb-4`}>
+                    <Button.Text type={'button'} onClick={() => setMode('upload')}>
+                        Upload File
+                    </Button.Text>
+                    <Button.Text type={'button'} onClick={() => setMode('paste')}>
+                        Paste JSON
+                    </Button.Text>
+                </div>
+
+                {mode === 'upload' ? (
+                    <div
+                        css={tw`border-2 border-dashed border-neutral-700 rounded p-6 text-center text-neutral-300 bg-neutral-900`}
+                    >
+                        <p css={tw`mb-3`}>Drop in a JSON egg file or pick one below.</p>
+                        <input
+                            type="file"
+                            accept=".json,.yaml,.yml"
+                            onChange={event => setFile(event.target.files ? event.target.files[0] : null)}
+                        />
+                        <p css={tw`text-xs text-neutral-500 mt-3`}>{file ? file.name : 'No file selected'}</p>
+                    </div>
+                ) : (
+                    <Editor
+                        childClassName={tw`h-64 rounded`}
+                        initialContent={''}
+                        fetchContent={value => {
+                            fetchFileContent = value;
+                        }}
+                        language={LanguageDescription.of({ name: 'json', support: json() })}
+                    />
+                )}
 
                 <div css={tw`flex flex-wrap justify-end mt-4 sm:mt-6`}>
                     <Button.Text
@@ -96,8 +103,6 @@ export default ({ className }: { className?: string }) => {
                     >
                         Cancel
                     </Button.Text>
-
-                    <input type="file" accept=".json" onChange={handleFileChange} className={'mt-4'} />
 
                     <Button css={tw`w-full sm:w-auto mt-4 sm:mt-0`} onClick={submit}>
                         Import Egg

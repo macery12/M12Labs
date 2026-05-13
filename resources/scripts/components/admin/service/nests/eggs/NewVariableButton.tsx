@@ -53,6 +53,7 @@ export default function NewVariableButton() {
                     defaultValue: '',
                     isUserViewable: false,
                     isUserEditable: false,
+                    fieldType: 'text',
                     rules: '',
                 }}
                 validationSchema={validationSchema}
@@ -96,7 +97,6 @@ export default function NewVariableButton() {
                 )}
             </Formik>
 
-            {/* TODO: make button green */}
             <Button type="button" onClick={() => setVisible(true)}>
                 New Variable
             </Button>

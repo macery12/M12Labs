@@ -19,6 +19,9 @@ export interface Egg extends Model {
     description: string | null;
     features: string[] | null;
     dockerImages: Record<string, string>;
+    fileDenylist: string[];
+    forceOutgoingIp: boolean;
+    updateUrl: string | null;
     configFiles: Record<string, any> | null;
     configStartup: Record<string, any> | null;
     configStop: string | null;
@@ -46,6 +49,7 @@ export interface EggVariable extends Model {
     defaultValue: string;
     isUserViewable: boolean;
     isUserEditable: boolean;
+    fieldType: 'text' | 'password' | 'number' | 'boolean';
     // isRequired: boolean;
     rules: string;
     createdAt: Date;

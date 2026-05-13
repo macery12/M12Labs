@@ -26,34 +26,27 @@ import NestDeleteButton from '@admin/service/nests/NestDeleteButton';
 import NestEggTable from '@admin/service/nests/NestEggTable';
 import type { ApplicationStore } from '@/state';
 
-interface ctx {
+interface Ctx {
     nest: Nest | undefined;
-    setNest: Action<ctx, Nest | undefined>;
-
+    setNest: Action<Ctx, Nest | undefined>;
     selectedEggs: number[];
-
-    setSelectedEggs: Action<ctx, number[]>;
-    appendSelectedEggs: Action<ctx, number>;
-    removeSelectedEggs: Action<ctx, number>;
+    setSelectedEggs: Action<Ctx, number[]>;
+    appendSelectedEggs: Action<Ctx, number>;
+    removeSelectedEggs: Action<Ctx, number>;
 }
 
-export const Context = createContextStore<ctx>({
+export const Context = createContextStore<Ctx>({
     nest: undefined,
-
     setNest: action((state, payload) => {
         state.nest = payload;
     }),
-
     selectedEggs: [],
-
     setSelectedEggs: action((state, payload) => {
         state.selectedEggs = payload;
     }),
-
     appendSelectedEggs: action((state, payload) => {
         state.selectedEggs = state.selectedEggs.filter(id => id !== payload).concat(payload);
     }),
-
     removeSelectedEggs: action((state, payload) => {
         state.selectedEggs = state.selectedEggs.filter(id => id !== payload);
     }),
@@ -66,7 +59,6 @@ interface Values {
 
 const EditInformationContainer = () => {
     const navigate = useNavigate();
-
     const { clearFlashes, clearAndAddHttpError } = useStoreActions(
         (actions: Actions<ApplicationStore>) => actions.flashes,
     );
@@ -74,8 +66,8 @@ const EditInformationContainer = () => {
     const nest = Context.useStoreState(state => state.nest);
     const setNest = Context.useStoreActions(actions => actions.setNest);
 
-    if (nest === undefined) {
-        return <></>;
+    if (!nest) {
+        return null;
     }
 
     const submit = ({ name, description }: Values, { setSubmitting }: FormikHelpers<Values>) => {
@@ -84,7 +76,6 @@ const EditInformationContainer = () => {
         updateNest(nest.id, name, description, nest.author)
             .then(() => setNest({ ...nest, name, description }))
             .catch(error => {
-                console.error(error);
                 clearAndAddHttpError({ key: 'nest', error });
             })
             .then(() => setSubmitting(false));
@@ -103,29 +94,26 @@ const EditInformationContainer = () => {
             })}
         >
             {({ isSubmitting, isValid }) => (
-                <>
-                    <AdminBox title={'Edit Nest'} css={tw`flex-1 self-start w-full relative mb-8 lg:mb-0 mr-0 lg:mr-4`}>
-                        <SpinnerOverlay visible={isSubmitting} />
+                <AdminBox title={'Edit Nest'} css={tw`flex-1 self-start w-full relative mb-8 lg:mb-0 mr-0 lg:mr-4`}>
+                    <SpinnerOverlay visible={isSubmitting} />
 
-                        <Form>
-                            <Field id={'name'} name={'name'} label={'Name'} type={'text'} css={tw`mb-6`} />
+                    <Form>
+                        <Field id={'name'} name={'name'} label={'Name'} type={'text'} css={tw`mb-6`} />
+                        <Field id={'description'} name={'description'} label={'Description'} type={'text'} css={tw`mb-6`} />
 
-                            <Field id={'description'} name={'description'} label={'Description'} type={'text'} />
-
-                            <div css={tw`w-full flex flex-row items-center mt-6`}>
-                                <div css={tw`flex`}>
-                                    <NestDeleteButton nestId={nest.id} onDeleted={() => navigate('/admin/nests')} />
-                                </div>
-
-                                <div css={tw`flex ml-auto`}>
-                                    <Button type="submit" disabled={isSubmitting || !isValid}>
-                                        Save Changes
-                                    </Button>
-                                </div>
+                        <div css={tw`w-full flex flex-row items-center mt-6`}>
+                            <div css={tw`flex`}>
+                                <NestDeleteButton nestId={nest.id} onDeleted={() => navigate('/admin/nests')} />
                             </div>
-                        </Form>
-                    </AdminBox>
-                </>
+
+                            <div css={tw`flex ml-auto`}>
+                                <Button type="submit" disabled={isSubmitting || !isValid}>
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </div>
+                    </Form>
+                </AdminBox>
             )}
         </Formik>
     );
@@ -134,8 +122,8 @@ const EditInformationContainer = () => {
 const ViewDetailsContainer = () => {
     const nest = Context.useStoreState(state => state.nest);
 
-    if (nest === undefined) {
-        return <></>;
+    if (!nest) {
+        return null;
     }
 
     return (
@@ -156,11 +144,16 @@ const ViewDetailsContainer = () => {
                         </CopyOnClick>
                     </div>
 
-                    <div css={tw`mt-6 mb-2`}>
+                    <div css={tw`mt-6`}>
                         <Label>Author</Label>
                         <CopyOnClick text={nest.author}>
                             <Input type={'text'} value={nest.author} readOnly />
                         </CopyOnClick>
+                    </div>
+
+                    <div css={tw`mt-6 mb-2`}>
+                        <Label>Eggs In Nest</Label>
+                        <Input type={'text'} value={(nest.relations.eggs?.length || 0).toString()} readOnly />
                     </div>
                 </div>
             </div>
@@ -183,9 +176,8 @@ const NestEditContainer = () => {
         clearFlashes('nest');
 
         getNest(Number(params.nestId), ['eggs'])
-            .then(nest => setNest(nest))
+            .then(current => setNest(current))
             .catch(error => {
-                console.error(error);
                 clearAndAddHttpError({ key: 'nest', error });
             })
             .then(() => setLoading(false));
@@ -205,6 +197,14 @@ const NestEditContainer = () => {
 
     return (
         <AdminContentBlock title={'Nests - ' + nest.name}>
+            <div css={tw`text-sm text-neutral-400 mb-3`}>
+                <NavLink to={'/admin/nests'} className={'hover:text-neutral-200'}>
+                    Nests
+                </NavLink>
+                {' / '}
+                <span css={tw`text-neutral-200`}>{nest.name}</span>
+            </div>
+
             <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>{nest.name}</h2>
@@ -213,16 +213,14 @@ const NestEditContainer = () => {
                             <span css={tw`italic`}>No description</span>
                         </p>
                     ) : (
-                        <p
-                            css={tw`hidden md:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}
-                        >
+                        <p css={tw`hidden md:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}>
                             {nest.description}
                         </p>
                     )}
                 </div>
 
                 <div css={tw`flex flex-row ml-auto pl-4`}>
-                    <ImportEggButton css={tw`mr-4`} />
+                    <ImportEggButton className={'mr-4'} />
 
                     <NavLink to={`/admin/nests/${params.nestId}/new`}>
                         <Button type={'button'} size={Size.Large} css={tw`h-10 px-4 py-0 whitespace-nowrap`}>

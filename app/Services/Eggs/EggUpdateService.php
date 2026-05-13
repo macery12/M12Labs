@@ -35,10 +35,6 @@ class EggUpdateService
             }
         }
 
-        // TODO(dane): Once the admin UI is done being reworked and this is exposed
-        //  in said UI, remove this so that you can actually update the denylist.
-        unset($data['file_denylist']);
-
         $this->repository->withoutFreshModel()->update($egg->id, $data);
     }
 }
