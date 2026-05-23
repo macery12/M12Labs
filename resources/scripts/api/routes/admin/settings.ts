@@ -6,13 +6,6 @@ export interface GeneralSettings {
     logo: URL | null;
     indicators: boolean;
     speed_dial: boolean;
-    activity: {
-        enabled: {
-            account: boolean;
-            server: boolean;
-            admin: boolean;
-        };
-    };
 }
 
 export const updateGeneralSettings = async (settings: Partial<GeneralSettings>): Promise<void> => {
@@ -22,10 +15,6 @@ export const updateGeneralSettings = async (settings: Partial<GeneralSettings>):
             'app:logo': settings.logo,
             'app:indicators': settings.indicators,
             'app:speed_dial': settings.speed_dial,
-
-            'activity:enabled:account': settings.activity?.enabled.account,
-            'activity:enabled:server': settings.activity?.enabled.server,
-            'activity:enabled:admin': settings.activity?.enabled.admin,
         })
             .then(() => resolve())
             .catch(reject);

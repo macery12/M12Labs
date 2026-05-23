@@ -14,10 +14,6 @@ class UpdateApplicationSettingsRequest extends ApplicationApiRequest
             'app:logo' => 'nullable|url|max:255',
             'app:indicators' => 'nullable|bool',
             'app:speed_dial' => 'nullable|bool',
-
-            'activity:enabled:account' => 'nullable|bool',
-            'activity:enabled:server' => 'nullable|bool',
-            'activity:enabled:admin' => 'nullable|bool',
         ];
     }
 

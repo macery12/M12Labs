@@ -18,6 +18,18 @@ _ide_helper_models.php
 .yarn
 public/assets/manifest.json
 
+# Extension system runtime state and installed/uninstalled package output
+storage/app/extensions/
+storage/app/extension-scans/
+storage/app/runtime-home/
+storage/app/tmp/
+storage/app/tmp-uninstall/
+storage/app/tmp-update/
+app/Extensions/Packages/
+resources/scripts/extensions/packages/
+resources/views/emails/**/*.blade.php.custom
+resources/views/emails/**/*.blade.php.bak.*
+
 # For local development with docker
 # Remove if we ever put the Dockerfile in the repo
 .dockerignore
