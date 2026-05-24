@@ -3,6 +3,24 @@ import { EggVariable, Transformers } from '@definitions/server';
 import { AxiosError } from 'axios';
 import useSWR, { SWRConfiguration } from 'swr';
 
+interface StartupVariableVersionOption {
+    value: string;
+    label: string;
+    stable: boolean;
+}
+
+interface StartupVariableVersionResponse {
+    key: string;
+    supported: boolean;
+    provider: string | null;
+    supportsSnapshots: boolean;
+    includeSnapshots: boolean;
+    stale: boolean;
+    error: string | null;
+    context: Record<string, string>;
+    options: StartupVariableVersionOption[];
+}
+
 const getServerStartup = (
     uuid: string,
     fallbackData?: { invocation: string; variables: EggVariable[]; dockerImages: Record<string, string> },
@@ -41,4 +59,34 @@ const updateStartupVariable = async (uuid: string, key: string, value: string): 
     return [Transformers.toEggVariable(data), data.meta.startup_command];
 };
 
-export { getServerStartup, setImage, changeEgg, updateStartupVariable };
+const getStartupVariableVersionOptions = async (
+    uuid: string,
+    key: string,
+    includeSnapshots = false,
+    context: Record<string, string> = {},
+): Promise<StartupVariableVersionResponse> => {
+    const { data } = await http.get(`/api/client/servers/${uuid}/startup/versions`, {
+        params: {
+            key,
+            include_snapshots: includeSnapshots ? 1 : 0,
+            context,
+        },
+    });
+
+    const attributes = data.attributes || {};
+
+    return {
+        key: attributes.key,
+        supported: !!attributes.supported,
+        provider: attributes.provider ?? null,
+        supportsSnapshots: !!attributes.supports_snapshots,
+        includeSnapshots: !!attributes.include_snapshots,
+        stale: !!attributes.stale,
+        error: attributes.error ?? null,
+        context: attributes.context ?? {},
+        options: (attributes.options ?? []) as StartupVariableVersionOption[],
+    };
+};
+
+export { getServerStartup, setImage, changeEgg, updateStartupVariable, getStartupVariableVersionOptions };
+export type { StartupVariableVersionOption, StartupVariableVersionResponse };

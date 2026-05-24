@@ -317,6 +317,7 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
 
         Route::group(['prefix' => '/startup'], function () {
             Route::get('/', [Client\Servers\StartupController::class, 'index']);
+            Route::get('/versions', [Client\Servers\StartupController::class, 'versions']);
             Route::put('/variable', [Client\Servers\StartupController::class, 'update']);
         });
 

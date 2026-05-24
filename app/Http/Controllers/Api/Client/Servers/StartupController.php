@@ -4,12 +4,15 @@ namespace Everest\Http\Controllers\Api\Client\Servers;
 
 use Everest\Models\Server;
 use Everest\Facades\Activity;
+use Illuminate\Http\JsonResponse;
 use Everest\Services\Servers\StartupCommandService;
+use Everest\Services\Servers\StartupVariableVersionService;
 use Everest\Repositories\Eloquent\ServerVariableRepository;
 use Everest\Transformers\Api\Client\EggVariableTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Everest\Http\Requests\Api\Client\Servers\Startup\GetStartupRequest;
+use Everest\Http\Requests\Api\Client\Servers\Startup\GetStartupVariableVersionsRequest;
 use Everest\Http\Requests\Api\Client\Servers\Startup\UpdateStartupVariableRequest;
 
 class StartupController extends ClientApiController
@@ -19,6 +22,7 @@ class StartupController extends ClientApiController
      */
     public function __construct(
         private StartupCommandService $startupCommandService,
+        private StartupVariableVersionService $versionService,
         private ServerVariableRepository $repository
     ) {
         parent::__construct();
@@ -41,6 +45,42 @@ class StartupController extends ClientApiController
                 'raw_startup_command' => $server->startup,
             ])
             ->toArray();
+    }
+
+    /**
+     * Returns version options for a startup variable if supported.
+     */
+    public function versions(GetStartupVariableVersionsRequest $request, Server $server): JsonResponse
+    {
+        $envVariable = strtoupper($request->input('key', ''));
+        $server->loadMissing('variables');
+
+        $variable = $server->variables->firstWhere('env_variable', $envVariable);
+        if (is_null($variable) || !$variable->user_viewable) {
+            throw new BadRequestHttpException('The environment variable you are trying to view does not exist.');
+        }
+
+        $data = $this->versionService->getOptionsForVariable(
+            server: $server,
+            envVariable: $envVariable,
+            includeSnapshots: $request->boolean('include_snapshots'),
+            context: $request->input('context', []),
+        );
+
+        return new JsonResponse([
+            'object' => 'startup_variable_versions',
+            'attributes' => [
+                'key' => $envVariable,
+                'supported' => $data['supported'] ?? false,
+                'provider' => $data['provider'] ?? null,
+                'supports_snapshots' => $data['supports_snapshots'] ?? false,
+                'include_snapshots' => $data['include_snapshots'] ?? false,
+                'stale' => $data['stale'] ?? false,
+                'error' => $data['error'] ?? null,
+                'context' => $data['context'] ?? [],
+                'options' => $data['options'] ?? [],
+            ],
+        ]);
     }
 
     /**
