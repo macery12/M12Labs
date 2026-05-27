@@ -6,10 +6,8 @@ use Carbon\Carbon;
 use Everest\Models\Server;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
-use Illuminate\Support\Facades\DB;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Servers\SuspensionService;
-use Everest\Services\Billing\BillingDefaults;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class ServerRenewalService
@@ -32,11 +30,8 @@ class ServerRenewalService
      *
      * @return array{server: Server, order: Order}
      */
-    public function renew(Server $server, Product $product, ?int $couponId = null, int $billingDays = 0): array
+    public function renew(Server $server, Product $product, ?int $couponId = null, int $billingDays = 30): array
     {
-        if ($billingDays <= 0) {
-            $billingDays = BillingDefaults::defaultBillingDays();
-        }
         // Verify that the server uses this product
         if ($server->billing_product_id !== $product->id) {
             throw new DisplayException('This server does not use this product.');
@@ -46,7 +41,6 @@ class ServerRenewalService
             throw new ConflictHttpException('This server is scheduled for deletion. Cancel deletion before renewing.');
         }
 
-        return DB::transaction(function () use ($server, $product, $couponId, $billingDays) {
         // Create an order record for the renewal
         $order = $this->orderService->create(
             null,
@@ -64,14 +58,8 @@ class ServerRenewalService
             $this->suspensionService->toggle($server, SuspensionService::ACTION_UNSUSPEND);
         }
 
-        // Resolve and persist the selected billing cycle for future renewals.
-        // This ensures coupon-driven free renewals still lock in the chosen cycle.
-        $resolvedBillingDays = $billingDays > 0
-            ? $billingDays
-            : ($server->billing_days > 0 ? $server->billing_days : $product->getRenewalDays());
-
-        // Use the resolved billing days as the renewal period baseline.
-        $renewalDays = $resolvedBillingDays;
+        // Use the billing days provided or fall back to product's renewal days
+        $renewalDays = $billingDays > 0 ? $billingDays : $product->getRenewalDays();
 
         // Calculate past due days if server is overdue
         $pastDueDays = 0;
@@ -79,7 +67,8 @@ class ServerRenewalService
             $pastDueDays = Carbon::now()->diffInDays($server->renewal_date);
 
             // Get the suspension threshold (grace period) for this billing cycle
-            $suspensionThreshold = $product->getSuspensionThresholdForBillingCycle($resolvedBillingDays);
+            $serverBillingDays = $server->billing_days > 0 ? $server->billing_days : $billingDays;
+            $suspensionThreshold = $product->getSuspensionThresholdForBillingCycle($serverBillingDays);
 
             // Only adjust renewal days if server is still within grace period (able to be renewed)
             // If past the grace period, they shouldn't be able to renew anyway
@@ -104,8 +93,6 @@ class ServerRenewalService
 
         $server->update([
             'renewal_date' => $newRenewalDate,
-            'billing_days' => $resolvedBillingDays,
-            'billing_amount' => $order->total,
         ]);
 
         // Mark order as processed
@@ -115,6 +102,5 @@ class ServerRenewalService
         ]);
 
         return ['server' => $server, 'order' => $order];
-        }); // end DB::transaction
     }
 }

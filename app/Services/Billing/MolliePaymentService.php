@@ -5,6 +5,7 @@ namespace Everest\Services\Billing;
 use Mollie\Api\MollieApiClient;
 use Mollie\Api\Resources\Payment;
 use Everest\Models\Billing\Product;
+use Everest\Exceptions\DisplayException;
 use Everest\Services\Security\LogSanitizer;
 use Everest\Models\Billing\BillingException;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
@@ -67,9 +68,6 @@ class MolliePaymentService
     /**
      * Get a Mollie payment by ID.
      *
-     * Callers should invoke status methods (->isPaid(), ->isExpired(), etc.) directly
-     * on the returned Payment object rather than delegating through this service.
-     *
      * @throws BillingExceptionClass
      */
     public function getPayment(string $paymentId): Payment
@@ -94,13 +92,98 @@ class MolliePaymentService
     }
 
     /**
-     * Get the current status string of a payment.
+     * Update payment metadata.
+     *
+     * Note: Mollie doesn't support updating payment metadata after creation.
+     * Metadata must be set during payment creation.
+     *
+     * @throws DisplayException
+     */
+    public function updatePaymentMetadata(string $paymentId, array $metadata): void
+    {
+        throw new DisplayException('Mollie does not support updating payment metadata after creation.');
+    }
+
+    /**
+     * Check if a payment is paid.
+     */
+    public function isPaymentPaid(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+
+        return $payment->isPaid();
+    }
+
+    /**
+     * Check if a payment has failed.
+     */
+    public function isPaymentFailed(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+
+        return $payment->isFailed() || $payment->isExpired() || $payment->isCanceled();
+    }
+
+    /**
+     * Get the current status of a payment.
      *
      * Returns one of: open, pending, paid, failed, expired, canceled, authorized
      */
     public function getPaymentStatus(string $paymentId): string
     {
-        return $this->getPayment($paymentId)->status;
+        $payment = $this->getPayment($paymentId);
+
+        return $payment->status;
+    }
+
+    /**
+     * Check if payment is expired.
+     */
+    public function isPaymentExpired(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+
+        return $payment->isExpired();
+    }
+
+    /**
+     * Check if payment is canceled.
+     */
+    public function isPaymentCanceled(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+
+        return $payment->isCanceled();
+    }
+
+    /**
+     * Check if payment is authorized (but not yet captured).
+     */
+    public function isPaymentAuthorized(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+
+        return $payment->isAuthorized();
+    }
+
+    /**
+     * Check if payment is pending.
+     */
+    public function isPaymentPending(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+
+        return $payment->isPending();
+    }
+
+    /**
+     * Check if payment is open (created but no action taken).
+     */
+    public function isPaymentOpen(string $paymentId): bool
+    {
+        $payment = $this->getPayment($paymentId);
+
+        return $payment->isOpen();
     }
 
     /**

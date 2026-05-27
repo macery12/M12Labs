@@ -175,7 +175,7 @@ export default class Transformers {
         product_id: data.product_id,
         type: data.type,
         threat_index: data.threat_index,
-        payment_processor: data.payment_processor,
+        payment_processor: data.payment_processor || 'stripe',
         payment_intent_id: data.payment_intent_id,
         mollie_payment_id: data.mollie_payment_id,
         paypal_order_id: data.paypal_order_id,

@@ -1,6 +1,6 @@
 export type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
 export type OrderType = 'new' | 'upg' | 'ren';
-export type PaymentProcessor = 'stripe' | 'mollie' | 'paypal' | 'free';
+export type PaymentProcessor = 'stripe' | 'mollie' | 'paypal';
 
 export interface OrderFilters {
     id?: number;

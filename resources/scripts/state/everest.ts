@@ -133,9 +133,6 @@ export interface EverestSettings {
     extensions: {
         enabled: boolean;
     };
-    custom_domains: {
-        enabled: boolean;
-    };
 }
 
 export interface EverestStore {

@@ -8,16 +8,20 @@ use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\CouponUsage;
-use Everest\Services\Billing\BillingDefaults;
 use Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob;
 use Everest\Services\CustomDomains\CustomDomainProvisioningService;
 
 /**
- * @deprecated Use ServerFulfillmentService instead.
+ * Unified order processing service for billing operations.
  *
- * OrderProcessorService is retained as a thin shim for one release cycle.
- * CheckoutController::processFree() now calls ServerFulfillmentService::fulfillFreeOrder().
- * This class will be removed once all callers have been updated.
+ * This service consolidates order creation and processing logic that was previously
+ * duplicated across the old FreeProductController and PaymentController (now replaced by CheckoutController).
+ *
+ * Responsibilities:
+ * - Create orders with proper metadata
+ * - Record coupon usage
+ * - Coordinate server creation and renewal
+ * - Update order status after processing
  */
 class OrderProcessorService
 {
@@ -58,12 +62,9 @@ class OrderProcessorService
         array $variables = [],
         ?string $paymentIntentId = null,
         ?string $serverName = null,
-        int $billingDays = 0,
+        int $billingDays = 30,
         array $domainPayload = []
     ): array {
-        if ($billingDays <= 0) {
-            $billingDays = BillingDefaults::defaultBillingDays();
-        }
         // Create the order record
         $order = $this->orderService->create(
             $paymentIntentId,
@@ -122,11 +123,8 @@ class OrderProcessorService
         Server $server,
         Product $product,
         ?int $couponId = null,
-        int $billingDays = 0
+        int $billingDays = 30
     ): array {
-        if ($billingDays <= 0) {
-            $billingDays = BillingDefaults::defaultBillingDays();
-        }
         // Use the unified renewal service
         $result = $this->renewalService->renew($server, $product, $couponId, $billingDays);
 
@@ -147,14 +145,12 @@ class OrderProcessorService
      */
     private function recordCouponUsage(int $couponId, int $userId, int $orderId): void
     {
-        CouponUsage::firstOrCreate(
-            [
-                'coupon_id' => $couponId,
-                'user_id' => $userId,
-                'order_id' => $orderId,
-            ],
-            ['used_at' => now()]
-        );
+        CouponUsage::create([
+            'coupon_id' => $couponId,
+            'user_id' => $userId,
+            'order_id' => $orderId,
+            'used_at' => now(),
+        ]);
     }
 
     /**

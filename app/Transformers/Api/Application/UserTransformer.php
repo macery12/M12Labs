@@ -34,7 +34,6 @@ class UserTransformer extends Transformer
             'uuid' => $model->uuid,
             'username' => $model->username,
             'email' => $model->email,
-            'stripe_id' => $model->stripe_id,
             'language' => $model->language,
             'root_admin' => (bool) $model->root_admin,
             '2fa' => (bool) $model->use_totp,

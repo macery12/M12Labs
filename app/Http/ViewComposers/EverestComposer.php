@@ -116,9 +116,6 @@ class EverestComposer
             'extensions' => [
                 'enabled' => boolval(config('modules.extensions.enabled', false)),
             ],
-            'custom_domains' => [
-                'enabled' => boolval(config('modules.custom_domains.enabled', false)),
-            ],
         ];
         
         // Merge admin-only configuration if user is authenticated admin

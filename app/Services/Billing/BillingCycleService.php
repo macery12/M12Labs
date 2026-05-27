@@ -3,11 +3,9 @@
 namespace Everest\Services\Billing;
 
 use Everest\Models\Setting;
-use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingCycle;
-use Everest\Services\Billing\BillingDefaults;
 
 class BillingCycleService
 {
@@ -18,73 +16,8 @@ class BillingCycleService
      */
     public function calculatePrice(Product $product, int $billingDays, ?int $nodeId = null): array
     {
-        $defaultBillingDays = BillingDefaults::defaultBillingDays();
-        $basePrice = $product->getEffectiveBasePrice();
-        $perDayPrice = $basePrice / $defaultBillingDays;
-
-        // Get multiplier steps from settings
-        $stepsJson = Setting::get('settings::modules:billing:renewal:multiplier_steps');
-        $steps = [];
-
-        if ($stepsJson) {
-            $decoded = json_decode($stepsJson, true);
-            if (is_array($decoded)) {
-                $steps = $decoded;
-                usort($steps, fn ($a, $b) => $a['maxDays'] <=> $b['maxDays']);
-            }
-        }
-
-        // Default steps if none configured
-        if (empty($steps)) {
-            $steps = [
-                ['maxDays' => 10, 'multiplier' => 1.30],
-                ['maxDays' => 20, 'multiplier' => 1.20],
-                ['maxDays' => 29, 'multiplier' => 1.10],
-                ['maxDays' => 30, 'multiplier' => 1.00],
-                ['maxDays' => 59, 'multiplier' => 0.95],
-                ['maxDays' => 89, 'multiplier' => 0.90],
-                ['maxDays' => 999, 'multiplier' => 0.85],
-            ];
-        }
-
-        // Find the first matching step (billing cycle multiplier)
-        $billingMultiplier = 1.0;
-        $matchedStep = false;
-        foreach ($steps as $step) {
-            if ($billingDays <= $step['maxDays']) {
-                $billingMultiplier = $step['multiplier'];
-                $matchedStep = true;
-                break;
-            }
-        }
-
-        // If no step matched (days > all maxDays), use the last step's multiplier
-        if (!$matchedStep && !empty($steps)) {
-            $billingMultiplier = end($steps)['multiplier'];
-        }
-
-        // Get node pricing multiplier (default to 1.0 if node not found or no node specified)
-        $nodeMultiplier = 1.0;
-        if ($nodeId) {
-            $node = \Everest\Models\Node::find($nodeId);
-            if ($node && isset($node->price_multiplier)) {
-                $nodeMultiplier = (float) $node->price_multiplier;
-            }
-        }
-
-        // Calculate final price: per_day_price * days * billing_multiplier * node_multiplier
-        $finalPrice = round($perDayPrice * $billingDays * $billingMultiplier * $nodeMultiplier, 2);
-
-        // Calculate discount percentage (negative = premium, positive = discount)
-        $standardPrice = $perDayPrice * $billingDays;
-        $discountPercent = $standardPrice > 0 ? (($standardPrice - $finalPrice) / $standardPrice) * 100 : 0;
-
-        return [
-            'price' => $finalPrice,
-            'multiplier' => $billingMultiplier,
-            'node_multiplier' => $nodeMultiplier,
-            'discount_percent' => round($discountPercent, 1),
-        ];
+        // Use the product's calculatePrice method with optional node ID
+        return $product->calculatePrice($billingDays, $nodeId);
     }
 
     /**
@@ -94,7 +27,7 @@ class BillingCycleService
     public function getAllCycles(Product $product): array
     {
         // Get default billing days from settings
-        $defaultBillingDays = BillingDefaults::defaultBillingDays();
+        $defaultBillingDays = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
 
         // Query ALL billing cycles for the product
         $cycles = BillingCycle::where('product_id', $product->id)
@@ -143,7 +76,7 @@ class BillingCycleService
     public function getAvailableCycles(Product $product, ?int $couponId = null): array
     {
         // Get default billing days from settings
-        $defaultBillingDays = BillingDefaults::defaultBillingDays();
+        $defaultBillingDays = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
 
         // Query enabled billing cycles directly with proper where clause
         $cycles = BillingCycle::where('product_id', $product->id)
@@ -208,7 +141,7 @@ class BillingCycleService
         }
 
         // No custom cycles: only the current global default is accepted.
-        $defaultBillingDays = BillingDefaults::defaultBillingDays();
+        $defaultBillingDays = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
         if ($billingDays !== $defaultBillingDays) {
             throw new DisplayException("The selected billing cycle ({$billingDays} days) is not available for this product. The default billing cycle is {$defaultBillingDays} days.");
         }
@@ -307,73 +240,5 @@ class BillingCycleService
         BillingCycle::where('product_id', $product->id)
             ->whereNotIn('days', $daysToKeep)
             ->delete();
-    }
-
-    /**
-     * Calculate the final price for a product after applying a coupon.
-     *
-     * Moved here from BillingValidationService so pricing logic is co-located
-     * with other cycle/price calculations. BillingValidationService retains a
-     * delegation shim for backwards compatibility.
-     *
-     * @throws DisplayException if coupon validation fails
-     */
-    public function calculatePriceWithCoupon(
-        Product $product,
-        ?int $couponId,
-        string $orderType = 'new',
-        ?int $billingDays = null,
-        ?int $nodeId = null,
-        ?int $userId = null
-    ): array {
-        $days = $billingDays ?? BillingDefaults::defaultBillingDays();
-
-        if ($orderType !== 'ren') {
-            $this->validateBillingCycle($product, $days);
-        }
-
-        $priceInfo = $product->calculatePrice($days, $nodeId);
-        $basePrice = $priceInfo['price'];
-
-        $finalPrice = round($basePrice, 2);
-        $discount = 0.0;
-
-        if ($couponId) {
-            $coupon = Coupon::find($couponId);
-
-            if (!$coupon) {
-                throw new DisplayException('The specified coupon does not exist.');
-            }
-
-            if ($userId === null) {
-                throw new DisplayException('User ID is required for coupon validation.');
-            }
-
-            $validation = $coupon->canBeUsed($userId, $basePrice);
-            if (!$validation['valid']) {
-                throw new DisplayException($validation['message']);
-            }
-
-            if (!$coupon->isAllowedForOrderType($orderType)) {
-                $allowedTypes = [
-                    Coupon::ALLOWED_FOR_PURCHASES => 'new purchases',
-                    Coupon::ALLOWED_FOR_RENEWALS  => 'renewals',
-                ];
-                $allowed = $allowedTypes[$coupon->allowed_for] ?? $coupon->allowed_for;
-                throw new DisplayException("This coupon is only valid for {$allowed}.");
-            }
-
-            $discount    = round($coupon->calculateDiscount($basePrice), 2);
-            $finalPrice  = max(0, round($basePrice - $discount, 2));
-        }
-
-        return [
-            'finalPrice'    => $finalPrice,
-            'discount'      => $discount,
-            'subtotal'      => $basePrice,
-            'billingDays'   => $days,
-            'multiplier'    => $priceInfo['multiplier'],
-            'nodeMultiplier' => $priceInfo['node_multiplier'],
-        ];
     }
 }

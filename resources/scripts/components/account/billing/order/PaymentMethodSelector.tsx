@@ -6,10 +6,11 @@ import MolliePaymentButton from './MolliePaymentButton';
 import PayPalPaymentButton from './PayPalPaymentButton';
 import { Elements } from '@stripe/react-stripe-js';
 import { Stripe } from '@stripe/stripe-js';
+import classNames from 'classnames';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faCreditCard, faCheck, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faPaypal } from '@fortawesome/free-brands-svg-icons';
 import { Alert } from '@/elements/alert';
-import ProcessorSelectorGrid, { type PaymentMethod } from '@/components/billing/ProcessorSelectorGrid';
 
 interface Props {
     selectedNode?: number;
@@ -31,22 +32,42 @@ interface Props {
 type PaymentMethod = 'stripe' | 'mollie' | 'paypal';
 
 export default (props: Props) => {
+    const { colors } = useStoreState(state => state.theme.data!);
     const billing = useStoreState(state => state.everest.data!.billing);
 
     const configuredProcessors: Array<{ method: PaymentMethod; available: boolean }> = [
-        { method: 'stripe' as const, available: billing.processors?.stripe?.available ?? false },
-        { method: 'mollie' as const, available: billing.processors?.mollie?.available ?? false },
-        { method: 'paypal' as const, available: billing.processors?.paypal?.available ?? false },
-    ].filter(p => {
-        if (p.method === 'stripe') return billing.processors?.stripe?.enabled;
-        if (p.method === 'mollie') return billing.processors?.mollie?.enabled;
+        {
+            method: 'stripe' as const,
+            available: billing.processors?.stripe?.available ?? false,
+        },
+        {
+            method: 'mollie' as const,
+            available: billing.processors?.mollie?.available ?? false,
+        },
+        {
+            method: 'paypal' as const,
+            available: billing.processors?.paypal?.available ?? false,
+        },
+    ].filter(processor => {
+        if (processor.method === 'stripe') {
+            return billing.processors?.stripe?.enabled;
+        }
+
+        if (processor.method === 'mollie') {
+            return billing.processors?.mollie?.enabled;
+        }
+
         return billing.processors?.paypal?.enabled;
     });
 
-    const availableProcessors = configuredProcessors.filter(p => p.available).map(p => p.method);
+    const availableProcessors = configuredProcessors
+        .filter(processor => processor.available)
+        .map(processor => processor.method);
 
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | undefined>(availableProcessors[0]);
     const showSelection = configuredProcessors.length > 1;
+
+    const getProcessor = (method: PaymentMethod) => configuredProcessors.find(processor => processor.method === method);
 
     // If no processors are available, show error message
     if (availableProcessors.length === 0) {
@@ -76,11 +97,162 @@ export default (props: Props) => {
     return (
         <div>
             {showSelection && (
-                <ProcessorSelectorGrid
-                    selected={selectedMethod}
-                    onSelect={setSelectedMethod}
-                    processors={configuredProcessors}
-                />
+                <div className={'mb-6'}>
+                    <h4 className={'mb-3 text-sm font-semibold text-gray-200'}>Select Payment Method</h4>
+                    <div className={'grid gap-3 sm:grid-cols-2'}>
+                        {getProcessor('stripe') && (
+                            <button
+                                type={'button'}
+                                disabled={!getProcessor('stripe')?.available}
+                                onClick={() => setSelectedMethod('stripe')}
+                                className={classNames(
+                                    'relative flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all',
+                                    getProcessor('stripe')?.available
+                                        ? 'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
+                                        : 'cursor-not-allowed opacity-50',
+                                    selectedMethod === 'stripe' ? 'border-primary' : 'border-gray-700',
+                                )}
+                                style={
+                                    selectedMethod === 'stripe'
+                                        ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                        : { backgroundColor: colors.background, borderColor: '#374151' }
+                                }
+                            >
+                                <div
+                                    className={classNames(
+                                        'flex h-10 w-10 items-center justify-center rounded-lg',
+                                        selectedMethod === 'stripe' ? 'text-white' : 'text-gray-400',
+                                    )}
+                                    style={
+                                        selectedMethod === 'stripe'
+                                            ? { backgroundColor: colors.primary }
+                                            : { backgroundColor: colors.secondary }
+                                    }
+                                >
+                                    <FontAwesomeIcon icon={faCreditCard} className={'h-5 w-5'} />
+                                </div>
+                                <div className={'flex-1'}>
+                                    <div className={'flex items-center gap-2'}>
+                                        <p className={'font-semibold text-gray-100'}>Stripe</p>
+                                        {selectedMethod === 'stripe' && (
+                                            <FontAwesomeIcon
+                                                icon={faCheck}
+                                                className={'h-4 w-4'}
+                                                style={{ color: colors.primary }}
+                                            />
+                                        )}
+                                    </div>
+                                    <p className={'mt-0.5 text-xs text-gray-400'}>
+                                        Card, PayPal{billing.link ? ', Link' : ''}
+                                    </p>
+                                    {!getProcessor('stripe')?.available && (
+                                        <p className={'mt-1 text-xs text-yellow-400'}>Unavailable</p>
+                                    )}
+                                </div>
+                            </button>
+                        )}
+
+                        {getProcessor('mollie') && (
+                            <button
+                                type={'button'}
+                                disabled={!getProcessor('mollie')?.available}
+                                onClick={() => setSelectedMethod('mollie')}
+                                className={classNames(
+                                    'relative flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all',
+                                    getProcessor('mollie')?.available
+                                        ? 'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
+                                        : 'cursor-not-allowed opacity-50',
+                                    selectedMethod === 'mollie' ? 'border-primary' : 'border-gray-700',
+                                )}
+                                style={
+                                    selectedMethod === 'mollie'
+                                        ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                        : { backgroundColor: colors.background, borderColor: '#374151' }
+                                }
+                            >
+                                <div
+                                    className={classNames(
+                                        'flex h-10 w-10 items-center justify-center rounded-lg',
+                                        selectedMethod === 'mollie' ? 'text-white' : 'text-gray-400',
+                                    )}
+                                    style={
+                                        selectedMethod === 'mollie'
+                                            ? { backgroundColor: colors.primary }
+                                            : { backgroundColor: colors.secondary }
+                                    }
+                                >
+                                    <FontAwesomeIcon icon={faCreditCard} className={'h-5 w-5'} />
+                                </div>
+                                <div className={'flex-1'}>
+                                    <div className={'flex items-center gap-2'}>
+                                        <p className={'font-semibold text-gray-100'}>Mollie</p>
+                                        {selectedMethod === 'mollie' && (
+                                            <FontAwesomeIcon
+                                                icon={faCheck}
+                                                className={'h-4 w-4'}
+                                                style={{ color: colors.primary }}
+                                            />
+                                        )}
+                                    </div>
+                                    <p className={'mt-0.5 text-xs text-gray-400'}>Card, iDEAL, and more</p>
+                                    {!getProcessor('mollie')?.available && (
+                                        <p className={'mt-1 text-xs text-yellow-400'}>Unavailable</p>
+                                    )}
+                                </div>
+                            </button>
+                        )}
+
+                        {getProcessor('paypal') && (
+                            <button
+                                type={'button'}
+                                disabled={!getProcessor('paypal')?.available}
+                                onClick={() => setSelectedMethod('paypal')}
+                                className={classNames(
+                                    'relative flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all',
+                                    getProcessor('paypal')?.available
+                                        ? 'hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
+                                        : 'cursor-not-allowed opacity-50',
+                                    selectedMethod === 'paypal' ? 'border-primary' : 'border-gray-700',
+                                )}
+                                style={
+                                    selectedMethod === 'paypal'
+                                        ? { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }
+                                        : { backgroundColor: colors.background, borderColor: '#374151' }
+                                }
+                            >
+                                <div
+                                    className={classNames(
+                                        'flex h-10 w-10 items-center justify-center rounded-lg',
+                                        selectedMethod === 'paypal' ? 'text-white' : 'text-gray-400',
+                                    )}
+                                    style={
+                                        selectedMethod === 'paypal'
+                                            ? { backgroundColor: colors.primary }
+                                            : { backgroundColor: colors.secondary }
+                                    }
+                                >
+                                    <FontAwesomeIcon icon={faPaypal} className={'h-5 w-5'} />
+                                </div>
+                                <div className={'flex-1'}>
+                                    <div className={'flex items-center gap-2'}>
+                                        <p className={'font-semibold text-gray-100'}>PayPal</p>
+                                        {selectedMethod === 'paypal' && (
+                                            <FontAwesomeIcon
+                                                icon={faCheck}
+                                                className={'h-4 w-4'}
+                                                style={{ color: colors.primary }}
+                                            />
+                                        )}
+                                    </div>
+                                    <p className={'mt-0.5 text-xs text-gray-400'}>PayPal account or card</p>
+                                    {!getProcessor('paypal')?.available && (
+                                        <p className={'mt-1 text-xs text-yellow-400'}>Unavailable</p>
+                                    )}
+                                </div>
+                            </button>
+                        )}
+                    </div>
+                </div>
             )}
 
             {/* Render the selected payment method */}

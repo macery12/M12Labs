@@ -20,10 +20,6 @@ use Everest\Http\Middleware\Api\IsValidJson;
 Route::prefix('/webhooks')
     ->middleware([IsValidJson::class, 'throttle:60,1'])
     ->group(function () {
-        // Stripe payment / customer webhooks
-        Route::post('/stripe', [Webhooks\StripeWebhookController::class, 'handle'])
-            ->name('webhook.stripe');
-
         // PayPal payment webhook
         Route::post('/paypal', [Webhooks\PayPalWebhookController::class, 'handle'])
             ->name('webhook.paypal');

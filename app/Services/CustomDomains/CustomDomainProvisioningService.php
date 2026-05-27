@@ -40,10 +40,6 @@ class CustomDomainProvisioningService
 
     public function getAvailableDomains(?Server $server = null): array
     {
-        if (!$this->moduleEnabled()) {
-            return [];
-        }
-
         $domains = CustomDomain::query()->where('enabled', true)->orderBy('domain')->get();
 
         if (!$server) {
@@ -57,10 +53,6 @@ class CustomDomainProvisioningService
     {
         if (empty($payload)) {
             return;
-        }
-
-        if (!$this->moduleEnabled()) {
-            throw new DisplayException('Custom domains are currently disabled.');
         }
 
         $server->loadMissing('allocation');
@@ -147,10 +139,6 @@ class CustomDomainProvisioningService
 
     public function provision(ServerCustomDomain $mapping): void
     {
-        if (!$this->moduleEnabled()) {
-            return;
-        }
-
         try {
             $mapping->loadMissing(['customDomain.apiKey', 'server.node', 'server.egg', 'server.nest', 'allocation']);
 
@@ -263,10 +251,6 @@ class CustomDomainProvisioningService
 
     public function cleanup(ServerCustomDomain $mapping): void
     {
-        if (!$this->moduleEnabled()) {
-            return;
-        }
-
         $mapping->loadMissing('customDomain.apiKey');
         $zoneId = $mapping->customDomain->cloudflare_zone_id;
         $token = trim((string) ($mapping->customDomain->apiKey?->token ?? ''));
@@ -290,11 +274,6 @@ class CustomDomainProvisioningService
         }
 
         $this->writeLog($mapping, 'delete', 'success', ['records' => $records], 'DNS records removed.');
-    }
-
-    private function moduleEnabled(): bool
-    {
-        return (bool) config('modules.custom_domains.enabled', false);
     }
 
     private function validateSubdomain(string $subdomain, CustomDomain $domain): void

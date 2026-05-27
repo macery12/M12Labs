@@ -2,7 +2,7 @@ import React from 'react';
 import tw from 'twin.macro';
 import { useStoreState } from '@/state/hooks';
 
-export type PaymentProcessor = 'stripe' | 'mollie' | 'paypal' | 'free';
+export type PaymentProcessor = 'stripe' | 'mollie' | 'paypal';
 
 interface Props {
     value: PaymentProcessor | null;
@@ -25,7 +25,6 @@ const PaymentProcessorFilter: React.FC<Props> = ({ value, onChange }) => {
                 <option value="stripe">Stripe</option>
                 <option value="mollie">Mollie</option>
                 <option value="paypal">PayPal</option>
-                <option value="free">Free</option>
             </select>
         </div>
     );

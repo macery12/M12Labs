@@ -3,7 +3,6 @@
 namespace Everest\Services\Billing;
 
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Everest\Models\Node;
 use Everest\Models\Billing\Product;
 use Everest\Repositories\Wings\DaemonConfigurationRepository;
@@ -22,32 +21,24 @@ class NodeAvailabilityService
         $isFreeProduct = (float) $product->price === 0.00;
 
         $nodes = Node::where($isFreeProduct ? 'deployable_free' : 'deployable', true)->get();
+        $availableNodes = collect();
 
-        return $nodes->filter(function (Node $node) {
-            return $this->isNodeAvailable($node);
-        });
-    }
-
-    /**
-     * Check whether a node is available, using a 30-second cache to avoid
-     * synchronous Wings HTTP calls on every checkout page load.
-     */
-    private function isNodeAvailable(Node $node): bool
-    {
-        $cacheKey = "billing.node_available.{$node->id}";
-
-        return Cache::remember($cacheKey, 30, function () use ($node) {
-            if (!$node->allocations()->whereNull('server_id')->exists()) {
-                return false;
+        foreach ($nodes as $node) {
+            $hasFreeAllocation = $node->allocations()->whereNull('server_id')->exists();
+            if (!$hasFreeAllocation) {
+                continue;
             }
+
             try {
                 $this->repository->setNode($node)->getSystemInformation();
-
-                return true;
-            } catch (\Throwable) {
-                return false;
+            } catch (\Throwable $e) {
+                continue;
             }
-        });
+
+            $availableNodes->push($node);
+        }
+
+        return $availableNodes;
     }
 
     /**

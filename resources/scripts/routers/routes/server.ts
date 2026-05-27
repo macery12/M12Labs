@@ -96,7 +96,6 @@ const server: ServerRouteDefinition[] = [
         name: 'Custom Domains',
         icon: GlobeIcon,
         category: 'configuration',
-        condition: flags => flags.customDomainsEnabled,
     }),
     route('startup/*', StartupContainer, {
         permission: 'startup.*',

@@ -5,10 +5,8 @@ namespace Everest\Services\Billing;
 use Everest\Models\Server;
 use Illuminate\Support\Facades\DB;
 use Everest\Models\Billing\Product;
-use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Servers\BuildModificationService;
-use Everest\Repositories\Wings\DaemonServerRepository;
 
 /**
  * Service to handle plan upgrades and downgrades for servers.
@@ -20,8 +18,7 @@ class PlanChangeService
      */
     public function __construct(
         private BillingValidationService $validationService,
-        private BuildModificationService $buildModificationService,
-        private DaemonServerRepository $daemonRepository,
+        private BuildModificationService $buildModificationService
     ) {
     }
 
@@ -76,7 +73,7 @@ class PlanChangeService
 
         // If it's a downgrade and not forced, validate current resource usage
         if ($isDowngrade && !$force) {
-            $violations = $this->validatePlanDowngrade($server, $newProduct);
+            $violations = $this->validationService->validatePlanDowngrade($server, $newProduct);
 
             if (!empty($violations)) {
                 // Format error message with all violations
@@ -141,70 +138,5 @@ class PlanChangeService
                $newProduct->database_limit < $server->database_limit ||
                $newProduct->backup_limit < $server->backup_limit ||
              $newProduct->allocation_limit < $server->allocation_limit;
-    }
-
-    /**
-     * Validate that a server can be downgraded to a new product plan.
-     * Checks current resource usage against the new plan's limits.
-     *
-     * @return array Empty array if validation passes, or array of exceeded resources with details
-     */
-    public function validatePlanDowngrade(Server $server, Product $newProduct): array
-    {
-        $violations = [];
-
-        try {
-            $stats = $this->daemonRepository->setServer($server)->getDetails();
-            $currentUsage = $stats['utilization'] ?? [];
-        } catch (\Exception $e) {
-            Log::warning('Failed to fetch server utilization for plan downgrade validation', [
-                'server_id' => $server->id,
-                'error' => $e->getMessage(),
-            ]);
-            $currentUsage = [];
-        }
-
-        if (isset($currentUsage['disk_bytes'])) {
-            $currentDiskMB = round($currentUsage['disk_bytes'] / 1024 / 1024);
-            if ($currentDiskMB > $newProduct->disk_limit) {
-                $violations['disk'] = ['current' => $currentDiskMB, 'limit' => $newProduct->disk_limit, 'unit' => 'MB'];
-            }
-        }
-
-        if (isset($currentUsage['memory_bytes'])) {
-            $currentMemoryMB = round($currentUsage['memory_bytes'] / 1024 / 1024);
-            if ($currentMemoryMB > $newProduct->memory_limit) {
-                $violations['memory'] = ['current' => $currentMemoryMB, 'limit' => $newProduct->memory_limit, 'unit' => 'MB'];
-            }
-        }
-
-        if (isset($currentUsage['cpu_absolute']) && $newProduct->cpu_limit > 0) {
-            $currentCpuPercent = round($currentUsage['cpu_absolute']);
-            if ($currentCpuPercent > $newProduct->cpu_limit) {
-                $violations['cpu'] = ['current' => $currentCpuPercent, 'limit' => $newProduct->cpu_limit, 'unit' => '%'];
-            }
-        }
-
-        $currentDatabases = $server->databases()->count();
-        if ($currentDatabases > $newProduct->database_limit) {
-            $violations['databases'] = ['current' => $currentDatabases, 'limit' => $newProduct->database_limit, 'unit' => 'databases'];
-        }
-
-        $currentBackups = $server->backups()->count();
-        if ($currentBackups > $newProduct->backup_limit) {
-            $violations['backups'] = ['current' => $currentBackups, 'limit' => $newProduct->backup_limit, 'unit' => 'backups'];
-        }
-
-        $currentAllocations = $server->allocations()->count();
-        if ($currentAllocations > $newProduct->allocation_limit) {
-            $violations['allocations'] = ['current' => $currentAllocations, 'limit' => $newProduct->allocation_limit, 'unit' => 'allocations'];
-        }
-
-        $currentSubdomains = $server->customDomains()->count();
-        if (is_null($server->subdomain_limit) && !is_null($newProduct->subdomain_limit) && $currentSubdomains > $newProduct->subdomain_limit) {
-            $violations['subdomains'] = ['current' => $currentSubdomains, 'limit' => $newProduct->subdomain_limit, 'unit' => 'subdomains'];
-        }
-
-        return $violations;
     }
 }

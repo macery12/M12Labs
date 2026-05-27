@@ -138,13 +138,7 @@ function AdminRouter() {
                     <div className={'mx-auto flex w-full flex-col'} style={{ maxWidth: '86rem' }}>
                         <ErrorBoundary>
                             <Routes>
-                                {routes.admin
-                                    .filter(
-                                        route =>
-                                            !route.condition ||
-                                            route.condition({ activityEnabled }),
-                                    )
-                                    .map(({ route, component: Component, permission }) => (
+                                {routes.admin.map(({ route, component: Component, permission }) => (
                                     <Route
                                         key={route}
                                         path={route}
@@ -160,7 +154,7 @@ function AdminRouter() {
                                             </Spinner.Suspense>
                                         }
                                     />
-                                    ))}
+                                ))}
                                 <Route path={'*'} element={<NotFound />} />
                             </Routes>
                         </ErrorBoundary>

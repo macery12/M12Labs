@@ -21,7 +21,6 @@ class OrderTransformer extends Transformer
     public function transform(Order $model): array
     {
         $server = $model->server;
-        $paymentProcessor = $this->resolvePaymentProcessor($model);
 
         return [
             'id' => $model->id,
@@ -32,17 +31,17 @@ class OrderTransformer extends Transformer
             'status' => $model->status,
             'product_id' => $model->product_id,
             'type' => $model->type ?? '?',
-            'payment_processor' => $paymentProcessor,
-            'transaction' => $model->transaction ? [
-                'external_id' => $model->transaction->external_id,
-                'capture_id'  => $model->transaction->capture_id,
-                'status'      => $model->transaction->status,
-                'amount'      => $model->transaction->amount,
-                'currency'    => $model->transaction->currency,
-                'payer_id'    => $model->transaction->payer_id,
-                'payer_email' => $model->transaction->payer_email,
-                'captured_at' => $model->transaction->captured_at?->toIso8601String(),
-            ] : null,
+            'payment_processor' => $model->payment_processor ?? 'stripe',
+            'payment_intent_id' => $model->payment_intent_id,
+            'mollie_payment_id' => $model->mollie_payment_id,
+            'paypal_order_id' => $model->paypal_order_id,
+            'paypal_capture_id' => $model->paypal_capture_id,
+            'paypal_payer_id' => $model->paypal_payer_id,
+            'paypal_payer_email' => $model->paypal_payer_email,
+            'paypal_status' => $model->paypal_status,
+            'paypal_amount' => $model->paypal_amount,
+            'paypal_currency' => $model->paypal_currency,
+            'paypal_captured_at' => $model->paypal_captured_at ? $model->paypal_captured_at->toIso8601String() : null,
             'threat_index' => $model->threat_index,
             'server_id' => $model->server_id,
             'server_uuid' => $server ? $server->uuid : null,
@@ -50,10 +49,5 @@ class OrderTransformer extends Transformer
             'created_at' => $model->created_at->toIso8601String(),
             'updated_at' => $model->updated_at->toIso8601String() ? $model->updated_at->toIso8601String() : null,
         ];
-    }
-
-    private function resolvePaymentProcessor(Order $model): string
-    {
-        return strtolower((string) ($model->payment_processor ?? 'stripe'));
     }
 }

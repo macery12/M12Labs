@@ -4,7 +4,6 @@ namespace Everest\Http\Controllers\Webhooks;
 
 use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
-use Everest\Models\Billing\PaymentTransaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Everest\Services\Security\LogSanitizer;
@@ -94,11 +93,7 @@ class PayPalWebhookController
                 return response()->json(['ok' => true], 200);
             }
 
-            $transaction = PaymentTransaction::where('processor', 'paypal')
-                ->where('external_id', $paypalOrderId)
-                ->latest()
-                ->first();
-            $order = $transaction?->order;
+            $order = Order::where('paypal_order_id', $paypalOrderId)->latest()->first();
 
             if (!$order) {
                 // Return 200 to prevent PayPal retries for non-existent orders
@@ -138,34 +133,11 @@ class PayPalWebhookController
 
             switch ($status) {
                 case 'COMPLETED':
-                    // Payment captured successfully - record payer/capture identifiers then fulfill
+                    // Payment captured successfully - fulfill the order
                     Log::info('PayPal webhook completed order', [
                         'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
                         'order_id' => $order->id,
                     ]);
-
-                    // Persist payer and capture details so they are available regardless of
-                    // whether the order was fulfilled via the client-side captureOrder endpoint
-                    // or this webhook path.
-                    $purchaseUnit = $paypalOrder['purchase_units'][0] ?? null;
-                    $capture = $purchaseUnit['payments']['captures'][0] ?? null;
-                    $payer = $paypalOrder['payer'] ?? null;
-
-                    if ($capture) {
-                        $order->paypal_capture_id = $order->paypal_capture_id ?? ($capture['id'] ?? null);
-                        $order->paypal_status = $capture['status'] ?? null;
-                        $order->paypal_amount = $order->paypal_amount ?? (isset($capture['amount']['value']) ? (float) $capture['amount']['value'] : null);
-                        $order->paypal_currency = $order->paypal_currency ?? ($capture['amount']['currency_code'] ?? null);
-                        $order->paypal_captured_at = $order->paypal_captured_at ?? (isset($capture['create_time']) ? \Carbon\Carbon::parse($capture['create_time']) : null);
-                    }
-
-                    if ($payer) {
-                        $order->paypal_payer_id = $order->paypal_payer_id ?? ($payer['payer_id'] ?? null);
-                        $order->paypal_payer_email = $order->paypal_payer_email ?? ($payer['email_address'] ?? null);
-                    }
-
-                    $order->save();
-
                     $this->fulfillOrder($request, $order);
                     break;
 

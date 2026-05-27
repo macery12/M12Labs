@@ -62,7 +62,6 @@ export interface CustomDomainTargetOptions {
 }
 
 export interface CustomDomainSettings {
-    enabled: boolean;
     cloudflare_token: string;
     allow_wildcard: boolean;
     max_wildcards_per_user: number;

@@ -22,8 +22,7 @@ import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process'
 import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
 import { loadStripeOnce } from '@/lib/stripe';
 import { Stripe } from '@stripe/stripe-js';
-import { ValidateCouponResponse, validateCoupon } from '@/api/routes/account/billing/coupons';
-import { useCheckoutDraft } from '@/hooks/useCheckoutDraft';
+import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 
 interface CheckoutState {
     productId: number;
@@ -43,12 +42,7 @@ export default () => {
     const { addFlash, clearAndAddHttpError, clearFlashes } = useFlash();
     const { colors } = useStoreState(s => s.theme.data!);
 
-    const routerState = state as CheckoutState | undefined;
-
-    // Fall back to sessionStorage draft when router state is missing (e.g. after a page refresh)
-    const productIdHint = routerState?.productId ?? 0;
-    const { draft } = useCheckoutDraft(productIdHint);
-    const checkoutState: CheckoutState | undefined = routerState ?? (draft.productId ? draft as unknown as CheckoutState : undefined);
+    const checkoutState = state as CheckoutState | undefined;
 
     const [product, setProduct] = useState<Product | undefined>();
     const [billingCycles, setBillingCycles] = useState<BillingCycle[]>([]);
@@ -57,8 +51,6 @@ export default () => {
     const [stripe, setStripe] = useState<Stripe | null>(null);
     const [intent, setIntent] = useState<StripeIntent | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
-    const [couponRevalidating, setCouponRevalidating] = useState<boolean>(false);
-    const [couponWarning, setCouponWarning] = useState<string | undefined>();
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(checkoutState?.couponData ?? null);
     const [couponId, setCouponId] = useState<number | undefined>(checkoutState?.couponId);
 
@@ -100,34 +92,6 @@ export default () => {
 
         loadData();
     }, [checkoutState?.productId]);
-
-    // Re-validate coupon on mount — price may have changed since step 1
-    useEffect(() => {
-        if (!checkoutState?.couponData || !product) return;
-
-        const revalidate = async () => {
-            setCouponRevalidating(true);
-            setCouponWarning(undefined);
-            try {
-                const result = await validateCoupon(
-                    checkoutState.couponData!.coupon.code,
-                    product.price,
-                    'new',
-                );
-                setCouponData(result);
-                setCouponId(result.coupon.id);
-            } catch {
-                // Coupon no longer valid — fall back to base price
-                setCouponData(null);
-                setCouponId(undefined);
-                setCouponWarning('Your coupon is no longer valid and has been removed.');
-            } finally {
-                setCouponRevalidating(false);
-            }
-        };
-
-        revalidate();
-    }, [product?.id]);
 
     useEffect(() => {
         if (!product || product.price === 0) return;
@@ -182,8 +146,6 @@ export default () => {
                 couponId,
                 checkoutState.selectedEggId,
                 checkoutState.serverName,
-                undefined,
-                checkoutState.selectedBillingDays,
             );
             navigate('/account/billing/success');
         } catch (error) {
@@ -246,16 +208,6 @@ export default () => {
     return (
         <PageContentBlock title={'Payment'}>
             <FlashMessageRender byKey={'account:billing:order'} className={'mb-4'} />
-            {couponWarning && (
-                <Alert type={'warning'} className={'mb-4'}>
-                    {couponWarning}
-                </Alert>
-            )}
-            {couponRevalidating && (
-                <Alert type={'info'} className={'mb-4'}>
-                    Re-validating coupon…
-                </Alert>
-            )}
             <div className={'mb-8'}>
                 <h1 className={'text-4xl font-bold text-gray-100'}>Payment</h1>
                 <p className={'mt-2 text-base text-gray-400'}>
