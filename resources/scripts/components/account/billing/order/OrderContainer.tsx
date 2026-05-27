@@ -15,8 +15,7 @@ import useFlash from '@/plugins/useFlash';
 import { EggVariable } from '@definitions/server';
 import { Button } from '@/elements/button';
 import FlashMessageRender from '@/elements/FlashMessageRender';
-import { Product, StripeIntent, type Node } from '@definitions/account/billing';
-import { Stripe } from '@stripe/stripe-js';
+import { Product, type Node } from '@definitions/account/billing';
 import {
     getProduct,
     getProductVariables,
@@ -30,10 +29,8 @@ import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import { AvailableCustomDomain, getAvailableCustomDomains } from '@/api/routes/account/billing/customDomains';
 import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
-import { getStripeIntent, getStripeKey } from '@/api/routes/account/billing/orders/stripe';
-import { loadStripeOnce } from '@/lib/stripe';
-import PaymentMethodSelector from '@account/billing/order/PaymentMethodSelector';
 import classNames from 'classnames';
+import { useCheckoutDraft } from '@/hooks/useCheckoutDraft';
 
 const getResponseStatus = (reason: unknown): number | undefined => {
     if (typeof reason === 'object' && reason !== null) {
@@ -45,12 +42,14 @@ const getResponseStatus = (reason: unknown): number | undefined => {
 
 export default () => {
     const params = useParams<'id'>();
+    const productId = params.id ? Number(params.id) : 0;
 
     const vars = useRef(new Map<string, string>()).current;
     const { addFlash, clearFlashes, clearAndAddHttpError } = useFlash();
     const navigate = useNavigate();
 
     const billing = useStoreState(state => state.everest.data!.billing);
+    const { setDraft } = useCheckoutDraft(productId);
     const [billingCycles, setBillingCycles] = useState<BillingCycle[]>([]);
     const [selectedBillingDays, setSelectedBillingDays] = useState<number>(30);
     const [nodes, setNodes] = useState<Node[] | undefined>();
@@ -64,8 +63,6 @@ export default () => {
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
-    const [intent, setIntent] = useState<StripeIntent | null>(null);
-    const [stripe, setStripe] = useState<Stripe | null>(null);
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
     const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
@@ -120,21 +117,6 @@ export default () => {
     const handleCouponApplied = (data: ValidateCouponResponse | null, status: 'applied' | 'removed' | 'invalid') => {
         if (status === 'invalid') return;
         setCouponData(data);
-
-        // Only regenerate intent if the final total is not zero and using Stripe
-        if (product && product.price !== 0 && billing.processors?.stripe?.available) {
-            const finalTotal = data ? data.total : product.price;
-
-            // If coupon makes it free, don't fetch intent
-            if (finalTotal === 0) {
-                setIntent(null);
-            } else {
-                // Regenerate intent with new amount for paid products
-                getStripeIntent(Number(params.id), data?.coupon.id)
-                    .then(intentData => setIntent({ id: intentData.id, secret: intentData.secret }))
-                    .catch((error: any) => console.error('Error updating payment intent:', error));
-            }
-        }
     };
 
     const getDomainPayload = () =>
@@ -157,6 +139,7 @@ export default () => {
                 selectedEggId,
                 serverName.trim(),
                 getDomainPayload(),
+                selectedBillingDays,
             )
                 .then(() => navigate('/'))
                 .catch((error: any) => clearAndAddHttpError({ key: 'account:billing:order', error }));
@@ -238,30 +221,6 @@ export default () => {
                 if (firstDomain) {
                     setSelectedDomainId(firstDomain.id);
                     setMappingRecordType(firstDomain.recommended_record_type);
-                }
-
-                if (productData.price !== 0) {
-                    // Check which processors are available and fetch resources accordingly
-                    const stripeAvailable = billing.processors?.stripe?.available ?? false;
-
-                    // Fetch Stripe resources if Stripe is available
-                    if (stripeAvailable) {
-                        try {
-                            // Fetch payment intent
-                            const intentData = await getStripeIntent(Number(params.id));
-                            setIntent({ id: intentData.id, secret: intentData.secret });
-
-                            // Fetch Stripe public key and initialize Stripe
-                            const stripePublicKey = await getStripeKey(Number(params.id));
-                            const stripeInstance = await loadStripeOnce(stripePublicKey.key);
-                            setStripe(stripeInstance);
-                        } catch (error) {
-                            console.error('Error initializing Stripe:', error);
-                        }
-                    }
-
-                    // Mollie doesn't need pre-initialization like Stripe
-                    // Payment is created when user clicks the button
                 }
             } catch (error: unknown) {
                 console.error('Error fetching billing order data:', error);
@@ -592,52 +551,38 @@ export default () => {
                                     onClick={createFree}
                                     size={Button.Sizes.Large}
                                     className={'w-full'}
-                                    disabled={!legalAgreed}
+                                    disabled={!reviewReady}
                                 >
                                     Create Server
                                 </Button>
                             ) : (
-                                <PaymentMethodSelector
-                                    selectedNode={selectedNode}
-                                    product={product}
-                                    vars={vars}
-                                    intent={intent}
-                                    stripe={stripe}
-                                    couponId={couponData?.coupon.id}
-                                    billingDays={selectedBillingDays}
-                                    selectedEggId={selectedEggId}
-                                    serverName={serverName}
-                                    domainPayload={getDomainPayload()}
-                                />
-                            )}
-
-                            <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
-                                <div className={'text-sm text-gray-400'}>
-                                    Ensure all required fields are filled before continuing to payment.
-                                </div>
                                 <Button
                                     onClick={() => {
                                         setServerNameTouched(true);
                                         if (!reviewReady) return;
+                                        const checkoutPayload = {
+                                            productId: product.id,
+                                            selectedNode,
+                                            selectedBillingDays,
+                                            selectedEggId,
+                                            vars: Array.from(vars.entries()),
+                                            couponId: couponData?.coupon.id,
+                                            couponData,
+                                            serverName: serverName.trim(),
+                                        };
+                                        // Persist to sessionStorage so step 2 survives a page refresh
+                                        setDraft(checkoutPayload);
                                         navigate('/checkout/payment', {
-                                            state: {
-                                                productId: product.id,
-                                                selectedNode,
-                                                selectedBillingDays,
-                                                selectedEggId,
-                                                vars: Array.from(vars.entries()),
-                                                couponId: couponData?.coupon.id,
-                                                couponData,
-                                                serverName: serverName.trim(),
-                                            },
+                                            state: checkoutPayload,
                                         });
                                     }}
                                     size={Button.Sizes.Large}
+                                    className={'w-full'}
                                     disabled={!reviewReady}
                                 >
                                     Continue to Payment →
                                 </Button>
-                            </div>
+                            )}
                         </div>
                     </section>
                 </div>

@@ -14,6 +14,7 @@ use Everest\Console\Commands\Schedule\ProcessRunnableCommand;
 use Everest\Console\Commands\Billing\SuspendBillableServersCommand;
 use Everest\Console\Commands\Maintenance\PruneOrphanedBackupsCommand;
 use Everest\Console\Commands\Billing\CalculateOrderThreatIndexCommand;
+use Everest\Console\Commands\Billing\RefreshNodeAvailabilityCommand;
 use Everest\Console\Commands\Maintenance\CleanServiceBackupFilesCommand;
 use Everest\Console\Commands\Billing\DeleteScheduledServersCommand;
 use Everest\Console\Commands\AI\PruneAiConversationsCommand;
@@ -56,6 +57,7 @@ class Kernel extends ConsoleKernel
             // Run near end of day so scheduled deletions occur after the full renewal date has passed.
             $schedule->command(DeleteScheduledServersCommand::class)->dailyAt('23:55');
             $schedule->command(CalculateOrderThreatIndexCommand::class)->everyFiveMinutes();
+            $schedule->command(RefreshNodeAvailabilityCommand::class)->everyMinute()->withoutOverlapping();
             $schedule->command(ExpireCouponsCommand::class)->twiceDaily(1, 13); // Run at 1:00 AM and 1:00 PM
         }
 

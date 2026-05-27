@@ -20,6 +20,7 @@ import PaymentContainer from './PaymentContainer';
 import { useStoreState } from '@/state/hooks';
 import PageContentBlock from '@/elements/PageContentBlock';
 import { getProduct, getProductBillingCycles, BillingCycle } from '@/api/routes/account/billing/products';
+import BillingCycleBox from '@account/billing/order/BillingCycleBox';
 import { Product } from '@definitions/account/billing';
 import { renewFreeServer } from '@/api/routes/account/billing/orders/process';
 import { Button } from '@/elements/button';
@@ -65,6 +66,8 @@ export default () => {
     const [renewing, setRenewing] = useState<boolean>(false);
     const [couponData, setCouponData] = useState<ValidateCouponResponse | null>(null);
     const [currentBillingCycle, setCurrentBillingCycle] = useState<BillingCycle | null>(null);
+    const [billingCycles, setBillingCycles] = useState<BillingCycle[]>([]);
+    const [selectedRenewalDays, setSelectedRenewalDays] = useState<number>(0);
 
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const settings = useStoreState(s => s.everest.data!.billing);
@@ -124,6 +127,7 @@ export default () => {
                     return getProductBillingCycles(billingProductId);
                 })
                 .then(cycles => {
+                    setBillingCycles(cycles ?? []);
                     // Find the billing cycle that matches the server's billing days
                     if (billingDays && cycles) {
                         const cycle = cycles.find(c => c.days === billingDays);
@@ -131,6 +135,8 @@ export default () => {
                             setCurrentBillingCycle(cycle);
                         }
                     }
+                    // Default selected renewal days to current server billing days
+                    setSelectedRenewalDays(billingDays ?? 0);
                     setLoading(false);
                 })
                 .catch(error => {
@@ -147,8 +153,8 @@ export default () => {
         clearFlashes('server:billing');
 
         // Use renewFreeServer for free products and paid products made free by coupons
-        // Pass the actual billing days from the server to ensure correct renewal period
-        renewFreeServer(billingProductId, Number(serverId), couponData?.coupon.id, billingDays != null ? Number(billingDays) : undefined)
+        // Pass the selected renewal days (allows cycle change at renewal)
+        renewFreeServer(billingProductId, Number(serverId), couponData?.coupon.id, selectedRenewalDays > 0 ? selectedRenewalDays : (billingDays != null ? Number(billingDays) : undefined))
             .then(() => {
                 // Force a full page reload to refresh the renewal date
                 window.location.reload();
@@ -373,6 +379,21 @@ export default () => {
                                                         </>
                                                     )}
                                                 </p>
+                                                {billingCycles.length > 1 && (
+                                                    <div className={'mb-4'}>
+                                                        <p css={tw`text-gray-400 text-xs mb-2`}>Select renewal cycle:</p>
+                                                        <div className={'grid gap-2'}>
+                                                            {billingCycles.map(cycle => (
+                                                                <BillingCycleBox
+                                                                    key={cycle.days}
+                                                                    cycle={cycle}
+                                                                    selected={selectedRenewalDays > 0 ? selectedRenewalDays : (billingDays ?? 30)}
+                                                                    setSelected={setSelectedRenewalDays}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <Button
                                                     onClick={handleFreeRenewal}
                                                     disabled={renewing}
@@ -455,7 +476,7 @@ export default () => {
                                                         <PaymentContainer
                                                             id={Number(product.id)}
                                                             couponId={couponData?.coupon.id}
-                                                            billingDays={billingDays}
+                                                            billingDays={selectedRenewalDays > 0 ? selectedRenewalDays : billingDays}
                                                         />
                                                     )}
                                                 </div>

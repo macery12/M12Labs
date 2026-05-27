@@ -170,6 +170,30 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
         </div>
     );
 
+    const renderFreeDetails = () => (
+        <div css={tw`space-y-3`}>
+            <div css={tw`flex justify-between items-start`}>
+                <span css={tw`text-sm text-gray-400`}>Payment</span>
+                <span css={tw`text-sm text-white`}>No payment required ($0.00)</span>
+            </div>
+            {order.payment_intent_id && (
+                <div css={tw`flex justify-between items-start`}>
+                    <span css={tw`text-sm text-gray-400`}>Reference</span>
+                    <CopyOnClick text={order.payment_intent_id}>
+                        <code
+                            css={tw`text-sm font-mono text-white bg-neutral-800 px-2 py-1 rounded cursor-pointer hover:bg-neutral-700 transition-colors`}
+                            style={{ backgroundColor: colors.background || colors.secondary }}
+                        >
+                            {order.payment_intent_id.length > 30
+                                ? `${order.payment_intent_id.substring(0, 30)}...`
+                                : order.payment_intent_id}
+                        </code>
+                    </CopyOnClick>
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <div css={tw`space-y-6`}>
             {/* Provider Information */}
@@ -207,6 +231,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                     {order.payment_processor === 'stripe' && renderStripeDetails()}
                     {order.payment_processor === 'mollie' && renderMollieDetails()}
                     {order.payment_processor === 'paypal' && renderPayPalDetails()}
+                    {order.payment_processor === 'free' && renderFreeDetails()}
                 </div>
             </div>
 

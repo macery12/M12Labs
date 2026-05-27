@@ -4,9 +4,11 @@ namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Stripe\StripeClient;
 use Illuminate\Http\Request;
+use Everest\Http\Requests\Api\Client\Billing\UpdateCheckoutRequest;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Everest\Models\Billing\Order;
+use Everest\Models\Billing\PaymentTransaction;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
@@ -15,7 +17,9 @@ use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\BillingValidationService;
+use Everest\Services\Billing\BillingDefaults;
 use Everest\Services\Billing\ServerFulfillmentService;
+use Everest\Services\Billing\StripeCustomerService;
 use Everest\Models\Setting;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
@@ -38,6 +42,7 @@ class CheckoutController extends ClientApiController
         private CreateOrderService $orderService,
         private CreateServerService $serverCreation,
         private ServerFulfillmentService $fulfillmentService,
+        private StripeCustomerService $stripeCustomerService,
     ) {
         parent::__construct();
 
@@ -72,7 +77,7 @@ class CheckoutController extends ClientApiController
         }
 
         // Get billing days (default to 30 if not provided)
-        $billingDays = (int) ($request->input('billing_days') ?? 30);
+        $billingDays = (int) ($request->input('billing_days') ?? BillingDefaults::defaultBillingDays());
 
         // Validate node deployment
         $nodeId = (int) $request->input('node');
@@ -96,7 +101,7 @@ class CheckoutController extends ClientApiController
         // Process the order
         $variables = $request->input('variables', []);
         $domainPayload = $request->input('domain_payload', []);
-        $result = $this->processorService->createServerOrder(
+        $result = $this->fulfillmentService->fulfillFreeOrder(
             $request,
             $user,
             $product,
@@ -131,7 +136,7 @@ class CheckoutController extends ClientApiController
         $server = $user->servers()->findOrFail($serverId);
 
         // Get billing days from request, or use server's existing billing_days, or default to 30
-        $billingDays = (int) ($request->input('billing_days') ?? $server->billing_days ?? 30);
+        $billingDays = (int) ($request->input('billing_days') ?? $server->billing_days ?? BillingDefaults::defaultBillingDays());
 
         // Calculate price with coupon for renewal (including server's node multiplier)
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
@@ -201,11 +206,17 @@ class CheckoutController extends ClientApiController
 
         try {
             // Get billing days (default to 30 if not provided)
-            $billingDays = (int) ($request->input('billing_days') ?? 30);
+            $billingDays = (int) ($request->input('billing_days') ?? BillingDefaults::defaultBillingDays());
 
             // Calculate price with coupon using validation service for new purchase
             $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
             $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, 'new', $billingDays, null, $request->user()->id);
+
+            // If the coupon makes the order free, skip PaymentIntent creation entirely.
+            // Stripe does not allow $0 PaymentIntents; the frontend should route to processFree.
+            if ($couponId !== null && $priceInfo['finalPrice'] <= 0.0001) {
+                return response()->json(['free' => true]);
+            }
 
             // Validate this is not a free order
             $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
@@ -220,12 +231,29 @@ class CheckoutController extends ClientApiController
                 $paymentMethodTypes[] = 'link';
             }
 
-            $paymentIntent = $this->stripe->paymentIntents->create([
+            $customerId = null;
+            try {
+                $customerId = $this->stripeCustomerService->resolveForUser($request->user());
+            } catch (\Exception $e) {
+                // Non-fatal: proceed without customer link rather than blocking checkout
+                \Log::warning('Could not resolve Stripe Customer, proceeding without', [
+                    'user_id' => $request->user()->id,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
+
+            $intentParams = [
                 'amount' => $priceInfo['finalPrice'] * 100,
                 'currency' => strtolower(config('modules.billing.currency.code')),
                 'payment_method_types' => array_values($paymentMethodTypes),
                 'capture_method' => 'manual',
-            ]);
+            ];
+
+            if ($customerId) {
+                $intentParams['customer'] = $customerId;
+            }
+
+            $paymentIntent = $this->stripe->paymentIntents->create($intentParams);
 
             if (!$paymentIntent->client_secret) {
                 throw new BillingExceptionClass('PaymentIntent client secret not generated', 'The payment intent was created but the client secret was not generated. Please check your Stripe configuration.', BillingException::TYPE_PAYMENT, null, 'stripe', $paymentIntent->id ?? null, ['product_id' => $product->id, 'amount' => $priceInfo['finalPrice']]);
@@ -262,7 +290,7 @@ class CheckoutController extends ClientApiController
      *
      * @throws BillingExceptionClass
      */
-    public function updateIntent(Request $request, ?int $id = null): Response
+    public function updateIntent(UpdateCheckoutRequest $request, ?int $id = null): Response
     {
         $this->ensureStripeInitialized();
 
@@ -311,15 +339,21 @@ class CheckoutController extends ClientApiController
             $eggId = !$isRenewal ? $this->validationService->validateAndGetEggId($product, $requestedEggId) : null;
 
             // Get billing days - for renewals, use server's billing_days if not provided
-            $billingDays = (int) ($request->input('billing_days') ?? 30);
+            $billingDays = (int) ($request->input('billing_days') ?? BillingDefaults::defaultBillingDays());
             if ($isRenewal && !$request->has('billing_days') && $server && $server->billing_days) {
                 $billingDays = $server->billing_days;
             }
 
             // Determine order type and calculate price with coupon (including node multiplier)
-            $orderType = $this->getOrderType($request);
+            $orderType = Order::resolveTypeFromRequest($request);
             $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
             $priceInfo = $this->validationService->calculatePriceWithCoupon($product, $couponId, $orderType, $billingDays, $nodeId, $request->user()->id);
+
+            // Guard: Stripe rejects $0 PaymentIntents. If a coupon reduces the total to zero,
+            // the frontend must use the free checkout path instead.
+            if ($priceInfo['finalPrice'] <= 0.0001) {
+                throw new DisplayException('This order is free due to the applied coupon. Please use the free checkout instead of payment.');
+            }
 
             // Update the intent amount if it has changed
             if ($intent->amount !== (int) ($priceInfo['finalPrice'] * 100)) {
@@ -352,14 +386,20 @@ class CheckoutController extends ClientApiController
                 $request->user(),
                 $product,
                 Order::STATUS_PENDING,
-                $this->getOrderType($request),
+                Order::resolveTypeFromRequest($request),
                 $couponId,
                 $eggId,
                 [
-                    'billing_days' => $billingDays,
-                    'server_id' => $request->input('server_id') ? (int) $request->input('server_id') : null,
+                    'billing_days'   => $billingDays,
+                    'name'           => $isRenewal ? 'Server Renewal' : $serverName,
+                    'node_id'        => $isRenewal ? null : $nodeId,
+                    'variables'      => $variables,
+                    'server_id'      => $request->input('server_id') ? (int) $request->input('server_id') : null,
                     'domain_payload' => is_array($domainPayload) ? $domainPayload : [],
-                ]
+                ],
+                $priceInfo['finalPrice'],
+                $priceInfo['subtotal'],
+                $priceInfo['discount']
             );
 
             return $this->returnNoContent();
@@ -394,13 +434,14 @@ class CheckoutController extends ClientApiController
 
         try {
             $intentId = (string) $request->input('intent');
-            $order = DB::transaction(function () use ($request, $intentId) {
-                return Order::query()
-                    ->where('user_id', $request->user()->id)
-                    ->where('payment_intent_id', $intentId)
+            $transaction = DB::transaction(function () use ($intentId) {
+                return PaymentTransaction::where('processor', 'stripe')
+                    ->where('external_id', $intentId)
                     ->lockForUpdate()
                     ->firstOrFail();
             });
+            $order = $transaction->order;
+            abort_if($order->user_id !== $request->user()->id, 403);
             $intent = $this->stripe->paymentIntents->retrieve($intentId);
 
             // Validate billing is enabled
@@ -434,7 +475,25 @@ class CheckoutController extends ClientApiController
             // Capture the payment after processing the order
             if ($intent->status === 'requires_capture') {
                 try {
-                    $intent->capture();
+                    $capturedIntent = $intent->capture();
+
+                    // Sync the captured intent details to payment_transactions
+                    try {
+                        $transaction = $order->transaction;
+                        if ($transaction) {
+                            $transaction->update([
+                                'status'     => 'captured',
+                                'capture_id' => $capturedIntent->latest_charge ?? null,
+                                'amount'     => isset($capturedIntent->amount_received) ? $capturedIntent->amount_received / 100 : null,
+                                'currency'   => $capturedIntent->currency ?? null,
+                            ]);
+                        }
+                    } catch (\Exception $syncEx) {
+                        \Log::warning('Failed to sync Stripe capture to PaymentTransaction', [
+                            'order_id' => $order->id,
+                            'error'    => $syncEx->getMessage(),
+                        ]);
+                    }
                 } catch (\Stripe\Exception\ApiErrorException $ex) {
                     // Payment capture failed - delete the server and log exception
                     $server->delete();
@@ -483,15 +542,4 @@ class CheckoutController extends ClientApiController
         }
     }
 
-    /**
-     * Determine the order type (NEW, UPGRADE, or RENEWAL).
-     */
-    private function getOrderType(Request $request): string
-    {
-        if ($request->has('renewal') && $request->boolean('renewal')) {
-            return Order::TYPE_REN;
-        }
-
-        return Order::TYPE_NEW;
-    }
 }

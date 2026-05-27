@@ -3,11 +3,18 @@ import { NotFound } from '@/elements/ScreenBlock';
 import AdminContentBlock from '@/elements/AdminContentBlock';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
+import { useStoreState } from '@/state/hooks';
 import { CogIcon, GlobeAltIcon } from '@heroicons/react/outline';
 import DomainsContainer from './domains/DomainsContainer';
 import SettingsContainer from './settings/SettingsContainer';
+import EnableCustomDomains from './EnableCustomDomains';
+import ToggleCustomDomainsButton from './ToggleCustomDomainsButton';
 
 export default () => {
+    const enabled = useStoreState(state => state.everest.data!.custom_domains.enabled);
+
+    if (!enabled) return <EnableCustomDomains />;
+
     return (
         <AdminContentBlock title={'Custom Domains'}>
             <div className={'mb-8 flex w-full flex-row items-center'}>
@@ -16,6 +23,9 @@ export default () => {
                     <p className={'overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400'}>
                         Manage domain inventory and Cloudflare credentials for automated DNS provisioning.
                     </p>
+                </div>
+                <div className={'ml-auto'}>
+                    <ToggleCustomDomainsButton />
                 </div>
             </div>
 

@@ -27,9 +27,11 @@ export default () => {
         const code: string = event.target.value.toUpperCase();
         const symbol: string = currencyDictionary[code]!.symbol;
 
-        submit('currency:code', code).then(() => {
-            submit('currency:symbol', symbol);
-        });
+        // Save both fields to DB, then update the nested currency object in local
+        // state so the new symbol shows immediately without a page reload.
+        await updateSettings('currency:code', code);
+        await updateSettings('currency:symbol', symbol);
+        updateEverest({ billing: { ...settings, currency: { code: code.toLowerCase(), symbol } } });
     };
 
     return (

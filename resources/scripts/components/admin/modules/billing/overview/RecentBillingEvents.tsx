@@ -62,6 +62,8 @@ export default ({ data }: RecentBillingEventsProps) => {
                 return faCcPaypal;
             case 'mollie':
                 return faCircle;
+            case 'free':
+                return faCheckCircle;
             default:
                 return faCircle;
         }

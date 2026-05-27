@@ -1,5 +1,5 @@
 export type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
-export type PaymentProcessor = 'stripe' | 'mollie' | 'paypal';
+export type PaymentProcessor = 'stripe' | 'mollie' | 'paypal' | 'free';
 
 export type CouponType = 'percentage' | 'fixed';
 export type CouponAllowedFor = 'both' | 'purchases' | 'renewals';

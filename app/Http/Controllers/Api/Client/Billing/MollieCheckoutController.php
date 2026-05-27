@@ -3,19 +3,20 @@
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Illuminate\Http\Request;
+use Everest\Http\Requests\Api\Client\Billing\UpdateCheckoutRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
+use Everest\Models\Billing\PaymentTransaction;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Security\LogSanitizer;
-use Everest\Services\Billing\CreateOrderService;
-use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\MolliePaymentService;
-use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\BillingValidationService;
+use Everest\Services\Billing\BillingDefaults;
+use Everest\Services\Billing\CreateOrderService;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
@@ -28,9 +29,7 @@ class MollieCheckoutController extends ClientApiController
     public function __construct(
         private MolliePaymentService $mollieService,
         private BillingValidationService $validationService,
-        private OrderProcessorService $processorService,
         private CreateOrderService $orderService,
-        private CreateServerService $serverCreation,
         private ServerFulfillmentService $fulfillmentService,
     ) {
         parent::__construct();
@@ -48,7 +47,7 @@ class MollieCheckoutController extends ClientApiController
         // Check if this is a renewal payment
         $isRenewal = $request->boolean('renewal', false);
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
-        $billingDays = (int) ($request->input('billing_days') ?? 30);
+        $billingDays = (int) ($request->input('billing_days') ?? BillingDefaults::defaultBillingDays());
 
         // Determine order type and calculate price
         $orderType = $isRenewal ? Order::TYPE_REN : Order::TYPE_NEW;
@@ -111,7 +110,10 @@ class MollieCheckoutController extends ClientApiController
             $orderType,
             $couponId,
             null, // egg_id will be set in updatePayment for new orders
-            $orderData
+            $orderData,
+            $priceInfo['finalPrice'],
+            $priceInfo['subtotal'],
+            $priceInfo['discount']
         );
 
         // Return payment info
@@ -128,9 +130,11 @@ class MollieCheckoutController extends ClientApiController
     public function redirectToCheckout(Request $request, string $paymentId): RedirectResponse
     {
         // Authorization guard: ensure the payment belongs to the current user before redirecting.
-        $order = Order::where('mollie_payment_id', $paymentId)
-            ->where('user_id', $request->user()->id)
+        $transaction = PaymentTransaction::where('processor', 'mollie')
+            ->where('external_id', $paymentId)
             ->firstOrFail();
+        $order = $transaction->order;
+        abort_if($order->user_id !== $request->user()->id, 403);
 
         $checkoutUrl = $this->mollieService->getCheckoutUrl($paymentId);
         if (!$checkoutUrl) {
@@ -146,7 +150,7 @@ class MollieCheckoutController extends ClientApiController
      *
      * @param int $id Product ID
      */
-    public function updatePayment(Request $request, int $id): Response
+    public function updatePayment(UpdateCheckoutRequest $request, int $id): Response
     {
         $product = Product::findOrFail($id);
         $paymentId = $request->input('payment_id');
@@ -174,20 +178,22 @@ class MollieCheckoutController extends ClientApiController
         // For renewals, egg_id is not required
         $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
         $eggId = $isRenewal ? null : $this->validationService->validateAndGetEggId($product, $requestedEggId);
-        $billingDays = (int) ($request->input('billing_days') ?? 30);
+        $billingDays = (int) ($request->input('billing_days') ?? BillingDefaults::defaultBillingDays());
 
         // Determine order type and calculate price with coupon
-        $orderType = $this->getOrderType($request);
+        $orderType = Order::resolveTypeFromRequest($request);
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         $variables = $request->input('variables', []);
         $domainPayload = $request->input('domain_payload', []);
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
 
         // Find the existing pending order and update it
-        $order = Order::where('mollie_payment_id', $paymentId)
-            ->where('user_id', $request->user()->id)
-            ->where('status', Order::STATUS_PENDING)
+        $transaction = PaymentTransaction::where('processor', 'mollie')
+            ->where('external_id', $paymentId)
             ->firstOrFail();
+        $order = $transaction->order;
+        abort_if($order->user_id !== $request->user()->id, 403);
+        abort_if($order->status !== Order::STATUS_PENDING, 404);
 
         $order->update([
             'name' => $isRenewal ? 'Server Renewal' : $serverName,
@@ -225,7 +231,11 @@ class MollieCheckoutController extends ClientApiController
         }
 
         // Find the order by mollie_payment_id
-        $order = Order::where('mollie_payment_id', $paymentId)->latest()->first();
+        $transaction = PaymentTransaction::where('processor', 'mollie')
+            ->where('external_id', $paymentId)
+            ->latest()
+            ->first();
+        $order = $transaction?->order;
 
         if (!$order) {
             // Return 200 to prevent Mollie retries for non-existent orders
@@ -255,6 +265,7 @@ class MollieCheckoutController extends ClientApiController
             if ($payment->isPaid()) {
                 // PAID: Payment successful - fulfill the order
                 $this->fulfillOrder($request, $order, $payment);
+                $this->syncMollieTransactionStatus($order, $payment->status, $payment);
             } elseif ($payment->isFailed()) {
                 // FAILED: Payment attempt failed definitively
                 \Log::info('Mollie webhook marked payment failed', [
@@ -262,7 +273,8 @@ class MollieCheckoutController extends ClientApiController
                     'order_id' => $order->id,
                 ]);
                 $order->update(['status' => Order::STATUS_FAILED]);
-                $this->dispatchPaymentFailedEmail($order, 'Payment failed', 'mollie');
+                $this->syncMollieTransactionStatus($order, $payment->status);
+                $this->fulfillmentService->dispatchPaymentFailedEmail($order, 'Payment failed', 'mollie');
             } elseif ($payment->isExpired()) {
                 // EXPIRED: Payment window expired (customer didn't complete in time)
                 \Log::info('Mollie webhook marked payment expired', [
@@ -270,7 +282,8 @@ class MollieCheckoutController extends ClientApiController
                     'order_id' => $order->id,
                 ]);
                 $order->update(['status' => Order::STATUS_FAILED]);
-                $this->dispatchPaymentFailedEmail($order, 'Payment expired - customer did not complete payment in time', 'mollie');
+                $this->syncMollieTransactionStatus($order, $payment->status);
+                $this->fulfillmentService->dispatchPaymentFailedEmail($order, 'Payment expired - customer did not complete payment in time', 'mollie');
             } elseif ($payment->isCanceled()) {
                 // CANCELED: Customer actively canceled the payment
                 \Log::info('Mollie webhook marked payment canceled', [
@@ -278,7 +291,8 @@ class MollieCheckoutController extends ClientApiController
                     'order_id' => $order->id,
                 ]);
                 $order->update(['status' => Order::STATUS_FAILED]);
-                $this->dispatchPaymentFailedEmail($order, 'Payment canceled by customer', 'mollie');
+                $this->syncMollieTransactionStatus($order, $payment->status);
+                $this->fulfillmentService->dispatchPaymentFailedEmail($order, 'Payment canceled by customer', 'mollie');
             } elseif ($payment->isAuthorized()) {
                 // AUTHORIZED: Payment authorized but not captured yet (Klarna, credit cards)
                 // Keep as pending until captured
@@ -342,15 +356,36 @@ class MollieCheckoutController extends ClientApiController
     }
 
     /**
-     * Determine the order type (NEW, UPGRADE, or RENEWAL).
+     * Sync Mollie payment status to the PaymentTransaction record.
+     * Non-fatal — logs and swallows exceptions so the webhook always returns 200.
+     *
+     * @param \Mollie\Api\Resources\Payment|null $payment Full payment object when available (paid status)
      */
-    private function getOrderType(Request $request): string
+    private function syncMollieTransactionStatus(Order $order, string $status, $payment = null): void
     {
-        if ($request->has('renewal') && $request->boolean('renewal')) {
-            return Order::TYPE_REN;
+        try {
+            $transaction = $order->transaction;
+            if (!$transaction) {
+                return;
+            }
+            $update = ['status' => $status];
+            if ($payment !== null) {
+                $amount = $payment->amount ?? null;
+                if ($amount) {
+                    $update['amount']   = isset($amount->value) ? (float) $amount->value : null;
+                    $update['currency'] = $amount->currency ?? null;
+                }
+                if (!empty($payment->paidAt)) {
+                    $update['captured_at'] = \Carbon\Carbon::parse($payment->paidAt);
+                }
+            }
+            $transaction->update($update);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to sync Mollie status to PaymentTransaction', [
+                'order_id' => $order->id,
+                'error'    => $e->getMessage(),
+            ]);
         }
-
-        return Order::TYPE_NEW;
     }
 
     /**
@@ -378,9 +413,13 @@ class MollieCheckoutController extends ClientApiController
                 ->first();
         } else {
             // Get the order by mollie_payment_id
-            $order = Order::where('mollie_payment_id', $paymentId)
-                ->where('user_id', $request->user()->id)
+            $transaction = PaymentTransaction::where('processor', 'mollie')
+                ->where('external_id', $paymentId)
                 ->first();
+            $order = $transaction?->order;
+            if ($order?->user_id !== $request->user()->id) {
+                $order = null;
+            }
         }
 
         if (!$order) {
@@ -442,9 +481,10 @@ class MollieCheckoutController extends ClientApiController
      */
     public function getPaymentFromToken(string $token): JsonResponse
     {
-        $order = Order::where('payment_token', $token)
-            ->where('payment_processor', 'mollie')
+        $transaction = PaymentTransaction::where('processor', 'mollie')
+            ->where('payment_token', $token)
             ->first();
+        $order = $transaction?->order;
 
         if (!$order) {
             return response()->json([
@@ -453,42 +493,8 @@ class MollieCheckoutController extends ClientApiController
         }
 
         return response()->json([
-            'payment_id' => $order->mollie_payment_id,
+            'payment_id' => $transaction->external_id,
             'user_id' => $order->user_id,
         ]);
-    }
-
-    /**
-     * Dispatch PaymentFailed email event.
-     */
-    private function dispatchPaymentFailedEmail(Order $order, string $reason, string $processor): void
-    {
-        try {
-            $user = $order->user;
-            if (!$user) {
-                \Log::warning("Cannot dispatch PaymentFailed email for order {$order->id}: user not found");
-                return;
-            }
-
-            $currency = config('modules.billing.currency.code', 'USD');
-            $product = Product::find($order->product_id);
-            $amount = $order->amount ?? ($product ? $product->price : 0);
-            $isRenewal = $order->type === Order::TYPE_REN;
-
-            event(new \Everest\Events\Email\PaymentFailed(
-                user: $user,
-                amount: $amount,
-                currency: $currency,
-                reason: $reason,
-                invoiceId: (string) $order->id,
-                correlationId: \Illuminate\Support\Str::uuid()->toString(),
-                paymentMethod: ucfirst($processor),
-                isRenewal: $isRenewal,
-            ));
-
-            \Log::info("Dispatched PaymentFailed email for order {$order->id}");
-        } catch (\Exception $e) {
-            \Log::error("Failed to dispatch PaymentFailed email for order {$order->id}: " . $e->getMessage());
-        }
     }
 }

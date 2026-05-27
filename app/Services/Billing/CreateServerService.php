@@ -11,6 +11,7 @@ use Everest\Models\Allocation;
 use Everest\Models\EggVariable;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
+use Illuminate\Support\Facades\Cache;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Servers\ServerCreationService;
@@ -111,6 +112,7 @@ class CreateServerService
                 'image' => current($egg->docker_images),
                 'billing_product_id' => $product->id,
                 'billing_days' => $renewalDays, // Use renewalDays to be consistent with renewal_date
+                'billing_amount' => $order->total,
                 'renewal_date' => Carbon::now()->addDays($renewalDays)->toDateTimeString(),
                 'database_limit' => $product->database_limit,
                 'backup_limit' => $product->backup_limit,
@@ -126,6 +128,9 @@ class CreateServerService
         } catch (\Exception $ex) {
             throw new BillingExceptionClass('Unexpected server creation error', 'An unexpected error occurred while creating server: ' . $ex->getMessage(), BillingException::TYPE_DEPLOYMENT, $order->id, null, null, ['product_id' => $product->id, 'node_id' => $metadata->node_id, 'egg_id' => $egg->id, 'error' => $ex->getMessage()], $ex);
         }
+
+        // Invalidate the node availability cache so the next checkout reflects current allocation state.
+        Cache::forget("billing.node_available.{$metadata->node_id}");
 
         return $server;
     }
