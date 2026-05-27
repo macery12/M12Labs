@@ -5,6 +5,7 @@ namespace Everest\Services\Billing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Everest\Models\Billing\Order;
+use Everest\Models\Billing\PaymentTransaction;
 use Everest\Services\Security\LogSanitizer;
 
 class MollieWebhookVerificationService
@@ -30,10 +31,12 @@ class MollieWebhookVerificationService
             ]);
         }
 
-        $order = Order::where('payment_token', $token)
-            ->where('mollie_payment_id', $paymentId)
+        $transaction = PaymentTransaction::where('processor', 'mollie')
+            ->where('payment_token', $token)
+            ->where('external_id', $paymentId)
             ->latest()
             ->first();
+        $order = $transaction?->order;
 
         if (!$order) {
             return $this->failure(401, 'invalid_webhook_token', [

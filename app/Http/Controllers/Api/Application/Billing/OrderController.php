@@ -31,7 +31,7 @@ class OrderController extends ApplicationApiController
             throw new QueryValueOutOfRangeHttpException('per_page', 1, 100);
         }
 
-        $orders = QueryBuilder::for(Order::query()->with('server'))
+        $orders = QueryBuilder::for(Order::query()->with('server', 'transaction'))
             ->allowedFilters([
                 'id', 'name', 'description', 'payment_processor', 'status', 'type',
                 AllowedFilter::callback('search', function (Builder $query, $value) {

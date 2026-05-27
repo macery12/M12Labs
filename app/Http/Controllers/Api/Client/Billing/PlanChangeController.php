@@ -79,7 +79,7 @@ class PlanChangeController extends ClientApiController
         }
 
         // Check for resource violations
-        $violations = $this->validationService->validatePlanDowngrade($server, $newProduct);
+        $violations = $this->planChangeService->validatePlanDowngrade($server, $newProduct);
 
         if (!empty($violations)) {
             return response()->json([

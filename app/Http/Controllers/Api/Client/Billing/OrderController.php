@@ -28,7 +28,7 @@ class OrderController extends ClientApiController
             throw new QueryValueOutOfRangeHttpException('per_page', 1, 100);
         }
 
-        $orders = QueryBuilder::for(Order::query()->where('user_id', $request->user()->id)->with('server'))
+        $orders = QueryBuilder::for(Order::query()->where('user_id', $request->user()->id)->with('server', 'transaction'))
             ->allowedFilters([
                 'id', 'name', 'payment_processor', 'status', 'type',
                 AllowedFilter::callback('search', function (Builder $query, $value) {
@@ -69,6 +69,7 @@ class OrderController extends ClientApiController
     {
         $order = Order::where('user_id', $request->user()->id)
             ->where('id', $id)
+            ->with('transaction')
             ->first();
 
         return $this->fractal->item($order)

@@ -106,19 +106,7 @@ class Coupon extends Model
      */
     public function usage()
     {
-        try {
-            // Check if the coupon_usage table exists
-            if (!\Schema::hasTable('coupon_usage')) {
-                // Return a mock relationship that won't execute queries
-                return $this->hasMany(CouponUsage::class)->whereRaw('1 = 0');
-            }
-
-            return $this->hasMany(CouponUsage::class);
-        } catch (\Exception $e) {
-            \Log::error('Error in coupon usage relationship: ' . $e->getMessage());
-            // Return a mock relationship that won't execute queries
-            return $this->hasMany(CouponUsage::class)->whereRaw('1 = 0');
-        }
+        return $this->hasMany(CouponUsage::class);
     }
 
     /**
@@ -131,13 +119,7 @@ class Coupon extends Model
             return (int) $this->attributes['usage_count'];
         }
 
-        try {
-            return $this->usage()->count();
-        } catch (\Exception $e) {
-            \Log::error('Error getting coupon usage count: ' . $e->getMessage());
-
-            return 0;
-        }
+        return $this->usage()->count();
     }
 
     /**
@@ -161,13 +143,7 @@ class Coupon extends Model
             return false;
         }
 
-        try {
-            return $this->usage()->count() >= $this->max_uses;
-        } catch (\Exception $e) {
-            \Log::error('Error checking coupon max uses: ' . $e->getMessage());
-
-            return false; // If there's an error, allow the coupon to be used
-        }
+        return $this->usage()->count() >= $this->max_uses;
     }
 
     /**
@@ -179,15 +155,7 @@ class Coupon extends Model
             return false;
         }
 
-        try {
-            $userUsageCount = $this->usage()->where('user_id', $userId)->count();
-
-            return $userUsageCount >= $this->max_uses_per_user;
-        } catch (\Exception $e) {
-            \Log::error('Error checking user coupon limit: ' . $e->getMessage());
-
-            return false; // If there's an error, allow the coupon to be used
-        }
+        return $this->usage()->where('user_id', $userId)->count() >= $this->max_uses_per_user;
     }
 
     /**

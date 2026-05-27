@@ -162,7 +162,7 @@ interface Order extends Model {
     product_id: number;
     type: OrderType;
     threat_index: number;
-    payment_processor: 'stripe' | 'mollie' | 'paypal';
+    payment_processor: 'stripe' | 'mollie' | 'paypal' | 'free';
     payment_intent_id?: string;
     mollie_payment_id?: string;
     paypal_order_id?: string;

@@ -5,13 +5,8 @@ namespace Everest\Services\Billing;
 use Everest\Models\Node;
 use Everest\Models\User;
 use Everest\Models\Server;
-use Everest\Models\Billing\Coupon;
 use Everest\Models\Billing\Product;
-use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\DisplayException;
-use Everest\Repositories\Wings\DaemonServerRepository;
-use Everest\Exceptions\Http\Connection\DaemonConnectionException;
-
 /**
  * Centralized validation service for billing operations.
  *
@@ -26,13 +21,7 @@ class BillingValidationService
      */
     private const PRICE_EPSILON = 0.0001;
 
-    /**
-     * BillingValidationService constructor.
-     *
-     * @param DaemonServerRepository $daemonRepository Repository for interacting with Wings daemon
-     */
     public function __construct(
-        private DaemonServerRepository $daemonRepository,
         private NodeAvailabilityService $nodeAvailabilityService,
         private BillingCycleService $billingCycleService,
     ) {
@@ -145,62 +134,10 @@ class BillingValidationService
      */
     public function calculatePriceWithCoupon(Product $product, ?int $couponId, string $orderType = 'new', ?int $billingDays = null, ?int $nodeId = null, ?int $userId = null): array
     {
-        // Use billing days if provided, otherwise default to 30
-        $days = $billingDays ?? 30;
-
-        // For new purchases, ensure the requested billing cycle is available for this product.
-        // Renewals use the server's existing billing_days and are not re-validated here.
-        if ($orderType !== 'ren') {
-            $this->billingCycleService->validateBillingCycle($product, $days);
-        }
-
-        // Calculate price based on billing cycle and node
-        $priceInfo = $product->calculatePrice($days, $nodeId);
-        $basePrice = $priceInfo['price'];
-
-        $finalPrice = round($basePrice, 2);
-        $discount = 0.0;
-
-        if ($couponId) {
-            $coupon = Coupon::find($couponId);
-
-            if (!$coupon) {
-                throw new DisplayException('The specified coupon does not exist.');
-            }
-
-            // SECURITY FIX: Validate coupon eligibility before applying
-            if ($userId === null) {
-                throw new DisplayException('User ID is required for coupon validation.');
-            }
-
-            // Check if coupon can be used
-            $validation = $coupon->canBeUsed($userId, $basePrice);
-            if (!$validation['valid']) {
-                throw new DisplayException($validation['message']);
-            }
-
-            // Check if coupon is allowed for this order type
-            if (!$coupon->isAllowedForOrderType($orderType)) {
-                $allowedTypes = [
-                    Coupon::ALLOWED_FOR_PURCHASES => 'new purchases',
-                    Coupon::ALLOWED_FOR_RENEWALS => 'renewals',
-                ];
-                $allowed = $allowedTypes[$coupon->allowed_for] ?? $coupon->allowed_for;
-                throw new DisplayException("This coupon is only valid for {$allowed}.");
-            }
-
-            $discount = round($coupon->calculateDiscount($basePrice), 2);
-            $finalPrice = max(0, round($basePrice - $discount, 2));
-        }
-
-        return [
-            'finalPrice' => $finalPrice,
-            'discount' => $discount,
-            'subtotal' => $basePrice,
-            'billingDays' => $days,
-            'multiplier' => $priceInfo['multiplier'],
-            'nodeMultiplier' => $priceInfo['node_multiplier'],
-        ];
+        // Delegate to BillingCycleService — pricing logic lives there now.
+        return $this->billingCycleService->calculatePriceWithCoupon(
+            $product, $couponId, $orderType, $billingDays, $nodeId, $userId
+        );
     }
 
     /**
@@ -249,108 +186,4 @@ class BillingValidationService
         }
     }
 
-    /**
-     * Validate that a server can be downgraded to a new product plan.
-     * Checks current resource usage against the new plan's limits.
-     *
-     * @param Server $server The server to validate
-     * @param Product $newProduct The product plan to switch to
-     *
-     * @return array Empty array if validation passes, or array of exceeded resources with details
-     */
-    public function validatePlanDowngrade(Server $server, Product $newProduct): array
-    {
-        $violations = [];
-
-        // Get current resource usage from the daemon
-        try {
-            $stats = $this->daemonRepository->setServer($server)->getDetails();
-            $currentUsage = $stats['utilization'] ?? [];
-        } catch (DaemonConnectionException $e) {
-            // If we can't get stats from Wings, we'll only check against current allocations
-            // This ensures we can still validate even if the server is offline
-            Log::warning('Could not retrieve server stats for plan validation', [
-                'server_id' => $server->id,
-                'error' => $e->getMessage(),
-            ]);
-            $currentUsage = [];
-        }
-
-        // Check disk usage (in bytes)
-        if (isset($currentUsage['disk_bytes'])) {
-            $currentDiskMB = round($currentUsage['disk_bytes'] / 1024 / 1024);
-            if ($currentDiskMB > $newProduct->disk_limit) {
-                $violations['disk'] = [
-                    'current' => $currentDiskMB,
-                    'limit' => $newProduct->disk_limit,
-                    'unit' => 'MB',
-                ];
-            }
-        }
-
-        // Check memory usage (in bytes)
-        if (isset($currentUsage['memory_bytes'])) {
-            $currentMemoryMB = round($currentUsage['memory_bytes'] / 1024 / 1024);
-            if ($currentMemoryMB > $newProduct->memory_limit) {
-                $violations['memory'] = [
-                    'current' => $currentMemoryMB,
-                    'limit' => $newProduct->memory_limit,
-                    'unit' => 'MB',
-                ];
-            }
-        }
-
-        // Check CPU (percentage)
-        if (isset($currentUsage['cpu_absolute']) && $newProduct->cpu_limit > 0) {
-            $currentCpuPercent = round($currentUsage['cpu_absolute']);
-            if ($currentCpuPercent > $newProduct->cpu_limit) {
-                $violations['cpu'] = [
-                    'current' => $currentCpuPercent,
-                    'limit' => $newProduct->cpu_limit,
-                    'unit' => '%',
-                ];
-            }
-        }
-
-        // Check database count
-        $currentDatabases = $server->databases()->count();
-        if ($currentDatabases > $newProduct->database_limit) {
-            $violations['databases'] = [
-                'current' => $currentDatabases,
-                'limit' => $newProduct->database_limit,
-                'unit' => 'databases',
-            ];
-        }
-
-        // Check backup count
-        $currentBackups = $server->backups()->count();
-        if ($currentBackups > $newProduct->backup_limit) {
-            $violations['backups'] = [
-                'current' => $currentBackups,
-                'limit' => $newProduct->backup_limit,
-                'unit' => 'backups',
-            ];
-        }
-
-        // Check allocation count
-        $currentAllocations = $server->allocations()->count();
-        if ($currentAllocations > $newProduct->allocation_limit) {
-            $violations['allocations'] = [
-                'current' => $currentAllocations,
-                'limit' => $newProduct->allocation_limit,
-                'unit' => 'allocations',
-            ];
-        }
-
-        $currentSubdomains = $server->customDomains()->count();
-        if (is_null($server->subdomain_limit) && !is_null($newProduct->subdomain_limit) && $currentSubdomains > $newProduct->subdomain_limit) {
-            $violations['subdomains'] = [
-                'current' => $currentSubdomains,
-                'limit' => $newProduct->subdomain_limit,
-                'unit' => 'subdomains',
-            ];
-        }
-
-        return $violations;
-    }
 }

@@ -69,30 +69,25 @@ class BillingController extends ApplicationApiController
 
         // Calculate upcoming renewals
         $now = Carbon::now();
-        $servers = Server::whereNotNull('renewal_date')
+
+        // Use DB-level date filtering to avoid loading all servers into memory.
+        $overdueRenewals = Server::whereNotNull('renewal_date')
             ->whereNotNull('billing_product_id')
+            ->where('renewal_date', '<', $now)
             ->with('product')
             ->get();
 
-        // Overdue renewals (past due - need attention)
-        $overdueRenewals = $servers->filter(function ($server) use ($now) {
-            return $server->renewal_date &&
-                   $server->renewal_date->lessThan($now);
-        });
+        $renewalsIn7Days = Server::whereNotNull('renewal_date')
+            ->whereNotNull('billing_product_id')
+            ->whereBetween('renewal_date', [$now, $now->copy()->addDays(7)])
+            ->with('product')
+            ->get();
 
-        // Renewals in next 7 days (0-7 days)
-        $renewalsIn7Days = $servers->filter(function ($server) use ($now) {
-            return $server->renewal_date &&
-                   $server->renewal_date->greaterThanOrEqualTo($now) &&
-                   $server->renewal_date->lessThanOrEqualTo($now->copy()->addDays(7));
-        });
-
-        // Renewals in days 8-14 (not cumulative - excludes first 7 days)
-        $renewalsIn8to14Days = $servers->filter(function ($server) use ($now) {
-            return $server->renewal_date &&
-                   $server->renewal_date->greaterThan($now->copy()->addDays(7)) &&
-                   $server->renewal_date->lessThanOrEqualTo($now->copy()->addDays(14));
-        });
+        $renewalsIn8to14Days = Server::whereNotNull('renewal_date')
+            ->whereNotNull('billing_product_id')
+            ->whereBetween('renewal_date', [$now->copy()->addDays(7), $now->copy()->addDays(14)])
+            ->with('product')
+            ->get();
 
         $expectedRevenueOverdue = $overdueRenewals->sum(function ($server) {
             return $server->product ? $server->product->price : 0;
@@ -112,15 +107,15 @@ class BillingController extends ApplicationApiController
 
         // Calculate forecast based on ALL active billing servers (including past-due)
         // A server with a billing subscription is still generating revenue even if past due
-        $activeServers = $servers->filter(function ($server) {
-            return $server->product &&
-                   $server->billing_days &&
-                   $server->billing_days > 0;
-        });
+        $activeServers = Server::whereNotNull('billing_product_id')
+            ->where('billing_days', '>', 0)
+            ->where('billing_amount', '>', 0)
+            ->get();
 
-        // Calculate total daily revenue from all active subscriptions
+        // Calculate total daily revenue using the actual billed amount (billing_amount),
+        // not the catalog base price, so coupon discounts and cycle multipliers are reflected.
         $totalDailyRevenue = $activeServers->sum(function ($server) {
-            return $server->product->price / $server->billing_days;
+            return $server->billing_amount / $server->billing_days;
         });
 
         $forecast7Days = $totalDailyRevenue * 7;

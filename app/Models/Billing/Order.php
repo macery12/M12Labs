@@ -3,6 +3,8 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
+use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
@@ -107,11 +109,24 @@ class Order extends Model
         'domain_payload' => 'nullable|array',
         'type' => 'required|in:new,upg,ren',
         'threat_index' => 'nullable|int|min:-1|max:100',
-        'payment_intent_id' => 'required|string|unique:orders,payment_intent_id',
+        'payment_intent_id' => 'nullable|string',
         'coupon_id' => 'nullable|exists:coupons,id',
         'subtotal' => 'nullable|numeric|min:0',
         'discount' => 'nullable|numeric|min:0',
     ];
+
+    /**
+     * Resolve the order type from an HTTP request.
+     *
+     * Consolidates the `getOrderType()` logic that was previously duplicated
+     * across CheckoutController, MollieCheckoutController, and PayPalCheckoutController.
+     */
+    public static function resolveTypeFromRequest(Request $request): string
+    {
+        return ($request->has('renewal') && $request->boolean('renewal'))
+            ? self::TYPE_REN
+            : self::TYPE_NEW;
+    }
 
     /**
      * Get the coupon associated with this order.
@@ -127,5 +142,13 @@ class Order extends Model
     public function server()
     {
         return $this->belongsTo(\Everest\Models\Server::class);
+    }
+
+    /**
+     * Get the payment transaction associated with this order.
+     */
+    public function transaction(): HasOne
+    {
+        return $this->hasOne(PaymentTransaction::class);
     }
 }
