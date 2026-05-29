@@ -10,6 +10,7 @@ import PaymentProcessorBadge from '@/components/elements/PaymentProcessorBadge';
 import OrderInspectorOverviewTab from './OrderInspectorOverviewTab';
 import OrderInspectorPaymentTab from './OrderInspectorPaymentTab';
 import OrderInspectorTimelineTab from './OrderInspectorTimelineTab';
+import OrderInspectorThreatTab from './OrderInspectorThreatTab';
 import { useStoreState } from '@/state/hooks';
 
 interface Props {
@@ -19,7 +20,7 @@ interface Props {
     isAdmin?: boolean;
 }
 
-type TabType = 'overview' | 'payment' | 'timeline';
+type TabType = 'overview' | 'payment' | 'timeline' | 'threat';
 
 const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin = false }) => {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -31,6 +32,8 @@ const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin 
                 return 'success';
             case 'failed':
                 return 'danger';
+            case 'cancelled':
+                return 'info';
             case 'pending':
                 return 'warn';
             default:
@@ -42,6 +45,8 @@ const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin 
         switch (status) {
             case 'failed':
                 return 'bg-red-500/10 border-l-4 border-red-500';
+            case 'cancelled':
+                return 'bg-blue-500/10 border-l-4 border-blue-500';
             case 'pending':
                 return 'bg-yellow-500/10 border-l-4 border-yellow-500';
             case 'processed':
@@ -85,7 +90,10 @@ const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin 
                                     )}
                                 </div>
                                 <div css={tw`text-lg text-gray-300 mb-3`}>
-                                    {order.name} — ${order.total.toFixed(2)}
+                                    {'product_name' in order && order.product_name
+                                        ? order.product_name
+                                        : 'Unknown Product'}{' '}
+                                    — ${order.total.toFixed(2)}
                                     {order.type === 'ren' && '/mo'}
                                 </div>
                                 <div css={tw`flex items-center gap-3 flex-wrap`}>
@@ -143,6 +151,19 @@ const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin 
                             >
                                 Timeline
                             </button>
+                            {isAdmin && 'threat_index' in order && (
+                                <button
+                                    onClick={() => setActiveTab('threat')}
+                                    className={'px-4 py-3 text-sm font-medium transition-colors border-b-2'}
+                                    style={
+                                        activeTab === 'threat'
+                                            ? { borderBottomColor: colors.primary, color: '#fff' }
+                                            : { borderBottomColor: 'transparent', color: '#9ca3af' }
+                                    }
+                                >
+                                    Threat Analysis
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -151,6 +172,9 @@ const OrderInspectorModal: React.FC<Props> = ({ order, isOpen, onClose, isAdmin 
                         {activeTab === 'overview' && <OrderInspectorOverviewTab order={order} isAdmin={isAdmin} />}
                         {activeTab === 'payment' && <OrderInspectorPaymentTab order={order} />}
                         {activeTab === 'timeline' && <OrderInspectorTimelineTab order={order} />}
+                        {activeTab === 'threat' && isAdmin && 'threat_index' in order && (
+                            <OrderInspectorThreatTab order={order} />
+                        )}
                     </div>
                 </Dialog.Panel>
             </div>

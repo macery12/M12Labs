@@ -3,8 +3,10 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
+use Everest\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -44,6 +46,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Order extends Model
 {
     public const STATUS_FAILED = 'failed';
+    public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_EXPIRED = 'expired';
     public const STATUS_PENDING = 'pending';
     public const STATUS_PROCESSED = 'processed';
@@ -103,7 +106,7 @@ class Order extends Model
         'user_id' => 'required|exists:users,id',
         'description' => 'required|string|min:3',
         'total' => 'required|min:0',
-        'status' => 'required|in:expired,pending,failed,processed',
+        'status' => 'required|in:expired,pending,failed,cancelled,processed',
         'product_id' => 'exists:products,id',
         'egg_id' => 'nullable|exists:eggs,id',
         'domain_payload' => 'nullable|array',
@@ -150,5 +153,21 @@ class Order extends Model
     public function transaction(): HasOne
     {
         return $this->hasOne(PaymentTransaction::class);
+    }
+
+    /**
+     * Get the product associated with this order.
+     */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Get the user associated with this order.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

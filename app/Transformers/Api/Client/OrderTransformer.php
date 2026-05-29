@@ -21,6 +21,7 @@ class OrderTransformer extends Transformer
     public function transform(Order $model): array
     {
         $server = $model->server;
+        $product = $model->product;
         $paymentProcessor = $this->resolvePaymentProcessor($model);
 
         return [
@@ -30,6 +31,7 @@ class OrderTransformer extends Transformer
             'total' => $model->total,
             'status' => $model->status,
             'product_id' => $model->product_id,
+            'product_name' => $product ? $product->name : null,
             'type' => $model->type ?? '?',
             'payment_processor' => $paymentProcessor,
             'transaction' => $model->transaction ? [
@@ -42,6 +44,11 @@ class OrderTransformer extends Transformer
                 'payer_email' => $model->transaction->payer_email,
                 'captured_at' => $model->transaction->captured_at?->toIso8601String(),
             ] : null,
+            'subtotal' => $model->subtotal,
+            'discount' => $model->discount,
+            'billing_days' => $model->billing_days,
+            'egg_id' => $model->egg_id,
+            'coupon_id' => $model->coupon_id,
             'server_id' => $model->server_id,
             'server_uuid' => $server ? $server->uuid : null,
             'server_name' => $server ? $server->name : null,

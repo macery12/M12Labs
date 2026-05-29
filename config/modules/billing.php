@@ -122,4 +122,13 @@ return [
      * Configure cooldown period for plan changes (in hours).
      */
     'plan_change_cooldown_hours' => env('BILLING_PLAN_CHANGE_COOLDOWN_HOURS', 72),
+
+    /*
+     * Configure the threat index scoring system for orders.
+     */
+    'threat' => [
+        // Orders with a total above this value (in the billing currency) receive
+        // an additional risk signal. Set via BILLING_THREAT_HIGH_VALUE_THRESHOLD.
+        'high_value_threshold' => env('BILLING_THREAT_HIGH_VALUE_THRESHOLD', 50.0),
+    ],
 ];

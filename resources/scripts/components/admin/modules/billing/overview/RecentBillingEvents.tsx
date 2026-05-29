@@ -22,6 +22,7 @@ export default ({ data }: RecentBillingEventsProps) => {
     const getEventIcon = (status: string) => {
         if (status === 'processed') return { icon: faCheckCircle, color: 'text-green-500' };
         if (status === 'failed') return { icon: faTimesCircle, color: 'text-red-500' };
+        if (status === 'cancelled') return { icon: faTimesCircle, color: 'text-blue-400' };
         if (status === 'refunded') return { icon: faUndo, color: 'text-yellow-500' };
         return { icon: faShoppingCart, color: 'text-gray-500' };
     };
@@ -45,6 +46,8 @@ export default ({ data }: RecentBillingEventsProps) => {
                 return 'Payment Succeeded';
             case 'failed':
                 return 'Payment Failed';
+            case 'cancelled':
+                return 'Order Cancelled';
             case 'pending':
                 return 'Pending';
             case 'expired':

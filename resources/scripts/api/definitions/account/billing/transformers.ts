@@ -11,8 +11,27 @@ export default class Transformers {
         total: data.total,
         status: data.status,
         product_id: data.product_id,
+        product_name: data.product_name ?? null,
+        egg_id: data.egg_id,
         type: data.type,
         payment_processor: data.payment_processor,
+        transaction: data.transaction
+            ? {
+                  external_id: data.transaction.external_id,
+                  capture_id: data.transaction.capture_id ?? null,
+                  status: data.transaction.status,
+                  amount: data.transaction.amount,
+                  currency: data.transaction.currency,
+                  payer_id: data.transaction.payer_id ?? null,
+                  payer_email: data.transaction.payer_email ?? null,
+                  captured_at: data.transaction.captured_at ? new Date(data.transaction.captured_at) : null,
+              }
+            : null,
+        subtotal: data.subtotal ?? null,
+        discount: data.discount ?? null,
+        billing_days: data.billing_days ?? null,
+        coupon_id: data.coupon_id ?? null,
+        // Legacy fields
         payment_intent_id: data.payment_intent_id,
         mollie_payment_id: data.mollie_payment_id,
         paypal_order_id: data.paypal_order_id,

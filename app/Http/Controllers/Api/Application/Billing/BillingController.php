@@ -65,7 +65,14 @@ class BillingController extends ApplicationApiController
      */
     public function analytics(GetBillingAnalyticsRequest $request): array
     {
-        $orders = Order::with('server')->get();
+        // Load a lightweight order list for the last year (only the fields the
+        // dashboard charts require). Capped at 10 000 rows so very large installs
+        // never pull unbounded data into memory.
+        $orders = Order::where('created_at', '>=', Carbon::now()->subYear())
+            ->select('id', 'status', 'created_at', 'total')
+            ->orderBy('created_at', 'desc')
+            ->limit(10000)
+            ->get();
 
         // Calculate upcoming renewals
         $now = Carbon::now();
@@ -121,9 +128,11 @@ class BillingController extends ApplicationApiController
         $forecast7Days = $totalDailyRevenue * 7;
         $forecast30Days = $totalDailyRevenue * 30;
 
-        // Get suspended servers with details
+        // Get suspended servers with details (capped at 200 to protect memory)
         $suspendedServers = Server::where('status', Server::STATUS_SUSPENDED)
             ->with('user')
+            ->orderBy('updated_at', 'desc')
+            ->limit(200)
             ->get()
             ->map(function ($server) {
                 return [
@@ -155,7 +164,7 @@ class BillingController extends ApplicationApiController
             });
 
         return [
-            'orders' => $orders,
+            'orders'     => $orders,
             'categories' => Category::all(),
             'products' => Product::all(),
             'donations' => \Everest\Models\Donation::where('status', 'completed')->get(),

@@ -28,7 +28,7 @@ class OrderController extends ClientApiController
             throw new QueryValueOutOfRangeHttpException('per_page', 1, 100);
         }
 
-        $orders = QueryBuilder::for(Order::query()->where('user_id', $request->user()->id)->with('server', 'transaction'))
+        $orders = QueryBuilder::for(Order::query()->where('user_id', $request->user()->id)->with('server', 'transaction', 'product'))
             ->allowedFilters([
                 'id', 'name', 'payment_processor', 'status', 'type',
                 AllowedFilter::callback('search', function (Builder $query, $value) {
@@ -38,6 +38,9 @@ class OrderController extends ClientApiController
                           ->orWhere('description', 'LIKE', "%{$value}%")
                           ->orWhereHas('server', function ($q) use ($value) {
                               $q->where('name', 'LIKE', "%{$value}%");
+                          })
+                          ->orWhereHas('transaction', function ($q) use ($value) {
+                              $q->where('external_id', 'LIKE', "%{$value}%");
                           });
                     });
                 }),
@@ -55,6 +58,7 @@ class OrderController extends ClientApiController
                 }),
             ])
             ->allowedSorts(['id', 'name', 'total', 'is_renewal', 'created_at', 'threat_index'])
+            ->defaultSort('-created_at')
             ->paginate($perPage);
 
         return $this->fractal->collection($orders)

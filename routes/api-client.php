@@ -134,6 +134,9 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             Route::get('/products/{id}/variables', [Client\Billing\EggController::class, 'index']);
             Route::get('/eggs/{id}', [Client\Billing\EggController::class, 'getEgg']);
             Route::get('/products/{id}/billing-cycles', [Client\Billing\BillingCycleController::class, 'index']);
+
+            // Cancel a PayPal order — only requires view permission (no purchase interaction needed)
+            Route::post('/paypal/cancel', [Client\Billing\PayPalCheckoutController::class, 'cancelOrder']);
         });
 
         Route::middleware(['verified.view:billing', 'verified.interact:billing'])->group(function () {

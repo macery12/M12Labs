@@ -246,9 +246,9 @@ class MollieCheckoutController extends ClientApiController
             return $this->returnNoContent();
         }
 
-        // IDEMPOTENCY: Check if payment is already in a final state (processed or failed)
+        // IDEMPOTENCY: Check if payment is already in a final state (processed, failed, or cancelled)
         // This prevents duplicate processing if webhook is called multiple times
-        if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
+        if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED, Order::STATUS_CANCELLED], true)) {
             \Log::info("Mollie webhook: Order {$order->id} already in final state: {$order->status}");
 
             return $this->returnNoContent();
@@ -290,7 +290,7 @@ class MollieCheckoutController extends ClientApiController
                     'payment_id' => LogSanitizer::maskIdentifier($paymentId),
                     'order_id' => $order->id,
                 ]);
-                $order->update(['status' => Order::STATUS_FAILED]);
+                $order->update(['status' => Order::STATUS_CANCELLED]);
                 $this->syncMollieTransactionStatus($order, $payment->status);
                 $this->fulfillmentService->dispatchPaymentFailedEmail($order, 'Payment canceled by customer', 'mollie');
             } elseif ($payment->isAuthorized()) {
@@ -461,15 +461,18 @@ class MollieCheckoutController extends ClientApiController
 
         // If payment failed/expired/canceled, update order status
         if ($payment && $order->status === Order::STATUS_PENDING) {
-            if ($payment->isFailed() || $payment->isExpired() || $payment->isCanceled()) {
+            if ($payment->isFailed() || $payment->isExpired()) {
                 $order->update(['status' => Order::STATUS_FAILED]);
+                $order->refresh();
+            } elseif ($payment->isCanceled()) {
+                $order->update(['status' => Order::STATUS_CANCELLED]);
                 $order->refresh();
             }
         }
 
         return response()->json([
             'processed' => $order->status === Order::STATUS_PROCESSED,
-            'failed' => $order->status === Order::STATUS_FAILED,
+            'failed' => in_array($order->status, [Order::STATUS_FAILED, Order::STATUS_CANCELLED], true),
             'pending' => $order->status === Order::STATUS_PENDING,
             'payment_id' => $order->mollie_payment_id,
             'payment_status' => $paymentStatus,

@@ -3,7 +3,18 @@ import { Server } from '@/api/routes/admin/server';
 import { OrderType } from '@/api/routes/account/billing/orders/types';
 
 type BillingExceptionType = 'payment' | 'deployment' | 'storefront' | 'webhook' | 'refund' | 'validation';
-type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
+type OrderStatus = 'pending' | 'expired' | 'failed' | 'cancelled' | 'processed';
+
+interface PaymentTransaction {
+    external_id: string;
+    capture_id?: string | null;
+    status: string;
+    amount: number;
+    currency: string;
+    payer_id?: string | null;
+    payer_email?: string | null;
+    captured_at?: Date | null;
+}
 
 interface User extends ModelWithRelationships {
     id: number;
@@ -156,13 +167,25 @@ interface Order extends Model {
     id: number;
     name: string;
     user_id: number;
+    username?: string | null;
+    user_email?: string | null;
     description: string;
     total: number;
     status: OrderStatus;
     product_id: number;
+    product_name?: string | null;
     type: OrderType;
     threat_index: number;
     payment_processor: 'stripe' | 'mollie' | 'paypal' | 'free';
+    transaction: PaymentTransaction | null;
+    subtotal?: number | null;
+    discount?: number | null;
+    billing_days?: number | null;
+    coupon_id?: number | null;
+    node_id?: number | null;
+    final_price?: number | null;
+    egg_id?: number | null;
+    // Legacy fields kept for backward compat (old orders without transaction records)
     payment_intent_id?: string;
     mollie_payment_id?: string;
     paypal_order_id?: string;

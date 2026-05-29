@@ -56,6 +56,9 @@ class UpdateBillingSettingsRequest extends ApplicationApiRequest
             ];
         }
 
-        return [];
+        return [
+            'key'   => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9_:.\-]+$/'],
+            'value' => ['required'],
+        ];
     }
 }

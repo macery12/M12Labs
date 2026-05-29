@@ -454,7 +454,7 @@ class PayPalCheckoutController extends ClientApiController
 
         // Map order status
         $processed = $order->status === Order::STATUS_PROCESSED;
-        $failed = $order->status === Order::STATUS_FAILED;
+        $failed = in_array($order->status, [Order::STATUS_FAILED, Order::STATUS_CANCELLED], true);
         $pending = !$processed && !$failed;
 
         Log::info('PayPal order status check result', [
@@ -475,6 +475,51 @@ class PayPalCheckoutController extends ClientApiController
             'order_status' => $orderStatus,
             'internal_order_id' => $order->id,
         ]);
+    }
+
+    /**
+     * Cancel a pending PayPal order when the user cancels on the PayPal site.
+     *
+     * PayPal redirects back to the cancel URL with a `token` query param equal
+     * to the PayPal Order ID. We look up the matching pending order and mark it
+     * as failed so it no longer appears as "pending" in the dashboard.
+     */
+    public function cancelOrder(Request $request): JsonResponse
+    {
+        $paypalOrderId = $request->input('order_id');
+
+        if (!$paypalOrderId) {
+            return response()->json(['success' => false, 'message' => 'No order ID provided.'], 422);
+        }
+
+        // Primary lookup via PaymentTransaction (consistent with the rest of the codebase)
+        $tx = PaymentTransaction::where('processor', 'paypal')
+            ->where('external_id', $paypalOrderId)
+            ->first();
+        $order = $tx?->order;
+
+        // Fallback: older orders may store the PayPal Order ID directly on the Order row
+        if (!$order) {
+            $order = Order::where('paypal_order_id', $paypalOrderId)->first();
+        }
+
+        if (!$order || $order->user_id !== $request->user()->id) {
+            // Return success to avoid leaking order existence
+            return response()->json(['success' => true]);
+        }
+
+        // Only update if the order is still pending; never downgrade a processed order
+        if ($order->status === Order::STATUS_PENDING) {
+            $order->update(['status' => Order::STATUS_CANCELLED]);
+
+            Log::info('PayPal order marked cancelled due to customer cancellation', [
+                'order_id' => $order->id,
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                'user_id' => $request->user()->id,
+            ]);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -582,9 +627,9 @@ class PayPalCheckoutController extends ClientApiController
             return $this->returnNoContent();
         }
 
-        // IDEMPOTENCY: Check if payment is already in a final state (processed or failed)
+        // IDEMPOTENCY: Check if payment is already in a final state (processed, failed, or cancelled)
         // This prevents duplicate processing if webhook is called multiple times
-        if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
+        if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED, Order::STATUS_CANCELLED], true)) {
             Log::info("PayPal webhook: Order {$order->id} already in final state: {$order->status}");
 
             return $this->returnNoContent();

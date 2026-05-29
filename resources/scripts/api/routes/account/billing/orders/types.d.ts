@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'expired' | 'failed' | 'processed';
+export type OrderStatus = 'pending' | 'expired' | 'failed' | 'cancelled' | 'processed';
 export type OrderType = 'new' | 'upg' | 'ren';
 export type PaymentProcessor = 'stripe' | 'mollie' | 'paypal' | 'free';
 

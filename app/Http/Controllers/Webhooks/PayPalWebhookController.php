@@ -109,9 +109,9 @@ class PayPalWebhookController
                 return response()->json(['ok' => true], 200);
             }
 
-            // IDEMPOTENCY: Check if payment is already in a final state (processed or failed)
+            // IDEMPOTENCY: Check if payment is already in a final state (processed, failed, or cancelled)
             // This prevents duplicate processing if webhook is called multiple times
-            if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
+            if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED, Order::STATUS_CANCELLED], true)) {
                 Log::info("PayPal webhook: Order {$order->id} already in final state: {$order->status}");
 
                 return response()->json(['ok' => true], 200);

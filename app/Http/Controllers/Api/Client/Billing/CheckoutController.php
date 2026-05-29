@@ -76,8 +76,8 @@ class CheckoutController extends ClientApiController
             throw new DisplayException('Server name is required.');
         }
 
-        // Get billing days (default to 30 if not provided)
-        $billingDays = (int) ($request->input('billing_days') ?? BillingDefaults::defaultBillingDays());
+        // Get billing days, clamped to a sane range
+        $billingDays = max(1, min(365, (int) ($request->input('billing_days') ?? BillingDefaults::defaultBillingDays())));
 
         // Validate node deployment
         $nodeId = (int) $request->input('node');
@@ -136,7 +136,7 @@ class CheckoutController extends ClientApiController
         $server = $user->servers()->findOrFail($serverId);
 
         // Get billing days from request, or use server's existing billing_days, or default to 30
-        $billingDays = (int) ($request->input('billing_days') ?? $server->billing_days ?? BillingDefaults::defaultBillingDays());
+        $billingDays = max(1, min(365, (int) ($request->input('billing_days') ?? $server->billing_days ?? BillingDefaults::defaultBillingDays())));
 
         // Calculate price with coupon for renewal (including server's node multiplier)
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;

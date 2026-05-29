@@ -161,7 +161,13 @@ class PlanChangeService
                 'server_id' => $server->id,
                 'error' => $e->getMessage(),
             ]);
-            $currentUsage = [];
+            // Wings is unreachable — reject the downgrade conservatively.
+            // Allowing a downgrade without confirming current resource usage risks data loss
+            // (e.g. truncating disk beyond what the container is actually using).
+            throw new DisplayException(
+                'Unable to validate resource usage: the game server is currently unreachable. ' .
+                'Please try again in a moment or contact support if the issue persists.'
+            );
         }
 
         if (isset($currentUsage['disk_bytes'])) {
