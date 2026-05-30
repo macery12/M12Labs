@@ -38,7 +38,7 @@ class ConfigController extends ApplicationApiController
                 'requested_at' => (string) Carbon::now(),
             ],
             'categories' => Category::all(),
-            'products' => Product::all(),
+            'products' => Product::with('billingCycles')->get(),
         ];
 
         Activity::event('admin:billing:config:export')
