@@ -57,7 +57,7 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
             </div>
 
             <p className={'mb-4'}>
-                Before you can use the PayPal API, you must provide Jexactyl with API credentials. Visit the PayPal
+                Before you can use the PayPal API, you must provide M12Labs with API credentials. Visit the PayPal
                 Developer Dashboard
                 <a
                     target={'_blank'}

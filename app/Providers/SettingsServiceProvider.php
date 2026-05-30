@@ -13,7 +13,7 @@ use Everest\Services\Security\SecretEncryptionService;
 class SettingsServiceProvider extends ServiceProvider
 {
     protected array $keys = [
-        // Jexactyl-specific keys
+        // M12Labs-specific keys
         'app:name', 'app:logo', 'app:mode', 'app:setup', 'app:locale',
         'app:speed_dial', 'app:indicators',
         'pterodactyl:guzzle:timeout', 'pterodactyl:guzzle:connect_timeout',

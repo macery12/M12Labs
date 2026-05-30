@@ -34,8 +34,8 @@ jobs:
         run: |
           # Create a release branch from the tag commit but do NOT modify config/app.php.
           BRANCH=release/${REF:10}
-          git config --local user.email "ci@jexactyl.com"
-          git config --local user.name "Jexactyl Releases"
+          git config --local user.email "ci@m12labs.com"
+          git config --local user.name "M12Labs Releases"
           git checkout -b $BRANCH
           git push -u origin $BRANCH
 

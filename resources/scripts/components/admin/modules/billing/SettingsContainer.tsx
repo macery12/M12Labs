@@ -57,7 +57,7 @@ export default () => {
             <AdminBox title={'Import/Export Configuration'} icon={faExchange}>
                 <FlashMessageRender byKey={'billing:config'} className={'mb-2'} />
                 Use the below options to either export your current billing configurations, or use the Import button to
-                import a pre-created set of categories and products to Jexactyl.
+                import a pre-created set of categories and products to M12Labs.
                 <div className={'mt-3 text-right'}>
                     <ExportConfigButton />
                     <ImportConfigButton />

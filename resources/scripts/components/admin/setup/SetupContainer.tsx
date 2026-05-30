@@ -33,7 +33,7 @@ export default () => {
                 {stage === 1 && (
                     <div>
                         <h1 className={'text-5xl lg:text-8xl'}>
-                            Welcome to <span style={{ color: primary }}>Jexactyl</span>
+                            Welcome to <span style={{ color: primary }}>M12Labs</span>
                         </h1>
                         <p className={'text-center italic text-gray-400'}>
                             It&apos;s great to have you here. Let&apos;s get started.
@@ -46,7 +46,7 @@ export default () => {
                 {stage === 5 && (
                     <div>
                         <h1 className={'text-5xl lg:text-8xl'}>
-                            Thanks for choosing <span style={{ color: primary }}>Jexactyl</span>
+                            Thanks for choosing <span style={{ color: primary }}>M12Labs</span>
                         </h1>
                         <p className={'text-center italic text-gray-400'}>
                             Your instance has been configured and is ready for use.

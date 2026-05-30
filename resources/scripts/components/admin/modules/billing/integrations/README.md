@@ -1,6 +1,6 @@
 # Billing Integrations
 
-This directory contains the modular billing integration system for Jexactyl.
+This directory contains the modular billing integration system for M12Labs.
 
 ## Structure
 
