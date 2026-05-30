@@ -94,7 +94,6 @@ class CreateOrderService
         }
 
         $order->payment_processor = $paymentProcessor;
-        $order->mollie_payment_id = $additionalData['mollie_payment_id'] ?? null;
         $order->paypal_order_id = $additionalData['paypal_order_id'] ?? null;
         $order->payment_token = $additionalData['payment_token'] ?? null;
 
@@ -113,9 +112,6 @@ class CreateOrderService
 
             if ($paymentProcessor === 'stripe') {
                 $transactionData['external_id'] = $intent;
-            } elseif ($paymentProcessor === 'mollie') {
-                $transactionData['external_id']   = $additionalData['mollie_payment_id'] ?? null;
-                $transactionData['payment_token'] = $additionalData['payment_token'] ?? null;
             } elseif ($paymentProcessor === 'paypal') {
                 $transactionData['external_id']   = $additionalData['paypal_order_id'] ?? null;
                 $transactionData['payment_token'] = $additionalData['payment_token'] ?? null;

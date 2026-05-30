@@ -3,7 +3,6 @@ import { Elements } from '@stripe/react-stripe-js';
 import { Stripe } from '@stripe/stripe-js';
 import { useEffect, useState } from 'react';
 import PaymentForm from './PaymentForm';
-import MolliePaymentForm from './MolliePaymentForm';
 import PayPalRenewalForm from './PayPalRenewalForm';
 import { ServerContext } from '@/state/server';
 import { StripeIntent } from '@definitions/account/billing';
@@ -26,11 +25,9 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
 
     const configuredProcessors: Array<{ method: PaymentMethod; available: boolean }> = [
         { method: 'stripe' as const, available: billing.processors?.stripe?.available ?? false },
-        { method: 'mollie' as const, available: billing.processors?.mollie?.available ?? false },
         { method: 'paypal' as const, available: billing.processors?.paypal?.available ?? false },
     ].filter(p => {
         if (p.method === 'stripe') return billing.processors?.stripe?.enabled;
-        if (p.method === 'mollie') return billing.processors?.mollie?.enabled;
         return billing.processors?.paypal?.enabled;
     });
 
@@ -120,15 +117,6 @@ export default ({ id, couponId, billingDays }: { id?: number; couponId?: number;
                         </div>
                     )}
                 </>
-            ) : selectedMethod === 'mollie' ? (
-                <div>
-                    <MolliePaymentForm
-                        id={id}
-                        serverId={Number(serverId)}
-                        serverUuid={serverUuid}
-                        couponId={couponId}
-                    />
-                </div>
             ) : selectedMethod === 'paypal' ? (
                 <div>
                     <PayPalRenewalForm

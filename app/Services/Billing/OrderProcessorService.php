@@ -2,108 +2,21 @@
 
 namespace Everest\Services\Billing;
 
-use Everest\Models\User;
 use Everest\Models\Server;
-use Illuminate\Http\Request;
 use Everest\Models\Billing\Order;
-use Everest\Models\Billing\Product;
 use Everest\Models\Billing\CouponUsage;
 use Everest\Services\Billing\BillingDefaults;
-use Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob;
-use Everest\Services\CustomDomains\CustomDomainProvisioningService;
 
 /**
- * @deprecated Use ServerFulfillmentService instead.
+ * Handles server renewal and coupon recording.
  *
- * OrderProcessorService is retained as a thin shim for one release cycle.
- * CheckoutController::processFree() now calls ServerFulfillmentService::fulfillFreeOrder().
- * This class will be removed once all callers have been updated.
+ * New server creation is handled by ServerFulfillmentService.
  */
 class OrderProcessorService
 {
     public function __construct(
-        private CreateOrderService $orderService,
-        private CreateServerService $serverCreationService,
         private ServerRenewalService $renewalService,
-        private CustomDomainProvisioningService $customDomainProvisioning,
     ) {
-    }
-
-    /**
-     * Create a new server order and process it.
-     *
-     * This method handles both free and paid server creation.
-     *
-     * @param Request $request The HTTP request
-     * @param User $user The user creating the order
-     * @param Product $product The product being purchased
-     * @param int $nodeId The node ID to deploy to
-     * @param int $eggId The validated egg ID
-     * @param int|null $couponId The coupon ID (optional)
-     * @param array $variables Custom environment variables (optional)
-     * @param string|null $paymentIntentId The Stripe payment intent ID (for paid orders)
-     * @param string|null $serverName The custom server name (optional)
-     * @param int $billingDays The billing cycle days (defaults to 30)
-    * @param array $domainPayload Custom domain payload collected during checkout
-     *
-     * @return array{server: Server, order: Order}
-     */
-    public function createServerOrder(
-        Request $request,
-        User $user,
-        Product $product,
-        int $nodeId,
-        int $eggId,
-        ?int $couponId = null,
-        array $variables = [],
-        ?string $paymentIntentId = null,
-        ?string $serverName = null,
-        int $billingDays = 0,
-        array $domainPayload = []
-    ): array {
-        if ($billingDays <= 0) {
-            $billingDays = BillingDefaults::defaultBillingDays();
-        }
-        // Create the order record
-        $order = $this->orderService->create(
-            $paymentIntentId,
-            $user,
-            $product,
-            Order::STATUS_PENDING,
-            Order::TYPE_NEW,
-            $couponId,
-            $eggId,
-            [
-                'billing_days' => $billingDays,
-                'domain_payload' => $domainPayload,
-            ]
-        );
-
-        // Create the server
-        $server = $this->serverCreationService->processFree(
-            $request,
-            $product,
-            $nodeId,
-            $order,
-            $variables,
-            $serverName
-        );
-
-        $this->customDomainProvisioning->syncFromOrder($server, $order);
-        ProvisionServerCustomDomainsJob::dispatch($server->id);
-
-        // Record coupon usage if applicable
-        if ($couponId) {
-            $this->recordCouponUsage($couponId, $user->id, $order->id);
-        }
-
-        // Update order status and name
-        $order->update([
-            'status' => Order::STATUS_PROCESSED,
-            'name' => $order->name . substr($server->uuid, 0, 8),
-        ]);
-
-        return ['server' => $server, 'order' => $order];
     }
 
     /**
@@ -155,18 +68,5 @@ class OrderProcessorService
             ],
             ['used_at' => now()]
         );
-    }
-
-    /**
-     * Update an order's name after server creation.
-     *
-     * @param Order $order The order to update
-     * @param Server $server The created server
-     */
-    public function finalizeOrderName(Order $order, Server $server): void
-    {
-        $order->update([
-            'name' => $order->name . substr($server->uuid, 0, 8),
-        ]);
     }
 }

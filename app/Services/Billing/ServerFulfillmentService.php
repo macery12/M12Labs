@@ -19,7 +19,7 @@ use Everest\Services\Billing\CreateOrderService;
  * Central server fulfillment service for paid orders.
  *
  * This service centralizes the server creation/renewal logic for all payment processors
- * (Stripe, PayPal, Mollie). It ensures consistent behavior and reduces code duplication.
+ * (Stripe, PayPal). It ensures consistent behavior and reduces code duplication.
  *
  * Key responsibilities:
  * - Idempotency checks to prevent duplicate order processing
@@ -52,7 +52,7 @@ class ServerFulfillmentService
      *
      * @param Request $request The HTTP request
      * @param Order $order The order to fulfill
-     * @param object|null $paymentMetadata Optional metadata from payment processor (Stripe, PayPal, Mollie)
+     * @param object|null $paymentMetadata Optional metadata from payment processor (Stripe, PayPal)
      *
      * @return Server The created or renewed server
      *
@@ -203,7 +203,7 @@ class ServerFulfillmentService
     /**
      * Build metadata object for server creation.
      *
-     * Prefers payment metadata if available (Stripe), otherwise uses order data (PayPal, Mollie).
+     * Prefers payment metadata if available (Stripe), otherwise uses order data (PayPal).
      *
      * @param Order $order The order containing server creation data
      * @param object|null $paymentMetadata Optional metadata from payment processor
@@ -227,7 +227,7 @@ class ServerFulfillmentService
             return $metadata;
         }
 
-        // Otherwise, build from order data (PayPal, Mollie)
+        // Otherwise, build from order data (PayPal)
         return (object) [
             'product_id' => $order->product_id,
             'node_id' => $order->node_id,
@@ -379,8 +379,6 @@ class ServerFulfillmentService
             $paymentMethod = 'Unknown';
             if ($order->payment_processor === 'paypal') {
                 $paymentMethod = 'PayPal';
-            } elseif ($order->payment_processor === 'mollie') {
-                $paymentMethod = 'Mollie';
             } elseif ($order->payment_processor === 'stripe') {
                 $paymentMethod = 'Stripe';
             } elseif ($order->payment_processor === 'free') {

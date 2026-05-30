@@ -75,21 +75,6 @@ return new class extends Migration
                     'created_at'    => $order->created_at,
                     'updated_at'    => now(),
                 ]);
-            } elseif ($processor === 'mollie') {
-                if (empty($order->mollie_payment_id)) {
-                    continue;
-                }
-                DB::table('payment_transactions')->insert([
-                    'order_id'      => $order->id,
-                    'processor'     => 'mollie',
-                    'external_id'   => $order->mollie_payment_id,
-                    'status'        => 'paid',
-                    'amount'        => $order->total,
-                    'currency'      => strtoupper($currency),
-                    'payment_token' => $order->payment_token ?: null,
-                    'created_at'    => $order->created_at,
-                    'updated_at'    => now(),
-                ]);
             }
         }
 

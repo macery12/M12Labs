@@ -11,7 +11,7 @@ import ImportConfigButton from './config/ImportConfigButton';
 import { updateSettings } from '@/api/routes/admin/billing';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
 
-export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'mollie' | 'payment' | 'none';
+export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'payment' | 'none';
 
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);

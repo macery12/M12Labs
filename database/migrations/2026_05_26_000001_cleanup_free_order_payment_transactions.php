@@ -11,7 +11,7 @@ return new class extends Migration
      * is the synthetic prefix CreateOrderService writes into orders.payment_intent_id
      * when no real payment intent exists (total = $0).
      *
-     * Only real payment processor identifiers (Stripe pi_*, Mollie tr_*, PayPal IDs)
+     * Only real payment processor identifiers (Stripe pi_*, PayPal IDs)
      * should appear in this table.
      */
     public function up(): void

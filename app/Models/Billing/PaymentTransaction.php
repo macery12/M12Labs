@@ -11,7 +11,7 @@ class PaymentTransaction extends Model
 
     public static array $validationRules = [
         'order_id'      => 'required|integer|exists:orders,id',
-        'processor'     => 'required|string|in:stripe,mollie,paypal,free',
+        'processor'     => 'required|string|in:stripe,paypal,free',
         'external_id'   => 'nullable|string|max:255',
         'capture_id'    => 'nullable|string|max:255',
         'status'        => 'nullable|string|max:50',

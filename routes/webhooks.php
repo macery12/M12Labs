@@ -28,7 +28,4 @@ Route::prefix('/webhooks')
         Route::post('/paypal', [Webhooks\PayPalWebhookController::class, 'handle'])
             ->name('webhook.paypal');
 
-        // Mollie payment webhook
-        Route::post('/mollie', [Webhooks\MollieWebhookController::class, 'handle'])
-            ->name('webhook.mollie');
     });

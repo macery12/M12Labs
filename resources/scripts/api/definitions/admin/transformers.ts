@@ -200,7 +200,6 @@ export default class Transformers {
         final_price: data.final_price ?? null,
         // Legacy fields
         payment_intent_id: data.payment_intent_id,
-        mollie_payment_id: data.mollie_payment_id,
         paypal_order_id: data.paypal_order_id,
         paypal_capture_id: data.paypal_capture_id,
         paypal_payer_id: data.paypal_payer_id,

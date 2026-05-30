@@ -23,7 +23,7 @@ interface Order extends Model {
     egg_id?: number;
     status: OrderStatus;
     type: OrderType;
-    payment_processor: 'stripe' | 'mollie' | 'paypal' | 'free';
+    payment_processor: 'stripe' | 'paypal' | 'free';
     transaction: PaymentTransaction | null;
     subtotal?: number | null;
     discount?: number | null;
@@ -31,7 +31,6 @@ interface Order extends Model {
     coupon_id?: number | null;
     // Legacy fields kept for backward compat (old orders without transaction records)
     payment_intent_id?: string;
-    mollie_payment_id?: string;
     paypal_order_id?: string;
     paypal_capture_id?: string;
     paypal_payer_id?: string;

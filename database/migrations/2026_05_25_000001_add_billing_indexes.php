@@ -14,7 +14,6 @@ return new class extends Migration
 
         Schema::table('orders', function (Blueprint $table) {
             $table->index('user_id');
-            $table->index('mollie_payment_id');
             $table->index('paypal_order_id');
         });
     }
@@ -27,7 +26,6 @@ return new class extends Migration
 
         Schema::table('orders', function (Blueprint $table) {
             $table->dropIndex(['user_id']);
-            $table->dropIndex(['mollie_payment_id']);
             $table->dropIndex(['paypal_order_id']);
         });
     }

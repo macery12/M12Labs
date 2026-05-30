@@ -26,7 +26,7 @@ class BillingException extends DisplayException
      * @param string $message Detailed error message
      * @param string $exceptionType Type of exception (payment, deployment, storefront, webhook, refund)
      * @param int|null $orderId Associated order ID
-     * @param string|null $paymentProcessor Payment processor (stripe, paypal, mollie)
+     * @param string|null $paymentProcessor Payment processor (stripe, paypal)
      * @param string|null $externalId External transaction/payment ID
      * @param array $context Additional context data
      * @param \Throwable|null $previous Previous exception

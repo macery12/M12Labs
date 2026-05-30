@@ -4,7 +4,7 @@ import { faCreditCard, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { faPaypal } from '@fortawesome/free-brands-svg-icons';
 import { useStoreState } from '@/state/hooks';
 
-export type PaymentMethod = 'stripe' | 'mollie' | 'paypal';
+export type PaymentMethod = 'stripe' | 'paypal';
 
 interface Props {
     selected: PaymentMethod | undefined;
@@ -23,10 +23,6 @@ const PROCESSOR_META: Record<PaymentMethod, { label: string; subtitle: (billing:
     stripe: {
         label: 'Stripe',
         subtitle: (billing) => `Card, PayPal${billing.link ? ', Link' : ''}`,
-    },
-    mollie: {
-        label: 'Mollie',
-        subtitle: () => 'Card, iDEAL, and more',
     },
     paypal: {
         label: 'PayPal',

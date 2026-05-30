@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useStoreState } from '@/state/hooks';
 import { Product, StripeIntent } from '@definitions/account/billing';
 import PaymentButton from './PaymentButton';
-import MolliePaymentButton from './MolliePaymentButton';
 import PayPalPaymentButton from './PayPalPaymentButton';
 import { Elements } from '@stripe/react-stripe-js';
 import { Stripe } from '@stripe/stripe-js';
@@ -28,18 +27,16 @@ interface Props {
     }>;
 }
 
-type PaymentMethod = 'stripe' | 'mollie' | 'paypal';
+type PaymentMethod = 'stripe' | 'paypal';
 
 export default (props: Props) => {
     const billing = useStoreState(state => state.everest.data!.billing);
 
     const configuredProcessors: Array<{ method: PaymentMethod; available: boolean }> = [
         { method: 'stripe' as const, available: billing.processors?.stripe?.available ?? false },
-        { method: 'mollie' as const, available: billing.processors?.mollie?.available ?? false },
         { method: 'paypal' as const, available: billing.processors?.paypal?.available ?? false },
     ].filter(p => {
         if (p.method === 'stripe') return billing.processors?.stripe?.enabled;
-        if (p.method === 'mollie') return billing.processors?.mollie?.enabled;
         return billing.processors?.paypal?.enabled;
     });
 
@@ -99,19 +96,6 @@ export default (props: Props) => {
                             domainPayload={props.domainPayload}
                         />
                     </Elements>
-                </div>
-            ) : selectedMethod === 'mollie' ? (
-                <div>
-                    <MolliePaymentButton
-                        selectedNode={props.selectedNode}
-                        product={props.product}
-                        vars={props.vars}
-                        couponId={props.couponId}
-                        billingDays={props.billingDays}
-                        selectedEggId={props.selectedEggId}
-                        serverName={props.serverName}
-                        domainPayload={props.domainPayload}
-                    />
                 </div>
             ) : selectedMethod === 'paypal' ? (
                 <div>

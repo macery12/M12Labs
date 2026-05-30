@@ -108,7 +108,6 @@ class BillingExceptionTest extends TestCase
         return [
             'stripe' => ['stripe'],
             'paypal' => ['paypal'],
-            'mollie' => ['mollie'],
         ];
     }
 

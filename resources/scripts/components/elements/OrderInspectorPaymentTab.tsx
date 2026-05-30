@@ -22,8 +22,6 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
         switch (order.payment_processor) {
             case 'stripe':
                 return `https://dashboard.stripe.com/payments/${tx.external_id}`;
-            case 'mollie':
-                return `https://www.mollie.com/dashboard/payments/${tx.external_id}`;
             case 'paypal':
                 return `https://www.paypal.com/activity/payment/${tx.external_id}`;
             default:

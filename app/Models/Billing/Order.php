@@ -31,7 +31,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $threat_index
  * @property string $payment_intent_id
  * @property string $payment_processor
- * @property string|null $mollie_payment_id
  * @property string|null $paypal_order_id
  * @property string|null $paypal_capture_id
  * @property string|null $paypal_payer_id
@@ -70,7 +69,7 @@ class Order extends Model
      * Fields that are mass assignable.
      */
     protected $fillable = [
-        'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id', 'paypal_order_id',
+        'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'paypal_order_id',
         'paypal_capture_id', 'paypal_payer_id', 'paypal_payer_email', 'paypal_status', 'paypal_amount', 'paypal_currency', 'paypal_captured_at',
         'payment_token', 'total', 'status', 'product_id', 'billing_days', 'final_price', 'multiplier_used', 'node_multiplier_used', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
         'domain_payload',
@@ -122,7 +121,7 @@ class Order extends Model
      * Resolve the order type from an HTTP request.
      *
      * Consolidates the `getOrderType()` logic that was previously duplicated
-     * across CheckoutController, MollieCheckoutController, and PayPalCheckoutController.
+     * across CheckoutController and PayPalCheckoutController.
      */
     public static function resolveTypeFromRequest(Request $request): string
     {

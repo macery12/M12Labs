@@ -34,24 +34,6 @@ return new class extends Migration
                     DB::table('payment_transactions')->insertOrIgnore($rows);
                 });
 
-            // Mollie orders
-            DB::table('orders')
-                ->where('payment_processor', 'mollie')
-                ->whereNotNull('mollie_payment_id')
-                ->chunkById(500, function ($orders) use ($now) {
-                    $rows = $orders->map(fn($o) => [
-                        'order_id'      => $o->id,
-                        'processor'     => 'mollie',
-                        'external_id'   => $o->mollie_payment_id,
-                        'payment_token' => $o->payment_token ?? null,
-                        'status'        => $o->status ?? null,
-                        'created_at'    => $o->created_at ?? $now,
-                        'updated_at'    => $now,
-                    ])->toArray();
-
-                    DB::table('payment_transactions')->insertOrIgnore($rows);
-                });
-
             // PayPal orders
             DB::table('orders')
                 ->where('payment_processor', 'paypal')

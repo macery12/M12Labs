@@ -49,13 +49,8 @@ export interface EverestSettings {
     billing: {
         enabled: boolean;
         donations_enabled: boolean;
-        processor?: string;
         processors?: {
             stripe: {
-                available: boolean;
-                enabled: boolean;
-            };
-            mollie: {
                 available: boolean;
                 enabled: boolean;
             };
@@ -68,9 +63,6 @@ export interface EverestSettings {
         keys?: {
             publishable?: boolean;
             secret?: boolean;
-        };
-        mollie?: {
-            api_key?: boolean;
         };
         paypal_standalone?: {
             mode?: string;
