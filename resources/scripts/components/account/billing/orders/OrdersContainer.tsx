@@ -33,6 +33,7 @@ import Input from '@/elements/Input';
 import InputSpinner from '@/elements/InputSpinner';
 import debounce from 'debounce';
 import { useStoreState } from '@/state/hooks';
+import InvoicesTab from './InvoicesTab';
 
 export function format(date: number): string {
     let prefix = 'th';
@@ -372,10 +373,27 @@ function OrderTable() {
 
 export default () => {
     const hooks = useTableHooks<OrderFilters>();
+    const [tab, setTab] = useState<'orders' | 'invoices'>('orders');
 
     return (
         <OrderContext.Provider value={hooks}>
-            <OrderTable />
+            {/* Tab switcher */}
+            <div className='flex border-b border-neutral-700 mb-6'>
+                {(['orders', 'invoices'] as const).map(t => (
+                    <button
+                        key={t}
+                        onClick={() => setTab(t)}
+                        className={`px-5 py-2.5 text-sm font-medium transition-colors capitalize ${
+                            tab === t
+                                ? 'border-b-2 border-blue-500 text-blue-400'
+                                : 'text-neutral-400 hover:text-neutral-200'
+                        }`}
+                    >
+                        {t}
+                    </button>
+                ))}
+            </div>
+            {tab === 'orders' ? <OrderTable /> : <InvoicesTab />}
         </OrderContext.Provider>
     );
 };

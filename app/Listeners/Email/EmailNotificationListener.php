@@ -56,11 +56,26 @@ class EmailNotificationListener
         // Get user ID if available
         $userId = property_exists($event, 'user') && $event->user ? $event->user->id : null;
 
+        // Collect invoice attachment data if present on event
+        $invoiceAttachment = null;
+        if (
+            $event instanceof \Everest\Events\Email\PaymentReceived
+            && $event->invoiceFilePath
+            && $event->invoiceFileDisk
+        ) {
+            $invoiceAttachment = [
+                'file_path' => $event->invoiceFilePath,
+                'file_disk' => $event->invoiceFileDisk,
+                'filename' => $event->invoiceFileName ?? 'invoice.pdf',
+            ];
+        }
+
         Log::info('EmailNotificationListener: Dispatching email', [
             'event' => get_class($event),
             'template_key' => $templateKey,
             'recipient' => $recipient,
             'correlation_id' => $correlationId,
+            'has_invoice_attachment' => $invoiceAttachment !== null,
         ]);
 
         // Dispatch the job
@@ -69,7 +84,8 @@ class EmailNotificationListener
             $recipient,
             $data,
             $userId,
-            $correlationId
+            $correlationId,
+            $invoiceAttachment
         );
     }
 

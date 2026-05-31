@@ -62,6 +62,16 @@ class SmtpTransport implements EmailTransport
                 if ($message->replyTo) {
                     $mail->replyTo($message->replyTo);
                 }
+
+                if (!empty($message->attachments)) {
+                    foreach ($message->attachments as $att) {
+                        $mail->attachData(
+                            $att['content'],
+                            $att['filename'],
+                            ['mime' => $att['content_type'] ?? 'application/octet-stream']
+                        );
+                    }
+                }
             });
 
             // Laravel's Mail::send does not expose provider message id; use a generated id for tracking consistency

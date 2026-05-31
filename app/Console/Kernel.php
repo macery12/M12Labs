@@ -7,6 +7,8 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Console\PruneCommand;
 use Everest\Console\Commands\Billing\CleanupOrdersCommand;
 use Everest\Console\Commands\Billing\ExpireCouponsCommand;
+use Everest\Console\Commands\Billing\ExpireInvoicesCommand;
+use Everest\Console\Commands\Billing\ExpirePdfCacheCommand;
 use Everest\Console\Commands\Auth\ProcessJGuardActivationsCommand;
 use Everest\Console\Commands\Email\ProcessDeferredEmailsCommand;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -56,7 +58,10 @@ class Kernel extends ConsoleKernel
             // Run near end of day so scheduled deletions occur after the full renewal date has passed.
             $schedule->command(DeleteScheduledServersCommand::class)->dailyAt('23:55');
             $schedule->command(CalculateOrderThreatIndexCommand::class)->everyFiveMinutes();
-            $schedule->command(ExpireCouponsCommand::class)->twiceDaily(1, 13); // Run at 1:00 AM and 1:00 PM
+            $schedule->command(RefreshNodeAvailabilityCommand::class)->everyMinute()->withoutOverlapping();
+            $schedule->command(ExpireCouponsCommand::class)->twiceDaily(1, 13);
+            $schedule->command(ExpirePdfCacheCommand::class)->hourly();        // Evict local 24-h PDF cache
+            $schedule->command(ExpireInvoicesCommand::class)->dailyAt('02:00'); // Auto-cleanup data snapshots (if enabled)
         }
 
         // Process deferred emails every 5 minutes

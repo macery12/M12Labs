@@ -12,6 +12,8 @@ use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob;
 use Everest\Services\CustomDomains\CustomDomainProvisioningService;
+use Everest\Jobs\Billing\GenerateInvoiceJob;
+use Everest\Services\Billing\CreateOrderService;
 
 /**
  * Central server fulfillment service for paid orders.
@@ -276,14 +278,12 @@ class ServerFulfillmentService
             $currency = config('modules.billing.currency.code', 'USD');
 
             // Determine payment method
-            $paymentMethod = 'Unknown';
-            if ($order->payment_processor === 'paypal') {
-                $paymentMethod = 'PayPal';
-            } elseif ($order->payment_processor === 'mollie') {
-                $paymentMethod = 'Mollie';
-            } elseif ($order->payment_processor === 'stripe') {
-                $paymentMethod = 'Stripe';
-            }
+            $paymentMethod = match ($order->payment_processor) {
+                'paypal' => 'PayPal',
+                'stripe' => 'Stripe',
+                'free' => 'Free',
+                default => 'Unknown',
+            };
 
             // Get coupon info if applicable
             $couponCode = null;
@@ -294,13 +294,11 @@ class ServerFulfillmentService
                 $coupon = \Everest\Models\Billing\Coupon::find($order->coupon_id);
                 if ($coupon) {
                     $couponCode = $coupon->code;
-                    // Calculate original amount before discount
-                    $finalAmount = $order->amount ?? $product->price;
+                    $finalAmount = $order->total;
                     if ($coupon->type === 'percent') {
                         $originalAmount = $finalAmount / (1 - ($coupon->value / 100));
                         $discountAmount = $originalAmount - $finalAmount;
                     } else {
-                        // Fixed discount
                         $originalAmount = $finalAmount + $coupon->value;
                         $discountAmount = $coupon->value;
                     }
@@ -309,25 +307,27 @@ class ServerFulfillmentService
 
             $isRenewal = $order->type === Order::TYPE_REN;
             $billingDays = $order->billing_days ?? null;
+            $correlationId = \Illuminate\Support\Str::uuid()->toString();
 
-            event(new \Everest\Events\Email\PaymentReceived(
-                user: $user,
-                amount: $order->amount ?? $product->price,
+            // Dispatch the invoice generation job which will generate the PDF
+            // and then fire the PaymentReceived email event.
+            GenerateInvoiceJob::dispatch(
+                orderId: $order->id,
+                amount: $order->total,
                 currency: $currency,
                 paymentMethod: $paymentMethod,
-                invoiceId: (string) $order->id,
-                correlationId: \Illuminate\Support\Str::uuid()->toString(),
+                correlationId: $correlationId,
                 isRenewal: $isRenewal,
                 originalAmount: $originalAmount,
                 discountAmount: $discountAmount,
                 couponCode: $couponCode,
                 billingDays: $billingDays,
-            ));
+            );
 
-            Log::info("Dispatched PaymentReceived email for order {$order->id}");
+            Log::info("Dispatched GenerateInvoiceJob for order {$order->id}");
         } catch (\Exception $e) {
-            // Don't fail the order if email dispatch fails
-            Log::error("Failed to dispatch PaymentReceived email for order {$order->id}: " . $e->getMessage());
+            // Don't fail the order if invoice/email dispatch fails
+            Log::error("Failed to dispatch GenerateInvoiceJob for order {$order->id}: " . $e->getMessage());
         }
     }
 }

@@ -30,6 +30,8 @@ import SettingsContainer from '@admin/modules/billing/SettingsContainer';
 import BillingExceptionsContainer from './exceptions/BillingExceptionsContainer';
 import BillingRulesContainer from '@admin/modules/billing/BillingRulesContainer';
 import IntegrationsContainer from './integrations/IntegrationsContainer';
+import InvoicesContainer from './invoices/InvoicesContainer';
+import InvoiceSettingsContainer from './settings/InvoiceSettingsContainer';
 import { createIntegrationRegistry, getEnabledIntegrations } from './integrations/registry';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPuzzlePiece, faBoxesStacked } from '@fortawesome/free-solid-svg-icons';
@@ -84,6 +86,20 @@ export default () => {
         },
     ];
 
+    // Define invoice dropdown items
+    const invoiceDropdownItems = [
+        {
+            to: '/admin/billing/invoices',
+            name: 'Invoices',
+            icon: CalendarIcon,
+        },
+        {
+            to: '/admin/billing/invoice-settings',
+            name: 'Invoice Settings',
+            icon: CogIcon,
+        },
+    ];
+
     return (
         <AdminContentBlock title={'Billing'}>
             <div className={'mb-8 flex w-full flex-col gap-2 sm:flex-row sm:items-center'}>
@@ -104,6 +120,7 @@ export default () => {
                     <DesktopComputerIcon />
                 </SubNavigationLink>
                 <BillingDropdown items={billingDropdownItems} icon={ViewGridIcon} />
+                <BillingDropdown items={invoiceDropdownItems} icon={CalendarIcon} label={'Invoices'} />
                 <SubNavigationLink to={'/admin/billing/exceptions'} name={'Exceptions'}>
                     <XCircleIcon />
                 </SubNavigationLink>
@@ -163,6 +180,8 @@ export default () => {
                 ))}
 
                 <Route path={'/settings'} element={<SettingsContainer />} />
+                <Route path={'/invoices'} element={<InvoicesContainer />} />
+                <Route path={'/invoice-settings'} element={<InvoiceSettingsContainer />} />
 
                 <Route path={'/*'} element={<NotFound />} />
             </Routes>

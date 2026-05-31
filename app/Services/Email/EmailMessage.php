@@ -7,6 +7,12 @@ class EmailMessage
     private const TAG_ALLOWED_PATTERN = '/[^A-Za-z0-9_-]/';
     private const MAX_TAG_LENGTH = 256;
 
+    /**
+     * Attachments array. Each entry:
+     *   ['filename' => 'invoice.pdf', 'content' => <raw bytes>, 'content_type' => 'application/pdf']
+     */
+    public ?array $attachments = null;
+
     public function __construct(
         public string $to,
         public string $subject,
@@ -15,8 +21,10 @@ class EmailMessage
         public ?array $tags = null,
         public ?string $from = null,
         public ?string $fromName = null,
-        public ?string $replyTo = null
+        public ?string $replyTo = null,
+        ?array $attachments = null
     ) {
+        $this->attachments = $attachments;
     }
 
     /**
@@ -77,6 +85,18 @@ class EmailMessage
         if ($this->replyTo !== null && $this->replyTo !== '') {
             $data['reply_to'] = $this->replyTo;
         }
+
+        // Attachments — supported by Resend API as base64-encoded content
+        if (!empty($this->attachments)) {
+            $data['attachments'] = array_map(function (array $att) {
+                return [
+                    'filename' => $att['filename'],
+                    'content' => base64_encode($att['content']),
+                    'content_type' => $att['content_type'] ?? 'application/octet-stream',
+                ];
+            }, $this->attachments);
+        }
+
 
         return $data;
     }
