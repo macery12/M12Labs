@@ -83,9 +83,21 @@ export default function Turnstile({ siteKey, onVerify, onError, onExpire }: Turn
         };
     }, [options]);
 
+    const containerStyle = {
+        minHeight: '65px',
+        width: '300px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    } as const;
+
     if (!options) {
-        return <div ref={containerRef} />;
+        return <div ref={containerRef} style={containerStyle} />;
     }
 
-    return <div ref={containerRef}>{missingTurnstile && !widgetId.current ? 'Loading verification…' : null}</div>;
+    return (
+        <div ref={containerRef} style={containerStyle}>
+            {missingTurnstile && !widgetId.current ? 'Loading verification…' : null}
+        </div>
+    );
 }

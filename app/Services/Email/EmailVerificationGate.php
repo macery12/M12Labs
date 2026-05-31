@@ -29,10 +29,6 @@ class EmailVerificationGate
             'can_view' => true,
             'can_interact' => false,
         ],
-        'donate' => [
-            'can_view' => false,
-            'can_interact' => false,
-        ],
         'credentials' => [
             'can_view' => true,
             'can_interact' => true,

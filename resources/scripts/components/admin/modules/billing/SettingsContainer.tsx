@@ -1,6 +1,6 @@
 import AdminBox from '@/elements/AdminBox';
 import ToggleFeatureButton from './ToggleFeatureButton';
-import { faDollar, faExchange, faGavel, faPowerOff } from '@fortawesome/free-solid-svg-icons';
+import { faDollar, faExchange, faGavel, faPowerOff, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
 import { useStoreActions, useStoreState } from '@/state/hooks';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
@@ -10,6 +10,7 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 import ImportConfigButton from './config/ImportConfigButton';
 import { updateSettings } from '@/api/routes/admin/billing';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
+import Switch from '@/elements/Switch';
 
 export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'payment' | 'none';
 
@@ -32,6 +33,11 @@ export default () => {
         await updateSettings('currency:code', code);
         await updateSettings('currency:symbol', symbol);
         updateEverest({ billing: { ...settings, currency: { code: code.toLowerCase(), symbol } } });
+    };
+
+    const handleCustomerRequirementChange = async (checked: boolean) => {
+        await updateSettings('require_billing_address', checked);
+        updateEverest({ billing: { ...settings, require_billing_address: checked } });
     };
 
     return (
@@ -83,6 +89,18 @@ export default () => {
                         Users can only change plans once per cooldown period. Set to 0 to disable cooldown (not
                         recommended).
                     </p>
+                </div>
+            </AdminBox>
+            <AdminBox title={'Customer Requirements'} icon={faShieldHalved}>
+                Configure checkout requirements for customers before they can complete a purchase.
+                <div className={'mt-4'}>
+                    <Switch
+                        name={'require_billing_address'}
+                        label={'Require billing address to checkout'}
+                        description={'When enabled, customers must add a billing address in their account settings before they can complete a purchase. The address is included on invoices.'}
+                        defaultChecked={settings.require_billing_address ?? false}
+                        onChange={e => handleCustomerRequirementChange(e.target.checked)}
+                    />
                 </div>
             </AdminBox>
             <AdminBox title={'Disable Billing Module'} icon={faPowerOff}>

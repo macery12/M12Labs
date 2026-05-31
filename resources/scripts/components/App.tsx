@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import '@/assets/tailwind.css';
 import { store } from '@/state';
 import { SiteTheme } from '@/state/theme';
@@ -14,9 +14,6 @@ import AuthenticatedRoute from '@/elements/AuthenticatedRoute';
 import { NotFound } from '@/elements/ScreenBlock';
 import ScreenBlock from '@/elements/ScreenBlock';
 import { EverestSettings } from '@/state/everest';
-import Onboarding from '@account/Onboarding';
-import SpeedDial from '@/elements/SpeedDial';
-import SetupContainer from './admin/setup/SetupContainer';
 import ServerErrorSvg from '@/assets/images/server_error.svg';
 import http from '@/api/http';
 
@@ -24,6 +21,9 @@ const AdminRouter = lazy(() => import('@/routers/AdminRouter'));
 const AuthenticationRouter = lazy(() => import('@/routers/AuthenticationRouter'));
 const DashboardRouter = lazy(() => import('@/routers/DashboardRouter'));
 const ServerRouter = lazy(() => import('@/routers/ServerRouter'));
+const Onboarding = lazy(() => import('@account/Onboarding'));
+const SpeedDial = lazy(() => import('@/elements/SpeedDial'));
+const SetupContainer = lazy(() => import('./admin/setup/SetupContainer'));
 
 interface ExtendedWindow extends Window {
     SiteConfiguration?: SiteSettings;
@@ -136,13 +136,17 @@ function App() {
             <StoreProvider store={store}>
                 <ProgressBar />
                 {PterodactylUser?.root_admin && !SiteConfiguration?.setup ? (
-                    <SetupContainer />
+                    <Spinner.Suspense>
+                        <SetupContainer />
+                    </Spinner.Suspense>
                 ) : (
                     <>
                         {' '}
                         {PterodactylUser?.username.startsWith('null_user_') &&
                         EverestConfiguration?.auth.modules.onboarding.enabled ? (
-                            <Onboarding />
+                            <Spinner.Suspense>
+                                <Onboarding />
+                            </Spinner.Suspense>
                         ) : (
                             <div className="mx-auto w-auto">
                                 <BrowserRouter>
@@ -162,7 +166,9 @@ function App() {
                                                 <AuthenticatedRoute>
                                                     <Spinner.Suspense>
                                                         <ServerContext.Provider>
-                                                            {hasAdminRole && <SpeedDial />}
+                                                            <Suspense fallback={null}>
+                                                                {hasAdminRole && <SpeedDial />}
+                                                            </Suspense>
                                                             <ServerRouter />
                                                         </ServerContext.Provider>
                                                     </Spinner.Suspense>
@@ -186,7 +192,9 @@ function App() {
                                             element={
                                                 <AuthenticatedRoute>
                                                     <Spinner.Suspense>
-                                                        {hasAdminRole && <SpeedDial />}
+                                                        <Suspense fallback={null}>
+                                                            {hasAdminRole && <SpeedDial />}
+                                                        </Suspense>
                                                         <DashboardRouter />
                                                     </Spinner.Suspense>
                                                 </AuthenticatedRoute>

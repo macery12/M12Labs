@@ -39,26 +39,14 @@ export default ({ data, history }: { data: BillingAnalytics; history: number }) 
                 return total + (order.total || 0);
             }, 0);
 
-        const revenueFromDonations = (data.donations || [])
-            .filter(donation => {
-                const createdAt = new Date(donation.created_at);
-                return (
-                    donation.status === 'completed' &&
-                    isWithinInterval(createdAt, { start: startOfDay(date), end: endOfDay(date) })
-                );
-            })
-            .reduce((total, donation) => {
-                return total + (donation.amount || 0);
-            }, 0);
-
-        return revenueFromOrders + revenueFromDonations;
+        return revenueFromOrders;
     });
 
     const chartData = {
         labels: daysRange.map(day => format(day, 'yyyy-MM-dd')),
         datasets: [
             {
-                label: 'Revenue from Orders & Donations',
+                label: 'Revenue from Orders',
                 data: dailyRevenue,
                 fill: false,
                 borderColor: '#36A2EB',

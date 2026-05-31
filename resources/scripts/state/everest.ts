@@ -3,7 +3,7 @@ import { action, Action } from 'easy-peasy';
 export type AlertType = 'success' | 'warning' | 'danger' | 'info';
 export type AlertPosition = 'notification' | 'top-center' | 'slide-out' | 'center' | 'bottom-right' | 'bottom-left';
 
-export type VerificationArea = 'billing' | 'orders' | 'donate' | 'credentials' | 'tickets';
+export type VerificationArea = 'billing' | 'orders' | 'credentials' | 'tickets';
 export type VerificationRule = { can_view: boolean; can_interact: boolean };
 export type VerificationRules = Record<VerificationArea, VerificationRule>;
 
@@ -48,7 +48,6 @@ export interface EverestSettings {
     };
     billing: {
         enabled: boolean;
-        donations_enabled: boolean;
         processors?: {
             stripe: {
                 available: boolean;
@@ -80,6 +79,7 @@ export interface EverestSettings {
             terms: string;
             privacy: string;
         };
+        require_billing_address?: boolean;
         renewal?: {
             days?: number;
             free_renewal_days?: number;

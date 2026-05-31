@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState } from 'react';
+import { forwardRef } from 'react';
 import * as React from 'react';
 import { Form } from 'formik';
 import styled from 'styled-components';
@@ -10,9 +10,7 @@ type Props = React.DetailedHTMLProps<React.FormHTMLAttributes<HTMLFormElement>, 
     title?: string;
 };
 
-const Container = styled.div<{ isVisible: boolean }>`
-    opacity: ${({ isVisible }) => (isVisible ? 1 : 0)};
-    transition: opacity 0.5s ease-in;
+const Container = styled.div`
 
     ${breakpoint('sm')`
         ${tw`w-4/5 mx-auto`}
@@ -32,15 +30,8 @@ const Container = styled.div<{ isVisible: boolean }>`
 `;
 
 export default forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => {
-    const [visible, setVisible] = useState(false);
-
-    useEffect(() => {
-        const timeout = setTimeout(() => setVisible(true), 50);
-        return () => clearTimeout(timeout);
-    }, []);
-
     return (
-        <Container isVisible={visible}>
+        <Container>
             <div className={'grid w-full 2xl:grid-cols-2'}>
                 <div className={'w-full lg:mx-auto lg:w-1/2'}>
                     {title && <h2 css={tw`text-3xl text-center text-neutral-100 font-medium py-4`}>{title}</h2>}

@@ -11,7 +11,7 @@ import AdminTable, {
 } from '@/elements/AdminTable';
 import CopyOnClick from '@/elements/CopyOnClick';
 import tw from 'twin.macro';
-import { useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { useContext, useEffect, useState, useCallback, useRef, type UIEvent } from 'react';
 import useFlash from '@/plugins/useFlash';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { OrderFilters, PaymentProcessor, OrderStatus } from '@/api/routes/admin/billing/types';
@@ -113,6 +113,29 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
 
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+    const topScrollRef = useRef<HTMLDivElement>(null);
+    const bottomScrollRef = useRef<HTMLDivElement>(null);
+    const syncingScrollRef = useRef<'top' | 'bottom' | null>(null);
+    const tableMinWidth = minimal ? '64rem' : '88rem';
+
+    const syncHorizontalScroll = useCallback(
+        (source: 'top' | 'bottom') => (event: UIEvent<HTMLDivElement>) => {
+            if (syncingScrollRef.current && syncingScrollRef.current !== source) {
+                return;
+            }
+
+            const target = source === 'top' ? bottomScrollRef.current : topScrollRef.current;
+            if (!target) return;
+
+            syncingScrollRef.current = source;
+            target.scrollLeft = event.currentTarget.scrollLeft;
+
+            requestAnimationFrame(() => {
+                syncingScrollRef.current = null;
+            });
+        },
+        [],
+    );
 
     const openInspector = (order: Order) => {
         setSelectedOrder(order);
@@ -373,8 +396,23 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
 
             <AdminTable>
                 <Pagination data={orders} onPageSelect={setPage}>
-                    <div css={tw`overflow-x-auto`}>
-                        <table css={tw`w-full table-auto`}>
+                    <div
+                        ref={topScrollRef}
+                        css={tw`mb-2 w-full overflow-x-auto overflow-y-hidden`}
+                        onScroll={syncHorizontalScroll('top')}
+                    >
+                        <div style={{ width: tableMinWidth, height: '1px' }} />
+                    </div>
+
+                    <div
+                        ref={bottomScrollRef}
+                        css={tw`w-full overflow-x-auto`}
+                        onScroll={syncHorizontalScroll('bottom')}
+                    >
+                        <table
+                            css={tw`w-full table-auto`}
+                            style={{ minWidth: tableMinWidth }}
+                        >
                             <TableHead>
                                 {!minimal && (
                                     <TableHeader

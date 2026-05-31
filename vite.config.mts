@@ -35,9 +35,16 @@ export default defineConfig({
 
     build: {
         target: 'es2019',
+        // Keep lazy-route dependencies truly lazy; this improves fresh-cache first paint
+        // by avoiding eager preload of heavy route chunks from the entry page.
+        modulePreload: false,
         rollupOptions: {
             output: {
                 manualChunks(id) {
+                    // Keep Vite runtime helpers in an always-loaded runtime chunk.
+                    // Otherwise Rollup can place the preload helper into a large feature chunk,
+                    // forcing that chunk onto the initial page load.
+                    if (id.includes('vite/preload-helper')) return 'vendor-react';
                     if (!id.includes('node_modules')) return;
                     // CodeMirror core runtime + @codemirror/view + Lezer parser runtime.
                     // @codemirror/view MUST be in the same chunk as @codemirror/state: they share

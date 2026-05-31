@@ -2,7 +2,6 @@ import { lazy } from 'react';
 import {
     CashIcon,
     ClipboardListIcon,
-    HeartIcon,
     KeyIcon,
     ShieldCheckIcon,
     TicketIcon,
@@ -24,9 +23,6 @@ const OrdersContainer = lazy(() => import('@account/billing/orders/OrdersContain
 const Processing = lazy(() => import('@account/billing/order/summary/Processing'));
 const Success = lazy(() => import('@account/billing/order/summary/Success'));
 const Cancel = lazy(() => import('@account/billing/order/summary/Cancel'));
-
-const DonationContainer = lazy(() => import('@account/donations/DonationContainer'));
-const DonationHistoryContainer = lazy(() => import('@account/donations/DonationHistoryContainer'));
 
 const account: RouteDefinition[] = [
     /**
@@ -65,18 +61,6 @@ const account: RouteDefinition[] = [
     route('billing/processing', Processing),
     route('billing/success', Success),
     route('billing/cancel', Cancel),
-
-    /**
-     * Account - Donation Routes
-     */
-    route('donations', DonationContainer, {
-        name: 'Donate',
-        icon: HeartIcon,
-        condition: flags => flags.billing.enabled && flags.billing.donations_enabled,
-    }),
-    route('donations/history', DonationHistoryContainer, {
-        condition: flags => flags.billing.enabled && flags.billing.donations_enabled,
-    }),
 ];
 
 export default account;

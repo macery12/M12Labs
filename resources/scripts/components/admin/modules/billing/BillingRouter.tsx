@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useStoreState } from '@/state/hooks';
 import { Route, Routes } from 'react-router-dom';
 import { NotFound } from '@/elements/ScreenBlock';
@@ -6,7 +7,6 @@ import EnableBilling from '@admin/modules/billing/EnableBilling';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import ProductForm from '@admin/modules/billing/products/ProductForm';
 import CategoryForm from '@admin/modules/billing/products/CategoryForm';
-import { SubNavigation, SubNavigationLink } from '@admin/SubNavigation';
 import OverviewContainer from '@/components/admin/modules/billing/overview/OverviewContainer';
 import CategoryTable from '@admin/modules/billing/products/CategoryTable';
 import OrdersContainer from '@admin/modules/billing/orders/OrdersContainer';
@@ -14,17 +14,6 @@ import ProductContainer from '@admin/modules/billing/products/ProductContainer';
 import CategoryContainer from '@admin/modules/billing/products/CategoryContainer';
 import CouponsContainer from '@admin/modules/billing/coupons/CouponsContainer';
 import CouponForm from '@admin/modules/billing/coupons/CouponForm';
-import DonationsContainer from '@admin/modules/billing/donations/DonationsContainer';
-import {
-    CalendarIcon,
-    CogIcon,
-    DesktopComputerIcon,
-    ShoppingCartIcon,
-    TicketIcon,
-    ViewGridIcon,
-    XCircleIcon,
-    HeartIcon,
-} from '@heroicons/react/outline';
 import Unfinished from '@/elements/Unfinished';
 import SettingsContainer from '@admin/modules/billing/SettingsContainer';
 import BillingExceptionsContainer from './exceptions/BillingExceptionsContainer';
@@ -33,76 +22,23 @@ import IntegrationsContainer from './integrations/IntegrationsContainer';
 import InvoicesContainer from './invoices/InvoicesContainer';
 import InvoiceSettingsContainer from './settings/InvoiceSettingsContainer';
 import { createIntegrationRegistry, getEnabledIntegrations } from './integrations/registry';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPuzzlePiece, faBoxesStacked } from '@fortawesome/free-solid-svg-icons';
-import { BillingDropdown } from './BillingDropdown';
-const ProductsIcon = ({ className }: { className?: string }) => (
-    <span className={`inline-flex items-center justify-center ${className ?? ''}`}>
-        <FontAwesomeIcon
-            icon={faBoxesStacked}
-            fixedWidth
-            style={{ verticalAlign: 'middle' }} // overrides FA default (-0.125em)
-            className="h-4 w-4"
-        />
-    </span>
-);
+import { BillingSidebar } from './BillingSidebar';
 
 export default () => {
     const enabled = useStoreState(state => state.everest.data!.billing.enabled);
     const billingSettings = useStoreState(state => state.everest.data!.billing);
 
+    // Must be called before any early return to satisfy rules-of-hooks
+    const enabledIntegrations = useMemo(
+        () => getEnabledIntegrations(createIntegrationRegistry(billingSettings)),
+        [billingSettings],
+    );
+
     if (!enabled) return <EnableBilling />;
-
-    // Get enabled integrations to dynamically render tabs
-    const integrations = createIntegrationRegistry(billingSettings);
-    const enabledIntegrations = getEnabledIntegrations(integrations);
-
-    // Define billing dropdown items
-    const billingDropdownItems = [
-        {
-            to: '/admin/billing/categories',
-            name: 'Products',
-            icon: ProductsIcon,
-        },
-        {
-            to: '/admin/billing/orders',
-            name: 'Orders',
-            icon: ShoppingCartIcon,
-        },
-        {
-            to: '/admin/billing/donations',
-            name: 'Donations',
-            icon: HeartIcon,
-        },
-        {
-            to: '/admin/billing/coupons',
-            name: 'Coupons',
-            icon: TicketIcon,
-        },
-        {
-            to: '/admin/billing/billing-rules',
-            name: 'Billing Rules',
-            icon: CalendarIcon,
-        },
-    ];
-
-    // Define invoice dropdown items
-    const invoiceDropdownItems = [
-        {
-            to: '/admin/billing/invoices',
-            name: 'Invoices',
-            icon: CalendarIcon,
-        },
-        {
-            to: '/admin/billing/invoice-settings',
-            name: 'Invoice Settings',
-            icon: CogIcon,
-        },
-    ];
 
     return (
         <AdminContentBlock title={'Billing'}>
-            <div className={'mb-8 flex w-full flex-col gap-2 sm:flex-row sm:items-center'}>
+            <div className={'mb-6 flex w-full flex-col gap-2 sm:flex-row sm:items-center'}>
                 <div className={'flex flex-shrink flex-col'} style={{ minWidth: '0' }}>
                     <h2 className={'font-header text-2xl font-medium text-neutral-50'}>Billing</h2>
                     <p className={'overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400'}>
@@ -113,78 +49,54 @@ export default () => {
 
             <Unfinished untested />
 
-            <FlashMessageRender byKey={'admin:billing'} className={'mb-4'} />
+            {/* Two-column layout: sidebar + content */}
+            <div className={'flex gap-6'}>
+                <BillingSidebar enabledIntegrations={enabledIntegrations} />
 
-            <SubNavigation>
-                <SubNavigationLink to={'/admin/billing'} name={'Overview'} base>
-                    <DesktopComputerIcon />
-                </SubNavigationLink>
-                <BillingDropdown items={billingDropdownItems} icon={ViewGridIcon} />
-                <BillingDropdown items={invoiceDropdownItems} icon={CalendarIcon} label={'Invoices'} />
-                <SubNavigationLink to={'/admin/billing/exceptions'} name={'Exceptions'}>
-                    <XCircleIcon />
-                </SubNavigationLink>
+                <div className={'min-w-0 flex-1'}>
+                    <FlashMessageRender byKey={'admin:billing'} className={'mb-4'} />
 
-                {/* Dynamically render tabs for enabled integrations */}
-                {enabledIntegrations.map(integration => (
-                    <SubNavigationLink
-                        key={integration.id}
-                        to={`/admin/billing/integrations/${integration.id}`}
-                        name={integration.name}
-                        base
-                    >
-                        <FontAwesomeIcon icon={integration.icon} />
-                    </SubNavigationLink>
-                ))}
+                    <Routes>
+                        <Route path={'/'} element={<OverviewContainer />} />
 
-                <SubNavigationLink to={'/admin/billing/integrations'} name={'Integrations'} base>
-                    <FontAwesomeIcon icon={faPuzzlePiece} />
-                </SubNavigationLink>
-                <SubNavigationLink to={'/admin/billing/settings'} name={'Settings'}>
-                    <CogIcon />
-                </SubNavigationLink>
-            </SubNavigation>
-            <Routes>
-                <Route path={'/'} element={<OverviewContainer />} />
+                        <Route path={'/categories'} element={<CategoryTable />} />
+                        <Route path={'/categories/new'} element={<CategoryForm />} />
+                        <Route path={'/categories/:id'} element={<CategoryContainer />} />
 
-                <Route path={'/categories'} element={<CategoryTable />} />
-                <Route path={'/categories/new'} element={<CategoryForm />} />
-                <Route path={'/categories/:id'} element={<CategoryContainer />} />
+                        <Route path={'/categories/:id/products/new'} element={<ProductForm />} />
+                        <Route path={'/categories/:id/products/:productId'} element={<ProductContainer />} />
 
-                <Route path={'/categories/:id/products/new'} element={<ProductForm />} />
-                <Route path={'/categories/:id/products/:productId'} element={<ProductContainer />} />
+                        <Route path={'/orders'} element={<OrdersContainer />} />
 
-                <Route path={'/orders'} element={<OrdersContainer />} />
+                        <Route path={'/coupons'} element={<CouponsContainer />} />
+                        <Route path={'/coupons/new'} element={<CouponForm />} />
+                        <Route path={'/coupons/:id'} element={<CouponForm />} />
 
-                <Route path={'/donations'} element={<DonationsContainer />} />
+                        <Route path={'/exceptions'} element={<BillingExceptionsContainer />} />
 
-                <Route path={'/coupons'} element={<CouponsContainer />} />
-                <Route path={'/coupons/new'} element={<CouponForm />} />
-                <Route path={'/coupons/:id'} element={<CouponForm />} />
+                        <Route path={'/billing-rules'} element={<BillingRulesContainer />} />
+                        {/* Keep old route for backward compatibility */}
+                        <Route path={'/renewal-dates'} element={<BillingRulesContainer />} />
 
-                <Route path={'/exceptions'} element={<BillingExceptionsContainer />} />
+                        <Route path={'/integrations'} element={<IntegrationsContainer />} />
 
-                <Route path={'/billing-rules'} element={<BillingRulesContainer />} />
-                {/* Keep old route for backward compatibility */}
-                <Route path={'/renewal-dates'} element={<BillingRulesContainer />} />
+                        {/* Dynamic routes for enabled integrations */}
+                        {enabledIntegrations.map(integration => (
+                            <Route
+                                key={integration.id}
+                                path={`/integrations/${integration.id}`}
+                                element={<integration.settingsComponent />}
+                            />
+                        ))}
 
-                <Route path={'/integrations'} element={<IntegrationsContainer />} />
+                        <Route path={'/settings'} element={<SettingsContainer />} />
+                        <Route path={'/invoices'} element={<InvoicesContainer />} />
+                        <Route path={'/invoice-settings'} element={<InvoiceSettingsContainer />} />
 
-                {/* Dynamic routes for enabled integrations */}
-                {enabledIntegrations.map(integration => (
-                    <Route
-                        key={integration.id}
-                        path={`/integrations/${integration.id}`}
-                        element={<integration.settingsComponent />}
-                    />
-                ))}
-
-                <Route path={'/settings'} element={<SettingsContainer />} />
-                <Route path={'/invoices'} element={<InvoicesContainer />} />
-                <Route path={'/invoice-settings'} element={<InvoiceSettingsContainer />} />
-
-                <Route path={'/*'} element={<NotFound />} />
-            </Routes>
+                        <Route path={'/*'} element={<NotFound />} />
+                    </Routes>
+                </div>
+            </div>
         </AdminContentBlock>
     );
 };

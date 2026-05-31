@@ -181,15 +181,6 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             ->middleware('throttle:30,1');
     });
 
-    Route::prefix('/donations')->middleware('verified.view:donate')->group(function () {
-        Route::get('/', [Client\DonationController::class, 'index']);
-        Route::middleware('verified.interact:donate')->group(function () {
-            Route::get('/key', [Client\DonationController::class, 'getStripeKey']);
-            Route::post('/intent', [Client\DonationController::class, 'createIntent']);
-            Route::post('/complete', [Client\DonationController::class, 'complete']);
-        });
-    });
-
     /*
     |--------------------------------------------------------------------------
     | Client Control API

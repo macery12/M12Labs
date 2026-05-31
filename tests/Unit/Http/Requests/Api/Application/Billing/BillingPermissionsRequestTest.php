@@ -5,7 +5,6 @@ namespace Everest\Tests\Unit\Http\Requests\Api\Application\Billing;
 use Everest\Models\AdminRole;
 use Everest\Tests\TestCase;
 use Illuminate\Support\Facades\Validator;
-use Everest\Http\Requests\Api\Application\Billing\Donations\GetDonationsRequest;
 use Everest\Http\Requests\Api\Application\Billing\NodePricing\GetNodePricingRequest;
 use Everest\Http\Requests\Api\Application\Billing\NodePricing\ResetNodePricingRequest;
 use Everest\Http\Requests\Api\Application\Billing\NodePricing\UpdateNodePricingRequest;
@@ -21,7 +20,6 @@ class BillingPermissionsRequestTest extends TestCase
     {
         $this->assertSame(AdminRole::BILLING_READ, (new GetNodePricingRequest())->permission());
         $this->assertSame(AdminRole::BILLING_READ, (new GetBillingCyclesRequest())->permission());
-        $this->assertSame(AdminRole::BILLING_READ, (new GetDonationsRequest())->permission());
     }
 
     public function testBillingWriteRequestsUseBillingUpdatePermission(): void

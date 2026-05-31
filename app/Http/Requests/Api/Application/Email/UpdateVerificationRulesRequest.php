@@ -14,8 +14,6 @@ class UpdateVerificationRulesRequest extends ApplicationApiRequest
             'billing.can_interact' => 'required|boolean',
             'orders.can_view' => 'required|boolean',
             'orders.can_interact' => 'required|boolean',
-            'donate.can_view' => 'required|boolean',
-            'donate.can_interact' => 'required|boolean',
             'credentials.can_view' => 'required|boolean',
             'credentials.can_interact' => 'required|boolean',
             'tickets.can_view' => 'required|boolean',
@@ -30,7 +28,7 @@ class UpdateVerificationRulesRequest extends ApplicationApiRequest
 
     public function normalizedRules(): array
     {
-        $areas = ['billing', 'orders', 'donate', 'credentials', 'tickets'];
+        $areas = ['billing', 'orders', 'credentials', 'tickets'];
         $rules = [];
 
         foreach ($areas as $area) {
