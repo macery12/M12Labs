@@ -96,7 +96,8 @@ class EmailManager
         string $correlationId,
         ?int $userId = null,
         ?EmailDelivery $delivery = null,
-        int $attemptNumber = 1
+        int $attemptNumber = 1,
+        ?array $attachments = null
     ): EmailResult {
         $tracker = app(EmailDeliveryTracker::class);
         $transportName = self::getTransport();
@@ -221,7 +222,8 @@ class EmailManager
             tags: $tags,
             from: $from,
             fromName: $fromName,
-            replyTo: $replyTo
+            replyTo: $replyTo,
+            attachments: $attachments
         );
 
         // Start attempt tracking (with error handling)

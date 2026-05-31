@@ -62,7 +62,7 @@ class EmailTypeRegistry
         'server.suspended' => ['userName', 'serverName', 'reason', 'suspendedAt'],
         'server.unsuspended' => ['userName', 'serverName', 'unsuspendedAt'],
         'server.expiring_soon' => ['userName', 'serverName', 'expiresAt', 'daysRemaining'],
-        'billing.payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate', 'isRenewal', 'originalAmount', 'discountAmount', 'couponCode', 'billingDays', 'billingCycle'],
+        'billing.payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate', 'isRenewal', 'originalAmount', 'discountAmount', 'couponCode', 'billingDays', 'billingCycle', 'invoiceDownloadUrl'],
         'billing.payment_failed' => ['userName', 'amount', 'currency', 'reason', 'invoiceId', 'retryUrl', 'paymentMethod', 'isRenewal'],
         'billing.server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'renewalDate', 'suspensionTime', 'renewalAmount', 'currency', 'billingDays', 'billingCycle'],
     ];
@@ -235,6 +235,7 @@ class EmailTypeRegistry
                 'couponCode' => $event->couponCode,
                 'billingDays' => $event->billingDays,
                 'billingCycle' => $billingCycle,
+                'invoiceDownloadUrl' => $event->invoiceDownloadUrl,
             ];
         } elseif ($event instanceof PaymentFailed) {
             /** @var PaymentFailed $event */

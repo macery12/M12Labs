@@ -132,6 +132,25 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::post('/export', [Application\Billing\ConfigController::class, 'export']);
         });
 
+        // Invoice management
+        Route::prefix('/invoices')->group(function () {
+            Route::get('/', [Application\Billing\InvoiceController::class, 'index']);
+            Route::get('/{uuid}', [Application\Billing\InvoiceController::class, 'show']);
+            Route::get('/{uuid}/download', [Application\Billing\InvoiceController::class, 'download']);
+            Route::get('/{uuid}/serve', [Application\Billing\InvoiceController::class, 'serve']);
+            Route::post('/{uuid}/void', [Application\Billing\InvoiceController::class, 'void']);
+            Route::post('/{uuid}/regenerate', [Application\Billing\InvoiceController::class, 'regenerate']);
+            Route::post('/{uuid}/resend', [Application\Billing\InvoiceController::class, 'resend']);
+        });
+
+        // Invoice settings
+        Route::prefix('/invoice-settings')->group(function () {
+            Route::get('/', [Application\Billing\InvoiceSettingsController::class, 'show']);
+            Route::put('/', [Application\Billing\InvoiceSettingsController::class, 'update']);
+            Route::get('/storage-usage', [Application\Billing\InvoiceSettingsController::class, 'storageUsage']);
+            Route::post('/test-connection', [Application\Billing\InvoiceSettingsController::class, 'testConnection']);
+        });
+
         // Node pricing multiplier routes
         Route::prefix('/node-pricing')->group(function () {
             Route::get('/', [Application\Billing\NodePricingController::class, 'index']);
