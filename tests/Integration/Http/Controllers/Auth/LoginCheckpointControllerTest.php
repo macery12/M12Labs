@@ -10,10 +10,10 @@ use Everest\Events\Auth\DirectLogin;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Session;
 use PHPUnit\Framework\Attributes\TestWith;
-use Everest\Tests\Integration\Http\HttpTestCase;
 use Everest\Events\Auth\ProvidedAuthenticationToken;
+use Everest\Tests\Integration\IntegrationTestCase;
 
-class LoginCheckpointControllerTest extends HttpTestCase
+class LoginCheckpointControllerTest extends IntegrationTestCase
 {
     public function setUp(): void
     {
