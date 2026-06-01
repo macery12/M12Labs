@@ -39,7 +39,7 @@ class InvoiceController extends ApplicationApiController
         }
 
         $invoices = QueryBuilder::for(Invoice::query()->with(['user', 'order']))
-            ->allowedFilters([
+            ->allowedFilters(...[
                 'status',
                 'currency',
                 AllowedFilter::callback('user_id', function (Builder $query, $value) {
@@ -61,7 +61,7 @@ class InvoiceController extends ApplicationApiController
                     $query->where('generated_at', '<=', $value);
                 }),
             ])
-            ->allowedSorts(['generated_at', 'total', 'invoice_number', 'status'])
+            ->allowedSorts(...['generated_at', 'total', 'invoice_number', 'status'])
             ->defaultSort('-generated_at')
             ->paginate($perPage);
 

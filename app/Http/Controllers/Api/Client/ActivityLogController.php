@@ -30,8 +30,8 @@ class ActivityLogController extends ClientApiController
                 ->whereNotIn('activity_logs.event', ActivityLog::DISABLED_EVENTS)
         )
             ->with('actor')
-            ->allowedFilters([AllowedFilter::partial('event')])
-            ->allowedSorts(['timestamp'])
+            ->allowedFilters(...[AllowedFilter::partial('event')])
+            ->allowedSorts(...['timestamp'])
             ->paginate(min($request->query('per_page', 5), 100))
             ->appends($request->query());
 

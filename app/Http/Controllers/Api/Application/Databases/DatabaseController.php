@@ -39,8 +39,8 @@ class DatabaseController extends ApplicationApiController
         }
 
         $databases = QueryBuilder::for(DatabaseHost::query())
-            ->allowedFilters(['name', 'host'])
-            ->allowedSorts(['id', 'name', 'host'])
+            ->allowedFilters(...['name', 'host'])
+            ->allowedSorts(...['id', 'name', 'host'])
             ->paginate($perPage);
 
         return $this->fractal->collection($databases)

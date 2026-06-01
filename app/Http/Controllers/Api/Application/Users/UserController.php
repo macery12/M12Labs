@@ -60,7 +60,7 @@ class UserController extends ApplicationApiController
         }
 
         $users = QueryBuilder::for(User::query())
-            ->allowedFilters([
+            ->allowedFilters(...[
                 'username',
                 'email',
                 AllowedFilter::exact('id'),
@@ -79,7 +79,7 @@ class UserController extends ApplicationApiController
                 }),
             ])
             ->defaultSort('-root_admin')
-            ->allowedSorts(['id', 'uuid', 'username', 'email', 'admin_role_id', 'use_totp', 'root_admin', 'state', 'created_at'])
+            ->allowedSorts(...['id', 'uuid', 'username', 'email', 'admin_role_id', 'use_totp', 'root_admin', 'state', 'created_at'])
             ->paginate($perPage);
 
         return $this->fractal->collection($users)
