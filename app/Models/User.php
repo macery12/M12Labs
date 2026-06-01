@@ -29,6 +29,7 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
  * @property string $uuid
  * @property string $username
  * @property string $email
+ * @property string|null $stripe_id
  * @property string $password
  * @property string|null $remember_token
  * @property string $language
@@ -124,6 +125,7 @@ class User extends Model implements
         'external_id',
         'username',
         'email',
+        'stripe_id',
         'password',
         'language',
         'use_totp',
@@ -144,6 +146,7 @@ class User extends Model implements
         'root_admin' => 'boolean',
         'use_totp' => 'boolean',
         'gravatar' => 'boolean',
+        'stripe_id' => 'string',
         'totp_authenticated_at' => 'datetime',
         'email_verified_at' => 'datetime',
     ];

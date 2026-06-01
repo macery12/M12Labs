@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'enabled' => env('CUSTOM_DOMAINS_ENABLED', true),
+    'enabled' => env('CUSTOM_DOMAINS_ENABLED', false),
 
     'cloudflare' => [
         'token' => env('CUSTOM_DOMAINS_CLOUDFLARE_TOKEN', ''),

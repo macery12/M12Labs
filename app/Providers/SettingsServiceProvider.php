@@ -13,7 +13,7 @@ use Everest\Services\Security\SecretEncryptionService;
 class SettingsServiceProvider extends ServiceProvider
 {
     protected array $keys = [
-        // Jexactyl-specific keys
+        // M12Labs-specific keys
         'app:name', 'app:logo', 'app:mode', 'app:setup', 'app:locale',
         'app:speed_dial', 'app:indicators',
         'pterodactyl:guzzle:timeout', 'pterodactyl:guzzle:connect_timeout',
@@ -54,7 +54,6 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:billing:link',
         'modules:billing:keys:publishable',
         'modules:billing:keys:secret',
-        'modules:billing:mollie:api_key',
         'modules:billing:currency:code',
         'modules:billing:currency:symbol',
         'modules:billing:links:terms',
@@ -62,7 +61,6 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:billing:renewal:suspension_threshold',
         'modules:billing:plan_change_cooldown_hours',
         'modules:billing:integrations:stripe:enabled',
-        'modules:billing:integrations:mollie:enabled',
         'modules:billing:integrations:paypal:enabled',
         'modules:billing:paypal_standalone:client_id',
         'modules:billing:paypal_standalone:client_secret',
@@ -103,6 +101,7 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:extensions:enabled',
 
         // Custom domains module settings
+        'modules:custom_domains:enabled',
         'modules:custom_domains:cloudflare:token',
         'modules:custom_domains:security:allow_wildcard',
         'modules:custom_domains:security:max_wildcards_per_user',

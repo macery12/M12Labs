@@ -44,11 +44,14 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
         });
 
         // Payment initiated
-        events.push({
-            title: 'Payment Initiated',
-            description: `Payment process started via ${
-                order.payment_processor.charAt(0).toUpperCase() + order.payment_processor.slice(1)
-            }`,
+            events.push({
+                title: 'Payment Initiated',
+                description:
+                    order.payment_processor === 'free'
+                        ? 'No payment required for this order ($0.00)'
+                        : `Payment process started via ${
+                              order.payment_processor.charAt(0).toUpperCase() + order.payment_processor.slice(1)
+                          }`,
             timestamp: order.created_at, // Usually same as creation
             icon: faCreditCard,
             themeColor: true,
@@ -79,6 +82,14 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
                 icon: faTimesCircle,
                 color: 'text-red-400',
             });
+        } else if (order.status === 'cancelled') {
+            events.push({
+                title: 'Order Cancelled',
+                description: 'Payment was cancelled by the customer',
+                timestamp: order.updated_at || order.created_at,
+                icon: faTimesCircle,
+                color: 'text-blue-400',
+            });
         } else if (order.status === 'pending') {
             events.push({
                 title: 'Payment Pending',
@@ -89,12 +100,12 @@ const OrderInspectorTimelineTab: React.FC<Props> = ({ order }) => {
             });
         }
 
-        // PayPal specific: capture event
-        if (order.payment_processor === 'paypal' && order.paypal_captured_at) {
+        // Capture event — use normalized transaction record (works for any processor)
+        if (order.transaction?.captured_at) {
             events.push({
-                title: 'PayPal Capture Completed',
-                description: `Funds captured: ${order.paypal_currency} ${order.paypal_amount?.toFixed(2)}`,
-                timestamp: order.paypal_captured_at,
+                title: 'Payment Captured',
+                description: `Funds captured via ${order.payment_processor.charAt(0).toUpperCase() + order.payment_processor.slice(1)}: ${order.transaction.currency?.toUpperCase()} ${Number(order.transaction.amount).toFixed(2)}`,
+                timestamp: order.transaction.captured_at,
                 icon: faCheckCircle,
                 color: 'text-green-400',
             });

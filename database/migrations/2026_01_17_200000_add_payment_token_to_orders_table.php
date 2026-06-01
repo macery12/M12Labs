@@ -11,7 +11,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->string('payment_token')->nullable()->after('mollie_payment_id');
+            $table->string('payment_token')->nullable()->after('payment_processor');
             $table->index('payment_token');
         });
     }

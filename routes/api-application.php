@@ -97,6 +97,7 @@ Route::middleware([AdminSubject::class])->group(function () {
 
         Route::group(['prefix' => '/orders'], function () {
             Route::get('/', [Application\Billing\OrderController::class, 'index']);
+            Route::get('/{order:id}/threat', [Application\Billing\OrderController::class, 'threat']);
         });
 
         Route::group(['prefix' => '/custom-domains'], function () {

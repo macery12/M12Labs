@@ -24,9 +24,9 @@ export default ({ setOpen }: { setOpen: Dispatch<SetStateAction<BillingSetupDial
             <p className={'mt-4 text-lg font-semibold text-white'}>2. Enable Link module in Stripe</p>
             Once you have navigated to the payment configuration page, scroll down and click the{' '}
             <Button.Text size={Button.Sizes.Small}>Turn On</Button.Text> button to activate it.
-            <p className={'mt-4 text-lg font-semibold text-white'}>3. Check Jexactyl for Link method</p>
-            Finally, go back to Jexactyl and visit the billing store. Select a plan, and head to the checkout. You
-            should now be able to checkout with Link via Jexactyl.
+            <p className={'mt-4 text-lg font-semibold text-white'}>3. Check M12Labs for Link method</p>
+            Finally, go back to M12Labs and visit the billing store. Select a plan, and head to the checkout. You
+            should now be able to checkout with Link via M12Labs.
             <Alert className={'mt-2'} type={'info'}>
                 Link should now be working correctly. Any issues? Please visit our community Discord server and let us
                 know.

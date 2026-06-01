@@ -27,6 +27,16 @@ class CouponUsage extends Model
     protected $table = 'coupon_usage';
 
     /**
+     * Validation rules for this model.
+     */
+    public static array $validationRules = [
+        'coupon_id' => 'required|integer|exists:coupons,id',
+        'user_id'   => 'required|integer|exists:users,id',
+        'order_id'  => 'required|integer|exists:orders,id',
+        'used_at'   => 'required|date',
+    ];
+
+    /**
      * Fields that are mass assignable.
      */
     protected $fillable = [

@@ -27,44 +27,48 @@ class SuspendBillableServersCommand extends Command
     {
         $now = now();
 
-        foreach (Server::whereNotNull('billing_product_id')->get() as $server) {
-            $renewalDate = $server->renewal_date;
+        Server::whereNotNull('billing_product_id')
+            ->with('product')
+            ->chunk(200, function ($servers) use ($now) {
+                foreach ($servers as $server) {
+                    $renewalDate = $server->renewal_date;
 
-            if ($renewalDate === null) {
-                continue;
-            }
+                    if ($renewalDate === null) {
+                        continue;
+                    }
 
-            if ($renewalDate->isPast()) {
-                $daysOverdue = $renewalDate->diffInDays($now);
+                    if ($renewalDate->isPast()) {
+                        $daysOverdue = $renewalDate->diffInDays($now);
 
-                // Get the product to determine suspension threshold
-                $product = $server->product;
+                        // Get the product to determine suspension threshold
+                        $product = $server->product;
 
-                if (!$product) {
-                    continue;
+                        if (!$product) {
+                            continue;
+                        }
+
+                        // Get the server's billing cycle length
+                        $billingDays = $server->billing_days;
+
+                        if (!$billingDays || $billingDays <= 0) {
+                            // Fall back to default if billing_days is not set
+                            $billingDays = config('modules.billing.renewal.default_billing_days', 30);
+                        }
+
+                        // Calculate suspension threshold based on the server's billing cycle
+                        // This ensures longer billing cycles get proportionally longer grace periods
+                        $suspensionThreshold = $product->getSuspensionThresholdForBillingCycle($billingDays);
+
+                        // Only suspend if overdue by more than the threshold
+                        if ($daysOverdue > $suspensionThreshold && !$server->isSuspended()) {
+                            $this->info("suspending server {$server->id}, overdue by {$daysOverdue} day(s) (threshold: {$suspensionThreshold} days for {$billingDays}-day cycle)");
+
+                            // Use the exact same suspension logic as the manual suspend button
+                            // This ensures servers can be manually unsuspended via admin panel
+                            $this->suspend->toggle($server, SuspensionService::ACTION_SUSPEND);
+                        }
+                    }
                 }
-
-                // Get the server's billing cycle length
-                $billingDays = $server->billing_days;
-
-                if (!$billingDays || $billingDays <= 0) {
-                    // Fall back to default if billing_days is not set
-                    $billingDays = config('modules.billing.renewal.default_billing_days', 30);
-                }
-
-                // Calculate suspension threshold based on the server's billing cycle
-                // This ensures longer billing cycles get proportionally longer grace periods
-                $suspensionThreshold = $product->getSuspensionThresholdForBillingCycle($billingDays);
-
-                // Only suspend if overdue by more than the threshold
-                if ($daysOverdue > $suspensionThreshold && !$server->isSuspended()) {
-                    $this->info("suspending server {$server->id}, overdue by {$daysOverdue} day(s) (threshold: {$suspensionThreshold} days for {$billingDays}-day cycle)");
-
-                    // Use the exact same suspension logic as the manual suspend button
-                    // This ensures servers can be manually unsuspended via admin panel
-                    $this->suspend->toggle($server, SuspensionService::ACTION_SUSPEND);
-                }
-            }
-        }
+            });
     }
 }

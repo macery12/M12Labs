@@ -3,7 +3,7 @@ import tw from 'twin.macro';
 import { useStoreState } from '@/state/hooks';
 
 interface Props {
-    processor: 'stripe' | 'mollie' | 'paypal';
+    processor: 'stripe' | 'paypal' | 'free';
     size?: 'small' | 'medium' | 'large';
 }
 
@@ -17,15 +17,15 @@ const PaymentProcessorBadge: React.FC<Props> = ({ processor, size = 'medium' }) 
                     name: 'Stripe',
                     emoji: '💳',
                 };
-            case 'mollie':
-                return {
-                    name: 'Mollie',
-                    emoji: '💶',
-                };
             case 'paypal':
                 return {
                     name: 'PayPal',
                     emoji: '🅿️',
+                };
+            case 'free':
+                return {
+                    name: 'Free',
+                    emoji: '$0',
                 };
             default:
                 return {

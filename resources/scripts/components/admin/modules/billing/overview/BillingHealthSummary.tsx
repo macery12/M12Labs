@@ -10,7 +10,6 @@ import {
     faCheck,
 } from '@fortawesome/free-solid-svg-icons';
 import { faCcStripe, faCcPaypal } from '@fortawesome/free-brands-svg-icons';
-import { faCircle } from '@fortawesome/free-solid-svg-icons';
 import { useState } from 'react';
 
 interface BillingHealthSummaryProps {
@@ -38,12 +37,6 @@ export default ({ data }: BillingHealthSummaryProps) => {
             icon: faCcStripe,
             enabled: settings.processors?.stripe?.enabled || false,
             configured: settings.keys?.publishable && settings.keys?.secret,
-        },
-        {
-            name: 'Mollie',
-            icon: faCircle,
-            enabled: settings.processors?.mollie?.enabled || false,
-            configured: settings.mollie?.api_key,
         },
         {
             name: 'PayPal',

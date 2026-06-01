@@ -91,7 +91,7 @@ export default ({ open, onClose }: { open: boolean; onClose: () => void }) => {
             </div>
 
             <p className={'mb-4'}>
-                Before you can use the Stripe API, you must provide Jexactyl with API keys to authenticate with Stripe.
+                Before you can use the Stripe API, you must provide M12Labs with API keys to authenticate with Stripe.
                 Visit the Stripe dashboard
                 <a
                     target={'_blank'}

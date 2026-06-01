@@ -122,7 +122,7 @@ class ModrinthService
             $options = [
                 'headers' => [
                     'Accept' => 'application/json',
-                    'User-Agent' => 'Jexactyl/1.0 (github.com/jexactyl/jexactyl)',
+                    'User-Agent' => 'M12Labs/1.0 (github.com/m12labs/m12labs)',
                 ],
             ];
 

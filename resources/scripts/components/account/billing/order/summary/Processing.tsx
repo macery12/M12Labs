@@ -6,7 +6,6 @@ import useFlash from '@/plugins/useFlash';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import Spinner from '@/elements/Spinner';
 import { processPaidOrder } from '@/api/routes/account/billing/orders/process';
-import { checkMolliePaymentStatus, getPaymentIdFromToken } from '@/api/routes/account/billing/orders/mollie';
 import {
     capturePayPalOrder,
     checkPayPalOrderStatus,
@@ -49,85 +48,11 @@ export default () => {
             return;
         }
 
-        // Handle Mollie payment
-        if (
-            token &&
-            (paymentProcessor === 'mollie' ||
-                (billing.processors?.mollie?.available && !paymentProcessor && !billing.processors?.paypal?.available))
-        ) {
-            // Get payment ID from token
-            getPaymentIdFromToken(token)
-                .then(({ payment_id }) => {
-                    // Poll for order status since Mollie processes via webhook
-                    let pollCount = 0;
-                    const maxPolls = 60; // 2 minutes max (60 * 2 seconds)
-
-                    const checkStatus = async () => {
-                        try {
-                            pollCount++;
-
-                            if (pollCount > maxPolls) {
-                                addFlash({
-                                    key: 'billing:process',
-                                    type: 'warning',
-                                    message:
-                                        'Payment verification is taking longer than expected. Please check your orders page or contact support.',
-                                });
-                                return;
-                            }
-
-                            const status = await checkMolliePaymentStatus(payment_id);
-
-                            if (status.processed) {
-                                // Order has been processed successfully
-                                if (renewal && isValidServerUuid(serverUuid)) {
-                                    window.location.href = `/server/${serverUuid}/billing`;
-                                } else {
-                                    navigate('/account/billing/success');
-                                }
-                            } else if (status.failed) {
-                                navigate('/account/billing/cancel');
-                            } else if (status.payment_status === 'paid') {
-                                // For renewals, payment is paid but order won't be marked as "processed"
-                                // The renewal is already complete, redirect to server billing page
-                                if (renewal && isValidServerUuid(serverUuid)) {
-                                    window.location.href = `/server/${serverUuid}/billing`;
-                                } else {
-                                    // For new orders, keep checking - webhook will process it
-                                    setTimeout(checkStatus, 2000);
-                                }
-                            } else {
-                                // Still processing, check again after a delay
-                                setTimeout(checkStatus, 2000);
-                            }
-                        } catch (error) {
-                            console.error('Error checking Mollie payment status:', error);
-                            addFlash({
-                                key: 'billing:process',
-                                type: 'error',
-                                message: 'Unable to verify payment status. Please contact an administrator.',
-                            });
-                        }
-                    };
-
-                    checkStatus();
-                })
-                .catch(error => {
-                    console.error('Error retrieving payment ID from token:', error);
-                    addFlash({
-                        key: 'billing:process',
-                        type: 'error',
-                        message: 'Invalid payment token. Please contact an administrator.',
-                    });
-                });
-            return;
-        }
-
         // Handle PayPal payment
         if (
             token &&
             (paymentProcessor === 'paypal' ||
-                (billing.processors?.paypal?.available && !paymentProcessor && !billing.processors?.mollie?.available))
+                (billing.processors?.paypal?.available && !paymentProcessor))
         ) {
             console.log('[PayPal Processing] Starting PayPal payment processing', {
                 token,

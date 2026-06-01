@@ -24,6 +24,17 @@ import ScopedAlert from '@account/ScopedAlert';
 import BypassModeHeader from '@/elements/BypassModeHeader';
 import FloatingWindowsLayer, { type FloatingServerWindow } from '@server/floating/FloatingWindowsLayer';
 
+type ServerRouteFlags = {
+    billable: boolean;
+    activityEnabled: boolean;
+    modsEnabled: boolean;
+    extensionsEnabled: boolean;
+    supercharged: boolean;
+    aiEnabled: boolean;
+    aiAssistantEnabled: boolean;
+    customDomainsEnabled: boolean;
+};
+
 function statusToColor(status: ServerStatus): string {
     switch (status) {
         case 'running':
@@ -40,10 +51,12 @@ function statusToColor(status: ServerStatus): string {
 }
 
 // Helper component to render server routes
-const ServerRoutes = ({ location }: { location: ReturnType<typeof useLocation> }) => (
+const ServerRoutes = ({ location, flags }: { location: ReturnType<typeof useLocation>; flags: ServerRouteFlags }) => (
     <ErrorBoundary>
         <Routes location={location}>
-            {routes.server.map(({ route, permission, component: Component }) => (
+            {routes.server
+                .filter(route => !route.condition || route.condition(flags))
+                .map(({ route, permission, component: Component }) => (
                 <Route
                     key={route}
                     path={route}
@@ -55,7 +68,7 @@ const ServerRoutes = ({ location }: { location: ReturnType<typeof useLocation> }
                         </PermissionRoute>
                     }
                 />
-            ))}
+                ))}
 
             <Route path="*" element={<NotFound />} />
         </Routes>
@@ -81,11 +94,23 @@ function ServerRouter() {
     const activityEnabled = useStoreState(state => state.settings.data!.activity.enabled.server);
     const aiEnabled = useStoreState(state => state.everest.data!.ai.enabled);
     const aiAssistantEnabled = useStoreState(state => state.everest.data!.ai.feature_server_assistant ?? true);
+    const customDomainsEnabled = useStoreState(state => state.everest.data?.custom_domains?.enabled ?? false);
     const billable = server?.billingProductId;
     const modsEnabled = server?.modsEnabled;
     const extensionsEnabled = server?.extensionsEnabled;
     const supercharged = server?.isNodeSupercharged;
     const status = ServerContext.useStoreState(state => state.status.value);
+
+    const routeFlags: ServerRouteFlags = {
+        billable: Boolean(billable),
+        activityEnabled,
+        modsEnabled: Boolean(modsEnabled),
+        extensionsEnabled: Boolean(extensionsEnabled),
+        supercharged: Boolean(supercharged),
+        aiEnabled,
+        aiAssistantEnabled,
+        customDomainsEnabled,
+    };
 
     const categories = ['data', 'configuration'] as const;
     const topWindowZRef = useRef(200);
@@ -214,16 +239,7 @@ function ServerRouter() {
                                 route =>
                                     !route.category &&
                                     route.name &&
-                                    (!route.condition ||
-                                        route.condition({
-                                            billable,
-                                            activityEnabled,
-                                            modsEnabled,
-                                            extensionsEnabled,
-                                            supercharged,
-                                            aiEnabled,
-                                            aiAssistantEnabled,
-                                        })),
+                                        (!route.condition || route.condition(routeFlags)),
                             )
                             .map(route => (
                                 <MobileDrawer.Link
@@ -239,7 +255,7 @@ function ServerRouter() {
                                 route =>
                                     route.category === category &&
                                     route.name &&
-                                    (!route.condition || route.condition({ billable, activityEnabled, modsEnabled, extensionsEnabled, supercharged, aiEnabled, aiAssistantEnabled })),
+                                        (!route.condition || route.condition(routeFlags)),
                             );
                             if (categoryRoutes.length === 0) return null;
 
@@ -292,16 +308,7 @@ function ServerRouter() {
                                     route =>
                                         !route.category &&
                                         route.name &&
-                                        (!route.condition ||
-                                            route.condition({
-                                                billable,
-                                                activityEnabled,
-                                                modsEnabled,
-                                                extensionsEnabled,
-                                                supercharged,
-                                                aiEnabled,
-                                                aiAssistantEnabled,
-                                            })),
+                                        (!route.condition || route.condition(routeFlags)),
                                 )
                                 .map(route => (
                                     <NavLink
@@ -319,16 +326,7 @@ function ServerRouter() {
                                     route =>
                                         route.category === category &&
                                         route.name &&
-                                        (!route.condition ||
-                                            route.condition({
-                                                billable,
-                                                activityEnabled,
-                                                modsEnabled,
-                                                extensionsEnabled,
-                                                supercharged,
-                                                aiEnabled,
-                                                aiAssistantEnabled,
-                                            })),
+                                        (!route.condition || route.condition(routeFlags)),
                                 );
                                 if (categoryRoutes.length === 0) return null;
 
@@ -395,7 +393,7 @@ function ServerRouter() {
                             !isConflictBypassed ? (
                                 <ConflictStateRenderer />
                             ) : (
-                                <ServerRoutes location={location} />
+                                <ServerRoutes location={location} flags={routeFlags} />
                             )}
                         </div>
                     )}

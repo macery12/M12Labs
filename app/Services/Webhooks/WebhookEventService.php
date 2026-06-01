@@ -93,7 +93,7 @@ class WebhookEventService
             'color' => $colorInt,
             'timestamp' => now()->toIso8601String(),
             'footer' => [
-                'text' => 'Jexactyl v4',
+                'text' => 'M12Labs v4',
                 'icon_url' => 'https://avatars.githubusercontent.com/u/91636558?s=200&v=4',
             ],
             'author' => [

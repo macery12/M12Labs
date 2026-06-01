@@ -28,7 +28,7 @@ import OrderInspectorModal from '@/components/elements/OrderInspectorModal';
 import { Order } from '@definitions/account/billing/models';
 import tw from 'twin.macro';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faFilter, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import Input from '@/elements/Input';
 import InputSpinner from '@/elements/InputSpinner';
 import debounce from 'debounce';
@@ -65,6 +65,8 @@ export function type(state: string): PillStatus {
             return 'success';
         case 'failed':
             return 'danger';
+        case 'cancelled':
+            return 'info';
         case 'pending':
             return 'warn';
         default:
@@ -76,6 +78,8 @@ function getStatusRowClass(status: string): string {
     switch (status) {
         case 'failed':
             return 'bg-red-500/5 hover:bg-red-500/10';
+        case 'cancelled':
+            return 'bg-blue-500/5 hover:bg-blue-500/10';
         case 'pending':
             return 'bg-yellow-500/5 hover:bg-yellow-500/10';
         case 'processed':
@@ -102,6 +106,7 @@ function OrderTable() {
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [searchInputText, setSearchInputText] = useState<string>('');
     const [searchLoading, setSearchLoading] = useState(false);
+    const [showFilters, setShowFilters] = useState(false);
 
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isInspectorOpen, setIsInspectorOpen] = useState(false);
@@ -116,7 +121,6 @@ function OrderTable() {
         setTimeout(() => setSelectedOrder(null), 300);
     };
 
-    // Debounced search handler
     const debouncedSearch = useCallback(
         debounce((query: string) => {
             setSearchQuery(query);
@@ -132,48 +136,22 @@ function OrderTable() {
         debouncedSearch(value);
     };
 
-    // Build filters object
     const buildFilters = (): OrderFilters | null => {
         const filters: OrderFilters = {};
         let hasFilters = false;
 
-        if (paymentProcessor) {
-            filters.payment_processor = paymentProcessor;
-            hasFilters = true;
-        }
-        if (status) {
-            filters.status = status;
-            hasFilters = true;
-        }
-        if (orderType) {
-            filters.type = orderType;
-            hasFilters = true;
-        }
-        if (minAmount !== null) {
-            filters.min_amount = minAmount;
-            hasFilters = true;
-        }
-        if (maxAmount !== null) {
-            filters.max_amount = maxAmount;
-            hasFilters = true;
-        }
-        if (startDate) {
-            filters.start_date = startDate;
-            hasFilters = true;
-        }
-        if (endDate) {
-            filters.end_date = endDate;
-            hasFilters = true;
-        }
-        if (searchQuery && searchQuery.length >= 2) {
-            filters.search = searchQuery;
-            hasFilters = true;
-        }
+        if (paymentProcessor) { filters.payment_processor = paymentProcessor; hasFilters = true; }
+        if (status) { filters.status = status; hasFilters = true; }
+        if (orderType) { filters.type = orderType; hasFilters = true; }
+        if (minAmount !== null) { filters.min_amount = minAmount; hasFilters = true; }
+        if (maxAmount !== null) { filters.max_amount = maxAmount; hasFilters = true; }
+        if (startDate) { filters.start_date = startDate; hasFilters = true; }
+        if (endDate) { filters.end_date = endDate; hasFilters = true; }
+        if (searchQuery && searchQuery.length >= 2) { filters.search = searchQuery; hasFilters = true; }
 
         return hasFilters ? filters : null;
     };
 
-    // Apply filters when any filter changes
     useEffect(() => {
         setFilters(buildFilters());
     }, [paymentProcessor, status, orderType, minAmount, maxAmount, startDate, endDate, searchQuery]);
@@ -191,7 +169,8 @@ function OrderTable() {
     };
 
     const hasActiveFilters =
-        paymentProcessor || status || orderType || minAmount || maxAmount || startDate || endDate || searchQuery;
+        paymentProcessor || status || orderType || minAmount !== null || maxAmount !== null ||
+        startDate || endDate || searchQuery;
 
     useEffect(() => {
         clearFlashes();
@@ -211,55 +190,75 @@ function OrderTable() {
                 </p>
                 <FlashMessageRender byKey={'billing:orders'} className={'mt-4'} />
             </div>
+
+            {/* Search + Filters card */}
             <div
                 className={'rounded-lg shadow-md mb-6'}
                 style={{ backgroundColor: colors.background || colors.secondary }}
             >
-                {/* Advanced Filters Panel */}
-                <div css={tw`p-6 space-y-4`}>
-                    <div css={tw`flex items-center justify-between mb-2`}>
-                        <h3 css={tw`text-sm font-semibold text-white`}>Filters & Search</h3>
+                <div css={tw`p-4`}>
+                    {/* Smart Search Bar */}
+                    <div css={tw`flex items-center gap-3 mb-3`}>
+                        <div css={tw`flex-1`}>
+                            <InputSpinner visible={searchLoading}>
+                                <Input
+                                    value={searchInputText}
+                                    placeholder="Search by order ID, server name, product, or transaction ID…"
+                                    onChange={handleSearchChange}
+                                    style={{ backgroundColor: colors.secondary }}
+                                />
+                            </InputSpinner>
+                        </div>
+                        <button
+                            onClick={() => setShowFilters(v => !v)}
+                            css={tw`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap`}
+                            style={{
+                                backgroundColor: showFilters ? colors.primary : colors.secondary,
+                                color: showFilters ? '#fff' : '#9ca3af',
+                            }}
+                        >
+                            <FontAwesomeIcon icon={faFilter} />
+                            Filters
+                            {hasActiveFilters && (
+                                <span css={tw`ml-1 bg-white/20 text-white text-xs rounded-full px-1.5 py-0.5`}>
+                                    {[paymentProcessor, status, orderType, minAmount, maxAmount, startDate, endDate, searchQuery].filter(Boolean).length}
+                                </span>
+                            )}
+                            <FontAwesomeIcon icon={showFilters ? faChevronUp : faChevronDown} css={tw`text-xs`} />
+                        </button>
                         {hasActiveFilters && (
                             <button
                                 onClick={clearFilters}
-                                css={tw`text-sm text-red-400 hover:text-red-300 transition-colors flex items-center gap-1`}
+                                css={tw`flex items-center gap-1 text-sm text-red-400 hover:text-red-300 transition-colors`}
                             >
                                 <FontAwesomeIcon icon={faTimes} />
-                                Clear All Filters
+                                Clear
                             </button>
                         )}
                     </div>
 
-                    {/* Search Input */}
-                    <div css={tw`mb-4`}>
-                        <InputSpinner visible={searchLoading}>
-                            <Input
-                                value={searchInputText}
-                                placeholder="Search by order ID, server name, product..."
-                                onChange={handleSearchChange}
-                                style={{ backgroundColor: colors.secondary }}
-                            />
-                        </InputSpinner>
-                    </div>
-
-                    {/* Filter Grid */}
-                    <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4`}>
-                        <PaymentProcessorFilter value={paymentProcessor} onChange={setPaymentProcessor} />
-                        <StatusFilter value={status} onChange={setStatus} />
-                        <OrderTypeFilter value={orderType} onChange={setOrderType} />
-                        <AmountRangeFilter
-                            minValue={minAmount}
-                            maxValue={maxAmount}
-                            onMinChange={setMinAmount}
-                            onMaxChange={setMaxAmount}
-                        />
-                        <DateRangeFilter
-                            startDate={startDate}
-                            endDate={endDate}
-                            onStartDateChange={setStartDate}
-                            onEndDateChange={setEndDate}
-                        />
-                    </div>
+                    {/* Collapsible Advanced Filters */}
+                    {showFilters && (
+                        <div css={tw`border-t border-neutral-700 pt-4`}>
+                            <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4`}>
+                                <PaymentProcessorFilter value={paymentProcessor} onChange={setPaymentProcessor} />
+                                <StatusFilter value={status} onChange={setStatus} />
+                                <OrderTypeFilter value={orderType} onChange={setOrderType} />
+                                <AmountRangeFilter
+                                    minValue={minAmount}
+                                    maxValue={maxAmount}
+                                    onMinChange={setMinAmount}
+                                    onMaxChange={setMaxAmount}
+                                />
+                                <DateRangeFilter
+                                    startDate={startDate}
+                                    endDate={endDate}
+                                    onStartDateChange={setStartDate}
+                                    onEndDateChange={setEndDate}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -273,7 +272,9 @@ function OrderTable() {
                                     direction={sort === 'id' ? (sortDirection ? 1 : 2) : null}
                                     onClick={() => setSort('id')}
                                 />
+                                <TableHeader name={'Server'} />
                                 <TableHeader name={'Product'} />
+                                <TableHeader name={'Type'} />
                                 <TableHeader name={'Provider'} />
                                 <TableHeader name={'Status'} />
                                 <TableHeader
@@ -281,6 +282,7 @@ function OrderTable() {
                                     direction={sort === 'total' ? (sortDirection ? 1 : 2) : null}
                                     onClick={() => setSort('total')}
                                 />
+                                <TableHeader name={'Billing Period'} />
                                 <TableHeader
                                     name={'Created'}
                                     direction={sort === 'created_at' ? (sortDirection ? 1 : 2) : null}
@@ -293,9 +295,7 @@ function OrderTable() {
                                     orders.items.map(order => (
                                         <tr
                                             key={order.id}
-                                            className={`h-12 cursor-pointer transition-colors ${getStatusRowClass(
-                                                order.status,
-                                            )}`}
+                                            className={`h-12 cursor-pointer transition-colors ${getStatusRowClass(order.status)}`}
                                             onClick={() => openInspector(order)}
                                         >
                                             <td className={`whitespace-nowrap px-6 py-4 text-left text-sm`}>
@@ -307,27 +307,27 @@ function OrderTable() {
                                                     </code>
                                                 </CopyOnClick>
                                             </td>
+                                            {/* Server column */}
                                             <td className={'px-6 py-4'}>
-                                                <div css={tw`flex items-center gap-2`}>
-                                                    <span css={tw`text-white font-medium`}>
-                                                        {order.server_name || order.name}
-                                                    </span>
-                                                    {order.type === 'ren' && (
-                                                        <Pill size="small" type="info">
-                                                            REN
-                                                        </Pill>
-                                                    )}
-                                                    {order.type === 'new' && (
-                                                        <Pill size="small" type="success">
-                                                            NEW
-                                                        </Pill>
-                                                    )}
-                                                    {order.type === 'upg' && (
-                                                        <Pill size="small" type="warn">
-                                                            UPG
-                                                        </Pill>
-                                                    )}
-                                                </div>
+                                                {order.server_name || order.name ? (
+                                                    <span css={tw`text-white font-medium`}>{order.server_name || order.name}</span>
+                                                ) : (
+                                                    <span css={tw`text-gray-600`}>—</span>
+                                                )}
+                                            </td>
+                                            {/* Product column */}
+                                            <td className={'px-6 py-4'}>
+                                                {order.product_name ? (
+                                                    <span css={tw`text-gray-300`}>{order.product_name}</span>
+                                                ) : (
+                                                    <span css={tw`text-gray-600`}>—</span>
+                                                )}
+                                            </td>
+                                            <td className={'px-6 py-4 text-gray-300 text-sm'}>
+                                                {order.type === 'new' && 'New Purchase'}
+                                                {order.type === 'ren' && 'Renewal'}
+                                                {order.type === 'upg' && 'Upgrade'}
+                                                {!['new', 'ren', 'upg'].includes(order.type) && '—'}
                                             </td>
                                             <td className={'px-6 py-4'}>
                                                 <PaymentProcessorBadge
@@ -340,11 +340,23 @@ function OrderTable() {
                                                     {order.status}
                                                 </Pill>
                                             </td>
-                                            <td className={'px-6 py-4 font-bold text-white'}>
-                                                ${order.total.toFixed(2)}
-                                                {order.type === 'ren' && (
-                                                    <span css={tw`text-sm text-gray-400 ml-1`}>/mo</span>
+                                            <td className={'px-6 py-4 font-bold text-white whitespace-nowrap'}>
+                                                {order.total === 0 || order.payment_processor === 'free' ? (
+                                                    <span css={tw`flex items-center gap-1.5`}>
+                                                        <span>${order.total.toFixed(2)}</span>
+                                                        <Pill size="small" type="success">Free</Pill>
+                                                    </span>
+                                                ) : (
+                                                    <span>
+                                                        ${order.total.toFixed(2)}
+                                                        {order.type === 'ren' && (
+                                                            <span css={tw`text-sm text-gray-400 ml-1`}>/mo</span>
+                                                        )}
+                                                    </span>
                                                 )}
+                                            </td>
+                                            <td className={'px-6 py-4 text-gray-400 text-sm'}>
+                                                {order.billing_days ? `${order.billing_days}d` : '—'}
                                             </td>
                                             <td className={'px-6 py-4 text-gray-400'}>
                                                 {formatDistanceToNowStrict(order.created_at, { addSuffix: true })}

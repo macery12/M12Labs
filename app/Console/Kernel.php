@@ -16,6 +16,7 @@ use Everest\Console\Commands\Schedule\ProcessRunnableCommand;
 use Everest\Console\Commands\Billing\SuspendBillableServersCommand;
 use Everest\Console\Commands\Maintenance\PruneOrphanedBackupsCommand;
 use Everest\Console\Commands\Billing\CalculateOrderThreatIndexCommand;
+use Everest\Console\Commands\Billing\RefreshNodeAvailabilityCommand;
 use Everest\Console\Commands\Maintenance\CleanServiceBackupFilesCommand;
 use Everest\Console\Commands\Billing\DeleteScheduledServersCommand;
 use Everest\Console\Commands\AI\PruneAiConversationsCommand;
@@ -53,7 +54,7 @@ class Kernel extends ConsoleKernel
         }
 
         if (config('modules.billing.enabled')) {
-            $schedule->command(CleanupOrdersCommand::class)->daily();
+            $schedule->command(CleanupOrdersCommand::class)->hourly();
             $schedule->command(SuspendBillableServersCommand::class)->daily();
             // Run near end of day so scheduled deletions occur after the full renewal date has passed.
             $schedule->command(DeleteScheduledServersCommand::class)->dailyAt('23:55');

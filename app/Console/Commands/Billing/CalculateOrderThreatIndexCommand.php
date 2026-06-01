@@ -2,76 +2,76 @@
 
 namespace Everest\Console\Commands\Billing;
 
-use Carbon\Carbon;
-use Everest\Models\User;
-use Illuminate\Console\Command;
 use Everest\Models\Billing\Order;
+use Everest\Services\Billing\ThreatIndexService;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class CalculateOrderThreatIndexCommand extends Command
 {
-    protected $description = 'An automated task to calculate the threat index of an order.';
+    protected $description = 'Calculate the threat index for pending orders.';
 
-    protected $signature = 'p:billing:calculate-order-threat-index';
+    protected $signature = 'p:billing:calculate-order-threat-index
+                            {--recalculate : Reset and recompute scores for all non-expired/cancelled orders}
+                            {--order= : Recalculate the threat index for a specific order ID}';
 
-    protected $reputableProviders = [
-        'gmail.com',
-        'yahoo.com',
-        'outlook.com',
-        'hotmail.com',
-        'icloud.com',
-        'zoho.com',
-        'aol.com',
-        'protonmail.com',
-        'mail.com',
-        'yandex.com',
-        'office.com',
-        'outlook.co.uk',
-        'live.com',
-        'live.co.uk',
-        'msn.com',
-        'sky.com',
-        'me.com',
-        'btinternet.com',
-    ];
-
-    /**
-     * CalculateOrderThreatIndexCommand constructor.
-     */
-    public function __construct()
+    public function __construct(private readonly ThreatIndexService $threatIndexService)
     {
         parent::__construct();
     }
 
-    /**
-     * Handle command execution.
-     */
-    public function handle()
+    public function handle(): void
     {
-        foreach (Order::where('threat_index', -1)->get() as $order) {
-            $index = 0;
-            $user = User::find($order->user_id);
+        if ($orderId = $this->option('order')) {
+            $this->recalculateSingle((int) $orderId);
 
-            if ($user->created_at->lt(Carbon::now()->subWeek())) {
-                $index += 30;
-            }
-
-            if (!$order->is_renewal) {
-                $index += 10;
-            }
-
-            if (in_array($domain = substr(strrchr($user->email, '@'), 1), $this->reputableProviders)) {
-                $index += 25;
-            }
-
-            if (!$user->use_totp) {
-                $index += 15;
-            }
-
-            if ($order->status === 'failed') {
-                $index += 20;
-            }
-
-            $order->update(['threat_index' => $index]);
+            return;
         }
+
+        if ($this->option('recalculate')) {
+            $this->info('Resetting threat index for all active orders…');
+            Order::whereNotIn('status', [Order::STATUS_EXPIRED, Order::STATUS_CANCELLED])
+                ->update(['threat_index' => -1]);
+        }
+
+        $processed = 0;
+        $skipped = 0;
+
+        Order::where('threat_index', -1)
+            ->with('user')
+            ->chunkById(100, function ($orders) use (&$processed, &$skipped) {
+                foreach ($orders as $order) {
+                    if ($order->user === null) {
+                        Log::warning('Skipping threat index calculation: user not found for order', [
+                            'order_id' => $order->id,
+                            'user_id' => $order->user_id,
+                        ]);
+                        $skipped++;
+                        continue;
+                    }
+
+                    $this->threatIndexService->recalculate($order);
+                    $processed++;
+                }
+            });
+
+        $this->info("Threat index calculated for {$processed} order(s). Skipped {$skipped} orphaned order(s).");
+    }
+
+    private function recalculateSingle(int $orderId): void
+    {
+        $order = Order::find($orderId);
+
+        if (!$order) {
+            $this->error("Order #{$orderId} not found.");
+
+            return;
+        }
+
+        $old = $order->threat_index;
+        $this->threatIndexService->recalculate($order);
+        $order->refresh();
+
+        $this->info("Order #{$orderId}: threat index updated from {$old} → {$order->threat_index}.");
     }
 }

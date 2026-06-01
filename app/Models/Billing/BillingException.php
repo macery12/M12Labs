@@ -5,6 +5,7 @@ namespace Everest\Models\Billing;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -49,6 +50,14 @@ class BillingException extends Model
         'description' => 'required|string|min:3',
         'exception_type' => 'required|string|in:deployment,payment,storefront,webhook,refund,validation',
     ];
+
+    /**
+     * Get the order associated with this exception.
+     */
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
 
     /**
      * When the model is creating, add the UUID here.

@@ -1,6 +1,6 @@
 # Billing Integrations
 
-This directory contains the modular billing integration system for Jexactyl.
+This directory contains the modular billing integration system for M12Labs.
 
 ## Structure
 
@@ -8,7 +8,6 @@ This directory contains the modular billing integration system for Jexactyl.
 - **`registry.ts`**: Integration registry and utility functions
 - **`IntegrationsContainer.tsx`**: Main UI for managing integrations
 - **`StripeSettings.tsx`**: Stripe-specific configuration
-- **`MollieSettings.tsx`**: Mollie-specific configuration
 
 ## How It Works
 
@@ -40,7 +39,6 @@ The `BillingRouter` component automatically:
 
 Each integration has a dedicated settings component:
 - **StripeSettings**: Manage Stripe API keys, PayPal integration, Link integration
-- **MollieSettings**: Manage Mollie API key and configuration
 
 ## Adding a New Integration
 
@@ -59,7 +57,6 @@ Integration states are stored in the global Everest store:
 billing: {
     integrations: {
         stripe: { enabled: boolean },
-        mollie: { enabled: boolean },
         // Add new integrations here
     }
 }

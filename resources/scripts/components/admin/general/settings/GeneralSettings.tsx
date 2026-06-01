@@ -81,7 +81,7 @@ export default () => {
                             </div>
                             <p className={'mt-1.5 text-xs text-gray-400'}>
                                 If enabled, small boxes will appear in the top-right of the UI indicating whether
-                                Jexactyl modules are enabled/disabled. Only on large screens.
+                                M12Labs modules are enabled/disabled. Only on large screens.
                             </p>
                         </div>
                     </AdminBox>

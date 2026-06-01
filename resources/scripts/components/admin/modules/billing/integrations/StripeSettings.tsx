@@ -55,7 +55,7 @@ export default () => {
             )}
 
             <AdminBox title={'Add PayPal integration'} icon={faPaypal}>
-                Adding PayPal to Jexactyl allows users to purchase products via another channel, improving order success
+                Adding PayPal to M12Labs allows users to purchase products via another channel, improving order success
                 rate and global payment availability. PayPal integration works through Stripe.
                 <p className={'mt-2 text-gray-400'}>
                     PayPal module is currently{' '}
@@ -81,7 +81,7 @@ export default () => {
             </AdminBox>
 
             <AdminBox title={'Add Link integration'} icon={faStripe}>
-                Adding Link to Jexactyl allows users to purchase products via another channel, improving order success
+                Adding Link to M12Labs allows users to purchase products via another channel, improving order success
                 rate and global payment availability. Link is Stripe&apos;s one-click payment system.
                 <p className={'mt-2 text-gray-400'}>
                     Link module is currently{' '}

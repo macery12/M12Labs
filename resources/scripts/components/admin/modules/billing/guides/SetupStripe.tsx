@@ -110,7 +110,7 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
                     categories. Once you&apos;re ready, head to the Settings tab to input your API key and secret.
                 </p>
             </div>
-            Before you can use the Stripe API, you must provide Jexactyl with API keys to authenticate with Stripe.
+            Before you can use the Stripe API, you must provide M12Labs with API keys to authenticate with Stripe.
             Visit the Stripe dashboard
             <a
                 target={'_blank'}

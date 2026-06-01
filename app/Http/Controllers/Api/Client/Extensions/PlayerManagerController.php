@@ -169,7 +169,7 @@ class PlayerManagerController extends ClientApiController
 
     private function lookupUser(string $uuid, Server $server): array|null
     {
-        $name = config('app.name', 'Jexactyl');
+        $name = config('app.name', 'M12Labs');
         $uuid = str_replace('-', '', $uuid);
         $cache = $this->userCache($server);
 
@@ -184,7 +184,7 @@ class PlayerManagerController extends ClientApiController
 
         $data = Cache::remember("minecraftplayer:$uuid", 1000, function () use ($name, $uuid) {
             try {
-                $req = Http::withUserAgent("Jexactyl Player Manager @ $name")
+                $req = Http::withUserAgent("M12Labs Player Manager @ $name")
                     ->timeout(5)
                     ->retry(2, 100, throw: true)
                     ->get("https://sessionserver.mojang.com/session/minecraft/profile/$uuid");
@@ -207,7 +207,7 @@ class PlayerManagerController extends ClientApiController
 
     private function lookupUserName(string $name, Server $server): array|null
     {
-        $app = config('app.name', 'Jexactyl');
+        $app = config('app.name', 'M12Labs');
         $offline = $this->isOfflineMode($server);
         $cache = $this->userCache($server);
 
@@ -230,7 +230,7 @@ class PlayerManagerController extends ClientApiController
 
         $data = Cache::remember("minecraftplayername:$name", 1000, function () use ($app, $name) {
             try {
-                $req = Http::withUserAgent("Jexactyl Player Manager @ $app")
+                $req = Http::withUserAgent("M12Labs Player Manager @ $app")
                     ->timeout(5)
                     ->retry(2, 100, throw: true)
                     ->get("https://api.mojang.com/users/profiles/minecraft/$name");

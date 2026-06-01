@@ -10,6 +10,7 @@ use Everest\Models\Billing\Product;
 use Illuminate\Support\Facades\Log;
 use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Billing\BillingDefaults;
 use Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob;
 use Everest\Services\CustomDomains\CustomDomainProvisioningService;
 use Everest\Jobs\Billing\GenerateInvoiceJob;
@@ -19,7 +20,7 @@ use Everest\Services\Billing\CreateOrderService;
  * Central server fulfillment service for paid orders.
  *
  * This service centralizes the server creation/renewal logic for all payment processors
- * (Stripe, PayPal, Mollie). It ensures consistent behavior and reduces code duplication.
+ * (Stripe, PayPal). It ensures consistent behavior and reduces code duplication.
  *
  * Key responsibilities:
  * - Idempotency checks to prevent duplicate order processing
@@ -33,6 +34,7 @@ class ServerFulfillmentService
         private CreateServerService $serverCreation,
         private OrderProcessorService $processorService,
         private CustomDomainProvisioningService $customDomainProvisioning,
+        private CreateOrderService $orderService,
     ) {
     }
 
@@ -51,7 +53,7 @@ class ServerFulfillmentService
      *
      * @param Request $request The HTTP request
      * @param Order $order The order to fulfill
-     * @param object|null $paymentMetadata Optional metadata from payment processor (Stripe, PayPal, Mollie)
+     * @param object|null $paymentMetadata Optional metadata from payment processor (Stripe, PayPal)
      *
      * @return Server The created or renewed server
      *
@@ -155,8 +157,8 @@ class ServerFulfillmentService
 
         $server = Server::findOrFail($order->server_id);
 
-        // Get billing days from the order, or fall back to server's billing_days, or default to 30
-        $billingDays = $order->billing_days ?? $server->billing_days ?? 30;
+        // Get billing days from the order, or fall back to server's billing_days, or default from settings
+        $billingDays = $order->billing_days ?? $server->billing_days ?? BillingDefaults::defaultBillingDays();
 
         // Use the unified processor service for renewal
         $result = $this->processorService->processRenewal($server, $product, $order->coupon_id, $billingDays);
@@ -202,7 +204,7 @@ class ServerFulfillmentService
     /**
      * Build metadata object for server creation.
      *
-     * Prefers payment metadata if available (Stripe), otherwise uses order data (PayPal, Mollie).
+     * Prefers payment metadata if available (Stripe), otherwise uses order data (PayPal).
      *
      * @param Order $order The order containing server creation data
      * @param object|null $paymentMetadata Optional metadata from payment processor
@@ -226,14 +228,14 @@ class ServerFulfillmentService
             return $metadata;
         }
 
-        // Otherwise, build from order data (PayPal, Mollie)
+        // Otherwise, build from order data (PayPal)
         return (object) [
             'product_id' => $order->product_id,
             'node_id' => $order->node_id,
             'egg_id' => $order->egg_id,
             'name' => $order->name,
             'variables' => $order->variables ?? [],
-            'billing_days' => $order->billing_days ?? 30,
+            'billing_days' => $order->billing_days ?? BillingDefaults::defaultBillingDays(),
         ];
     }
 
@@ -257,6 +259,103 @@ class ServerFulfillmentService
         );
 
         Log::info("Recorded coupon usage for order {$order->id}");
+    }
+
+    /**
+     * Fulfill a free order by creating a new server.
+     *
+     * This consolidates the free checkout path previously handled by
+     * OrderProcessorService::createServerOrder(). CheckoutController::processFree()
+     * calls this instead of going through OrderProcessorService.
+     *
+     * @return array{server: Server, order: Order}
+     */
+    public function fulfillFreeOrder(
+        Request $request,
+        \Everest\Models\User $user,
+        Product $product,
+        int $nodeId,
+        int $eggId,
+        ?int $couponId = null,
+        array $variables = [],
+        ?string $paymentIntentId = null,
+        ?string $serverName = null,
+        int $billingDays = 0,
+        array $domainPayload = []
+    ): array {
+        if ($billingDays <= 0) {
+            $billingDays = BillingDefaults::defaultBillingDays();
+        }
+
+        $order = $this->orderService->create(
+            $paymentIntentId,
+            $user,
+            $product,
+            Order::STATUS_PENDING,
+            Order::TYPE_NEW,
+            $couponId,
+            $eggId,
+            [
+                'billing_days'   => $billingDays,
+                'name'           => $serverName,
+                'domain_payload' => $domainPayload,
+            ]
+        );
+
+        $server = $this->serverCreation->processFree(
+            $request,
+            $product,
+            $nodeId,
+            $order,
+            $variables,
+            $serverName
+        );
+
+        $this->customDomainProvisioning->syncFromOrder($server, $order);
+        ProvisionServerCustomDomainsJob::dispatch($server->id);
+
+        if ($couponId) {
+            CouponUsage::firstOrCreate(
+                ['coupon_id' => $couponId, 'user_id' => $user->id, 'order_id' => $order->id],
+                ['used_at' => now()]
+            );
+        }
+
+        $order->update(['status' => Order::STATUS_PROCESSED]);
+
+        return ['server' => $server, 'order' => $order];
+    }
+
+    /**
+     * Dispatch a PaymentFailed email event.
+    {
+        try {
+            $user = $order->user;
+            if (!$user) {
+                Log::warning("Cannot dispatch PaymentFailed email for order {$order->id}: user not found");
+                return;
+            }
+
+            $currency = config('modules.billing.currency.code', 'USD');
+            $product = Product::find($order->product_id);
+            $amount = $order->amount ?? ($product ? $product->price : 0);
+            $isRenewal = $order->type === Order::TYPE_REN;
+
+            event(new \Everest\Events\Email\PaymentFailed(
+                user: $user,
+                amount: $amount,
+                currency: $currency,
+                reason: $reason,
+                invoiceId: (string) $order->id,
+                correlationId: \Illuminate\Support\Str::uuid()->toString(),
+                paymentMethod: ucfirst($processor),
+                isRenewal: $isRenewal,
+            ));
+
+            Log::info("Dispatched PaymentFailed email for order {$order->id}");
+        } catch (\Exception $e) {
+            Log::error("Failed to dispatch PaymentFailed email for order {$order->id}: " . $e->getMessage());
+        }
     }
 
     /**

@@ -366,7 +366,7 @@ These are compatible with Laravel 11 and require no version bumps:
 - `predis/predis` ~2.1 — compatible
 - `webmozart/assert` ~1.11 — compatible
 - `aws/aws-sdk-php` ~3.368 — compatible
-- `mollie/mollie-api-php` ^3.8 — compatible
+- *(mollie/mollie-api-php removed)*
 - `lcobucci/jwt` ~4.3 — compatible
 - `spatie/laravel-fractal` ~6.0 — compatible
 - `spatie/laravel-ignition` ^2.5 — compatible

@@ -42,6 +42,7 @@ use Everest\Exceptions\Http\Server\ServerStateConflictException;
  * @property string $image
  * @property int|null $billing_product_id
  * @property int|null $billing_days
+ * @property float|null $billing_amount
  * @property \Illuminate\Support\Carbon|null $renewal_date
  * @property int|null $allocation_limit
  * @property int|null $database_limit
@@ -175,6 +176,7 @@ class Server extends Model
         'image' => 'required|string|max:191',
         'billing_product_id' => 'nullable|int|exists:products,id',
         'billing_days' => 'nullable|int|min:1',
+        'billing_amount' => 'nullable|numeric|min:0',
         'renewal_date' => 'nullable|date',
         'deletion_scheduled_at' => 'nullable|date',
         'deletion_scheduled_by' => 'nullable|integer|exists:users,id',
@@ -238,6 +240,7 @@ class Server extends Model
         'egg_id' => 'integer',
         'billing_product_id' => 'integer',
         'billing_days' => 'integer',
+        'billing_amount' => 'float',
         'renewal_date' => 'datetime',
         'deletion_scheduled_at' => 'datetime',
         'deletion_scheduled_by' => 'integer',

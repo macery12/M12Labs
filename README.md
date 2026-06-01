@@ -12,12 +12,12 @@
 
 M12Labs Panel is a modern, high-performance game server management and billing platform, built on top of Jexpanel and the Pterodactyl Panel ecosystem.
 
-It extends the original Jexpanel foundation with more features, deeper customization, and an expanded billing system with native Stripe, mollie and PayPal support—designed for long-term scalability
+It extends the original Jexpanel foundation with more features, deeper customization, and an expanded billing system with native Stripe and PayPal support—designed for long-term scalability
 
 ## Features
 
 - Advanced authentication and security setups  
-- Integrated billing system (Stripe + PayPal + mollie)  
+- Integrated billing system (Stripe + PayPal)  
 - Clean, user-friendly administrative interface  
 - Built with modern tech: PHP, Laravel, TypeScript, React  
 - Fully open-source, community-driven

@@ -11,7 +11,7 @@ import ImportConfigButton from './config/ImportConfigButton';
 import { updateSettings } from '@/api/routes/admin/billing';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
 
-export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'mollie' | 'payment' | 'none';
+export type BillingSetupDialog = 'paypal' | 'link' | 'setup' | 'payment' | 'none';
 
 export default () => {
     const settings = useStoreState(s => s.everest.data!.billing);
@@ -27,9 +27,11 @@ export default () => {
         const code: string = event.target.value.toUpperCase();
         const symbol: string = currencyDictionary[code]!.symbol;
 
-        submit('currency:code', code).then(() => {
-            submit('currency:symbol', symbol);
-        });
+        // Save both fields to DB, then update the nested currency object in local
+        // state so the new symbol shows immediately without a page reload.
+        await updateSettings('currency:code', code);
+        await updateSettings('currency:symbol', symbol);
+        updateEverest({ billing: { ...settings, currency: { code: code.toLowerCase(), symbol } } });
     };
 
     return (
@@ -55,7 +57,7 @@ export default () => {
             <AdminBox title={'Import/Export Configuration'} icon={faExchange}>
                 <FlashMessageRender byKey={'billing:config'} className={'mb-2'} />
                 Use the below options to either export your current billing configurations, or use the Import button to
-                import a pre-created set of categories and products to Jexactyl.
+                import a pre-created set of categories and products to M12Labs.
                 <div className={'mt-3 text-right'}>
                     <ExportConfigButton />
                     <ImportConfigButton />

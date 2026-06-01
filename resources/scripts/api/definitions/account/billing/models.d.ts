@@ -1,6 +1,17 @@
 import { Model } from '@definitions';
 import { OrderType } from '@/api/routes/account/billing/orders/types';
 
+interface PaymentTransaction {
+    external_id: string;
+    capture_id?: string | null;
+    status: string;
+    amount: number;
+    currency: string;
+    payer_id?: string | null;
+    payer_email?: string | null;
+    captured_at?: Date | null;
+}
+
 interface Order extends Model {
     id: number;
     name: string;
@@ -8,12 +19,18 @@ interface Order extends Model {
     description: string;
     total: number;
     product_id: number;
+    product_name?: string | null;
     egg_id?: number;
     status: OrderStatus;
     type: OrderType;
-    payment_processor: 'stripe' | 'mollie' | 'paypal';
+    payment_processor: 'stripe' | 'paypal' | 'free';
+    transaction: PaymentTransaction | null;
+    subtotal?: number | null;
+    discount?: number | null;
+    billing_days?: number | null;
+    coupon_id?: number | null;
+    // Legacy fields kept for backward compat (old orders without transaction records)
     payment_intent_id?: string;
-    mollie_payment_id?: string;
     paypal_order_id?: string;
     paypal_capture_id?: string;
     paypal_payer_id?: string;

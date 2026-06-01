@@ -171,8 +171,8 @@ export default () => {
                                             placement={'right-end'}
                                             content={
                                                 info?.system.supercharged
-                                                    ? 'This node is running Jexactyl SuperDaemon, which adds more features.'
-                                                    : 'This node is running Pterodactyl Wings. Consider moving to Jexactyl SuperDaemon for more features.'
+                                                    ? 'This node is running M12Labs SuperDaemon, which adds more features.'
+                                                    : 'This node is running Pterodactyl Wings. Consider moving to M12Labs SuperDaemon for more features.'
                                             }
                                         >
                                             <FontAwesomeIcon

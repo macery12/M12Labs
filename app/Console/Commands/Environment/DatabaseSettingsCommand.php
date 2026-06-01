@@ -50,13 +50,13 @@ class DatabaseSettingsCommand extends Command
 
         $this->variables['DB_DATABASE'] = $this->option('database') ?? $this->ask(
             'Database Name',
-            config('database.connections.mysql.database', 'jexactyldb')
+            config('database.connections.mysql.database', 'm12labsdb')
         );
 
         $this->output->note('Using the "root" account for MySQL connections is not only highly frowned upon, it is also not allowed by this application. You\'ll need to have created a MySQL user for this software.');
         $this->variables['DB_USERNAME'] = $this->option('username') ?? $this->ask(
             'Database Username',
-            config('database.connections.mysql.username', 'jexactyluser')
+            config('database.connections.mysql.username', 'm12labsuser')
         );
 
         $askForMySQLPassword = true;
