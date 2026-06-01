@@ -7,14 +7,14 @@ use Illuminate\Http\Response;
 use Everest\Models\Permission;
 use Everest\Repositories\Wings\DaemonServerRepository;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class SettingsControllerTest extends ClientApiIntegrationTestCase
 {
     /**
      * Test that the server's name can be changed.
-     *
-     * @dataProvider renamePermissionsDataProvider
-     */
+     **/
+    #[DataProvider('renamePermissionsDataProvider')]
     public function testServerNameCanBeChanged(array $permissions)
     {
         /** @var \Everest\Models\Server $server */
@@ -68,9 +68,8 @@ class SettingsControllerTest extends ClientApiIntegrationTestCase
     /**
      * Test that a server can be reinstalled. Honestly this test doesn't do much of anything other
      * than make sure the endpoint works since.
-     *
-     * @dataProvider reinstallPermissionsDataProvider
-     */
+     **/
+    #[DataProvider('reinstallPermissionsDataProvider')]
     public function testServerCanBeReinstalled(array $permissions)
     {
         /** @var \Everest\Models\Server $server */

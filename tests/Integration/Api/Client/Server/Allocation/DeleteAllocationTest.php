@@ -6,15 +6,15 @@ use Illuminate\Http\Response;
 use Everest\Models\Allocation;
 use Everest\Models\Permission;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class DeleteAllocationTest extends ClientApiIntegrationTestCase
 {
     /**
      * Test that an allocation is deleted from the server and the notes are properly reset
      * to an empty value on assignment.
-     *
-     * @dataProvider permissionDataProvider
-     */
+     **/
+    #[DataProvider('permissionDataProvider')]
     public function testAllocationCanBeDeletedFromServer(array $permission)
     {
         /** @var \Everest\Models\Server $server */

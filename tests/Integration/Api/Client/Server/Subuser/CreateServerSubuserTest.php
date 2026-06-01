@@ -7,6 +7,7 @@ use Everest\Models\Subuser;
 use Illuminate\Support\Str;
 use Illuminate\Http\Response;
 use Everest\Models\Permission;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Illuminate\Foundation\Testing\WithFaker;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
 
@@ -16,9 +17,8 @@ class CreateServerSubuserTest extends ClientApiIntegrationTestCase
 
     /**
      * Test that a subuser can be created for a server.
-     *
-     * @dataProvider permissionsDataProvider
      */
+    #[DataProvider('permissionsDataProvider')]
     public function testSubuserCanBeCreated(array $permissions)
     {
         [$user, $server] = $this->generateTestAccount($permissions);

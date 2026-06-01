@@ -6,7 +6,7 @@ use Everest\Models\Node;
 use Everest\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
-use Lcobucci\JWT\Token\Plain;
+use Lcobucci\JWT\UnencryptedToken;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -18,7 +18,7 @@ class NodeJWTService
 
     private ?User $user = null;
 
-    private ?\DateTimeImmutable $expiresAt;
+    private ?\DateTimeImmutable $expiresAt = null;
 
     private ?string $subject = null;
 
@@ -60,7 +60,7 @@ class NodeJWTService
     /**
      * Generate a new JWT for a given node.
      */
-    public function handle(Node $node, ?string $identifiedBy, string $algo = 'md5'): Plain
+    public function handle(Node $node, ?string $identifiedBy, string $algo = 'md5'): UnencryptedToken
     {
         $identifier = hash($algo, $identifiedBy);
         $config = Configuration::forSymmetricSigner(new Sha256(), InMemory::plainText($node->getDecryptedKey()));

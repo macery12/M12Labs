@@ -175,12 +175,15 @@ class EmailTypeRegistry
             ];
         } elseif ($event instanceof NewLoginDetected) {
             /** @var NewLoginDetected $event */
+            $timezone = new \DateTimeZone((string) config('app.timezone'));
+            $loginAt = \DateTimeImmutable::createFromInterface($event->loginAt)->setTimezone($timezone);
+
             $data = [
                 'userName' => $event->user->name ?? $event->user->username,
                 'ipAddress' => $event->ipAddress,
                 'userAgent' => $event->userAgent,
                 'location' => $event->location ?? 'Unknown', // Could integrate with IP geolocation service
-                'loginTime' => $event->loginAt->setTimezone(config('app.timezone'))->format('F j, Y g:i A T'),
+                'loginTime' => $loginAt->format('F j, Y g:i A T'),
             ];
         } elseif ($event instanceof TwoFactorEnabled) {
             /** @var TwoFactorEnabled $event */

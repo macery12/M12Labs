@@ -15,6 +15,7 @@ use GuzzleHttp\Exception\BadResponseException;
 use Everest\Tests\Integration\IntegrationTestCase;
 use Everest\Repositories\Wings\DaemonPowerRepository;
 use Everest\Exceptions\Http\Connection\DaemonConnectionException;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class RunTaskJobTest extends IntegrationTestCase
 {
@@ -47,7 +48,7 @@ class RunTaskJobTest extends IntegrationTestCase
         $this->assertFalse($schedule->is_active);
         $this->assertTrue(CarbonImmutable::now()->isSameAs(\DateTimeInterface::ATOM, $schedule->last_run_at));
     }
-
+    #[DataProvider('isManualRunDataProvider')]
     public function testJobWithInvalidActionThrowsException()
     {
         $server = $this->createServerModel();
@@ -64,9 +65,7 @@ class RunTaskJobTest extends IntegrationTestCase
         Bus::dispatchSync($job);
     }
 
-    /**
-     * @dataProvider isManualRunDataProvider
-     */
+    /***/
     public function testJobIsExecuted(bool $isManualRun)
     {
         $server = $this->createServerModel();
@@ -105,9 +104,8 @@ class RunTaskJobTest extends IntegrationTestCase
         $this->assertTrue(CarbonImmutable::now()->isSameAs(\DateTimeInterface::ATOM, $schedule->last_run_at));
     }
 
-    /**
-     * @dataProvider isManualRunDataProvider
-     */
+    /***/
+    #[DataProvider('isManualRunDataProvider')]
     public function testExceptionDuringRunIsHandledCorrectly(bool $continueOnFailure)
     {
         $server = $this->createServerModel();

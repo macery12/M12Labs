@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
 
 class ModrinthService
@@ -150,7 +151,7 @@ class ModrinthService
 
             return $data;
         } catch (GuzzleException $e) {
-            if ($e->hasResponse()) {
+            if ($e instanceof RequestException && $e->hasResponse()) {
                 $statusCode = $e->getResponse()->getStatusCode();
 
                 if ($statusCode === 429) {
@@ -263,10 +264,8 @@ class ModrinthService
             $facets[] = array_map(static fn ($p) => 'categories:' . $p, $platformFacets);
         }
 
-        // Add facets as JSON array if any exist
-        if (!empty($facets)) {
-            $searchParams['facets'] = json_encode($facets);
-        }
+        // $facets is always initialized with at least the project_type filter.
+        $searchParams['facets'] = json_encode($facets);
 
         // Map sort fields from CurseForge to Modrinth
         if (!empty($params['sortField'])) {

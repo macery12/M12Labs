@@ -6,15 +6,15 @@ use Everest\Models\User;
 use Illuminate\Http\Response;
 use Everest\Models\Permission;
 use Everest\Models\EggVariable;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
 
 class UpdateStartupVariableTest extends ClientApiIntegrationTestCase
 {
     /**
      * Test that a startup variable can be edited successfully for a server.
-     *
-     * @dataProvider permissionsDataProvider
      */
+    #[DataProvider('permissionsDataProvider')]
     public function testStartupVariableCanBeUpdated(array $permissions)
     {
         /** @var \Everest\Models\Server $server */
@@ -47,9 +47,8 @@ class UpdateStartupVariableTest extends ClientApiIntegrationTestCase
     /**
      * Test that variables that are either not user_viewable, or not user_editable, cannot be
      * updated via this endpoint.
-     *
-     * @dataProvider permissionsDataProvider
      */
+    #[DataProvider('permissionsDataProvider')]
     public function testStartupVariableCannotBeUpdatedIfNotUserViewableOrEditable(array $permissions)
     {
         /** @var \Everest\Models\Server $server */

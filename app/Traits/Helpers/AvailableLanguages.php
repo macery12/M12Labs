@@ -4,6 +4,7 @@ namespace Everest\Traits\Helpers;
 
 use Matriphe\ISO639\ISO639;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Str;
 
 trait AvailableLanguages
 {
@@ -21,7 +22,7 @@ trait AvailableLanguages
             $code = basename($path);
             $value = $localize ? $this->getIsoInstance()->nativeByCode1($code) : $this->getIsoInstance()->languageByCode1($code);
 
-            return [$code => title_case($value)];
+            return [$code => Str::title($value)];
         })->toArray();
     }
 

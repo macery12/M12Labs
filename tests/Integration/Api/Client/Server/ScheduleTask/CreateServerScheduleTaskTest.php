@@ -7,14 +7,14 @@ use Everest\Models\Schedule;
 use Illuminate\Http\Response;
 use Everest\Models\Permission;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class CreateServerScheduleTaskTest extends ClientApiIntegrationTestCase
 {
     /**
      * Test that a task can be created.
-     *
-     * @dataProvider permissionsDataProvider
-     */
+     **/
+    #[DataProvider('permissionsDataProvider')]
     public function testTaskCanBeCreated(array $permissions)
     {
         [$user, $server] = $this->generateTestAccount($permissions);

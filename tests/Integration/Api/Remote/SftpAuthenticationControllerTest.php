@@ -9,6 +9,7 @@ use Everest\Models\Permission;
 use Everest\Models\UserSSHKey;
 use phpseclib3\Crypt\EC\PrivateKey;
 use Everest\Tests\Integration\IntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class SftpAuthenticationControllerTest extends IntegrationTestCase
 {
@@ -94,9 +95,8 @@ class SftpAuthenticationControllerTest extends IntegrationTestCase
     /**
      * Test that providing an invalid key and/or invalid username triggers the throttle on
      * the endpoint.
-     *
-     * @dataProvider authorizationTypeDataProvider
-     */
+     **/
+    #[DataProvider('authorizationTypeDataProvider')]
     public function testUserIsThrottledIfInvalidCredentialsAreProvided()
     {
         for ($i = 0; $i <= 10; ++$i) {
@@ -128,9 +128,8 @@ class SftpAuthenticationControllerTest extends IntegrationTestCase
     /**
      * Test that a request is rejected if the credentials are valid but the username indicates
      * a server on a different node.
-     *
-     * @dataProvider authorizationTypeDataProvider
-     */
+     **/
+    #[DataProvider('authorizationTypeDataProvider')]
     public function testRequestIsRejectedIfServerBelongsToDifferentNode(string $type)
     {
         $node2 = $this->createServerModel()->node;
@@ -165,9 +164,8 @@ class SftpAuthenticationControllerTest extends IntegrationTestCase
             ->assertJsonPath('errors.0.detail', 'You do not have permission to access SFTP for this server.');
     }
 
-    /**
-     * @dataProvider serverStateDataProvider
-     */
+    /***/
+    #[DataProvider('serverStateDataProvider')]
     public function testInvalidServerStateReturnsConflictError(string $status)
     {
         $this->server->update(['status' => $status]);
