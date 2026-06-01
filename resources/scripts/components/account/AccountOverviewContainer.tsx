@@ -14,6 +14,10 @@ import EmailVerificationNotice from '@account/EmailVerificationNotice';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import Pill from '@/elements/Pill';
 import { useStoreState } from '@/state/hooks';
+import { useEffect, useState } from 'react';
+import { getBillingProfile, type BillingProfile } from '@/api/routes/account/billing/billingProfile';
+import BillingAddressModal from '@account/billing/BillingAddressModal';
+import { Button } from '@/elements/button';
 
 const Container = styled.div`
     ${tw`flex flex-wrap`};
@@ -44,6 +48,22 @@ export default () => {
         );
     });
     const discordEnabled = useStoreState(s => Boolean(s.everest.data?.auth?.modules?.discord?.enabled));
+
+    const [billingProfile, setBillingProfile] = useState<BillingProfile | null>(null);
+    const [billingLoaded, setBillingLoaded] = useState(false);
+    const [billingModalOpen, setBillingModalOpen] = useState(false);
+
+    useEffect(() => {
+        getBillingProfile()
+            .then(profile => setBillingProfile(profile))
+            .catch(() => setBillingProfile(null))
+            .finally(() => setBillingLoaded(true));
+    }, []);
+
+    const handleBillingSaved = (profile: BillingProfile) => {
+        setBillingProfile(profile);
+        setBillingModalOpen(false);
+    };
 
     return (
         <PageContentBlock title="Account Overview" header description={'Update your email, password, or setup 2-FA.'}>
@@ -79,6 +99,39 @@ export default () => {
                 </ContentBox>
             </Container>
 
+            {/* Billing Information */}
+            {billingLoaded && (
+                <div css={tw`mb-10`}>
+                    <ContentBox title="Billing Information">
+                        {billingProfile ? (
+                            <div className={'space-y-1 text-sm text-neutral-300'}>
+                                <p className={'font-medium text-neutral-100'}>
+                                    {billingProfile.first_name} {billingProfile.last_name}
+                                </p>
+                                <p>{billingProfile.address_line1}</p>
+                                {billingProfile.address_line2 && <p>{billingProfile.address_line2}</p>}
+                                <p>
+                                    {billingProfile.city}
+                                    {billingProfile.state ? `, ${billingProfile.state}` : ''}{' '}
+                                    {billingProfile.postal_code}
+                                </p>
+                                <p>{billingProfile.country}</p>
+                                {billingProfile.phone && <p className={'mt-1 text-neutral-400'}>{billingProfile.phone}</p>}
+                            </div>
+                        ) : (
+                            <p className={'text-sm text-neutral-400'}>
+                                No billing information set. Add your address to have it included on invoices.
+                            </p>
+                        )}
+                        <div className={'mt-4'}>
+                            <Button size={Button.Sizes.Small} onClick={() => setBillingModalOpen(true)}>
+                                {billingProfile ? 'Edit Billing Info' : 'Add Billing Info'}
+                            </Button>
+                        </div>
+                    </ContentBox>
+                </div>
+            )}
+
             {discordEnabled && (
                 <div css={tw`mb-10`}>
                     <FlashMessageRender byKey={'account:discord'} css={tw`mb-4`} />
@@ -89,6 +142,15 @@ export default () => {
                     </div>
                 </div>
             )}
+
+            <BillingAddressModal
+                open={billingModalOpen}
+                onClose={() => setBillingModalOpen(false)}
+                existing={billingProfile}
+                onSaved={handleBillingSaved}
+            />
         </PageContentBlock>
     );
 };
+
+

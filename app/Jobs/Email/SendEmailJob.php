@@ -36,13 +36,16 @@ class SendEmailJob extends Job implements ShouldQueue
     /**
      * Create a new job instance.
      * Note: correlationId should ALWAYS be provided by EmailNotificationListener.
+     *
+     * @param array|null $invoiceAttachment Optional: ['file_path' => ..., 'file_disk' => ..., 'filename' => ...]
      */
     public function __construct(
         public string $templateKey,
         public string $recipient,
         public array $data,
         public ?int $userId = null,
-        public ?string $correlationId = null
+        public ?string $correlationId = null,
+        public ?array $invoiceAttachment = null
     ) {
         // Ensure we have correlation_id (fallback only for direct job dispatch)
         $this->correlationId = $correlationId ?? \Illuminate\Support\Str::uuid()->toString();
@@ -206,6 +209,27 @@ class SendEmailJob extends Job implements ShouldQueue
             }
         }
 
+        // Resolve invoice attachment bytes if present
+        $attachments = null;
+        if (!empty($this->invoiceAttachment)) {
+            try {
+                $content = \Illuminate\Support\Facades\Storage::disk($this->invoiceAttachment['file_disk'])
+                    ->get($this->invoiceAttachment['file_path']);
+                if ($content) {
+                    $attachments = [[
+                        'filename' => $this->invoiceAttachment['filename'],
+                        'content' => $content,
+                        'content_type' => 'application/pdf',
+                    ]];
+                }
+            } catch (\Throwable $e) {
+                Log::warning('SendEmailJob: Could not read invoice attachment, sending email without it', [
+                    'error' => $e->getMessage(),
+                    'correlation_id' => $this->correlationId,
+                ]);
+            }
+        }
+
         // Send the email - EmailManager will use tracker to log attempts
         $result = $emailManager->sendFromTemplate(
             templateKey: $this->templateKey,
@@ -214,7 +238,8 @@ class SendEmailJob extends Job implements ShouldQueue
             correlationId: $this->correlationId,
             userId: $this->userId,
             delivery: $delivery,
-            attemptNumber: $this->attempts()
+            attemptNumber: $this->attempts(),
+            attachments: $attachments
         );
 
         if (!$result->success && $provider === 'resend' && $result->statusCode === 429) {

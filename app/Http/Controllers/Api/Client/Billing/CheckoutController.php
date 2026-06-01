@@ -20,6 +20,7 @@ use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\BillingDefaults;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Services\Billing\StripeCustomerService;
+use Everest\Services\Billing\InvoiceSettingsService;
 use Everest\Models\Setting;
 use Everest\Transformers\Api\Client\ServerTransformer;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
@@ -43,6 +44,7 @@ class CheckoutController extends ClientApiController
         private CreateServerService $serverCreation,
         private ServerFulfillmentService $fulfillmentService,
         private StripeCustomerService $stripeCustomerService,
+        private InvoiceSettingsService $invoiceSettingsService,
     ) {
         parent::__construct();
 
@@ -69,6 +71,9 @@ class CheckoutController extends ClientApiController
 
         // Validate billing is enabled
         $this->validationService->validateBillingEnabled();
+
+        // Gate: require billing address when admin has enabled this setting
+        $this->assertBillingAddressPresent($user);
 
         // Get and validate server name
         $serverName = trim((string) $request->input('name', ''));
@@ -447,6 +452,9 @@ class CheckoutController extends ClientApiController
             // Validate billing is enabled
             $this->validationService->validateBillingEnabled();
 
+            // Gate: require billing address when admin has enabled this setting
+            $this->assertBillingAddressPresent($request->user());
+
             if (!$intent) {
                 throw new BillingExceptionClass('Unable to fetch PaymentIntent', 'Unable to fetch payment intent from Stripe. Please try again or contact support.', BillingException::TYPE_PAYMENT, $order->id, 'stripe', $intentId, ['intent_id' => $intentId]);
             }
@@ -527,6 +535,21 @@ class CheckoutController extends ClientApiController
 
             $order = Order::where('user_id', $request->user()->id)->latest()->first();
             throw new BillingExceptionClass('Order processing error', 'An unexpected error occurred while processing your order: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, $order?->id, 'stripe', $request->input('intent'), ['error' => $e->getMessage()], $e);
+        }
+    }
+
+    /**
+     * Throw a 422 if the admin requires a billing address and the user hasn't set one.
+     */
+    private function assertBillingAddressPresent(\Everest\Models\User $user): void
+    {
+        $settings = $this->invoiceSettingsService->get();
+
+        if ($settings->require_billing_address && !$user->billingProfile()->exists()) {
+            abort(response()->json([
+                'error'      => 'A billing address is required to complete checkout.',
+                'error_code' => 'billing_address_required',
+            ], 422));
         }
     }
 

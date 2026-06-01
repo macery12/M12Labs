@@ -27,5 +27,11 @@
         'url' => url('/billing'),
         'text' => 'View Billing History'
     ])
+    @if(!empty($invoiceDownloadUrl))
+        @include('emails.partials.button', [
+            'url' => $invoiceDownloadUrl,
+            'text' => 'Download Invoice PDF'
+        ])
+    @endif
     <p style="margin:0 0 16px; color:#111827; font-size:15px; line-height:1.6;">If you have any questions about this payment, please contact our support team.</p>
 @endsection

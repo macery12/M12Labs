@@ -37,4 +37,19 @@ return [
         'webhook_secret'    => env('STRIPE_WEBHOOK_SECRET'),
         'webhook_tolerance' => (int) env('STRIPE_WEBHOOK_TOLERANCE', 300),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nominatim (OpenStreetMap) Address Autocomplete
+    |--------------------------------------------------------------------------
+    |
+    | Base URL for the Nominatim geocoding API. Defaults to the public instance.
+    | Set NOMINATIM_BASE_URL to point at a self-hosted instance to avoid the
+    | public server's rate limits and to keep user queries fully internal.
+    |
+    */
+
+    'nominatim' => [
+        'base_url' => env('NOMINATIM_BASE_URL', 'https://nominatim.openstreetmap.org'),
+    ],
 ];
