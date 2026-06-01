@@ -6,7 +6,7 @@ use Everest\Tests\TestCase;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\BillingCycleService;
 use Everest\Services\Billing\NodeAvailabilityService;
-use Everest\Repositories\Wings\DaemonServerRepository;
+use Everest\Repositories\Wings\DaemonConfigurationRepository;
 use Everest\Services\Billing\BillingValidationService;
 
 class BillingValidationServiceTest extends TestCase
@@ -17,9 +17,12 @@ class BillingValidationServiceTest extends TestCase
     {
         parent::setUp();
 
+        $nodeAvailabilityService = new NodeAvailabilityService(
+            \Mockery::mock(DaemonConfigurationRepository::class)
+        );
+
         $this->service = new BillingValidationService(
-            \Mockery::mock(DaemonServerRepository::class),
-            \Mockery::mock(NodeAvailabilityService::class),
+            $nodeAvailabilityService,
             \Mockery::mock(BillingCycleService::class),
         );
     }

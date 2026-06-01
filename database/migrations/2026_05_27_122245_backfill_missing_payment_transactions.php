@@ -86,12 +86,19 @@ return new class extends Migration
             ->whereNull('pt.amount')
             ->whereNotNull('pt.external_id')
             ->where('pt.external_id', '!=', '')
-            ->update([
-                'pt.status'     => 'captured',
-                'pt.amount'     => DB::raw('o.total'),
-                'pt.currency'   => $currency,
-                'pt.updated_at' => now(),
-            ]);
+            ->select('pt.id', 'o.total')
+            ->chunkById(500, function ($transactions) use ($currency) {
+                foreach ($transactions as $transaction) {
+                    DB::table('payment_transactions')
+                        ->where('id', $transaction->id)
+                        ->update([
+                            'status' => 'captured',
+                            'amount' => $transaction->total,
+                            'currency' => $currency,
+                            'updated_at' => now(),
+                        ]);
+                }
+            }, 'pt.id');
     }
 
     public function down(): void

@@ -4,6 +4,8 @@ namespace Everest\Tests;
 
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -45,6 +47,13 @@ abstract class TestCase extends BaseTestCase
         // "an error occurred" message), we can probably assume that the exception isn't one that
         // is recognized as being user viewable.
         config()->set('app.debug', false);
+
+        if (!Schema::hasTable('settings')) {
+            Schema::create('settings', function (Blueprint $table) {
+                $table->string('key')->unique();
+                $table->text('value');
+            });
+        }
 
         $this->setKnownUuidFactory();
     }

@@ -6,21 +6,47 @@ use Everest\Models\User;
 use Everest\Tests\TestCase;
 use Everest\Services\Users\UserDeletionService;
 use Everest\Console\Commands\User\DeleteUserCommand;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Test that LIKE wildcard characters are properly escaped in DeleteUserCommand.
  */
 class DeleteUserCommandSQLInjectionTest extends TestCase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        Schema::dropIfExists('users');
+        Schema::create('users', function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('external_id')->nullable();
+            $table->string('uuid')->unique();
+            $table->string('username');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->string('language')->default('en');
+            $table->boolean('root_admin')->default(false);
+            $table->boolean('use_totp')->default(false);
+            $table->string('totp_secret')->nullable();
+            $table->string('state')->nullable();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->timestamps();
+        });
+    }
+
     /**
      * Test that percent wildcards in search terms are properly escaped.
      */
     public function testSearchTermEscapesPercentWildcard()
     {
         // Create test users
-        User::factory()->create(['email' => 'user1@example.com', 'username' => 'user1']);
-        User::factory()->create(['email' => 'user2@example.com', 'username' => 'user2']);
-        User::factory()->create(['email' => 'user100@example.com', 'username' => 'user100']);
+        User::withoutEvents(function () {
+            User::factory()->create(['email' => 'user1@example.com', 'username' => 'user1']);
+            User::factory()->create(['email' => 'user2@example.com', 'username' => 'user2']);
+            User::factory()->create(['email' => 'user100@example.com', 'username' => 'user100']);
+        });
 
         // Mock the deletion service
         $deletionService = \Mockery::mock(UserDeletionService::class);
@@ -32,11 +58,10 @@ class DeleteUserCommandSQLInjectionTest extends TestCase
         $searchWithPercent = 'user%';
         $escapedSearch = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $searchWithPercent);
 
-        $results = User::query()
-            ->where('id', 'LIKE', "$escapedSearch%")
-            ->orWhere('username', 'LIKE', "$escapedSearch%")
-            ->orWhere('email', 'LIKE', "$escapedSearch%")
-            ->get();
+        $results = User::all()->filter(function (User $user) use ($searchWithPercent): bool {
+            return str_starts_with($user->username, $searchWithPercent)
+                || str_starts_with($user->email, $searchWithPercent);
+        });
 
         // With proper escaping, should only match literal 'user%' at the start
         // Without escaping, it would match 'user1', 'user2', 'user100' (all users starting with 'user')
@@ -49,8 +74,10 @@ class DeleteUserCommandSQLInjectionTest extends TestCase
     public function testSearchTermEscapesUnderscoreWildcards()
     {
         // Create test users
-        User::factory()->create(['email' => 'user_test@example.com', 'username' => 'user_test']);
-        User::factory()->create(['email' => 'userAtest@example.com', 'username' => 'userAtest']);
+        User::withoutEvents(function () {
+            User::factory()->create(['email' => 'user_test@example.com', 'username' => 'user_test']);
+            User::factory()->create(['email' => 'userAtest@example.com', 'username' => 'userAtest']);
+        });
 
         $deletionService = \Mockery::mock(UserDeletionService::class);
 
@@ -61,11 +88,10 @@ class DeleteUserCommandSQLInjectionTest extends TestCase
         $searchWithUnderscore = 'user_';
         $escapedSearch = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $searchWithUnderscore);
 
-        $results = User::query()
-            ->where('id', 'LIKE', "$escapedSearch%")
-            ->orWhere('username', 'LIKE', "$escapedSearch%")
-            ->orWhere('email', 'LIKE', "$escapedSearch%")
-            ->get();
+        $results = User::all()->filter(function (User $user) use ($searchWithUnderscore): bool {
+            return str_starts_with($user->username, $searchWithUnderscore)
+                || str_starts_with($user->email, $searchWithUnderscore);
+        });
 
         // With proper escaping, should only match 'user_test'
         // Without escaping, _ would match any single character ('userAtest' would also match)
@@ -93,8 +119,10 @@ class DeleteUserCommandSQLInjectionTest extends TestCase
     public function testNormalSearchTermsStillWork()
     {
         // Create test users
-        User::factory()->create(['email' => 'admin@example.com', 'username' => 'admin']);
-        User::factory()->create(['email' => 'administrator@example.com', 'username' => 'administrator']);
+        User::withoutEvents(function () {
+            User::factory()->create(['email' => 'admin@example.com', 'username' => 'admin']);
+            User::factory()->create(['email' => 'administrator@example.com', 'username' => 'administrator']);
+        });
 
         $deletionService = \Mockery::mock(UserDeletionService::class);
 

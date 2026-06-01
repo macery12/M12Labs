@@ -160,6 +160,11 @@ class Node extends Model
         'wings_type' => self::WINGS_TYPE_DEFAULT,
     ];
 
+    public function getPriceMultiplierAttribute($value): float
+    {
+        return (float) ($value ?? 1.0);
+    }
+
     /**
      * Determine if this node is running Wings-RS (Supercharged).
      */

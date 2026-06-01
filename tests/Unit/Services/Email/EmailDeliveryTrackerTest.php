@@ -257,8 +257,15 @@ class EmailDeliveryTrackerTest extends TestCase
 
     private function setUpEmailTables(): void
     {
+        Schema::dropIfExists('users');
         Schema::dropIfExists('email_delivery_attempts');
         Schema::dropIfExists('email_deliveries');
+
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('email');
+            $table->string('username');
+        });
 
         Schema::create('email_deliveries', function (Blueprint $table) {
             $table->id();
@@ -299,5 +306,11 @@ class EmailDeliveryTrackerTest extends TestCase
             $table->unsignedInteger('duration_ms')->nullable();
             $table->timestamp('created_at')->nullable();
         });
+
+        \Illuminate\Support\Facades\DB::table('users')->insert([
+            'id' => 1,
+            'email' => 'test@example.com',
+            'username' => 'testuser',
+        ]);
     }
 }

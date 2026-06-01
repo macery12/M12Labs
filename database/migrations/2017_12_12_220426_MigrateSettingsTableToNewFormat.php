@@ -12,6 +12,10 @@ class MigrateSettingsTableToNewFormat extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::table('settings')->truncate();
         Schema::table('settings', function (Blueprint $table) {
             $table->increments('id')->first();
@@ -23,6 +27,10 @@ class MigrateSettingsTableToNewFormat extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         Schema::table('settings', function (Blueprint $table) {
             $table->dropColumn('id');
         });

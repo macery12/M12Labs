@@ -9,6 +9,7 @@ use Everest\Services\Email\EmailDeliveryTracker;
 use Everest\Services\Email\EmailManager;
 use Everest\Services\Email\EmailPolicyService;
 use Everest\Services\Email\EmailSettingsReader;
+use Everest\Services\Email\ResendQuotaReservation;
 use Everest\Services\Email\ResendPlanResolver;
 use Everest\Services\Email\ResendQuotaService;
 use Everest\Tests\TestCase;
@@ -78,7 +79,15 @@ class SendEmailJobResendQuotaTest extends TestCase
         app()->instance(EmailPolicyService::class, $policy);
 
         $tracker = app(EmailDeliveryTracker::class);
-        $quotaService = app(ResendQuotaService::class);
+        $quotaService = Mockery::mock(ResendQuotaService::class);
+        $quotaService->shouldReceive('reserve')
+            ->once()
+            ->andReturn(new ResendQuotaReservation(
+                allowed: false,
+                reason: 'monthly_quota_exceeded',
+                scheduledAt: now()->addMinutes(15),
+            ));
+        app()->instance(ResendQuotaService::class, $quotaService);
 
         $job = new SendEmailJob(
             templateKey: 'auth.password_reset',
@@ -92,7 +101,7 @@ class SendEmailJobResendQuotaTest extends TestCase
 
         $this->assertDatabaseHas('deferred_emails', [
             'recipient' => 'quota@example.com',
-            'reason' => 'resend_monthly_quota_reached',
+            'reason' => 'monthly_quota_exceeded',
         ]);
 
         $this->assertSame(1, DeferredEmail::count());

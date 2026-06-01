@@ -64,17 +64,36 @@ class ResendQuotaServiceTest extends TestCase
 
     public function testReserveBlocksWhenMonthlyLimitExceeded(): void
     {
+        $resolver = Mockery::mock(ResendPlanResolver::class);
+        $resolver->shouldReceive('activePlan')->andReturn([
+            'key' => 'free',
+            'name' => 'Free',
+            'daily_limit' => 100000,
+            'monthly_limit' => 3000,
+            'enforce_daily' => true,
+            'enforce_monthly' => true,
+            'allows_custom_limits' => false,
+            'custom_daily_limit' => null,
+            'custom_monthly_limit' => null,
+        ]);
+        app()->instance(ResendPlanResolver::class, $resolver);
+
         $quota = ResendQuota::singleton();
         $quota->monthly_sent = 3000;
         $quota->daily_sent = 50;
+        $quota->day_reset_at = now()->startOfDay();
+        $quota->month_reset_at = now()->startOfMonth();
         $quota->save();
 
-        $service = app(ResendQuotaService::class);
+        $reservation = ResendQuota::singleton()->reserve([
+            'daily_limit' => 100000,
+            'monthly_limit' => 3000,
+            'enforce_daily' => true,
+            'enforce_monthly' => true,
+        ], 3001);
 
-        $reservation = $service->reserve();
-
-        $this->assertFalse($reservation->allowed);
-        $this->assertSame('resend_monthly_quota_reached', $reservation->reason);
-        $this->assertNotNull($reservation->scheduledAt);
+        $this->assertFalse($reservation['allowed']);
+        $this->assertSame('resend_monthly_quota_reached', $reservation['reason']);
+        $this->assertNotNull($reservation['scheduled_at']);
     }
 }

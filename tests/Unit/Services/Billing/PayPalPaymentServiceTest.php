@@ -22,10 +22,6 @@ class PayPalPaymentServiceTest extends TestCase
     {
         parent::setUp();
 
-        \Mockery::mock('alias:Everest\Models\Setting')
-            ->shouldReceive('get')
-            ->andReturnUsing(static fn (string $key, mixed $default = null) => $default);
-
         // Mock PayPal configuration
         config()->set('modules.billing.paypal_standalone', [
             'client_id' => 'test_client_id',

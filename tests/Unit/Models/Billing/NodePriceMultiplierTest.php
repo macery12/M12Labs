@@ -2,11 +2,12 @@
 
 namespace Everest\Tests\Unit\Models\Billing;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Everest\Models\Node;
 use Everest\Models\Setting;
 use Everest\Tests\TestCase;
 use Everest\Models\Billing\Product;
-use Everest\Models\Billing\Category;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class NodePriceMultiplierTest extends TestCase
@@ -56,25 +57,7 @@ class NodePriceMultiplierTest extends TestCase
             'price_multiplier' => 1.25,
         ]);
 
-        // Create a product with a base price
-        $category = Category::create([
-            'name' => 'Test Category',
-            'description' => 'Test',
-            'nest_id' => 1,
-        ]);
-
-        $product = Product::create([
-            'name' => 'Test Product',
-            'description' => 'Test',
-            'price' => 10.0,
-            'category_id' => $category->id,
-            'cpu_limit' => 100,
-            'memory_limit' => 1024,
-            'disk_limit' => 5000,
-            'database_limit' => 1,
-            'backup_limit' => 1,
-            'allocation_limit' => 1,
-        ]);
+        $product = $this->createProduct();
 
         // Set default billing days
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
@@ -93,24 +76,7 @@ class NodePriceMultiplierTest extends TestCase
      */
     public function testProductCalculatePriceDefaultsToOneWithoutNode()
     {
-        $category = Category::create([
-            'name' => 'Test Category',
-            'description' => 'Test',
-            'nest_id' => 1,
-        ]);
-
-        $product = Product::create([
-            'name' => 'Test Product',
-            'description' => 'Test',
-            'price' => 10.0,
-            'category_id' => $category->id,
-            'cpu_limit' => 100,
-            'memory_limit' => 1024,
-            'disk_limit' => 5000,
-            'database_limit' => 1,
-            'backup_limit' => 1,
-            'allocation_limit' => 1,
-        ]);
+        $product = $this->createProduct();
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
 
@@ -124,24 +90,7 @@ class NodePriceMultiplierTest extends TestCase
 
     public function testProductCalculatePriceHonorsBaseMultiplierForDefaultCycle(): void
     {
-        $category = Category::create([
-            'name' => 'Base Multiplier Category',
-            'description' => 'Test',
-            'nest_id' => 1,
-        ]);
-
-        $product = Product::create([
-            'name' => 'Base Multiplier Product',
-            'description' => 'Test',
-            'price' => 10.0,
-            'category_id' => $category->id,
-            'cpu_limit' => 100,
-            'memory_limit' => 1024,
-            'disk_limit' => 5000,
-            'database_limit' => 1,
-            'backup_limit' => 1,
-            'allocation_limit' => 1,
-        ]);
+        $product = $this->createProduct('Base Multiplier Product');
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
 
@@ -157,24 +106,7 @@ class NodePriceMultiplierTest extends TestCase
      */
     public function testProductCalculatePriceHandlesRemovedNodeGracefully()
     {
-        $category = Category::create([
-            'name' => 'Test Category',
-            'description' => 'Test',
-            'nest_id' => 1,
-        ]);
-
-        $product = Product::create([
-            'name' => 'Test Product',
-            'description' => 'Test',
-            'price' => 10.0,
-            'category_id' => $category->id,
-            'cpu_limit' => 100,
-            'memory_limit' => 1024,
-            'disk_limit' => 5000,
-            'database_limit' => 1,
-            'backup_limit' => 1,
-            'allocation_limit' => 1,
-        ]);
+        $product = $this->createProduct();
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
 
@@ -195,24 +127,7 @@ class NodePriceMultiplierTest extends TestCase
             'price_multiplier' => 1.234567,
         ]);
 
-        $category = Category::create([
-            'name' => 'Test Category',
-            'description' => 'Test',
-            'nest_id' => 1,
-        ]);
-
-        $product = Product::create([
-            'name' => 'Test Product',
-            'description' => 'Test',
-            'price' => 10.0,
-            'category_id' => $category->id,
-            'cpu_limit' => 100,
-            'memory_limit' => 1024,
-            'disk_limit' => 5000,
-            'database_limit' => 1,
-            'backup_limit' => 1,
-            'allocation_limit' => 1,
-        ]);
+        $product = $this->createProduct();
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
 
@@ -232,24 +147,7 @@ class NodePriceMultiplierTest extends TestCase
             'price_multiplier' => 0.0,
         ]);
 
-        $category = Category::create([
-            'name' => 'Test Category',
-            'description' => 'Test',
-            'nest_id' => 1,
-        ]);
-
-        $product = Product::create([
-            'name' => 'Test Product',
-            'description' => 'Test',
-            'price' => 10.0,
-            'category_id' => $category->id,
-            'cpu_limit' => 100,
-            'memory_limit' => 1024,
-            'disk_limit' => 5000,
-            'database_limit' => 1,
-            'backup_limit' => 1,
-            'allocation_limit' => 1,
-        ]);
+        $product = $this->createProduct();
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
 
@@ -268,24 +166,7 @@ class NodePriceMultiplierTest extends TestCase
             'price_multiplier' => 0.85, // 15% discount
         ]);
 
-        $category = Category::create([
-            'name' => 'Test Category',
-            'description' => 'Test',
-            'nest_id' => 1,
-        ]);
-
-        $product = Product::create([
-            'name' => 'Test Product',
-            'description' => 'Test',
-            'price' => 10.0,
-            'category_id' => $category->id,
-            'cpu_limit' => 100,
-            'memory_limit' => 1024,
-            'disk_limit' => 5000,
-            'database_limit' => 1,
-            'backup_limit' => 1,
-            'allocation_limit' => 1,
-        ]);
+        $product = $this->createProduct();
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
 
@@ -305,24 +186,7 @@ class NodePriceMultiplierTest extends TestCase
             'price_multiplier' => 1.50, // 50% premium
         ]);
 
-        $category = Category::create([
-            'name' => 'Test Category',
-            'description' => 'Test',
-            'nest_id' => 1,
-        ]);
-
-        $product = Product::create([
-            'name' => 'Test Product',
-            'description' => 'Test',
-            'price' => 10.0,
-            'category_id' => $category->id,
-            'cpu_limit' => 100,
-            'memory_limit' => 1024,
-            'disk_limit' => 5000,
-            'database_limit' => 1,
-            'backup_limit' => 1,
-            'allocation_limit' => 1,
-        ]);
+        $product = $this->createProduct();
 
         Setting::set('settings::modules:billing:renewal:default_billing_days', '30');
 
@@ -331,5 +195,40 @@ class NodePriceMultiplierTest extends TestCase
         // Expected: $10 * 1.0 * 1.50 = $15.00
         $this->assertEquals(15.0, $result['price']);
         $this->assertEquals(1.50, $result['node_multiplier']);
+    }
+
+    private function createProduct(string $name = 'Test Product'): Product
+    {
+        $categoryUuid = (string) Str::uuid();
+
+        DB::statement('PRAGMA foreign_keys = OFF');
+
+        DB::table('categories')->insert([
+            'uuid' => $categoryUuid,
+            'name' => $name . ' Category',
+            'icon' => null,
+            'description' => 'Test',
+            'visible' => '1',
+            'nest_id' => 1,
+            'egg_id' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::statement('PRAGMA foreign_keys = ON');
+
+        return Product::create([
+            'uuid' => (string) Str::uuid(),
+            'category_uuid' => $categoryUuid,
+            'name' => $name,
+            'description' => 'Test',
+            'price' => 10.0,
+            'cpu_limit' => 100,
+            'memory_limit' => 1024,
+            'disk_limit' => 5000,
+            'database_limit' => 1,
+            'backup_limit' => 1,
+            'allocation_limit' => 1,
+        ]);
     }
 }

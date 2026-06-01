@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Everest\Tests\TestCase;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Order;
+use Everest\Models\Billing\InvoiceSettings;
+use Everest\Models\User;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
@@ -35,11 +37,20 @@ class CheckoutControllerTest extends TestCase
         config()->set('database.connections.sqlite.database', $dbPath);
 
         Schema::dropIfExists('orders');
+        Schema::dropIfExists('payment_transactions');
         Schema::create('orders', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('user_id');
             $table->string('payment_intent_id')->unique();
             $table->string('status');
+            $table->timestamps();
+        });
+
+        Schema::create('payment_transactions', function (Blueprint $table) {
+            $table->increments('id');
+            $table->unsignedInteger('order_id');
+            $table->string('processor');
+            $table->string('external_id')->nullable();
             $table->timestamps();
         });
     }
@@ -75,6 +86,14 @@ class CheckoutControllerTest extends TestCase
             ],
         ]);
 
+        DB::table('payment_transactions')->insert([
+            'order_id' => 11,
+            'processor' => 'stripe',
+            'external_id' => 'pi-match',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
         $validation = Mockery::mock(BillingValidationService::class);
         $validation->shouldReceive('validateBillingEnabled')->once();
 
@@ -97,12 +116,19 @@ class CheckoutControllerTest extends TestCase
             ->andReturn(null);
         $this->app->instance(SettingsRepositoryInterface::class, $settings);
 
+        $invoiceSettings = Mockery::mock(\Everest\Services\Billing\InvoiceSettingsService::class);
+        $invoiceSettings->shouldReceive('get')
+            ->once()
+            ->andReturn(new InvoiceSettings(['require_billing_address' => false]));
+
         $controller = new \Everest\Http\Controllers\Api\Client\Billing\CheckoutController(
             $validation,
             Mockery::mock(OrderProcessorService::class),
             Mockery::mock(CreateOrderService::class),
             Mockery::mock(CreateServerService::class),
-            $fulfillment
+            $fulfillment,
+            Mockery::mock(\Everest\Services\Billing\StripeCustomerService::class),
+            $invoiceSettings
         );
 
         $intent = new class() {
@@ -137,8 +163,11 @@ class CheckoutControllerTest extends TestCase
         $reflection->setValue($controller, $stripe);
 
         $request = Request::create('/api/client/billing/process', 'POST', ['intent' => 'pi-match']);
-        $request->setUserResolver(fn () => new class() {
-            public int $id = 7;
+        $request->setUserResolver(function () {
+            $user = new User();
+            $user->id = 7;
+
+            return $user;
         });
 
         $response = $controller->processPaid($request);
