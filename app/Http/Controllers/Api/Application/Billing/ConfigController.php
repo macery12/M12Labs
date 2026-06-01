@@ -4,6 +4,7 @@ namespace Everest\Http\Controllers\Api\Application\Billing;
 
 use Carbon\Carbon;
 use Everest\Facades\Activity;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
@@ -58,18 +59,32 @@ class ConfigController extends ApplicationApiController
      *
      * @throws \Throwable
      */
-    public function import(ImportBillingConfigRequest $request): Response
+    public function import(ImportBillingConfigRequest $request): Response|JsonResponse
     {
         $data = (array) $request->input('data');
         $override = (bool) $request->input('override');
         $ignore_duplicates = (bool) $request->input('ignore_duplicates');
+        $resolution = (array) $request->input('resolution', []);
+
+        $importOptionsIgnoreDuplicates = $override ? false : $ignore_duplicates;
+        $analysis = $this->importService->analyze($data, $importOptionsIgnoreDuplicates, $resolution);
+
+        if (!empty($analysis['conflicts'])) {
+            return response()->json([
+                'object' => 'billing_import_conflict',
+                'attributes' => [
+                    'conflicts' => $analysis['conflicts'],
+                    'available_nests' => $analysis['available_nests'],
+                ],
+            ], 409);
+        }
 
         if ($override) {
             Category::query()->delete();
             Product::query()->delete();
         }
 
-        $this->importService->handle($data, $override ? false : $ignore_duplicates);
+        $this->importService->persist($analysis['data'], $importOptionsIgnoreDuplicates);
 
         Activity::event('admin:billing:config:import')
             ->property('override', $override)

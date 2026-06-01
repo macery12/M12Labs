@@ -2,6 +2,8 @@
 
 namespace Everest\Services\Billing;
 
+use Everest\Models\Egg;
+use Everest\Models\Nest;
 use Illuminate\Support\Str;
 use Everest\Models\Billing\BillingCycle;
 use Everest\Models\Billing\Product;
@@ -10,9 +12,72 @@ use Everest\Models\Billing\Category;
 class BillingConfigImportService
 {
     /**
+     * Analyze an import payload and apply one-time conflict resolutions.
+     */
+    public function analyze(array $import_data, bool $ignore_duplicates, array $resolution = []): array
+    {
+        $categories = array_values(array_filter($import_data['categories'] ?? [], 'is_array'));
+        $products = array_values(array_filter($import_data['products'] ?? [], 'is_array'));
+        $resolutionMap = $resolution['categories'] ?? [];
+
+        $categories = $this->filterDroppedCategories($categories, $resolutionMap);
+        $products = $this->filterDroppedCategoryProducts($products, $categories, $resolutionMap);
+
+        foreach ($categories as $index => $category) {
+            if ($ignore_duplicates && isset($category['name']) && Category::where('name', $category['name'])->exists()) {
+                continue;
+            }
+
+            $categoryKey = $this->getCategoryKey($category, $index);
+            $categoryResolution = is_array($resolutionMap[$categoryKey] ?? null) ? $resolutionMap[$categoryKey] : [];
+
+            if (array_key_exists('nest_id', $categoryResolution)) {
+                $category['nest_id'] = (int) $categoryResolution['nest_id'];
+            }
+
+            if (array_key_exists('egg_id', $categoryResolution)) {
+                $category['egg_id'] = (int) $categoryResolution['egg_id'];
+            }
+
+            if (array_key_exists('allowed_eggs', $categoryResolution) && is_array($categoryResolution['allowed_eggs'])) {
+                $category['allowed_eggs'] = array_values(array_map('intval', $categoryResolution['allowed_eggs']));
+            }
+
+            $categories[$index] = $category;
+        }
+
+        $products = $this->filterDroppedProducts($products, $categories, $resolutionMap);
+
+        $conflicts = [];
+        foreach ($categories as $index => $category) {
+            if ($ignore_duplicates && isset($category['name']) && Category::where('name', $category['name'])->exists()) {
+                continue;
+            }
+
+            $conflict = $this->buildCategoryConflict($category, $products, $this->getCategoryKey($category, $index));
+            if (!is_null($conflict)) {
+                $conflicts[] = $conflict;
+            }
+        }
+
+        return [
+            'data' => [
+                'categories' => $categories,
+                'products' => $products,
+            ],
+            'conflicts' => $conflicts,
+            'available_nests' => Nest::query()
+                ->select(['id', 'name'])
+                ->orderBy('name')
+                ->get()
+                ->toArray(),
+        ];
+    }
+
+    /**
      * Process a formatted JSON configuration file.
      */
-    public function handle(array $import_data, bool $ignore_duplicates): void
+    public function persist(array $import_data, bool $ignore_duplicates): void
     {
         $old_data = [];
 
@@ -20,6 +85,11 @@ class BillingConfigImportService
         foreach ($import_data['categories'] as $category) {
             // Skip existing categories if ignore_duplicates is true and a category with the same name exists
             if ($ignore_duplicates && Category::where('name', $category['name'])->exists()) {
+                $existingCategory = Category::where('name', $category['name'])->first();
+                if (!empty($category['uuid']) && $existingCategory instanceof Category) {
+                    $old_data[$category['uuid']] = $existingCategory->uuid;
+                }
+
                 continue;  // Skip this category if it already exists
             } else {
                 $new_uuid = Str::uuid()->toString();
@@ -101,5 +171,173 @@ class BillingConfigImportService
                 }
             }
         }
+    }
+
+    /**
+     * Build a stable category key for conflict mapping between frontend and backend.
+     */
+    private function getCategoryKey(array $category, int $index): string
+    {
+        if (!empty($category['uuid']) && is_string($category['uuid'])) {
+            return $category['uuid'];
+        }
+
+        return '__index_' . $index;
+    }
+
+    /**
+     * Remove products explicitly dropped during conflict resolution.
+     */
+    private function filterDroppedProducts(array $products, array $categories, array $resolutionMap): array
+    {
+        $categoryLookup = [];
+        foreach ($categories as $index => $category) {
+            if (!is_array($category)) {
+                continue;
+            }
+
+            $key = $this->getCategoryKey($category, $index);
+            $categoryLookup[$key] = $category;
+        }
+
+        return array_values(array_filter($products, function (array $product) use ($categoryLookup, $resolutionMap) {
+            $categoryUuid = (string) ($product['category_uuid'] ?? '');
+            if ($categoryUuid === '' || !isset($categoryLookup[$categoryUuid])) {
+                return true;
+            }
+
+            $dropProducts = $resolutionMap[$categoryUuid]['drop_products'] ?? [];
+            if (!is_array($dropProducts) || empty($dropProducts)) {
+                return true;
+            }
+
+            $productUuid = (string) ($product['uuid'] ?? '');
+            $productName = (string) ($product['name'] ?? '');
+
+            return !in_array($productUuid, $dropProducts, true) && !in_array($productName, $dropProducts, true);
+        }));
+    }
+
+    /**
+     * Remove categories explicitly dropped during conflict resolution.
+     */
+    private function filterDroppedCategories(array $categories, array $resolutionMap): array
+    {
+        return array_values(array_filter($categories, function (array $category, int $index) use ($resolutionMap) {
+            $categoryKey = $this->getCategoryKey($category, $index);
+            $dropCategory = (bool) ($resolutionMap[$categoryKey]['drop_category'] ?? false);
+
+            return !$dropCategory;
+        }, ARRAY_FILTER_USE_BOTH));
+    }
+
+    /**
+     * Remove products that belong to categories dropped during conflict resolution.
+     */
+    private function filterDroppedCategoryProducts(array $products, array $categories, array $resolutionMap): array
+    {
+        $categoryLookup = [];
+        foreach ($categories as $index => $category) {
+            if (!is_array($category)) {
+                continue;
+            }
+
+            $categoryKey = $this->getCategoryKey($category, $index);
+            $categoryLookup[$categoryKey] = $category;
+        }
+
+        return array_values(array_filter($products, function (array $product) use ($resolutionMap, $categoryLookup) {
+            $categoryUuid = (string) ($product['category_uuid'] ?? '');
+            if ($categoryUuid === '' || !isset($resolutionMap[$categoryUuid])) {
+                return true;
+            }
+
+            $dropCategory = (bool) ($resolutionMap[$categoryUuid]['drop_category'] ?? false);
+
+            return !$dropCategory;
+        }));
+    }
+
+    /**
+     * Return conflict details if imported category nest/egg references are invalid.
+     */
+    private function buildCategoryConflict(array $category, array $products, string $categoryKey): ?array
+    {
+        $nestId = isset($category['nest_id']) ? (int) $category['nest_id'] : null;
+        $eggId = isset($category['egg_id']) ? (int) $category['egg_id'] : null;
+        $allowedEggs = is_array($category['allowed_eggs'] ?? null)
+            ? array_values(array_map('intval', $category['allowed_eggs']))
+            : [];
+
+        $issues = [];
+        $nest = is_null($nestId) ? null : Nest::query()->find($nestId);
+        if (!$nest) {
+            $issues[] = [
+                'field' => 'nest_id',
+                'code' => 'invalid_nest',
+                'invalid_value' => $nestId,
+                'message' => 'The selected nest id is invalid.',
+            ];
+        }
+
+        if (!is_null($eggId)) {
+            $defaultEgg = Egg::query()->find($eggId);
+            if (!$defaultEgg || (!$nest ? false : $defaultEgg->nest_id !== $nest->id)) {
+                $issues[] = [
+                    'field' => 'egg_id',
+                    'code' => 'invalid_default_egg',
+                    'invalid_value' => $eggId,
+                    'message' => 'The selected egg id is invalid for the selected nest.',
+                ];
+            }
+        }
+
+        if (!empty($allowedEggs)) {
+            $invalidAllowedEggs = [];
+            foreach ($allowedEggs as $allowedEggId) {
+                $egg = Egg::query()->find($allowedEggId);
+                if (!$egg || (!$nest ? false : $egg->nest_id !== $nest->id)) {
+                    $invalidAllowedEggs[] = $allowedEggId;
+                }
+            }
+
+            if (!empty($invalidAllowedEggs)) {
+                $issues[] = [
+                    'field' => 'allowed_eggs',
+                    'code' => 'invalid_allowed_eggs',
+                    'invalid_values' => $invalidAllowedEggs,
+                    'message' => 'One or more allowed eggs are invalid for the selected nest.',
+                ];
+            }
+        }
+
+        if (empty($issues)) {
+            return null;
+        }
+
+        $dependentProducts = [];
+        foreach ($products as $product) {
+            if (($product['category_uuid'] ?? null) !== ($category['uuid'] ?? null)) {
+                continue;
+            }
+
+            $dependentProducts[] = [
+                'uuid' => (string) ($product['uuid'] ?? ''),
+                'name' => (string) ($product['name'] ?? 'Unnamed product'),
+            ];
+        }
+
+        return [
+            'category_key' => $categoryKey,
+            'category_uuid' => (string) ($category['uuid'] ?? ''),
+            'category_name' => (string) ($category['name'] ?? 'Unnamed category'),
+            'current' => [
+                'nest_id' => $nestId,
+                'egg_id' => $eggId,
+                'allowed_eggs' => $allowedEggs,
+            ],
+            'issues' => $issues,
+            'dependent_products' => $dependentProducts,
+        ];
     }
 }

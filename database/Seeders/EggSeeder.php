@@ -8,6 +8,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
 use Everest\Services\Eggs\Sharing\EggImporterService;
 use Everest\Services\Eggs\Sharing\EggUpdateImporterService;
+use Illuminate\Support\Str;
 
 class EggSeeder extends Seeder
 {
@@ -52,7 +53,7 @@ class EggSeeder extends Seeder
      */
     protected function parseEggFiles(Nest $nest)
     {
-        $files = new \DirectoryIterator(database_path('Seeders/eggs/' . kebab_case($nest->name)));
+        $files = new \DirectoryIterator(database_path('Seeders/eggs/' . Str::kebab($nest->name)));
 
         $this->command->alert('Updating Eggs for Nest: ' . $nest->name);
         /** @var \DirectoryIterator $file */
