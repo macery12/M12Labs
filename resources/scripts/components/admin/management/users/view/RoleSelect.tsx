@@ -14,7 +14,7 @@ export default ({ selected }: { selected?: UserRole }) => {
         if (selected) {
             setUserRole(selected);
             setUserRoles(prev =>
-                prev && !prev.some(r => r.id === selected.id) ? [selected, ...prev] : prev ?? [selected],
+                prev && !prev.some(r => r.id === selected.id) ? [selected, ...prev] : (prev ?? [selected]),
             );
         }
     }, [selected]);

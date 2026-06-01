@@ -273,8 +273,8 @@ export default ({ product }: { product?: Product }) => {
                                                                     discount > 0
                                                                         ? `${Math.abs(discount).toFixed(0)}% discount`
                                                                         : discount < 0
-                                                                        ? `${Math.abs(discount).toFixed(0)}% premium`
-                                                                        : 'base price';
+                                                                          ? `${Math.abs(discount).toFixed(0)}% premium`
+                                                                          : 'base price';
                                                                 return (
                                                                     <li key={idx}>
                                                                         Days ≤ {step.maxDays}:{' '}

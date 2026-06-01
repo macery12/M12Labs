@@ -1,12 +1,5 @@
 import { lazy } from 'react';
-import {
-    CashIcon,
-    ClipboardListIcon,
-    KeyIcon,
-    ShieldCheckIcon,
-    TicketIcon,
-    UserIcon,
-} from '@heroicons/react/outline';
+import { CashIcon, ClipboardListIcon, KeyIcon, ShieldCheckIcon, TicketIcon, UserIcon } from '@heroicons/react/outline';
 import { route, type RouteDefinition } from '@/routers/routes/utils';
 
 const CredentialsContainer = lazy(() => import('@account/CredentialsContainer'));

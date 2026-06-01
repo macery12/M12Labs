@@ -103,7 +103,7 @@ export default () => {
 
     const getCurrentPrice = () => {
         const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-        return selectedCycle ? selectedCycle.price : product?.price ?? 0;
+        return selectedCycle ? selectedCycle.price : (product?.price ?? 0);
     };
 
     const calculatedOrderTotal = couponData ? couponData.total : getCurrentPrice();
@@ -289,7 +289,6 @@ export default () => {
         }
         // Note: couponData is intentionally NOT in the dependency array to avoid infinite loops
         // We only want to clear it when selectedBillingDays changes
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedBillingDays]);
 
     if (!product) return <Spinner centered />;

@@ -4,7 +4,7 @@ import { Dialog, DialogProps, DialogWrapperContext, WrapperProps } from '@/eleme
 
 function asDialog(
     initialProps?: WrapperProps,
-    // eslint-disable-next-line @typescript-eslint/ban-types
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 ): <P extends {}>(C: ComponentType<P>) => FunctionComponent<P & DialogProps> {
     return function (Component) {
         return function ({ open, onClose, ...rest }) {

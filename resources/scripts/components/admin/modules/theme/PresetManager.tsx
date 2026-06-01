@@ -118,7 +118,11 @@ export default ({ onApplied }: Props) => {
                                         {preset.name}
                                     </span>
                                     {preset.is_builtin && (
-                                        <span className={'shrink-0 rounded bg-neutral-700 px-1.5 py-0.5 text-[10px] text-neutral-400'}>
+                                        <span
+                                            className={
+                                                'shrink-0 rounded bg-neutral-700 px-1.5 py-0.5 text-[10px] text-neutral-400'
+                                            }
+                                        >
                                             built-in
                                         </span>
                                     )}
@@ -126,11 +130,11 @@ export default ({ onApplied }: Props) => {
 
                                 {/* Color swatches */}
                                 <div className={'flex items-center gap-1.5'}>
-                                    <ColorSwatch hex={preset.colors.primary}    title={'Primary'} />
-                                    <ColorSwatch hex={preset.colors.secondary}  title={'Secondary'} />
+                                    <ColorSwatch hex={preset.colors.primary} title={'Primary'} />
+                                    <ColorSwatch hex={preset.colors.secondary} title={'Secondary'} />
                                     <ColorSwatch hex={preset.colors.background} title={'Background'} />
-                                    <ColorSwatch hex={preset.colors.headers}    title={'Headers'} />
-                                    <ColorSwatch hex={preset.colors.sidebar}    title={'Sidebar'} />
+                                    <ColorSwatch hex={preset.colors.headers} title={'Headers'} />
+                                    <ColorSwatch hex={preset.colors.sidebar} title={'Sidebar'} />
                                 </div>
 
                                 <div className={'mt-auto flex items-center gap-2'}>

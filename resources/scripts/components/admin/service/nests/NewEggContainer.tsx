@@ -93,7 +93,9 @@ export default function NewEggContainer() {
             <div css={tw`w-full flex flex-col gap-2 sm:flex-row sm:items-center mb-8`}>
                 <div css={tw`flex flex-col flex-shrink`} style={{ minWidth: '0' }}>
                     <h2 css={tw`text-2xl text-neutral-50 font-header font-medium`}>New Egg</h2>
-                    <p css={tw`hidden md:block text-base text-neutral-400`}>Create an egg with a simple, single-page form.</p>
+                    <p css={tw`hidden md:block text-base text-neutral-400`}>
+                        Create an egg with a simple, single-page form.
+                    </p>
                 </div>
             </div>
 

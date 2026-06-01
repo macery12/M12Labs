@@ -9,9 +9,9 @@ export default () => {
 
     return (
         <FeatureContainer image={<AISvg color={primary} />} icon={faWandMagicSparkles} title={'M12Labs-AI'}>
-            Use the M12Labs-AI suite to give users better insights into errors, provide instant
-            support and help administrators take better control over their Panel. M12Labs-AI uses OpenAI-compatible
-            endpoints, allowing you to use OpenAI, LocalAI, Ollama, or any other compatible AI service.
+            Use the M12Labs-AI suite to give users better insights into errors, provide instant support and help
+            administrators take better control over their Panel. M12Labs-AI uses OpenAI-compatible endpoints, allowing
+            you to use OpenAI, LocalAI, Ollama, or any other compatible AI service.
             <p className={'mt-2 text-right'}>
                 <ToggleFeatureButton />
             </p>

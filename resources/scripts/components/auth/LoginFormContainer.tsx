@@ -11,7 +11,6 @@ type Props = React.DetailedHTMLProps<React.FormHTMLAttributes<HTMLFormElement>, 
 };
 
 const Container = styled.div`
-
     ${breakpoint('sm')`
         ${tw`w-4/5 mx-auto`}
     `};

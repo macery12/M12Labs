@@ -4,7 +4,17 @@ import { SparklesIcon, RefreshIcon, CheckCircleIcon, XCircleIcon, SearchIcon, XI
 import { useStoreState } from '@/state/hooks';
 import { KeyboardEvent as ReactKeyboardEvent, useState, useRef, useEffect, useCallback } from 'react';
 import { handleQueryStream } from '@/api/routes/admin/ai/handleQuery';
-import { fetchSettings, getStats, getRecentLogs, getLogs, testConnection, type AIAdminSettings, type AIStats, type AILogEntry, type GetLogsParams } from '@/api/routes/admin/ai/settings';
+import {
+    fetchSettings,
+    getStats,
+    getRecentLogs,
+    getLogs,
+    testConnection,
+    type AIAdminSettings,
+    type AIStats,
+    type AILogEntry,
+    type GetLogsParams,
+} from '@/api/routes/admin/ai/settings';
 import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import MessageBubble, { type Message } from '@/components/ai/MessageBubble';
@@ -12,7 +22,10 @@ import MessageBubble, { type Message } from '@/components/ai/MessageBubble';
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
     const theme = useStoreState(s => s.theme.data!);
     return (
-        <div className={'flex flex-col gap-1 rounded-xl border border-neutral-700/60 px-4 py-3'} style={{ backgroundColor: theme.colors.secondary }}>
+        <div
+            className={'flex flex-col gap-1 rounded-xl border border-neutral-700/60 px-4 py-3'}
+            style={{ backgroundColor: theme.colors.secondary }}
+        >
             <span className={'text-xs text-neutral-500'}>{label}</span>
             <span className={'text-xl font-semibold text-neutral-100'}>{value}</span>
             {sub && <span className={'text-xs text-neutral-500'}>{sub}</span>}
@@ -29,7 +42,14 @@ function Sparkline({ series }: { series: { date: string; requests: number }[] })
     const points = series.map((s, i) => `${i * step},${H - (s.requests / max) * H}`).join(' ');
     return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className={'overflow-visible'}>
-            <polyline fill={'none'} stroke={theme.colors.primary} strokeWidth={1.5} strokeLinecap={'round'} strokeLinejoin={'round'} points={points} />
+            <polyline
+                fill={'none'}
+                stroke={theme.colors.primary}
+                strokeWidth={1.5}
+                strokeLinecap={'round'}
+                strokeLinejoin={'round'}
+                points={points}
+            />
         </svg>
     );
 }
@@ -43,40 +63,64 @@ function ConnectionCard({ settings }: { settings: AIAdminSettings | null }) {
     const runTest = useCallback(() => {
         setConn({ state: 'testing' });
         testConnection()
-            .then(r => setConn(r.status === 'ok' ? { state: 'ok', latency: r.latency_ms } : { state: 'error', message: r.message }))
+            .then(r =>
+                setConn(
+                    r.status === 'ok' ? { state: 'ok', latency: r.latency_ms } : { state: 'error', message: r.message },
+                ),
+            )
             .catch(() => setConn({ state: 'error', message: 'Request failed' }));
     }, []);
 
-    useEffect(() => { runTest(); }, [runTest]);
+    useEffect(() => {
+        runTest();
+    }, [runTest]);
 
-    const icon = conn.state === 'ok'
-        ? <CheckCircleIcon className={'h-5 w-5 text-green-400'} />
-        : conn.state === 'error'
-            ? <XCircleIcon className={'h-5 w-5 text-red-400'} />
-            : <span className={'flex h-5 w-5 items-center justify-center'}><Spinner size={'small'} /></span>;
+    const icon =
+        conn.state === 'ok' ? (
+            <CheckCircleIcon className={'h-5 w-5 text-green-400'} />
+        ) : conn.state === 'error' ? (
+            <XCircleIcon className={'h-5 w-5 text-red-400'} />
+        ) : (
+            <span className={'flex h-5 w-5 items-center justify-center'}>
+                <Spinner size={'small'} />
+            </span>
+        );
 
-    const label = conn.state === 'ok'
-        ? <span className={'text-green-400'}>Connected{conn.latency !== undefined ? ` · ${conn.latency}ms` : ''}</span>
-        : conn.state === 'error'
-            ? <span className={'text-red-400'}>Error — {conn.message}</span>
-            : <span className={'text-neutral-500'}>{conn.state === 'testing' ? 'Testing…' : 'Idle'}</span>;
+    const label =
+        conn.state === 'ok' ? (
+            <span className={'text-green-400'}>
+                Connected{conn.latency !== undefined ? ` · ${conn.latency}ms` : ''}
+            </span>
+        ) : conn.state === 'error' ? (
+            <span className={'text-red-400'}>Error — {conn.message}</span>
+        ) : (
+            <span className={'text-neutral-500'}>{conn.state === 'testing' ? 'Testing…' : 'Idle'}</span>
+        );
 
     return (
-        <div className={'flex h-full items-center justify-between rounded-xl border border-neutral-700/60 px-4 py-3'} style={{ backgroundColor: theme.colors.secondary }}>
+        <div
+            className={'flex h-full items-center justify-between rounded-xl border border-neutral-700/60 px-4 py-3'}
+            style={{ backgroundColor: theme.colors.secondary }}
+        >
             <div className={'flex items-center gap-3'}>
                 {icon}
                 <div>
                     <p className={'text-xs font-medium text-neutral-200'}>
-                        {settings?.mode === 'ollama' ? 'Ollama' : 'OpenAI'} · <span className={'font-mono'}>{settings?.model || 'no model'}</span>
+                        {settings?.mode === 'ollama' ? 'Ollama' : 'OpenAI'} ·{' '}
+                        <span className={'font-mono'}>{settings?.model || 'no model'}</span>
                     </p>
-                    <p className={'truncate text-xs text-neutral-500'} style={{ maxWidth: '200px' }}>{settings?.endpoint || 'Not configured'}</p>
+                    <p className={'truncate text-xs text-neutral-500'} style={{ maxWidth: '200px' }}>
+                        {settings?.endpoint || 'Not configured'}
+                    </p>
                     <p className={'mt-0.5 text-xs'}>{label}</p>
                 </div>
             </div>
             <button
                 onClick={runTest}
                 disabled={conn.state === 'testing'}
-                className={'ml-4 flex-shrink-0 rounded-lg border border-neutral-700 p-1.5 text-neutral-400 transition-colors hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40'}
+                className={
+                    'ml-4 flex-shrink-0 rounded-lg border border-neutral-700 p-1.5 text-neutral-400 transition-colors hover:border-neutral-500 hover:text-neutral-200 disabled:opacity-40'
+                }
                 title={'Re-test connection'}
             >
                 <RefreshIcon className={'h-4 w-4' + (conn.state === 'testing' ? ' animate-spin' : '')} />
@@ -90,23 +134,37 @@ function LogRow({ log }: { log: AILogEntry }) {
         <tr className={'border-b border-neutral-700/20 hover:bg-neutral-800/30'}>
             <td className={'whitespace-nowrap px-3 py-1.5 font-mono text-neutral-500'}>
                 {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                <span className={'ml-1 text-neutral-700'}>{new Date(log.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                <span className={'ml-1 text-neutral-700'}>
+                    {new Date(log.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                </span>
             </td>
             <td className={'px-3 py-1.5 text-neutral-300'}>{log.username}</td>
-            <td className={'px-3 py-1.5 text-neutral-500'}>{log.server_name ?? <span className={'italic text-neutral-700'}>—</span>}</td>
+            <td className={'px-3 py-1.5 text-neutral-500'}>
+                {log.server_name ?? <span className={'italic text-neutral-700'}>—</span>}
+            </td>
             <td className={'px-3 py-1.5 font-mono text-neutral-400'}>{log.model}</td>
             <td className={'px-3 py-1.5'}>
-                <span className={'rounded px-1.5 py-0.5 ' + (log.source === 'admin' ? 'bg-purple-900/40 text-purple-300' : 'bg-blue-900/40 text-blue-300')}>
+                <span
+                    className={
+                        'rounded px-1.5 py-0.5 ' +
+                        (log.source === 'admin' ? 'bg-purple-900/40 text-purple-300' : 'bg-blue-900/40 text-blue-300')
+                    }
+                >
                     {log.source}
                 </span>
             </td>
             <td className={'px-3 py-1.5 font-mono text-neutral-400'}>{log.total_tokens ?? '—'}</td>
-            <td className={'px-3 py-1.5 font-mono text-neutral-400'}>{log.latency_ms != null ? `${log.latency_ms}ms` : '—'}</td>
+            <td className={'px-3 py-1.5 font-mono text-neutral-400'}>
+                {log.latency_ms != null ? `${log.latency_ms}ms` : '—'}
+            </td>
             <td className={'px-3 py-1.5'}>
-                {log.status === 'success'
-                    ? <span className={'text-green-400'}>✓</span>
-                    : <span className={'text-red-400'} title={log.error_message ?? undefined}>✗</span>
-                }
+                {log.status === 'success' ? (
+                    <span className={'text-green-400'}>✓</span>
+                ) : (
+                    <span className={'text-red-400'} title={log.error_message ?? undefined}>
+                        ✗
+                    </span>
+                )}
             </td>
         </tr>
     );
@@ -118,7 +176,11 @@ function LogTableHead() {
     return (
         <thead>
             <tr className={'border-b border-neutral-700/40 text-left text-neutral-500'}>
-                {LOG_TABLE_HEADERS.map(h => <th key={h} className={'px-3 py-2 font-normal'}>{h}</th>)}
+                {LOG_TABLE_HEADERS.map(h => (
+                    <th key={h} className={'px-3 py-2 font-normal'}>
+                        {h}
+                    </th>
+                ))}
             </tr>
         </thead>
     );
@@ -151,21 +213,33 @@ function LogsModal({ onClose }: { onClose: () => void }) {
 
     // close on Escape
     useEffect(() => {
-        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
     }, [onClose]);
 
-    const selectClass = 'rounded border border-neutral-700 px-2 py-1.5 text-xs text-neutral-300 focus:outline-none focus:border-neutral-500';
+    const selectClass =
+        'rounded border border-neutral-700 px-2 py-1.5 text-xs text-neutral-300 focus:outline-none focus:border-neutral-500';
 
     return (
-        <div className={'fixed inset-0 z-50 flex items-center justify-center'} style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <div
+            className={'fixed inset-0 z-50 flex items-center justify-center'}
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+        >
             <div
-                className={'relative mx-4 flex w-full max-w-5xl flex-col rounded-xl border border-neutral-700 shadow-2xl'}
+                className={
+                    'relative mx-4 flex w-full max-w-5xl flex-col rounded-xl border border-neutral-700 shadow-2xl'
+                }
                 style={{ backgroundColor: theme.colors.secondary, maxHeight: '85vh' }}
             >
                 {/* Header */}
-                <div className={'flex flex-shrink-0 items-center justify-between border-b border-neutral-700/60 px-5 py-4'}>
+                <div
+                    className={
+                        'flex flex-shrink-0 items-center justify-between border-b border-neutral-700/60 px-5 py-4'
+                    }
+                >
                     <div>
                         <p className={'text-sm font-semibold text-neutral-200'}>AI Request Logs</p>
                         <p className={'text-xs text-neutral-500'}>Up to 500 most recent records</p>
@@ -179,7 +253,11 @@ function LogsModal({ onClose }: { onClose: () => void }) {
                 </div>
 
                 {/* Filter bar */}
-                <div className={'flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-neutral-700/40 px-5 py-3'}>
+                <div
+                    className={
+                        'flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-neutral-700/40 px-5 py-3'
+                    }
+                >
                     <div
                         className={'flex items-center gap-1.5 rounded border border-neutral-700 px-2 py-1.5'}
                         style={{ backgroundColor: theme.colors.background }}
@@ -190,10 +268,18 @@ function LogsModal({ onClose }: { onClose: () => void }) {
                             placeholder={'Search by username…'}
                             value={searchInput}
                             onChange={e => handleSearchChange(e.target.value)}
-                            className={'w-44 bg-transparent text-xs text-neutral-300 placeholder-neutral-600 focus:outline-none'}
+                            className={
+                                'w-44 bg-transparent text-xs text-neutral-300 placeholder-neutral-600 focus:outline-none'
+                            }
                         />
                         {searchInput && (
-                            <button onClick={() => { setSearchInput(''); setSearch(''); }} className={'text-neutral-600 hover:text-neutral-400'}>
+                            <button
+                                onClick={() => {
+                                    setSearchInput('');
+                                    setSearch('');
+                                }}
+                                className={'text-neutral-600 hover:text-neutral-400'}
+                            >
                                 <XIcon className={'h-3 w-3'} />
                             </button>
                         )}
@@ -226,15 +312,21 @@ function LogsModal({ onClose }: { onClose: () => void }) {
                 {/* Table */}
                 <div className={'min-h-0 flex-1 overflow-y-auto'}>
                     {loading ? (
-                        <div className={'flex justify-center py-10'}><Spinner size={'small'} /></div>
+                        <div className={'flex justify-center py-10'}>
+                            <Spinner size={'small'} />
+                        </div>
                     ) : logs.length === 0 ? (
-                        <p className={'px-5 py-10 text-center text-xs text-neutral-600'}>No records match your filters</p>
+                        <p className={'px-5 py-10 text-center text-xs text-neutral-600'}>
+                            No records match your filters
+                        </p>
                     ) : (
                         <div className={'overflow-x-auto'}>
                             <table className={'w-full text-xs'}>
                                 <LogTableHead />
                                 <tbody>
-                                    {logs.map(log => <LogRow key={log.id} log={log} />)}
+                                    {logs.map(log => (
+                                        <LogRow key={log.id} log={log} />
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
@@ -245,10 +337,21 @@ function LogsModal({ onClose }: { onClose: () => void }) {
     );
 }
 
-function RecentLogsTable({ logs, loading, onViewAll }: { logs: AILogEntry[]; loading: boolean; onViewAll: () => void }) {
+function RecentLogsTable({
+    logs,
+    loading,
+    onViewAll,
+}: {
+    logs: AILogEntry[];
+    loading: boolean;
+    onViewAll: () => void;
+}) {
     const theme = useStoreState(s => s.theme.data!);
     return (
-        <div className={'rounded-xl border border-neutral-700/60 overflow-hidden'} style={{ backgroundColor: theme.colors.secondary }}>
+        <div
+            className={'rounded-xl border border-neutral-700/60 overflow-hidden'}
+            style={{ backgroundColor: theme.colors.secondary }}
+        >
             <div className={'flex items-center justify-between border-b border-neutral-700/60 px-4 py-2.5'}>
                 <p className={'text-xs font-medium text-neutral-300'}>Recent Requests</p>
                 <button
@@ -259,7 +362,9 @@ function RecentLogsTable({ logs, loading, onViewAll }: { logs: AILogEntry[]; loa
                 </button>
             </div>
             {loading ? (
-                <div className={'flex justify-center py-6'}><Spinner size={'small'} /></div>
+                <div className={'flex justify-center py-6'}>
+                    <Spinner size={'small'} />
+                </div>
             ) : logs.length === 0 ? (
                 <p className={'px-4 py-6 text-center text-xs text-neutral-600'}>No requests logged yet</p>
             ) : (
@@ -267,7 +372,9 @@ function RecentLogsTable({ logs, loading, onViewAll }: { logs: AILogEntry[]; loa
                     <table className={'w-full text-xs'}>
                         <LogTableHead />
                         <tbody>
-                            {logs.map(log => <LogRow key={log.id} log={log} />)}
+                            {logs.map(log => (
+                                <LogRow key={log.id} log={log} />
+                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -302,75 +409,101 @@ export default () => {
     const hasFirstToken = useRef(false);
 
     useEffect(() => {
-        fetchSettings().then(setSettings).catch(() => undefined);
-        getStats().then(setStats).catch(() => undefined).finally(() => setStatsLoading(false));
-        getRecentLogs().then(setLogs).catch(() => undefined).finally(() => setLogsLoading(false));
+        fetchSettings()
+            .then(setSettings)
+            .catch(() => undefined);
+        getStats()
+            .then(setStats)
+            .catch(() => undefined)
+            .finally(() => setStatsLoading(false));
+        getRecentLogs()
+            .then(setLogs)
+            .catch(() => undefined)
+            .finally(() => setLogsLoading(false));
     }, []);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    useEffect(() => { return () => abortRef.current?.abort(); }, []);
+    useEffect(() => {
+        return () => abortRef.current?.abort();
+    }, []);
 
-    const sendQuery = useCallback((query: string) => {
-        if (loading || !query.trim()) return;
-        setMessages(prev => [...prev, { role: 'user', content: query }, { role: 'assistant', content: '', streaming: true }]);
-        setInput('');
-        setLoading(true);
-        abortRef.current?.abort();
-        abortRef.current = new AbortController();
+    const sendQuery = useCallback(
+        (query: string) => {
+            if (loading || !query.trim()) return;
+            setMessages(prev => [
+                ...prev,
+                { role: 'user', content: query },
+                { role: 'assistant', content: '', streaming: true },
+            ]);
+            setInput('');
+            setLoading(true);
+            abortRef.current?.abort();
+            abortRef.current = new AbortController();
 
-        // Show "spinning up" hint if no token arrives within 5s (Ollama cold start)
-        hasFirstToken.current = false;
-        setSlowHint(false);
-        if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
-        slowHintTimer.current = setTimeout(() => {
-            if (!hasFirstToken.current) setSlowHint(true);
-        }, 5000);
+            // Show "spinning up" hint if no token arrives within 5s (Ollama cold start)
+            hasFirstToken.current = false;
+            setSlowHint(false);
+            if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
+            slowHintTimer.current = setTimeout(() => {
+                if (!hasFirstToken.current) setSlowHint(true);
+            }, 5000);
 
-        handleQueryStream(
-            query,
-            chunk => {
-                hasFirstToken.current = true;
-                setSlowHint(false);
-                setMessages(prev => {
-                    const next = [...prev];
-                    const last = next[next.length - 1];
-                    if (last?.role === 'assistant') next[next.length - 1] = { ...last, content: last.content + chunk };
-                    return next;
-                });
-            },
-            () => {
-                setMessages(prev => {
-                    const next = [...prev];
-                    const last = next[next.length - 1];
-                    if (last?.role === 'assistant') next[next.length - 1] = { ...last, streaming: false };
-                    return next;
-                });
-                setLoading(false);
-                setSlowHint(false);
-                if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
-                abortRef.current = null;
-            },
-            (error: Error) => {
-                setMessages(prev => {
-                    const next = [...prev];
-                    const last = next[next.length - 1];
-                    if (last?.role === 'assistant') next[next.length - 1] = { ...last, content: `**Error:** ${error.message || 'Request failed.'}`, streaming: false };
-                    return next;
-                });
-                setLoading(false);
-                setSlowHint(false);
-                if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
-                abortRef.current = null;
-            },
-            abortRef.current.signal,
-        );
-    }, [loading]);
+            handleQueryStream(
+                query,
+                chunk => {
+                    hasFirstToken.current = true;
+                    setSlowHint(false);
+                    setMessages(prev => {
+                        const next = [...prev];
+                        const last = next[next.length - 1];
+                        if (last?.role === 'assistant')
+                            next[next.length - 1] = { ...last, content: last.content + chunk };
+                        return next;
+                    });
+                },
+                () => {
+                    setMessages(prev => {
+                        const next = [...prev];
+                        const last = next[next.length - 1];
+                        if (last?.role === 'assistant') next[next.length - 1] = { ...last, streaming: false };
+                        return next;
+                    });
+                    setLoading(false);
+                    setSlowHint(false);
+                    if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
+                    abortRef.current = null;
+                },
+                (error: Error) => {
+                    setMessages(prev => {
+                        const next = [...prev];
+                        const last = next[next.length - 1];
+                        if (last?.role === 'assistant')
+                            next[next.length - 1] = {
+                                ...last,
+                                content: `**Error:** ${error.message || 'Request failed.'}`,
+                                streaming: false,
+                            };
+                        return next;
+                    });
+                    setLoading(false);
+                    setSlowHint(false);
+                    if (slowHintTimer.current) clearTimeout(slowHintTimer.current);
+                    abortRef.current = null;
+                },
+                abortRef.current.signal,
+            );
+        },
+        [loading],
+    );
 
     const handleKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuery(input); }
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendQuery(input);
+        }
     };
 
     const cancelRequest = () => {
@@ -382,7 +515,8 @@ export default () => {
         setMessages(prev => {
             const next = [...prev];
             const last = next[next.length - 1];
-            if (last?.role === 'assistant' && last.streaming) next[next.length - 1] = { ...last, content: last.content + '\n\n*(cancelled)*', streaming: false };
+            if (last?.role === 'assistant' && last.streaming)
+                next[next.length - 1] = { ...last, content: last.content + '\n\n*(cancelled)*', streaming: false };
             return next;
         });
     };
@@ -399,28 +533,65 @@ export default () => {
                 <div className={'sm:col-span-2'}>
                     <ConnectionCard settings={settings} />
                 </div>
-                <StatCard label={'Requests (24h)'} value={statsLoading ? '…' : (stats?.last_24h?.requests ?? 0)} sub={`${statsLoading ? '…' : (stats?.last_24h?.tokens ?? 0).toLocaleString()} tokens`} />
-                <StatCard label={'Requests (7d)'} value={statsLoading ? '…' : (stats?.last_7d?.requests ?? 0)} sub={`${statsLoading ? '…' : (stats?.last_7d?.tokens ?? 0).toLocaleString()} tokens`} />
-                <StatCard label={'All-time'} value={statsLoading ? '…' : (stats?.all_time?.total_requests ?? 0).toLocaleString()} sub={successRate !== null ? `${successRate}% success · avg ${stats?.all_time?.avg_latency_ms ?? '?'}ms` : undefined} />
+                <StatCard
+                    label={'Requests (24h)'}
+                    value={statsLoading ? '…' : (stats?.last_24h?.requests ?? 0)}
+                    sub={`${statsLoading ? '…' : (stats?.last_24h?.tokens ?? 0).toLocaleString()} tokens`}
+                />
+                <StatCard
+                    label={'Requests (7d)'}
+                    value={statsLoading ? '…' : (stats?.last_7d?.requests ?? 0)}
+                    sub={`${statsLoading ? '…' : (stats?.last_7d?.tokens ?? 0).toLocaleString()} tokens`}
+                />
+                <StatCard
+                    label={'All-time'}
+                    value={statsLoading ? '…' : (stats?.all_time?.total_requests ?? 0).toLocaleString()}
+                    sub={
+                        successRate !== null
+                            ? `${successRate}% success · avg ${stats?.all_time?.avg_latency_ms ?? '?'}ms`
+                            : undefined
+                    }
+                />
             </div>
 
             {/* ── Activity sparkline + top users ── */}
             {!statsLoading && stats && (
                 <div className={'grid gap-3 sm:grid-cols-2'}>
-                    <div className={'flex items-center justify-between rounded-xl border border-neutral-700/60 px-4 py-3'} style={{ backgroundColor: theme.colors.secondary }}>
+                    <div
+                        className={
+                            'flex items-center justify-between rounded-xl border border-neutral-700/60 px-4 py-3'
+                        }
+                        style={{ backgroundColor: theme.colors.secondary }}
+                    >
                         <div>
                             <p className={'mb-1 text-xs text-neutral-500'}>Activity — last 7 days</p>
                             <div className={'flex items-center gap-3'}>
                                 <Sparkline series={stats.daily_series} />
                                 <div className={'space-y-0.5 text-xs'}>
-                                    <p><span className={'text-neutral-500'}>Client</span> <span className={'font-medium text-neutral-200'}>{stats.source_breakdown['client'] ?? 0}</span></p>
-                                    <p><span className={'text-neutral-500'}>Admin</span> <span className={'font-medium text-neutral-200'}>{stats.source_breakdown['admin'] ?? 0}</span></p>
-                                    <p><span className={'text-neutral-500'}>Errors</span> <span className={'font-medium text-red-400'}>{stats.all_time.errors}</span></p>
+                                    <p>
+                                        <span className={'text-neutral-500'}>Client</span>{' '}
+                                        <span className={'font-medium text-neutral-200'}>
+                                            {stats.source_breakdown['client'] ?? 0}
+                                        </span>
+                                    </p>
+                                    <p>
+                                        <span className={'text-neutral-500'}>Admin</span>{' '}
+                                        <span className={'font-medium text-neutral-200'}>
+                                            {stats.source_breakdown['admin'] ?? 0}
+                                        </span>
+                                    </p>
+                                    <p>
+                                        <span className={'text-neutral-500'}>Errors</span>{' '}
+                                        <span className={'font-medium text-red-400'}>{stats.all_time.errors}</span>
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div className={'rounded-xl border border-neutral-700/60 px-4 py-3'} style={{ backgroundColor: theme.colors.secondary }}>
+                    <div
+                        className={'rounded-xl border border-neutral-700/60 px-4 py-3'}
+                        style={{ backgroundColor: theme.colors.secondary }}
+                    >
                         <p className={'mb-2 text-xs text-neutral-500'}>Top users (7d)</p>
                         {stats.top_users.length === 0 ? (
                             <p className={'text-xs text-neutral-600'}>No usage data yet</p>
@@ -444,7 +615,10 @@ export default () => {
             {/* ── Chat + config sidebar ── */}
             <div className={'grid gap-4 lg:grid-cols-5'}>
                 <div className={'col-span-3 flex flex-col'}>
-                    <div className={'flex-1 overflow-y-auto rounded-xl p-4'} style={{ minHeight: '28vh', maxHeight: '44vh', backgroundColor: theme.colors.secondary }}>
+                    <div
+                        className={'flex-1 overflow-y-auto rounded-xl p-4'}
+                        style={{ minHeight: '28vh', maxHeight: '44vh', backgroundColor: theme.colors.secondary }}
+                    >
                         {messages.map((msg, i) => (
                             <MessageBubble key={i} message={msg} />
                         ))}
@@ -455,10 +629,15 @@ export default () => {
                             ⏳ Ollama is loading the model — this first response may take 20–60 seconds…
                         </p>
                     )}
-                    <div className={'mt-3 flex items-end gap-2 rounded-xl border border-neutral-700 px-4 py-3'} style={{ backgroundColor: theme.colors.secondary }}>
+                    <div
+                        className={'mt-3 flex items-end gap-2 rounded-xl border border-neutral-700 px-4 py-3'}
+                        style={{ backgroundColor: theme.colors.secondary }}
+                    >
                         <textarea
                             ref={inputRef}
-                            className={'flex-1 resize-none bg-transparent text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none'}
+                            className={
+                                'flex-1 resize-none bg-transparent text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none'
+                            }
                             placeholder={'Ask M12Labs-AI anything… (Enter to send, Shift+Enter for newline)'}
                             rows={2}
                             value={input}
@@ -470,17 +649,24 @@ export default () => {
                             {loading ? (
                                 <>
                                     <Spinner size={'small'} />
-                                    <Button variant={'secondary'} size={'sm'} onClick={cancelRequest}>Cancel</Button>
+                                    <Button variant={'secondary'} size={'sm'} onClick={cancelRequest}>
+                                        Cancel
+                                    </Button>
                                 </>
                             ) : (
-                                <Button size={'sm'} onClick={() => sendQuery(input)} disabled={input.trim().length < 1}>Send</Button>
+                                <Button size={'sm'} onClick={() => sendQuery(input)} disabled={input.trim().length < 1}>
+                                    Send
+                                </Button>
                             )}
                         </div>
                     </div>
                 </div>
 
                 <div className={'col-span-2 space-y-4'}>
-                    <div className={'rounded-xl border border-neutral-700 p-4'} style={{ backgroundColor: theme.colors.secondary }}>
+                    <div
+                        className={'rounded-xl border border-neutral-700 p-4'}
+                        style={{ backgroundColor: theme.colors.secondary }}
+                    >
                         <div className={'mb-3 flex items-center gap-2 text-sm font-medium text-neutral-200'}>
                             <SparklesIcon className={'h-4 w-4'} style={{ color: theme.colors.primary }} />
                             Configuration
@@ -488,7 +674,9 @@ export default () => {
                         <dl className={'space-y-1.5 text-xs'}>
                             <div className={'flex justify-between'}>
                                 <dt className={'text-neutral-500'}>Provider</dt>
-                                <dd className={'font-medium text-neutral-200'}>{settings?.mode === 'ollama' ? 'Ollama' : 'OpenAI'}</dd>
+                                <dd className={'font-medium text-neutral-200'}>
+                                    {settings?.mode === 'ollama' ? 'Ollama' : 'OpenAI'}
+                                </dd>
                             </div>
                             <div className={'flex justify-between'}>
                                 <dt className={'text-neutral-500'}>Model</dt>
@@ -504,13 +692,19 @@ export default () => {
                             </div>
                             <div className={'flex justify-between'}>
                                 <dt className={'text-neutral-500'}>Server AI Assistant</dt>
-                                <dd className={settings?.feature_server_assistant ? 'text-green-400' : 'text-neutral-400'}>
+                                <dd
+                                    className={
+                                        settings?.feature_server_assistant ? 'text-green-400' : 'text-neutral-400'
+                                    }
+                                >
                                     {settings?.feature_server_assistant ? 'Enabled' : 'Disabled'}
                                 </dd>
                             </div>
                             <div className={'flex justify-between'}>
                                 <dt className={'text-neutral-500'}>Crash Analysis</dt>
-                                <dd className={settings?.feature_crash_analysis ? 'text-green-400' : 'text-neutral-400'}>
+                                <dd
+                                    className={settings?.feature_crash_analysis ? 'text-green-400' : 'text-neutral-400'}
+                                >
                                     {settings?.feature_crash_analysis ? 'Enabled' : 'Disabled'}
                                 </dd>
                             </div>
@@ -521,8 +715,8 @@ export default () => {
                         </dl>
                     </div>
                     <AdminBox title={'Disable M12Labs-AI'}>
-                        Clicking the button below will disable M12Labs-AI for both clients and administrators. Your API key
-                        will remain in the database unless you choose to delete it manually.
+                        Clicking the button below will disable M12Labs-AI for both clients and administrators. Your API
+                        key will remain in the database unless you choose to delete it manually.
                         <div className={'mt-2 text-right'}>
                             <ToggleFeatureButton />
                         </div>

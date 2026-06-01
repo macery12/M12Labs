@@ -31,7 +31,7 @@ class ErrorBoundary extends Component<Props, State> {
     override componentDidCatch(error: Error, errorInfo: { componentStack: string }) {
         // Capture error so we can optionally render it in the UI when requested.
         // Still log to the console for server-side diagnostics.
-        // eslint-disable-next-line no-console
+
         console.error(error, errorInfo);
         this.setState({ error, errorInfo });
     }

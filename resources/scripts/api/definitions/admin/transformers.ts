@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 import { Allocation, Node } from '@/api/routes/admin/node';
 import { Server, ServerVariable } from '@/api/routes/admin/server';
 import { FractalResponseData, FractalResponseList } from '@/api/http';
@@ -268,7 +267,7 @@ export default class Transformers {
                     Transformers.toProduct,
                 ),
             },
-        } as Models.Category);
+        }) as Models.Category;
 
     static toCoupon = ({ attributes }: FractalResponseData): Models.Coupon => ({
         id: attributes.id,

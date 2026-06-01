@@ -41,11 +41,7 @@ export default () => {
     const emailEnabled = useStoreState(s => {
         const email = s.everest.data?.email;
         const resend = email?.resend;
-        return Boolean(
-            email?.enabled ??
-                (typeof resend !== 'boolean' ? resend?.enabled : undefined) ??
-                resend,
-        );
+        return Boolean(email?.enabled ?? (typeof resend !== 'boolean' ? resend?.enabled : undefined) ?? resend);
     });
     const discordEnabled = useStoreState(s => Boolean(s.everest.data?.auth?.modules?.discord?.enabled));
 
@@ -116,7 +112,9 @@ export default () => {
                                     {billingProfile.postal_code}
                                 </p>
                                 <p>{billingProfile.country}</p>
-                                {billingProfile.phone && <p className={'mt-1 text-neutral-400'}>{billingProfile.phone}</p>}
+                                {billingProfile.phone && (
+                                    <p className={'mt-1 text-neutral-400'}>{billingProfile.phone}</p>
+                                )}
                             </div>
                         ) : (
                             <p className={'text-sm text-neutral-400'}>
@@ -152,5 +150,3 @@ export default () => {
         </PageContentBlock>
     );
 };
-
-

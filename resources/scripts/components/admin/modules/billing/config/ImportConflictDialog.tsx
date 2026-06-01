@@ -98,7 +98,7 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
             const nextAllowed = checked
                 ? Array.from(new Set([...state.allowedEggs, eggId]))
                 : state.allowedEggs.filter(id => id !== eggId);
-            const nextPrimary = nextAllowed.includes(state.eggId ?? -1) ? state.eggId : nextAllowed[0] ?? null;
+            const nextPrimary = nextAllowed.includes(state.eggId ?? -1) ? state.eggId : (nextAllowed[0] ?? null);
             return { ...state, eggId: nextPrimary, allowedEggs: nextAllowed, saved: false };
         });
     };
@@ -116,7 +116,13 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
         const state = stateByCategory[conflict.category_key];
         if (!state) return false;
         if (state.dropCategory) return true;
-        return state.saved && !!state.nestId && !!state.eggId && state.allowedEggs.length > 0 && state.allowedEggs.includes(state.eggId);
+        return (
+            state.saved &&
+            !!state.nestId &&
+            !!state.eggId &&
+            state.allowedEggs.length > 0 &&
+            state.allowedEggs.includes(state.eggId)
+        );
     };
 
     const allDone = conflicts.length > 0 && conflicts.every(isConflictDone);
@@ -128,8 +134,8 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
             const state = stateByCategory[conflict.category_key];
             if (!state) continue;
             categories[conflict.category_key] = {
-                nest_id: state.dropCategory ? undefined : state.nestId ?? undefined,
-                egg_id: state.dropCategory ? undefined : state.eggId ?? undefined,
+                nest_id: state.dropCategory ? undefined : (state.nestId ?? undefined),
+                egg_id: state.dropCategory ? undefined : (state.eggId ?? undefined),
                 allowed_eggs: state.dropCategory ? undefined : state.allowedEggs,
                 drop_category: state.dropCategory,
             };
@@ -138,7 +144,7 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
     };
 
     const activeState = activeConflict ? stateByCategory[activeConflict.category_key] : null;
-    const activeNestEggs = activeState?.nestId ? eggsByNest[activeState.nestId] ?? [] : [];
+    const activeNestEggs = activeState?.nestId ? (eggsByNest[activeState.nestId] ?? []) : [];
 
     const canApplyActive =
         !!activeConflict &&
@@ -163,7 +169,6 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
                 <>
                     {/* Two-column layout */}
                     <div className={'flex min-h-[440px] gap-3 overflow-hidden rounded border border-neutral-700'}>
-
                         {/* ── Left panel: conflict list ── */}
                         <div className={'flex w-64 shrink-0 flex-col border-r border-neutral-700 bg-zinc-800'}>
                             <div className={'border-b border-neutral-700 px-4 py-2.5'}>
@@ -192,7 +197,9 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
                                                 onClick={() => setActiveConflictKey(conflict.category_key)}
                                                 className={'w-full px-4 py-3 text-left'}
                                             >
-                                                <p className={`truncate text-sm font-medium ${isActive ? 'text-slate-50' : 'text-neutral-200'}`}>
+                                                <p
+                                                    className={`truncate text-sm font-medium ${isActive ? 'text-slate-50' : 'text-neutral-200'}`}
+                                                >
                                                     {conflict.category_name}
                                                 </p>
                                                 <span
@@ -200,8 +207,8 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
                                                         dropped
                                                             ? 'bg-red-500/20 text-red-300'
                                                             : done
-                                                                ? 'bg-green-500/20 text-green-300'
-                                                                : 'bg-amber-500/20 text-amber-200'
+                                                              ? 'bg-green-500/20 text-green-300'
+                                                              : 'bg-amber-500/20 text-amber-200'
                                                     }`}
                                                 >
                                                     {dropped ? 'Dropped' : done ? 'Resolved' : 'Needs action'}
@@ -213,7 +220,9 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
                                                     <button
                                                         type={'button'}
                                                         onClick={() => undropConflict(conflict.category_key)}
-                                                        className={'text-xs text-neutral-400 transition-colors hover:text-neutral-200'}
+                                                        className={
+                                                            'text-xs text-neutral-400 transition-colors hover:text-neutral-200'
+                                                        }
                                                     >
                                                         Undo drop
                                                     </button>
@@ -221,7 +230,9 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
                                                     <button
                                                         type={'button'}
                                                         onClick={() => dropConflict(conflict.category_key)}
-                                                        className={'text-xs font-bold uppercase tracking-wide text-red-400 transition-colors hover:text-red-200'}
+                                                        className={
+                                                            'text-xs font-bold uppercase tracking-wide text-red-400 transition-colors hover:text-red-200'
+                                                        }
                                                     >
                                                         Drop
                                                     </button>
@@ -242,14 +253,18 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
                             ) : activeState.dropCategory ? (
                                 <div className={'p-5'}>
                                     <div className={'rounded border border-red-700/40 bg-red-950/20 p-4'}>
-                                        <p className={'text-sm font-semibold text-red-300'}>{activeConflict.category_name}</p>
+                                        <p className={'text-sm font-semibold text-red-300'}>
+                                            {activeConflict.category_name}
+                                        </p>
                                         <p className={'mt-1 text-sm text-red-400/70'}>
                                             This category and all its products will be skipped during import.
                                         </p>
                                         <button
                                             type={'button'}
                                             onClick={() => undropConflict(activeConflict.category_key)}
-                                            className={'mt-3 text-xs text-neutral-400 underline underline-offset-2 transition-colors hover:text-neutral-200'}
+                                            className={
+                                                'mt-3 text-xs text-neutral-400 underline underline-offset-2 transition-colors hover:text-neutral-200'
+                                            }
                                         >
                                             Undo — remap this category instead
                                         </button>
@@ -266,7 +281,11 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
 
                                     {/* Issues */}
                                     <div className={'rounded border border-amber-700/30 bg-amber-950/20 p-3'}>
-                                        <p className={'mb-2 text-xs font-semibold uppercase tracking-wide text-amber-400/80'}>
+                                        <p
+                                            className={
+                                                'mb-2 text-xs font-semibold uppercase tracking-wide text-amber-400/80'
+                                            }
+                                        >
                                             Detected issues
                                         </p>
                                         <ul className={'space-y-1'}>
@@ -309,7 +328,11 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
                                     {/* Allowed Eggs */}
                                     <div>
                                         <Label>Allowed Eggs</Label>
-                                        <div className={'mt-1 max-h-40 overflow-y-auto rounded border border-neutral-700 bg-zinc-900/60 divide-y divide-neutral-700/50'}>
+                                        <div
+                                            className={
+                                                'mt-1 max-h-40 overflow-y-auto rounded border border-neutral-700 bg-zinc-900/60 divide-y divide-neutral-700/50'
+                                            }
+                                        >
                                             {!activeState.nestId ? (
                                                 <p className={'px-3 py-2.5 text-sm text-neutral-500'}>
                                                     Pick a nest first.
@@ -340,7 +363,9 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
                                                                     )
                                                                 }
                                                             />
-                                                            <span className={'text-sm text-neutral-200'}>{egg.name}</span>
+                                                            <span className={'text-sm text-neutral-200'}>
+                                                                {egg.name}
+                                                            </span>
                                                         </div>
                                                         <span className={'text-xs text-neutral-500'}>#{egg.id}</span>
                                                     </div>
@@ -392,17 +417,12 @@ export default ({ open, loading, payload, onClose, onSubmit }: Props) => {
                             )}
                         </div>
                     </div>
-
                 </>
             )}
 
             <Dialog.Footer>
                 <Button.Text onClick={onClose}>Cancel</Button.Text>
-                {allDone && (
-                    <span className={'mr-auto text-xs text-green-300'}>
-                        All conflicts resolved
-                    </span>
-                )}
+                {allDone && <span className={'mr-auto text-xs text-green-300'}>All conflicts resolved</span>}
                 <Button onClick={submitImport} disabled={!allDone || loading}>
                     {loading ? 'Importing...' : 'Import'}
                 </Button>

@@ -118,12 +118,14 @@ export default ({ onDismiss }: ConfigureAIProps) => {
             </div>
 
             <Formik
-                initialValues={{
-                    mode: 'openai',
-                    endpoint: 'https://api.openai.com/v1',
-                    key: '',
-                    model: 'gpt-3.5-turbo',
-                } as Values}
+                initialValues={
+                    {
+                        mode: 'openai',
+                        endpoint: 'https://api.openai.com/v1',
+                        key: '',
+                        model: 'gpt-3.5-turbo',
+                    } as Values
+                }
                 validationSchema={validation}
                 onSubmit={submit}
             >
@@ -179,9 +181,7 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                             <label className={'block text-sm text-gray-400 mb-1'}>API Endpoint URL</label>
                             <Input
                                 placeholder={
-                                    values.mode === 'ollama'
-                                        ? 'http://localhost:11434/v1'
-                                        : 'https://api.openai.com/v1'
+                                    values.mode === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1'
                                 }
                                 value={values.endpoint}
                                 onChange={e => setFieldValue('endpoint', e.currentTarget.value)}
@@ -222,7 +222,7 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                                     Your API key is stored securely and used to authenticate requests.
                                 </p>
 
-                                {!(values.mode === 'ollama' || ((values.key || '').length >= 20)) && (
+                                {!(values.mode === 'ollama' || (values.key || '').length >= 20) && (
                                     <div className={'mt-2 text-xs text-red-400'}>
                                         API key looks too short. Make sure you pasted the full key.
                                     </div>
@@ -247,7 +247,7 @@ export default ({ onDismiss }: ConfigureAIProps) => {
                                 disabled={
                                     isSubmitting ||
                                     loading ||
-                                    !(values.mode === 'ollama' || ((values.key || '').length >= 20))
+                                    !(values.mode === 'ollama' || (values.key || '').length >= 20)
                                 }
                             >
                                 Save

@@ -6,11 +6,7 @@ import InputSpinner from '@/elements/InputSpinner';
 import Input from '@/elements/Input';
 import Switch from '@/elements/Switch';
 import { debounce } from 'debounce';
-import {
-    updateStartupVariable,
-    getServerStartup,
-    getStartupVariableVersionOptions,
-} from '@/api/routes/server/startup';
+import { updateStartupVariable, getServerStartup, getStartupVariableVersionOptions } from '@/api/routes/server/startup';
 import type { StartupVariableVersionOption } from '@/api/routes/server/startup';
 import useFlash from '@/plugins/useFlash';
 import FlashMessageRender from '@/elements/FlashMessageRender';
@@ -66,7 +62,8 @@ const VariableBox = ({ variable }: Props) => {
     const variableContext = useMemo(() => {
         return serverVariables.reduce<Record<string, string>>((accumulator, currentVariable) => {
             if (currentVariable.envVariable === 'MINECRAFT_VERSION' || currentVariable.envVariable === 'MC_VERSION') {
-                accumulator[currentVariable.envVariable] = currentVariable.serverValue ?? currentVariable.defaultValue ?? '';
+                accumulator[currentVariable.envVariable] =
+                    currentVariable.serverValue ?? currentVariable.defaultValue ?? '';
             }
 
             return accumulator;
@@ -187,7 +184,9 @@ const VariableBox = ({ variable }: Props) => {
                 data => ({
                     ...data!,
                     invocation,
-                    variables: (data!.variables || []).map(v => (v.envVariable === response.envVariable ? response : v)),
+                    variables: (data!.variables || []).map(v =>
+                        v.envVariable === response.envVariable ? response : v,
+                    ),
                 }),
                 false,
             );
@@ -234,7 +233,9 @@ const VariableBox = ({ variable }: Props) => {
                     <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-semibold">
                             {!variable.isEditable && (
-                                <span className="mr-2 mb-1 rounded-full bg-neutral-700 py-1 px-2 text-xs">Read Only</span>
+                                <span className="mr-2 mb-1 rounded-full bg-neutral-700 py-1 px-2 text-xs">
+                                    Read Only
+                                </span>
                             )}
                             {variable.name}
                         </p>

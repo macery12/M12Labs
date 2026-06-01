@@ -58,9 +58,10 @@ export default () => {
                         addFlash({ key: 'billing:config', type: 'success', message: 'Import completed successfully' });
                     })
                     .catch(error => {
-                        const conflictResponse = error?.response?.status === 409
-                            ? (error.response.data as BillingImportConflictResponse)
-                            : null;
+                        const conflictResponse =
+                            error?.response?.status === 409
+                                ? (error.response.data as BillingImportConflictResponse)
+                                : null;
 
                         if (conflictResponse?.object === 'billing_import_conflict') {
                             setLoading(false);
@@ -106,9 +107,8 @@ export default () => {
                 addFlash({ key: 'billing:config', type: 'success', message: 'Import completed successfully' });
             })
             .catch(error => {
-                const conflictResponse = error?.response?.status === 409
-                    ? (error.response.data as BillingImportConflictResponse)
-                    : null;
+                const conflictResponse =
+                    error?.response?.status === 409 ? (error.response.data as BillingImportConflictResponse) : null;
 
                 if (conflictResponse?.object === 'billing_import_conflict') {
                     setLoading(false);

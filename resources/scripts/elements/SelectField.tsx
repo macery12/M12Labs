@@ -43,7 +43,6 @@ export const SelectStyle: StylesConfig<T, any, any> = {
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     container: (base: CSSObject, _props: ContainerProps<T, any, any>): CSSObject => {
         return {
             ...base,
@@ -81,28 +80,24 @@ export const SelectStyle: StylesConfig<T, any, any> = {
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     group: (base: CSSObject, _props: GroupProps<T, any, any>): CSSObject => {
         return {
             ...base,
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     groupHeading: (base: CSSObject, _props: GroupHeadingProps<T, any, any>): CSSObject => {
         return {
             ...base,
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     indicatorsContainer: (base: CSSObject, _props: IndicatorsContainerProps<T, any, any>): CSSObject => {
         return {
             ...base,
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     indicatorSeparator: (base: CSSObject, _props: IndicatorSeparatorProps<T, any, any>): CSSObject => {
         return {
             ...base,
@@ -110,7 +105,6 @@ export const SelectStyle: StylesConfig<T, any, any> = {
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     input: (base: CSSObject, _props: InputProps): CSSObject => {
         return {
             ...base,
@@ -119,21 +113,18 @@ export const SelectStyle: StylesConfig<T, any, any> = {
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     loadingIndicator: (base: CSSObject, _props: LoadingIndicatorProps<T, any, any>): CSSObject => {
         return {
             ...base,
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     loadingMessage: (base: CSSObject, _props: NoticeProps<T, any, any>): CSSObject => {
         return {
             ...base,
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     menu: (base: CSSObject, _props: MenuProps<T, any, any>): CSSObject => {
         return {
             ...base,
@@ -142,21 +133,18 @@ export const SelectStyle: StylesConfig<T, any, any> = {
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     menuList: (base: CSSObject, _props: MenuListProps<T, any, any>): CSSObject => {
         return {
             ...base,
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     menuPortal: (base: CSSObject, _props: any): CSSObject => {
         return {
             ...base,
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     multiValue: (base: CSSObject, _props: MultiValueProps<T, any>): CSSObject => {
         return {
             ...base,
@@ -165,7 +153,6 @@ export const SelectStyle: StylesConfig<T, any, any> = {
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     multiValueLabel: (base: CSSObject, _props: MultiValueProps<T, any>): CSSObject => {
         return {
             ...base,
@@ -173,21 +160,18 @@ export const SelectStyle: StylesConfig<T, any, any> = {
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     multiValueRemove: (base: CSSObject, _props: MultiValueRemoveProps<T, any>): CSSObject => {
         return {
             ...base,
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     noOptionsMessage: (base: CSSObject, _props: NoticeProps<T, any, any>): CSSObject => {
         return {
             ...base,
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     option: (base: CSSObject, _props: OptionProps<T, any, any>): CSSObject => {
         return {
             ...base,
@@ -200,7 +184,6 @@ export const SelectStyle: StylesConfig<T, any, any> = {
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     placeholder: (base: CSSObject, _props: PlaceholderProps<T, any, any>): CSSObject => {
         return {
             ...base,
@@ -209,7 +192,6 @@ export const SelectStyle: StylesConfig<T, any, any> = {
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     singleValue: (base: CSSObject, _props: SingleValueProps<T, any>): CSSObject => {
         return {
             ...base,
@@ -217,7 +199,6 @@ export const SelectStyle: StylesConfig<T, any, any> = {
         };
     },
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     valueContainer: (base: CSSObject, _props: ValueContainerProps<T, any>): CSSObject => {
         return {
             ...base,

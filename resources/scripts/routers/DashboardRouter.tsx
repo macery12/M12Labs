@@ -37,11 +37,7 @@ function DashboardRouter() {
     const emailEnabled = useStoreState(state => {
         const email = state.everest.data?.email;
         const resend = email?.resend;
-        return Boolean(
-            email?.enabled ??
-                (typeof resend !== 'boolean' ? resend?.enabled : undefined) ??
-                resend,
-        );
+        return Boolean(email?.enabled ?? (typeof resend !== 'boolean' ? resend?.enabled : undefined) ?? resend);
     });
     const verificationRules = normalizeVerificationRules(
         useStoreState(state => state.everest.data?.email?.verification_rules),

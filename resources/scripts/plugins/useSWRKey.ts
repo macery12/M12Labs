@@ -2,7 +2,7 @@ import { useDeepCompareMemo } from '@/plugins/useDeepCompareMemo';
 import { ServerContext } from '@/state/server';
 import { useStoreState } from '@/state/hooks';
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 type Context = string | string[] | (string | number | null | {})[];
 
 function useSWRKey(context: Context, prefix: string | null = null): string {

@@ -65,10 +65,16 @@ const AdminBox = ({
             >
                 {typeof title === 'string' ? (
                     <p css={tw`font-semibold`}>
-                        {icon && (typeof icon === 'object' && ('iconName' in icon || 'prefix' in icon || Array.isArray(icon))
-                            ? <FontAwesomeIcon icon={icon as IconProp} css={tw`mr-2 text-neutral-300`} />
-                            : (() => { const SvgIcon = icon as ComponentType<SVGProps<SVGSVGElement>>; return <SvgIcon className="mr-2 h-4 w-4 inline text-neutral-300" />; })()
-                        )}
+                        {icon &&
+                            (typeof icon === 'object' &&
+                            ('iconName' in icon || 'prefix' in icon || Array.isArray(icon)) ? (
+                                <FontAwesomeIcon icon={icon as IconProp} css={tw`mr-2 text-neutral-300`} />
+                            ) : (
+                                (() => {
+                                    const SvgIcon = icon as ComponentType<SVGProps<SVGSVGElement>>;
+                                    return <SvgIcon className="mr-2 h-4 w-4 inline text-neutral-300" />;
+                                })()
+                            ))}
                         {title}
                     </p>
                 ) : (

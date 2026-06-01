@@ -109,7 +109,6 @@ const updateRole = (
 };
 
 const getRoles = (include: string[] = []) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { page, filters, sort, sortDirection } = useContext(Context);
 
     const params = {};
@@ -125,7 +124,6 @@ const getRoles = (include: string[] = []) => {
         params.sort = (sortDirection ? '-' : '') + sort;
     }
 
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     return useSWR<PaginatedResult<UserRole>>(['roles', page, filters, sort, sortDirection], async () => {
         const { data } = await http.get('/api/application/roles', {
             params: { include: include.join(','), page, ...params },

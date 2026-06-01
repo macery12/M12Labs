@@ -41,7 +41,6 @@ export const Option = <T extends IdObj>({
 
     // This should never be true, but just in-case we set it to an empty function to make sure shit doesn't blow up.
     if (onClick === undefined) {
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         onClick = () => () => {};
     }
 

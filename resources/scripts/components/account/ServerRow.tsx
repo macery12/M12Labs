@@ -49,8 +49,8 @@ const UtilBox = ({
     const stateLabel = server?.isTransferring
         ? 'Transferring'
         : server?.status === 'suspended'
-        ? 'Suspended'
-        : 'Offline';
+          ? 'Suspended'
+          : 'Offline';
 
     return (
         <div

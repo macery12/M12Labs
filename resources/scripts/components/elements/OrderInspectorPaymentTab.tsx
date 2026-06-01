@@ -31,8 +31,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
 
     const providerUrl = getProviderDashboardUrl();
 
-    const truncate = (str: string, max = 32) =>
-        str.length > max ? `${str.substring(0, max)}…` : str;
+    const truncate = (str: string, max = 32) => (str.length > max ? `${str.substring(0, max)}…` : str);
 
     return (
         <div css={tw`space-y-6`}>
@@ -124,9 +123,7 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                                 </div>
                             )}
                             {/* Amount + currency */}
-                            <div
-                                css={tw`flex justify-between items-start border-t border-neutral-800 pt-3 mt-3`}
-                            >
+                            <div css={tw`flex justify-between items-start border-t border-neutral-800 pt-3 mt-3`}>
                                 <span css={tw`text-sm text-gray-400`}>Charged Amount</span>
                                 <span css={tw`text-sm text-white font-bold`}>
                                     {tx.currency?.toUpperCase()} {Number(tx.amount).toFixed(2)}
@@ -195,12 +192,12 @@ const OrderInspectorPaymentTab: React.FC<Props> = ({ order }) => {
                             {order.status === 'processed'
                                 ? 'Payment successfully processed and order completed.'
                                 : order.status === 'pending'
-                                ? 'Payment is pending confirmation from the provider.'
-                                : order.status === 'failed'
-                                ? 'Payment failed or was declined by the provider.'
-                                : order.status === 'cancelled'
-                                ? 'Payment was cancelled by the customer.'
-                                : 'Order has expired or reached an unknown state.'}
+                                  ? 'Payment is pending confirmation from the provider.'
+                                  : order.status === 'failed'
+                                    ? 'Payment failed or was declined by the provider.'
+                                    : order.status === 'cancelled'
+                                      ? 'Payment was cancelled by the customer.'
+                                      : 'Order has expired or reached an unknown state.'}
                         </p>
                     </div>
                 </div>

@@ -139,27 +139,23 @@ function AdminRouter() {
                         <ErrorBoundary>
                             <Routes>
                                 {routes.admin
-                                    .filter(
-                                        route =>
-                                            !route.condition ||
-                                            route.condition({ activityEnabled }),
-                                    )
+                                    .filter(route => !route.condition || route.condition({ activityEnabled }))
                                     .map(({ route, component: Component, permission }) => (
-                                    <Route
-                                        key={route}
-                                        path={route}
-                                        element={
-                                            <Spinner.Suspense>
-                                                {permission ? (
-                                                    <RequireAdminPermission permission={permission}>
+                                        <Route
+                                            key={route}
+                                            path={route}
+                                            element={
+                                                <Spinner.Suspense>
+                                                    {permission ? (
+                                                        <RequireAdminPermission permission={permission}>
+                                                            <Component />
+                                                        </RequireAdminPermission>
+                                                    ) : (
                                                         <Component />
-                                                    </RequireAdminPermission>
-                                                ) : (
-                                                    <Component />
-                                                )}
-                                            </Spinner.Suspense>
-                                        }
-                                    />
+                                                    )}
+                                                </Spinner.Suspense>
+                                            }
+                                        />
                                     ))}
                                 <Route path={'*'} element={<NotFound />} />
                             </Routes>

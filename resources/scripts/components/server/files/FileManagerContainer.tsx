@@ -119,7 +119,6 @@ export default () => {
     useEffect(() => {
         setSortField(persistedSortField);
         setSortDirection(persistedSortDirection);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -150,10 +149,7 @@ export default () => {
     }, [files, searchTerm, sortField, sortDirection]);
 
     // Total size of all displayed files (folders report 0 size, which is correct)
-    const totalSize = useMemo(
-        () => displayFiles.reduce((acc, f) => acc + (f.isFile ? f.size : 0), 0),
-        [displayFiles],
-    );
+    const totalSize = useMemo(() => displayFiles.reduce((acc, f) => acc + (f.isFile ? f.size : 0), 0), [displayFiles]);
 
     if (error) {
         return <ServerError message={httpErrorToHuman(error)} onRetry={() => mutate()} />;
@@ -239,7 +235,9 @@ export default () => {
             )}
 
             {/* ── Main content + optional connection panel ── */}
-            <div className={`grid gap-4 ${showConnectionPanel ? 'xl:grid-cols-[minmax(0,1fr)_minmax(26rem,32rem)]' : ''}`}>
+            <div
+                className={`grid gap-4 ${showConnectionPanel ? 'xl:grid-cols-[minmax(0,1fr)_minmax(26rem,32rem)]' : ''}`}
+            >
                 {/* File browser — always primary */}
                 <div className={'min-w-0'}>
                     {!files ? (
@@ -284,9 +282,7 @@ export default () => {
                                     : `${displayFiles.length} item${displayFiles.length !== 1 ? 's' : ''}`}
                                 {totalSize > 0 && ` · ${formatBytes(totalSize)}`}
                             </span>
-                            {filteredFiles.length > 250 && (
-                                <span css={tw`text-yellow-500`}>Showing first 250</span>
-                            )}
+                            {filteredFiles.length > 250 && <span css={tw`text-yellow-500`}>Showing first 250</span>}
                         </div>
                     )}
                 </div>

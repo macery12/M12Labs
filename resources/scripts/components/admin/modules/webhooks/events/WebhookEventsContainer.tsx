@@ -72,14 +72,17 @@ export default () => {
     if (!events || !filteredEvents) return <Spinner size={'large'} centered />;
 
     // Group events by category
-    const categorizedEvents = filteredEvents.reduce((acc, event) => {
-        const category = event.key.split(':')[1] ?? 'unknown'; // Extract category from key like "admin:billing:update"
-        if (!acc[category]) {
-            acc[category] = [];
-        }
-        acc[category].push(event);
-        return acc;
-    }, {} as Record<string, WebhookEvent[]>);
+    const categorizedEvents = filteredEvents.reduce(
+        (acc, event) => {
+            const category = event.key.split(':')[1] ?? 'unknown'; // Extract category from key like "admin:billing:update"
+            if (!acc[category]) {
+                acc[category] = [];
+            }
+            acc[category].push(event);
+            return acc;
+        },
+        {} as Record<string, WebhookEvent[]>,
+    );
 
     // Sort categories alphabetically
     const sortedCategories = Object.keys(categorizedEvents).sort();

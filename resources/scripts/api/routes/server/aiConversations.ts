@@ -25,9 +25,7 @@ export const loadConversation = (
     serverUuid: string,
     conversationId: number,
 ): Promise<{ conversation: Conversation; messages: ConversationMessage[] }> =>
-    http
-        .get(`/api/client/servers/${serverUuid}/ai/conversations/${conversationId}`)
-        .then(r => r.data.data);
+    http.get(`/api/client/servers/${serverUuid}/ai/conversations/${conversationId}`).then(r => r.data.data);
 
 export const deleteConversation = (serverUuid: string, conversationId: number): Promise<void> =>
     http.delete(`/api/client/servers/${serverUuid}/ai/conversations/${conversationId}`).then(() => undefined);
@@ -36,9 +34,7 @@ export const toggleSaveConversation = (
     serverUuid: string,
     conversationId: number,
 ): Promise<{ id: number; is_saved: boolean; expires_at: string | null }> =>
-    http
-        .patch(`/api/client/servers/${serverUuid}/ai/conversations/${conversationId}/save`)
-        .then(r => r.data.data);
+    http.patch(`/api/client/servers/${serverUuid}/ai/conversations/${conversationId}/save`).then(r => r.data.data);
 
 export const appendMessages = (
     serverUuid: string,

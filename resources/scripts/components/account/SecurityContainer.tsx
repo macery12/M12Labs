@@ -149,8 +149,8 @@ export default () => {
                                                         {session.revokedAt
                                                             ? 'Revoked'
                                                             : session.isCurrent
-                                                            ? 'Current'
-                                                            : 'Log out'}
+                                                              ? 'Current'
+                                                              : 'Log out'}
                                                     </Button.Text>
                                                 </td>
                                             </tr>
@@ -214,8 +214,8 @@ export default () => {
                                                 {session.revokedAt
                                                     ? 'Revoked'
                                                     : session.isCurrent
-                                                    ? 'Current'
-                                                    : 'Log out'}
+                                                      ? 'Current'
+                                                      : 'Log out'}
                                             </Button.Text>
                                         </div>
                                     </div>

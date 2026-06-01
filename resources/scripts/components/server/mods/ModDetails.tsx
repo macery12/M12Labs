@@ -349,8 +349,8 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                                                 isPremium
                                                     ? 'Premium (blocked)'
                                                     : isExternal
-                                                    ? 'External only'
-                                                    : undefined
+                                                      ? 'External only'
+                                                      : undefined
                                             }
                                         />
                                     </FileItem>

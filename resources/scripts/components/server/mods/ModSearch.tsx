@@ -45,7 +45,7 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
     const [categoryId, setCategoryId] = useState<string>('');
     const [minRating, setMinRating] = useState<string>(initialParams.minRating?.toString() ?? '');
     const [platform, setPlatform] = useState<string>(
-        Array.isArray(initialParams.platform) ? initialParams.platform[0] ?? '' : initialParams.platform ?? '',
+        Array.isArray(initialParams.platform) ? (initialParams.platform[0] ?? '') : (initialParams.platform ?? ''),
     );
 
     const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);

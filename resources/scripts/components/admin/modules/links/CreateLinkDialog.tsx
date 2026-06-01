@@ -29,7 +29,7 @@ export default ({ link, setOpen }: { link?: CustomLink; setOpen: Dispatch<SetSta
     };
 
     const updateValues = (e: FormEvent<HTMLInputElement>) => {
-        setValues(prev => ({ ...prev, [e.currentTarget?.name]: e.currentTarget?.value } as Values));
+        setValues(prev => ({ ...prev, [e.currentTarget?.name]: e.currentTarget?.value }) as Values);
     };
 
     return (

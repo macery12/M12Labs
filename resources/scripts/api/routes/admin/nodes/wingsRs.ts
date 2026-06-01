@@ -103,7 +103,7 @@ export const getSystemStats = (nodeId: number): Promise<SystemStats> => {
 
 export const getSystemLogs = (nodeId: number): Promise<LogFile[]> => {
     return http.get(`/api/application/nodes/${nodeId}/wings-rs/logs`).then(({ data }) => {
-        const items = Array.isArray(data) ? data : data?.log_files ?? data?.files;
+        const items = Array.isArray(data) ? data : (data?.log_files ?? data?.files);
 
         if (!Array.isArray(items)) {
             return [];

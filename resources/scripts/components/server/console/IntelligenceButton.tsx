@@ -99,7 +99,13 @@ export default () => {
     };
 
     const analyzeLogs = () => {
-        let data = stripAnsi(log.slice(-MAX_LOG_LINES).map(it => it.replace('\r', '')).join('\n')) || '';
+        let data =
+            stripAnsi(
+                log
+                    .slice(-MAX_LOG_LINES)
+                    .map(it => it.replace('\r', ''))
+                    .join('\n'),
+            ) || '';
         // Truncate from the start so we keep the most recent (most relevant) log lines
         if (data.length > MAX_LOG_CHARS) {
             data = data.slice(data.length - MAX_LOG_CHARS);
@@ -139,51 +145,60 @@ export default () => {
         };
     }, [connected, instance, status]);
 
-    if (!isEnabled) return <></>;    
+    if (!isEnabled) return <></>;
     if (!assistantEnabled && !crashEnabled) return <></>;
 
     return (
         <>
             {/* Crash toast — only shown when crash_analysis feature is enabled */}
             {crashEnabled && (
-            <div
-                className={'fixed bottom-6 right-6 z-50 transition-all duration-500'}
-                style={{ transform: toastVisible ? 'translateY(0)' : 'translateY(120%)', opacity: toastVisible ? 1 : 0, pointerEvents: toastVisible ? 'auto' : 'none' }}
-            >
                 <div
-                    className={'flex items-center gap-3 rounded-xl border border-red-700/60 px-4 py-3 shadow-2xl'}
-                    style={{ backgroundColor: theme.colors.secondary }}
+                    className={'fixed bottom-6 right-6 z-50 transition-all duration-500'}
+                    style={{
+                        transform: toastVisible ? 'translateY(0)' : 'translateY(120%)',
+                        opacity: toastVisible ? 1 : 0,
+                        pointerEvents: toastVisible ? 'auto' : 'none',
+                    }}
                 >
-                    <SparklesIcon className={'h-5 w-5 flex-shrink-0 text-red-400'} />
-                    <div>
-                        <p className={'text-sm font-semibold text-red-300'}>Crash Detected</p>
-                        <p className={'text-xs text-neutral-400'}>AI can help diagnose this</p>
-                    </div>
-                    <button
-                        className={'ml-2 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90'}
-                        style={{ backgroundColor: theme.colors.primary }}
-                        onClick={() => { dismissToast(); setOpen(true); }}
+                    <div
+                        className={'flex items-center gap-3 rounded-xl border border-red-700/60 px-4 py-3 shadow-2xl'}
+                        style={{ backgroundColor: theme.colors.secondary }}
                     >
-                        Analyze
-                    </button>
-                    <button onClick={dismissToast} className={'ml-1 text-neutral-500 hover:text-neutral-200'}>
-                        <XIcon className={'h-4 w-4'} />
-                    </button>
+                        <SparklesIcon className={'h-5 w-5 flex-shrink-0 text-red-400'} />
+                        <div>
+                            <p className={'text-sm font-semibold text-red-300'}>Crash Detected</p>
+                            <p className={'text-xs text-neutral-400'}>AI can help diagnose this</p>
+                        </div>
+                        <button
+                            className={
+                                'ml-2 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90'
+                            }
+                            style={{ backgroundColor: theme.colors.primary }}
+                            onClick={() => {
+                                dismissToast();
+                                setOpen(true);
+                            }}
+                        >
+                            Analyze
+                        </button>
+                        <button onClick={dismissToast} className={'ml-1 text-neutral-500 hover:text-neutral-200'}>
+                            <XIcon className={'h-4 w-4'} />
+                        </button>
+                    </div>
                 </div>
-            </div>
             )}
 
             {/* Ask AI button — only shown when server_assistant feature is enabled */}
             {assistantEnabled && (
-            <Button
-                size={'sm'}
-                variant={hasCrash ? 'danger' : 'secondary'}
-                onClick={() => setOpen(true)}
-                className={hasCrash ? 'animate-pulse' : ''}
-            >
-                <SparklesIcon className={'mr-1 w-4'} />
-                {hasCrash ? 'Crash Detected' : 'Ask AI'}
-            </Button>
+                <Button
+                    size={'sm'}
+                    variant={hasCrash ? 'danger' : 'secondary'}
+                    onClick={() => setOpen(true)}
+                    className={hasCrash ? 'animate-pulse' : ''}
+                >
+                    <SparklesIcon className={'mr-1 w-4'} />
+                    {hasCrash ? 'Crash Detected' : 'Ask AI'}
+                </Button>
             )}
 
             <Dialog
@@ -238,7 +253,11 @@ export default () => {
                             </div>
                         )}
                         {response && (
-                            <div className={'max-h-64 overflow-y-auto whitespace-pre-wrap rounded-lg bg-black/50 p-3 text-sm'}>
+                            <div
+                                className={
+                                    'max-h-64 overflow-y-auto whitespace-pre-wrap rounded-lg bg-black/50 p-3 text-sm'
+                                }
+                            >
                                 {response}
                             </div>
                         )}
@@ -267,4 +286,3 @@ export default () => {
         </>
     );
 };
-

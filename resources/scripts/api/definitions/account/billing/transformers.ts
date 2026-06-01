@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 import { FractalResponseData } from '@/api/http';
 import * as Models from '@definitions/account/billing/models';
 

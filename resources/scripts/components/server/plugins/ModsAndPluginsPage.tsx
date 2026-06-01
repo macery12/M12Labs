@@ -42,7 +42,7 @@ const ComingSoon = ({ label }: { label: string }) => (
 const contentOrder: ContentTab[] = ['installed', 'mods', 'modpacks', 'plugins'];
 
 const resolveActive = <T,>(preferred: T | null, available: T[]): T | null =>
-    preferred && available.includes(preferred) ? preferred : available[0] ?? null;
+    preferred && available.includes(preferred) ? preferred : (available[0] ?? null);
 
 type ProvidersByType = Record<ContentType, ProviderKey[]>;
 const marketplaceTypes: ContentType[] = ['mods', 'modpacks', 'plugins'];
@@ -129,8 +129,8 @@ const ModsAndPluginsPage = () => {
     const [activeType, setActiveType] = useState<ContentTab | null>(
         () => resolveActive(initialType, availableContentTypes) ?? defaultType,
     );
-    const [activeProvider, setActiveProvider] = useState<ProviderKey | null>(() =>
-        resolveActive(initialProvider, initialProviderPool) ?? null,
+    const [activeProvider, setActiveProvider] = useState<ProviderKey | null>(
+        () => resolveActive(initialProvider, initialProviderPool) ?? null,
     );
 
     useEffect(() => {

@@ -15,7 +15,15 @@ import Field from '@/elements/Field';
 import Spinner from '@/elements/Spinner';
 import Alert from '@/elements/alert/Alert';
 import { Button } from '@/elements/button';
-import { faBuilding, faCloud, faFileInvoice, faHardDrive, faRotate, faShieldHalved, faTrash } from '@fortawesome/free-solid-svg-icons';
+import {
+    faBuilding,
+    faCloud,
+    faFileInvoice,
+    faHardDrive,
+    faRotate,
+    faShieldHalved,
+    faTrash,
+} from '@fortawesome/free-solid-svg-icons';
 import { useStoreState } from '@/state/hooks';
 
 const R2_LIMIT_BYTES = 10_200_547_328; // 9.5 GiB
@@ -50,18 +58,63 @@ const COMPANY_FIELDS: Array<{ key: keyof InvoiceSettingsFormValues; label: strin
 ];
 
 const S3_FIELDS = [
-    { field: 'key', label: 'Access Key ID', placeholder: 'e.g. AKIAIOSFODNN7EXAMPLE', description: 'Found under IAM → Users → Security Credentials.' },
-    { field: 'secret', label: 'Secret Access Key', placeholder: 'Paste your secret key here', description: 'Only shown once when the IAM key is created.' },
-    { field: 'region', label: 'Region', placeholder: 'e.g. us-east-1', description: 'The AWS region your bucket is in.' },
-    { field: 'bucket', label: 'Bucket Name', placeholder: 'e.g. my-invoices', description: 'The name of your S3 bucket.' },
+    {
+        field: 'key',
+        label: 'Access Key ID',
+        placeholder: 'e.g. AKIAIOSFODNN7EXAMPLE',
+        description: 'Found under IAM → Users → Security Credentials.',
+    },
+    {
+        field: 'secret',
+        label: 'Secret Access Key',
+        placeholder: 'Paste your secret key here',
+        description: 'Only shown once when the IAM key is created.',
+    },
+    {
+        field: 'region',
+        label: 'Region',
+        placeholder: 'e.g. us-east-1',
+        description: 'The AWS region your bucket is in.',
+    },
+    {
+        field: 'bucket',
+        label: 'Bucket Name',
+        placeholder: 'e.g. my-invoices',
+        description: 'The name of your S3 bucket.',
+    },
 ] as const;
 
 const R2_FIELDS = [
-    { field: 'account_id', label: 'Account ID', placeholder: 'e.g. a1b2c3d4e5f6...', description: 'Found on the R2 overview page.' },
-    { field: 'key', label: 'Access Key ID', placeholder: 'e.g. abc123def456...', description: 'Generated under R2 → Manage R2 API Tokens.' },
-    { field: 'secret', label: 'Secret Access Key', placeholder: 'Paste your secret key here', description: 'Only shown once when the token is created.' },
-    { field: 'bucket', label: 'Bucket Name', placeholder: 'e.g. my-invoices', description: 'The name of your R2 bucket.' },
-    { field: 'endpoint', label: 'Endpoint URL', placeholder: 'https://{account_id}.r2.cloudflarestorage.com', description: 'Leave blank to auto-generate from Account ID, or use a custom domain.' },
+    {
+        field: 'account_id',
+        label: 'Account ID',
+        placeholder: 'e.g. a1b2c3d4e5f6...',
+        description: 'Found on the R2 overview page.',
+    },
+    {
+        field: 'key',
+        label: 'Access Key ID',
+        placeholder: 'e.g. abc123def456...',
+        description: 'Generated under R2 → Manage R2 API Tokens.',
+    },
+    {
+        field: 'secret',
+        label: 'Secret Access Key',
+        placeholder: 'Paste your secret key here',
+        description: 'Only shown once when the token is created.',
+    },
+    {
+        field: 'bucket',
+        label: 'Bucket Name',
+        placeholder: 'e.g. my-invoices',
+        description: 'The name of your R2 bucket.',
+    },
+    {
+        field: 'endpoint',
+        label: 'Endpoint URL',
+        placeholder: 'https://{account_id}.r2.cloudflarestorage.com',
+        description: 'Leave blank to auto-generate from Account ID, or use a custom domain.',
+    },
 ] as const;
 
 function toFormValues(settings: InvoiceSettings): InvoiceSettingsFormValues {
@@ -109,15 +162,23 @@ function formatBytes(bytes: number): string {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
-function TabButton({ active, onClick, children, primary }: { active: boolean; onClick: () => void; children: React.ReactNode; primary: string }) {
+function TabButton({
+    active,
+    onClick,
+    children,
+    primary,
+}: {
+    active: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+    primary: string;
+}) {
     return (
         <button
-            type='button'
+            type="button"
             onClick={onClick}
             className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-                active
-                    ? 'text-white'
-                    : 'border-transparent text-neutral-400 hover:text-neutral-200'
+                active ? 'text-white' : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
             style={active ? { borderColor: primary } : undefined}
         >
@@ -128,9 +189,9 @@ function TabButton({ active, onClick, children, primary }: { active: boolean; on
 
 function CompanyTab({ invoiceSequence }: { invoiceSequence: number }) {
     return (
-        <div className='grid grid-cols-1 gap-6 xl:grid-cols-2'>
-            <AdminBox title='Company Info' icon={faBuilding}>
-                <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <AdminBox title="Company Info" icon={faBuilding}>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {COMPANY_FIELDS.slice(0, 7).map(field => (
                         <Field
                             key={field.key}
@@ -138,34 +199,36 @@ function CompanyTab({ invoiceSequence }: { invoiceSequence: number }) {
                             name={field.key}
                             label={field.label}
                             description={field.description}
-                            type='text'
+                            type="text"
                         />
                     ))}
                 </div>
-                <div className='mt-4'>
+                <div className="mt-4">
                     <Field
-                        id='company_logo_url'
-                        name='company_logo_url'
-                        label='Logo URL'
-                        description='Used on generated PDF invoices.'
-                        type='text'
+                        id="company_logo_url"
+                        name="company_logo_url"
+                        label="Logo URL"
+                        description="Used on generated PDF invoices."
+                        type="text"
                     />
                 </div>
             </AdminBox>
 
-            <AdminBox title='Invoice Numbering' icon={faFileInvoice}>
-                <div className='grid grid-cols-1 gap-4'>
+            <AdminBox title="Invoice Numbering" icon={faFileInvoice}>
+                <div className="grid grid-cols-1 gap-4">
                     <Field
-                        id='invoice_prefix'
-                        name='invoice_prefix'
-                        label='Invoice Prefix'
-                        description='Examples: INV, BILL, ACME.'
-                        type='text'
+                        id="invoice_prefix"
+                        name="invoice_prefix"
+                        label="Invoice Prefix"
+                        description="Examples: INV, BILL, ACME."
+                        type="text"
                     />
-                    <div className='rounded-md border border-neutral-700 bg-neutral-900/40 p-4'>
-                        <p className='text-sm font-medium text-neutral-200'>Current sequence</p>
-                        <p className='mt-1 font-mono text-lg text-neutral-100'>#{invoiceSequence}</p>
-                        <p className='mt-2 text-xs text-neutral-400'>Invoice numbering is global and never resets per year.</p>
+                    <div className="rounded-md border border-neutral-700 bg-neutral-900/40 p-4">
+                        <p className="text-sm font-medium text-neutral-200">Current sequence</p>
+                        <p className="mt-1 font-mono text-lg text-neutral-100">#{invoiceSequence}</p>
+                        <p className="mt-2 text-xs text-neutral-400">
+                            Invoice numbering is global and never resets per year.
+                        </p>
                     </div>
                 </div>
             </AdminBox>
@@ -191,13 +254,13 @@ function StorageTab({
     const r2Critical = r2Percent >= 90;
 
     return (
-        <div className='flex flex-col gap-6'>
-            <AdminBox title='Storage Driver' icon={faHardDrive}>
-                <div className='flex flex-wrap gap-3'>
+        <div className="flex flex-col gap-6">
+            <AdminBox title="Storage Driver" icon={faHardDrive}>
+                <div className="flex flex-wrap gap-3">
                     {(['local', 's3', 'r2'] as const).map(storageDriver => (
                         <button
                             key={storageDriver}
-                            type='button'
+                            type="button"
                             onClick={() => {
                                 setDriver(storageDriver);
                                 setTestResult(null);
@@ -216,35 +279,61 @@ function StorageTab({
                 </div>
             </AdminBox>
 
-            <AdminBox title='Storage Configuration' icon={faCloud}>
-                {usage === null && <p className='text-sm text-neutral-400'>Open this tab to load usage details and configuration guidance.</p>}
+            <AdminBox title="Storage Configuration" icon={faCloud}>
+                {usage === null && (
+                    <p className="text-sm text-neutral-400">
+                        Open this tab to load usage details and configuration guidance.
+                    </p>
+                )}
                 {usage !== null && (
-                    <div className='flex flex-col gap-4'>
-                        <div className='rounded-md border border-neutral-700 bg-neutral-900/40 px-4 py-3 text-sm text-neutral-300'>
-                            {usage.local_bytes_used != null
-                                ? <>Local storage used by invoices: <span className='font-medium text-neutral-100'>{formatBytes(usage.local_bytes_used)}</span></>
-                                : <>Storage usage loaded for <span className='font-medium text-neutral-100'>{usage.driver.toUpperCase()}</span>.</>}
+                    <div className="flex flex-col gap-4">
+                        <div className="rounded-md border border-neutral-700 bg-neutral-900/40 px-4 py-3 text-sm text-neutral-300">
+                            {usage.local_bytes_used != null ? (
+                                <>
+                                    Local storage used by invoices:{' '}
+                                    <span className="font-medium text-neutral-100">
+                                        {formatBytes(usage.local_bytes_used)}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    Storage usage loaded for{' '}
+                                    <span className="font-medium text-neutral-100">{usage.driver.toUpperCase()}</span>.
+                                </>
+                            )}
                         </div>
-                        <div className='flex flex-col gap-2'>
-                            <div className='flex items-center justify-between text-sm'>
-                                <span className='text-neutral-400'>R2 usage</span>
-                                <span className={r2Critical ? 'text-red-400' : 'text-neutral-300'}>{formatBytes(usage.r2_bytes_used)} / {formatBytes(R2_LIMIT_BYTES)} ({usage.r2_percent_used.toFixed(1)}%)</span>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-neutral-400">R2 usage</span>
+                                <span className={r2Critical ? 'text-red-400' : 'text-neutral-300'}>
+                                    {formatBytes(usage.r2_bytes_used)} / {formatBytes(R2_LIMIT_BYTES)} (
+                                    {usage.r2_percent_used.toFixed(1)}%)
+                                </span>
                             </div>
-                            <div className='h-2 w-full overflow-hidden rounded-full bg-neutral-700'>
-                                <div className={`h-full rounded-full transition-all ${r2Critical ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${r2Percent}%` }} />
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-700">
+                                <div
+                                    className={`h-full rounded-full transition-all ${r2Critical ? 'bg-red-500' : 'bg-blue-500'}`}
+                                    style={{ width: `${r2Percent}%` }}
+                                />
                             </div>
-                            {r2Critical && <p className='text-xs text-red-400'>Warning: Storage is above 90%. New invoice PDFs will be blocked at 9.5 GiB.</p>}
+                            {r2Critical && (
+                                <p className="text-xs text-red-400">
+                                    Warning: Storage is above 90%. New invoice PDFs will be blocked at 9.5 GiB.
+                                </p>
+                            )}
                         </div>
                     </div>
                 )}
             </AdminBox>
 
-            <AdminBox title='Connection Test' icon={faRotate}>
-                <div className='flex flex-col gap-4'>
-                    <p className='text-sm text-neutral-400'>Test the currently selected storage driver without saving the form.</p>
-                    <div className='flex flex-wrap items-center gap-3'>
+            <AdminBox title="Connection Test" icon={faRotate}>
+                <div className="flex flex-col gap-4">
+                    <p className="text-sm text-neutral-400">
+                        Test the currently selected storage driver without saving the form.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3">
                         <Button.Text
-                            type='button'
+                            type="button"
                             disabled={testLoading}
                             loading={testLoading}
                             onClick={() => {
@@ -252,7 +341,12 @@ function StorageTab({
                                 setTestResult(null);
                                 testStorageConnection()
                                     .then(res => setTestResult(res))
-                                    .catch(err => setTestResult({ ok: false, message: err?.response?.data?.message ?? err.message ?? 'Test failed.' }))
+                                    .catch(err =>
+                                        setTestResult({
+                                            ok: false,
+                                            message: err?.response?.data?.message ?? err.message ?? 'Test failed.',
+                                        }),
+                                    )
                                     .finally(() => setTestLoading(false));
                             }}
                         >
@@ -267,10 +361,10 @@ function StorageTab({
                 </div>
             </AdminBox>
 
-            <div className='grid grid-cols-1 gap-6 xl:grid-cols-2'>
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 {driver === 's3' && (
-                    <AdminBox title='AWS S3' icon={faShieldHalved}>
-                        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                    <AdminBox title="AWS S3" icon={faShieldHalved}>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             {S3_FIELDS.map(({ field, label, placeholder, description }) => (
                                 <Field
                                     key={field}
@@ -287,8 +381,8 @@ function StorageTab({
                 )}
 
                 {driver === 'r2' && (
-                    <AdminBox title='Cloudflare R2' icon={faCloud}>
-                        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                    <AdminBox title="Cloudflare R2" icon={faCloud}>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             {R2_FIELDS.map(({ field, label, placeholder, description }) => (
                                 <Field
                                     key={field}
@@ -310,22 +404,22 @@ function StorageTab({
 
 function RetentionTab() {
     return (
-        <div className='grid grid-cols-1 gap-6 xl:grid-cols-2'>
-            <AdminBox title='Data Retention' icon={faTrash}>
-                <div className='grid grid-cols-1 gap-4'>
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <AdminBox title="Data Retention" icon={faTrash}>
+                <div className="grid grid-cols-1 gap-4">
                     <Field
-                        id='auto_cleanup_enabled'
-                        name='auto_cleanup_enabled'
-                        type='checkbox'
-                        label='Enable automatic cleanup'
-                        description='Invoice data is stored forever by default. Enable this to delete snapshots older than a set number of years.'
+                        id="auto_cleanup_enabled"
+                        name="auto_cleanup_enabled"
+                        type="checkbox"
+                        label="Enable automatic cleanup"
+                        description="Invoice data is stored forever by default. Enable this to delete snapshots older than a set number of years."
                     />
                     <Field
-                        id='auto_cleanup_after_years'
-                        name='auto_cleanup_after_years'
-                        type='number'
-                        label='Delete data after (years)'
-                        description='Encrypted data snapshots older than this will be deleted. PDF cache is separate (24 h TTL always).'
+                        id="auto_cleanup_after_years"
+                        name="auto_cleanup_after_years"
+                        type="number"
+                        label="Delete data after (years)"
+                        description="Encrypted data snapshots older than this will be deleted. PDF cache is separate (24 h TTL always)."
                         min={1}
                         max={100}
                     />
@@ -344,9 +438,11 @@ export default () => {
     const { primary } = useStoreState(state => state.theme.data!.colors);
 
     useEffect(() => {
-        getInvoiceSettings().then(setSettings).catch(() =>
-            addFlash({ key: 'admin:invoice-settings', type: 'error', message: 'Failed to load invoice settings.' })
-        );
+        getInvoiceSettings()
+            .then(setSettings)
+            .catch(() =>
+                addFlash({ key: 'admin:invoice-settings', type: 'error', message: 'Failed to load invoice settings.' }),
+            );
     }, []);
 
     useEffect(() => {
@@ -361,8 +457,8 @@ export default () => {
 
     if (!settings) {
         return (
-            <div className='flex min-h-48 items-center justify-center py-10'>
-                <Spinner size='large' centered />
+            <div className="flex min-h-48 items-center justify-center py-10">
+                <Spinner size="large" centered />
             </div>
         );
     }
@@ -378,25 +474,37 @@ export default () => {
                     setSettings(updated);
                     addFlash({ key: 'admin:invoice-settings', type: 'success', message: 'Invoice settings saved.' });
                 } catch (error: any) {
-                    addFlash({ key: 'admin:invoice-settings', type: 'error', message: error?.message ?? 'Save failed.' });
+                    addFlash({
+                        key: 'admin:invoice-settings',
+                        type: 'error',
+                        message: error?.message ?? 'Save failed.',
+                    });
                 } finally {
                     setSubmitting(false);
                 }
             }}
         >
             {({ isSubmitting, values, setFieldValue }) => (
-                <Form className='flex flex-col gap-6'>
+                <Form className="flex flex-col gap-6">
                     <div>
-                        <h2 className='font-header text-xl font-medium text-neutral-50'>Invoice Settings</h2>
-                        <p className='text-sm text-neutral-400'>Configure company details, storage driver, and retention policy for invoices.</p>
+                        <h2 className="font-header text-xl font-medium text-neutral-50">Invoice Settings</h2>
+                        <p className="text-sm text-neutral-400">
+                            Configure company details, storage driver, and retention policy for invoices.
+                        </p>
                     </div>
 
-                    <FlashMessageRender byKey='admin:invoice-settings' className='mb-2' />
+                    <FlashMessageRender byKey="admin:invoice-settings" className="mb-2" />
 
-                    <div className='flex border-b border-neutral-700'>
-                        <TabButton primary={primary} active={tab === 'company'} onClick={() => setTab('company')}>Company Info</TabButton>
-                        <TabButton primary={primary} active={tab === 'storage'} onClick={() => setTab('storage')}>Storage</TabButton>
-                        <TabButton primary={primary} active={tab === 'retention'} onClick={() => setTab('retention')}>Retention</TabButton>
+                    <div className="flex border-b border-neutral-700">
+                        <TabButton primary={primary} active={tab === 'company'} onClick={() => setTab('company')}>
+                            Company Info
+                        </TabButton>
+                        <TabButton primary={primary} active={tab === 'storage'} onClick={() => setTab('storage')}>
+                            Storage
+                        </TabButton>
+                        <TabButton primary={primary} active={tab === 'retention'} onClick={() => setTab('retention')}>
+                            Retention
+                        </TabButton>
                     </div>
 
                     {tab === 'company' && <CompanyTab invoiceSequence={values.invoice_sequence} />}
@@ -412,8 +520,8 @@ export default () => {
 
                     {tab === 'retention' && <RetentionTab />}
 
-                    <div className='flex justify-end'>
-                        <Button type='submit' loading={isSubmitting} disabled={isSubmitting}>
+                    <div className="flex justify-end">
+                        <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
                             Save Changes
                         </Button>
                     </div>

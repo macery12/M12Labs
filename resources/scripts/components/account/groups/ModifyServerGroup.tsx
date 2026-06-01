@@ -36,7 +36,7 @@ export default ({
 
     const updateValues = (e: FormEvent<HTMLInputElement>) => {
         setValues(
-            prev => ({ ...prev, [e.currentTarget?.name]: e.currentTarget?.value } as { name: string; color?: string }),
+            prev => ({ ...prev, [e.currentTarget?.name]: e.currentTarget?.value }) as { name: string; color?: string },
         );
     };
 

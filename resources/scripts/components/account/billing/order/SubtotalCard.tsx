@@ -160,9 +160,7 @@ export default ({
                     {selectedCycle && (
                         <div className={'flex items-center justify-between text-sm'}>
                             <div className={'flex flex-col'}>
-                                <span className={'text-gray-400'}>
-                                    {selectedBillingDays}-day cycle
-                                </span>
+                                <span className={'text-gray-400'}>{selectedBillingDays}-day cycle</span>
                                 {hasDiscount && (
                                     <span className={'text-xs text-green-400'}>
                                         {selectedCycle.discountPercent.toFixed(0)}% off
@@ -199,8 +197,8 @@ export default ({
                                     hasNodeDiscount
                                         ? 'text-green-400'
                                         : hasNodePremium
-                                        ? 'text-red-400'
-                                        : 'text-gray-300'
+                                          ? 'text-red-400'
+                                          : 'text-gray-300'
                                 }
                             >
                                 {formatPrice(afterNodeMultiplier)}

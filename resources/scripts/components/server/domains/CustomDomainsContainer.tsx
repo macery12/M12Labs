@@ -78,7 +78,7 @@ const CustomDomainsContainer = () => {
     const selectedDomain = useMemo(() => options.find(item => item.id === domainId), [options, domainId]);
     const effectiveRecordType: 'srv' | 'cname' = selectedDomain?.allow_record_type_selection
         ? recordType
-        : selectedDomain?.forced_record_type ?? selectedDomain?.recommended_record_type ?? 'cname';
+        : (selectedDomain?.forced_record_type ?? selectedDomain?.recommended_record_type ?? 'cname');
     const supportsSrv = effectiveRecordType === 'srv';
     const currentSubdomainCount = data?.length ?? 0;
     const hasUnlimitedSubdomains = subdomainLimit === null || subdomainLimit === undefined;
@@ -188,8 +188,8 @@ const CustomDomainsContainer = () => {
                                     selectedDomain.forced_record_type === 'cname'
                                         ? 'CNAME Only'
                                         : selectedDomain.recommended_record_type === 'srv'
-                                        ? 'SRV Recommended'
-                                        : 'CNAME Recommended'}
+                                          ? 'SRV Recommended'
+                                          : 'CNAME Recommended'}
                                 </div>
                                 <div css={tw`text-neutral-300`}>{selectedDomain.recommendation_notice}</div>
                                 <div css={tw`mt-1 text-xs text-neutral-400`}>{selectedDomain.connection_hint}</div>
@@ -237,8 +237,8 @@ const CustomDomainsContainer = () => {
                                                 ? `Default SRV tag: ${selectedDomain.default_service_tag}`
                                                 : 'Default SRV tag: none (set one manually if needed)'
                                             : selectedDomain?.dns_mode === 'rust'
-                                            ? 'CNAME selected (recommended). Connect using :port.'
-                                            : 'CNAME is the only supported option for this game profile. Connect using :port.'}
+                                              ? 'CNAME selected (recommended). Connect using :port.'
+                                              : 'CNAME is the only supported option for this game profile. Connect using :port.'}
                                     </div>
                                 </div>
                                 <div>
@@ -251,8 +251,8 @@ const CustomDomainsContainer = () => {
                                             {selectedDomain?.dns_mode === 'minecraft'
                                                 ? 'CNAME (supported)'
                                                 : selectedDomain?.dns_mode === 'rust'
-                                                ? 'CNAME (recommended)'
-                                                : 'CNAME (only supported option)'}
+                                                  ? 'CNAME (recommended)'
+                                                  : 'CNAME (only supported option)'}
                                         </option>
                                         {selectedDomain?.allow_record_type_selection && (
                                             <option value={'srv'}>

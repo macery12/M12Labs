@@ -134,8 +134,8 @@ const OrderInspectorThreatTab: React.FC<Props> = ({ order }) => {
                             breakdown.score >= 50
                                 ? 'bg-red-500'
                                 : breakdown.score >= 25
-                                ? 'bg-yellow-400'
-                                : 'bg-green-500'
+                                  ? 'bg-yellow-400'
+                                  : 'bg-green-500'
                         }`}
                         style={{ width: `${breakdown.score}%` }}
                     />

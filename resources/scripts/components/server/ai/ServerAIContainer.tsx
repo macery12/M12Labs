@@ -33,9 +33,7 @@ export default function ServerAIContainer() {
     const canUseCrash = isAdmin || crashEnabled;
     const theme = useStoreState(state => state.theme.data!);
 
-    const [messages, setMessages] = useState<Message[]>([
-        { role: 'assistant', content: GREETING(serverName) },
-    ]);
+    const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: GREETING(serverName) }]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [slowHint, setSlowHint] = useState(false);
@@ -58,7 +56,9 @@ export default function ServerAIContainer() {
         setConversationsLoading(true);
         listConversations(uuid)
             .then(setConversations)
-            .catch(() => {/* silent */})
+            .catch(() => {
+                /* silent */
+            })
             .finally(() => setConversationsLoading(false));
     }, [uuid]);
 
@@ -114,9 +114,7 @@ export default function ServerAIContainer() {
         toggleSaveConversation(uuid, conv.id).then(updated => {
             setConversations(prev =>
                 prev.map(c =>
-                    c.id === updated.id
-                        ? { ...c, is_saved: updated.is_saved, expires_at: updated.expires_at }
-                        : c,
+                    c.id === updated.id ? { ...c, is_saved: updated.is_saved, expires_at: updated.expires_at } : c,
                 ),
             );
         });
@@ -203,7 +201,9 @@ export default function ServerAIContainer() {
                                 setActiveConversationId(conv.id);
                                 persistExchange(conv.id);
                             })
-                            .catch(() => { pendingExchangeRef.current = null; });
+                            .catch(() => {
+                                pendingExchangeRef.current = null;
+                            });
                     }
                 },
                 error => {
@@ -284,7 +284,9 @@ export default function ServerAIContainer() {
                 <div className={'flex flex-col items-center justify-center py-20 text-neutral-400'}>
                     <SparklesIcon className={'mb-4 h-12 w-12 opacity-30'} />
                     <p className={'text-lg font-medium'}>Access restricted</p>
-                    <p className={'mt-1 text-sm'}>AI features for standard users have not been enabled by your administrator.</p>
+                    <p className={'mt-1 text-sm'}>
+                        AI features for standard users have not been enabled by your administrator.
+                    </p>
                 </div>
             </PageContentBlock>
         );
@@ -301,7 +303,9 @@ export default function ServerAIContainer() {
                     >
                         <button
                             onClick={startNewChat}
-                            className={'flex items-center gap-2 border-b border-neutral-700/50 px-3 py-3 text-sm font-medium text-neutral-200 transition-colors hover:bg-white/5'}
+                            className={
+                                'flex items-center gap-2 border-b border-neutral-700/50 px-3 py-3 text-sm font-medium text-neutral-200 transition-colors hover:bg-white/5'
+                            }
                         >
                             <PlusIcon className={'h-4 w-4 flex-shrink-0'} />
                             New Chat
@@ -329,14 +333,18 @@ export default function ServerAIContainer() {
                                             className={`ml-1 flex-shrink-0 transition-opacity ${conv.is_saved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                                             style={conv.is_saved ? { color: theme.colors.primary } : undefined}
                                             onMouseEnter={e => (e.currentTarget.style.color = theme.colors.primary)}
-                                            onMouseLeave={e => { if (!conv.is_saved) e.currentTarget.style.color = ''; }}
+                                            onMouseLeave={e => {
+                                                if (!conv.is_saved) e.currentTarget.style.color = '';
+                                            }}
                                             title={conv.is_saved ? 'Unsave chat' : 'Save chat'}
                                         >
                                             <BookmarkIcon className={'h-3 w-3'} />
                                         </button>
                                         <button
                                             onClick={e => removeConversation(e, conv)}
-                                            className={'ml-0.5 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400'}
+                                            className={
+                                                'ml-0.5 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400'
+                                            }
                                             title={'Delete conversation'}
                                         >
                                             <TrashIcon className={'h-3 w-3'} />
@@ -359,7 +367,9 @@ export default function ServerAIContainer() {
                     <div className={'mb-3 flex items-center'}>
                         <button
                             onClick={() => setSidebarOpen(o => !o)}
-                            className={'rounded-full border border-neutral-700 bg-neutral-800 p-1.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-white'}
+                            className={
+                                'rounded-full border border-neutral-700 bg-neutral-800 p-1.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-white'
+                            }
                             title={sidebarOpen ? 'Hide history' : 'Show history'}
                         >
                             <MenuIcon className={'h-3.5 w-3.5'} />
@@ -389,7 +399,9 @@ export default function ServerAIContainer() {
                     >
                         <textarea
                             ref={inputRef}
-                            className={'flex-1 resize-none bg-transparent text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none'}
+                            className={
+                                'flex-1 resize-none bg-transparent text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none'
+                            }
                             placeholder={'Ask about your server... (Enter to send, Shift+Enter for new line)'}
                             rows={2}
                             value={input}

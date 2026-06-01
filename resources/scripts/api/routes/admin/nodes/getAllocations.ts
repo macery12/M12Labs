@@ -42,9 +42,8 @@ export const rawDataToAllocation = ({ attributes }: FractalResponseData): Alloca
 
 export interface Filters {
     search?: string;
-    /* eslint-disable camelcase */
+
     server_id?: string;
-    /* eslint-enable camelcase */
 }
 
 export default (id: string | number, filters: Filters = {}, include: string[] = []): Promise<Allocation[]> => {

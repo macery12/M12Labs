@@ -266,9 +266,13 @@ function EggVariableModal({
     return (
         <div
             css={tw`fixed inset-0 z-50 flex items-center justify-center bg-black/60`}
-            onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+            onClick={e => {
+                if (e.target === e.currentTarget) onClose();
+            }}
         >
-            <div css={tw`relative bg-neutral-800 border border-neutral-700 rounded-lg w-full max-w-xl mx-4 p-6 shadow-2xl`}>
+            <div
+                css={tw`relative bg-neutral-800 border border-neutral-700 rounded-lg w-full max-w-xl mx-4 p-6 shadow-2xl`}
+            >
                 <SpinnerOverlay visible={isSubmitting} />
 
                 <div css={tw`flex items-center justify-between mb-5`}>
@@ -332,7 +336,10 @@ function EggVariableRow({
                 css={tw`border-b border-neutral-700 last:border-b-0 hover:bg-neutral-700/30 transition-colors`}
             >
                 <td css={tw`px-3 py-3 w-8`}>
-                    <span css={tw`text-neutral-600 cursor-move hover:text-neutral-400 select-none text-base`} title={'Drag to reorder'}>
+                    <span
+                        css={tw`text-neutral-600 cursor-move hover:text-neutral-400 select-none text-base`}
+                        title={'Drag to reorder'}
+                    >
                         ⠿
                     </span>
                 </td>
@@ -353,7 +360,9 @@ function EggVariableRow({
                 </td>
 
                 <td css={tw`px-3 py-3 w-36`}>
-                    <span css={tw`text-xs font-mono text-neutral-400 bg-neutral-900 px-2 py-0.5 rounded truncate block max-w-[130px]`}>
+                    <span
+                        css={tw`text-xs font-mono text-neutral-400 bg-neutral-900 px-2 py-0.5 rounded truncate block max-w-[130px]`}
+                    >
                         {defaultValue}
                     </span>
                 </td>
@@ -361,17 +370,23 @@ function EggVariableRow({
                 <td css={tw`px-3 py-3`}>
                     <div css={tw`flex flex-wrap gap-1.5`}>
                         {isRequired && (
-                            <span css={tw`text-xs px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/40`}>
+                            <span
+                                css={tw`text-xs px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/40`}
+                            >
                                 required
                             </span>
                         )}
                         {variable.isUserViewable && (
-                            <span css={tw`text-xs px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/40`}>
+                            <span
+                                css={tw`text-xs px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/40`}
+                            >
                                 viewable
                             </span>
                         )}
                         {variable.isUserEditable && (
-                            <span css={tw`text-xs px-2 py-0.5 rounded bg-green-500/10 text-green-300 border border-green-500/40`}>
+                            <span
+                                css={tw`text-xs px-2 py-0.5 rounded bg-green-500/10 text-green-300 border border-green-500/40`}
+                            >
                                 editable
                             </span>
                         )}
@@ -443,11 +458,16 @@ export default function EggVariablesContainer() {
                 <Form>
                     <FlashMessageRender byKey={'egg'} className={'mb-4'} />
 
-                    <div css={tw`rounded-lg border border-neutral-700 shadow-lg overflow-hidden mb-16`} style={{ backgroundColor: secondary }}>
+                    <div
+                        css={tw`rounded-lg border border-neutral-700 shadow-lg overflow-hidden mb-16`}
+                        style={{ backgroundColor: secondary }}
+                    >
                         <div css={tw`px-4 xl:px-5 py-3 border-b border-neutral-700`}>
                             <div css={tw`flex flex-row gap-3 flex-wrap items-center`}>
                                 <NewVariableButton />
-                                <span css={tw`text-xs text-neutral-500`}>{values.length} variable{values.length !== 1 ? 's' : ''}</span>
+                                <span css={tw`text-xs text-neutral-500`}>
+                                    {values.length} variable{values.length !== 1 ? 's' : ''}
+                                </span>
                                 <Button type="submit" className="ml-auto" disabled={isSubmitting || !isValid}>
                                     Save Changes
                                 </Button>
@@ -463,10 +483,26 @@ export default function EggVariablesContainer() {
                                         <thead>
                                             <tr css={tw`border-b border-neutral-700 bg-neutral-800/60`}>
                                                 <th css={tw`px-3 py-2 w-8`}></th>
-                                                <th css={tw`px-3 py-2 text-left text-xs font-medium text-neutral-400 uppercase tracking-wide`}>Variable</th>
-                                                <th css={tw`px-3 py-2 text-left text-xs font-medium text-neutral-400 uppercase tracking-wide w-24`}>Type</th>
-                                                <th css={tw`px-3 py-2 text-left text-xs font-medium text-neutral-400 uppercase tracking-wide w-36`}>Default</th>
-                                                <th css={tw`px-3 py-2 text-left text-xs font-medium text-neutral-400 uppercase tracking-wide`}>Flags</th>
+                                                <th
+                                                    css={tw`px-3 py-2 text-left text-xs font-medium text-neutral-400 uppercase tracking-wide`}
+                                                >
+                                                    Variable
+                                                </th>
+                                                <th
+                                                    css={tw`px-3 py-2 text-left text-xs font-medium text-neutral-400 uppercase tracking-wide w-24`}
+                                                >
+                                                    Type
+                                                </th>
+                                                <th
+                                                    css={tw`px-3 py-2 text-left text-xs font-medium text-neutral-400 uppercase tracking-wide w-36`}
+                                                >
+                                                    Default
+                                                </th>
+                                                <th
+                                                    css={tw`px-3 py-2 text-left text-xs font-medium text-neutral-400 uppercase tracking-wide`}
+                                                >
+                                                    Flags
+                                                </th>
                                                 <th css={tw`px-3 py-2 w-20`}></th>
                                             </tr>
                                         </thead>
@@ -491,19 +527,24 @@ export default function EggVariablesContainer() {
                                                     onDeleteClick={success => {
                                                         deleteEggVariable(egg.id, v.id)
                                                             .then(async () => {
-                                                                setValues(values.filter(variable => variable.id !== v.id));
+                                                                setValues(
+                                                                    values.filter(variable => variable.id !== v.id),
+                                                                );
                                                                 await mutate(current => ({
                                                                     ...current!,
                                                                     relationships: {
                                                                         ...current!.relationships,
-                                                                        variables: current!.relationships.variables!.filter(
-                                                                            variable => variable.id !== v.id,
-                                                                        ),
+                                                                        variables:
+                                                                            current!.relationships.variables!.filter(
+                                                                                variable => variable.id !== v.id,
+                                                                            ),
                                                                     },
                                                                 }));
                                                                 success();
                                                             })
-                                                            .catch(error => clearAndAddHttpError({ key: 'egg', error }));
+                                                            .catch(error =>
+                                                                clearAndAddHttpError({ key: 'egg', error }),
+                                                            );
                                                     }}
                                                 />
                                             ))}

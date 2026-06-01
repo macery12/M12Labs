@@ -48,7 +48,8 @@ export default () => {
     // Fall back to sessionStorage draft when router state is missing (e.g. after a page refresh)
     const productIdHint = routerState?.productId ?? 0;
     const { draft } = useCheckoutDraft(productIdHint);
-    const checkoutState: CheckoutState | undefined = routerState ?? (draft.productId ? draft as unknown as CheckoutState : undefined);
+    const checkoutState: CheckoutState | undefined =
+        routerState ?? (draft.productId ? (draft as unknown as CheckoutState) : undefined);
 
     const [product, setProduct] = useState<Product | undefined>();
     const [billingCycles, setBillingCycles] = useState<BillingCycle[]>([]);
@@ -109,11 +110,7 @@ export default () => {
             setCouponRevalidating(true);
             setCouponWarning(undefined);
             try {
-                const result = await validateCoupon(
-                    checkoutState.couponData!.coupon.code,
-                    product.price,
-                    'new',
-                );
+                const result = await validateCoupon(checkoutState.couponData!.coupon.code, product.price, 'new');
                 setCouponData(result);
                 setCouponId(result.coupon.id);
             } catch {

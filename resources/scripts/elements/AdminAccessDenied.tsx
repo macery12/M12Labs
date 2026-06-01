@@ -29,8 +29,7 @@ export default function AdminAccessDenied({ permission }: Props) {
 
             {permission && (
                 <p className={'mb-6 rounded-md bg-neutral-800 px-3 py-1.5 font-mono text-xs text-neutral-400'}>
-                    Required permission:{' '}
-                    <span className={'text-neutral-200'}>{permission}</span>
+                    Required permission: <span className={'text-neutral-200'}>{permission}</span>
                 </p>
             )}
 

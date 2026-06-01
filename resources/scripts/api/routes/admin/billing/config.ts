@@ -40,13 +40,16 @@ export interface BillingImportConflictResponse {
 }
 
 export interface BillingImportResolution {
-    categories: Record<string, {
-        nest_id?: number;
-        egg_id?: number;
-        allowed_eggs?: number[];
-        drop_products?: string[];
-        drop_category?: boolean;
-    }>;
+    categories: Record<
+        string,
+        {
+            nest_id?: number;
+            egg_id?: number;
+            allowed_eggs?: number[];
+            drop_products?: string[];
+            drop_category?: boolean;
+        }
+    >;
 }
 
 export const importBillingConfiguration = (

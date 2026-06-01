@@ -26,7 +26,5 @@ export interface ThreatBreakdown {
 }
 
 export const getOrderThreat = (orderId: number): Promise<ThreatBreakdown> => {
-    return http
-        .get(`/api/application/billing/orders/${orderId}/threat`)
-        .then(({ data }) => data as ThreatBreakdown);
+    return http.get(`/api/application/billing/orders/${orderId}/threat`).then(({ data }) => data as ThreatBreakdown);
 };

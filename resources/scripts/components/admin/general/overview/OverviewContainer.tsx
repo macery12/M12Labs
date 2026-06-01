@@ -175,14 +175,18 @@ export default () => {
                         link={'https://donate.stripe.com/4gM4gzeoYeSk5dyd4T5ZC02'}
                         title={'Support M12Labs Development'}
                         action={'Donate'}
-                        description={'Help fund infrastructure, development time, and new features to keep M12Labs fast, reliable, and actively maintained.'}
+                        description={
+                            'Help fund infrastructure, development time, and new features to keep M12Labs fast, reliable, and actively maintained.'
+                        }
                     />
                     <SuggestionCard
                         icon={faHeart}
                         link={'https://donate.stripe.com/6oE02Zftd9cC34IbIS'}
                         title={'Support the original creators'}
                         action={'Donate'}
-                        description={'Jexpanel laid the groundwork for M12Labs. If you value what we’ve built, consider giving back to the project that made it possible.'}
+                        description={
+                            'Jexpanel laid the groundwork for M12Labs. If you value what we’ve built, consider giving back to the project that made it possible.'
+                        }
                     />
                 </div>
             </AdminBox>

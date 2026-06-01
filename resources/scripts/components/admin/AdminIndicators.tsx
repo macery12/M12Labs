@@ -42,15 +42,9 @@ export default () => {
                 {everest.extensions.enabled && (
                     <Indicator text={'Extensions module is enabled.'} icon={faPlugCircleBolt} />
                 )}
-                {everest.ai.enabled && (
-                    <Indicator text={'AI features are enabled.'} icon={faWandMagicSparkles} />
-                )}
-                {everest.mods.enabled && (
-                    <Indicator text={'Marketplace (Mods & Modpacks) is enabled.'} icon={faBox} />
-                )}
-                {everest.auth.security.force2fa && (
-                    <Indicator text={'Force 2FA is enabled.'} icon={faShieldHalved} />
-                )}
+                {everest.ai.enabled && <Indicator text={'AI features are enabled.'} icon={faWandMagicSparkles} />}
+                {everest.mods.enabled && <Indicator text={'Marketplace (Mods & Modpacks) is enabled.'} icon={faBox} />}
+                {everest.auth.security.force2fa && <Indicator text={'Force 2FA is enabled.'} icon={faShieldHalved} />}
                 {everest.tickets.enabled && <Indicator text={'Support ticket system is enabled.'} icon={faTicket} />}
             </div>
         </div>

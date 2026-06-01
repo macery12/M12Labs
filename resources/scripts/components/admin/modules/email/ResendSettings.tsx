@@ -972,12 +972,12 @@ export default () => {
                                         sent={activeUsage?.daily_sent ?? 0}
                                         limit={
                                             activePlan?.enforce_daily
-                                                ? activeUsage?.daily_limit ?? activePlan?.daily_limit ?? null
+                                                ? (activeUsage?.daily_limit ?? activePlan?.daily_limit ?? null)
                                                 : null
                                         }
                                         applies={Boolean(
                                             activePlan?.enforce_daily &&
-                                                (activePlan?.daily_limit !== null || activeUsage?.daily_limit !== null),
+                                            (activePlan?.daily_limit !== null || activeUsage?.daily_limit !== null),
                                         )}
                                     />
                                     <UsageStat
@@ -985,13 +985,12 @@ export default () => {
                                         sent={activeUsage?.monthly_sent ?? 0}
                                         limit={
                                             activePlan?.enforce_monthly
-                                                ? activeUsage?.monthly_limit ?? activePlan?.monthly_limit ?? null
+                                                ? (activeUsage?.monthly_limit ?? activePlan?.monthly_limit ?? null)
                                                 : null
                                         }
                                         applies={Boolean(
                                             activePlan?.enforce_monthly &&
-                                                (activePlan?.monthly_limit !== null ||
-                                                    activeUsage?.monthly_limit !== null),
+                                            (activePlan?.monthly_limit !== null || activeUsage?.monthly_limit !== null),
                                         )}
                                     />
                                 </div>
@@ -1275,10 +1274,10 @@ const ResultBanner = ({ result }: { result: TestResult }) => (
             getEmailStatusPresentation(result.status).tone === 'success'
                 ? 'border-green-600/50 bg-green-950/40 text-green-100'
                 : getEmailStatusPresentation(result.status).tone === 'warning'
-                ? 'border-yellow-500/50 bg-yellow-950/40 text-yellow-100'
-                : getEmailStatusPresentation(result.status).tone === 'neutral'
-                ? 'border-neutral-600/50 bg-neutral-900 text-neutral-100'
-                : 'border-amber-500/50 bg-amber-950/40 text-amber-100'
+                  ? 'border-yellow-500/50 bg-yellow-950/40 text-yellow-100'
+                  : getEmailStatusPresentation(result.status).tone === 'neutral'
+                    ? 'border-neutral-600/50 bg-neutral-900 text-neutral-100'
+                    : 'border-amber-500/50 bg-amber-950/40 text-amber-100'
         }`}
     >
         <div className={'flex items-center justify-between'}>

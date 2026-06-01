@@ -11,8 +11,8 @@ interface Props {
 const BillingAddressModalContent = ({ existing, onSaved }: Props) => (
     <>
         <p className={'mb-4 text-sm text-neutral-400'}>
-            Your billing information is stored encrypted and is used on your invoices.
-            It is never shared with third parties.
+            Your billing information is stored encrypted and is used on your invoices. It is never shared with third
+            parties.
         </p>
         <BillingProfileForm existing={existing} onSaved={onSaved} />
     </>
