@@ -11,10 +11,25 @@ abstract class TestCase extends BaseTestCase
     use CreatesApplication;
 
     /**
+     * @var list<callable>
+     */
+    private array $baselineErrorHandlers = [];
+
+    /**
+     * @var list<callable>
+     */
+    private array $baselineExceptionHandlers = [];
+
+    /**
      * Setup tests.
      */
     public function setUp(): void
     {
+        // PHPUnit snapshots handlers before setUp(). Capture that same baseline
+        // so we can restore it after Laravel flushes handlers in tearDown().
+        $this->baselineErrorHandlers = $this->captureActiveErrorHandlers();
+        $this->baselineExceptionHandlers = $this->captureActiveExceptionHandlers();
+
         parent::setUp();
 
         $now = Carbon::now()->startOfSecond();
@@ -39,10 +54,99 @@ abstract class TestCase extends BaseTestCase
      */
     protected function tearDown(): void
     {
-        parent::tearDown();
+        try {
+            parent::tearDown();
+        } finally {
+            $this->restoreErrorHandlers($this->baselineErrorHandlers);
+            $this->restoreExceptionHandlers($this->baselineExceptionHandlers);
 
-        Carbon::setTestNow();
-        CarbonImmutable::setTestNow();
+            Carbon::setTestNow();
+            CarbonImmutable::setTestNow();
+        }
+    }
+
+    /**
+     * @return list<callable>
+     */
+    private function captureActiveErrorHandlers(): array
+    {
+        $handlers = [];
+
+        while (true) {
+            $previous = set_error_handler(static fn () => false);
+            restore_error_handler();
+
+            if ($previous === null) {
+                break;
+            }
+
+            $handlers[] = $previous;
+            restore_error_handler();
+        }
+
+        $handlers = array_reverse($handlers);
+
+        foreach ($handlers as $handler) {
+            set_error_handler($handler);
+        }
+
+        return $handlers;
+    }
+
+    /**
+     * @return list<callable>
+     */
+    private function captureActiveExceptionHandlers(): array
+    {
+        $handlers = [];
+
+        while (true) {
+            $previous = set_exception_handler(static fn () => null);
+            restore_exception_handler();
+
+            if ($previous === null) {
+                break;
+            }
+
+            $handlers[] = $previous;
+            restore_exception_handler();
+        }
+
+        $handlers = array_reverse($handlers);
+
+        foreach ($handlers as $handler) {
+            set_exception_handler($handler);
+        }
+
+        return $handlers;
+    }
+
+    /**
+     * @param list<callable> $handlers
+     */
+    private function restoreErrorHandlers(array $handlers): void
+    {
+        while (get_error_handler() !== null) {
+            restore_error_handler();
+        }
+
+        foreach ($handlers as $handler) {
+            set_error_handler($handler);
+        }
+    }
+
+    /**
+     * @param list<callable> $handlers
+     */
+    private function restoreExceptionHandlers(array $handlers): void
+    {
+        while (get_exception_handler() !== null) {
+            restore_exception_handler();
+        }
+
+        foreach ($handlers as $handler) {
+            set_exception_handler($handler);
+        }
     }
 
     /**
