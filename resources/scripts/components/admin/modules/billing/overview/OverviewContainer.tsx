@@ -43,14 +43,7 @@ export default () => {
     );
 
     const revenueFromOrders = successfulOrders.reduce((total, order) => total + order.total, 0);
-    const revenueFromDonations = (analytics.donations || [])
-        .filter(
-            donation =>
-                donation.status === 'completed' &&
-                differenceInDays(now, parseISO(donation.created_at.toString())) <= history,
-        )
-        .reduce((total, donation) => total + donation.amount, 0);
-    const revenue: string = (revenueFromOrders + revenueFromDonations).toFixed(2);
+    const revenue: string = revenueFromOrders.toFixed(2);
 
     return (
         <div className={'space-y-6'}>
@@ -90,15 +83,7 @@ export default () => {
                             <span className={'text-5xl font-bold text-blue-400'}>{revenue}</span>
                         </div>
                         <p className={'mt-3 text-sm text-gray-400'}>
-                            From {successfulOrders.length} orders and{' '}
-                            {
-                                (analytics.donations || []).filter(
-                                    d =>
-                                        d.status === 'completed' &&
-                                        differenceInDays(now, parseISO(d.created_at.toString())) <= history,
-                                ).length
-                            }{' '}
-                            donations over the last {history} days.
+                            From {successfulOrders.length} orders over the last {history} days.
                         </p>
                     </div>
                 </ContentBox>

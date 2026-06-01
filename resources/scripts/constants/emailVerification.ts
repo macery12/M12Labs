@@ -8,7 +8,6 @@ export const EMAIL_VERIFICATION_ERROR_CODE = 'EMAIL_NOT_VERIFIED';
 export const EMAIL_VERIFICATION_AREA_LABELS: Record<VerificationArea, string> = {
     billing: 'Billing',
     orders: 'Orders',
-    donate: 'Donate',
     credentials: 'Credentials',
     tickets: 'Tickets',
 };
@@ -20,10 +19,6 @@ export const DEFAULT_EMAIL_VERIFICATION_RULES: VerificationRules = {
     },
     orders: {
         can_view: true,
-        can_interact: false,
-    },
-    donate: {
-        can_view: false,
         can_interact: false,
     },
     credentials: {
@@ -66,7 +61,6 @@ export const normalizeVerificationRules = (
 export const getAreaForPath = (path: string): VerificationArea | null => {
     if (path.startsWith('billing/orders')) return 'orders';
     if (path.startsWith('billing/')) return 'billing';
-    if (path.startsWith('donations')) return 'donate';
     if (path.startsWith('credentials')) return 'credentials';
     if (path.startsWith('tickets')) return 'tickets';
 

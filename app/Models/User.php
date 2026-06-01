@@ -318,9 +318,9 @@ class User extends Model implements
         return $this->hasMany(UserSession::class);
     }
 
-    public function donations(): HasMany
+    public function billingProfile(): HasOne
     {
-        return $this->hasMany(Donation::class);
+        return $this->hasOne(\Everest\Models\Billing\UserBillingProfile::class);
     }
 
     public function billingProfile(): HasOne

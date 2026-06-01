@@ -181,13 +181,20 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             ->middleware('throttle:30,1');
     });
 
-    Route::prefix('/donations')->middleware('verified.view:donate')->group(function () {
-        Route::get('/', [Client\DonationController::class, 'index']);
-        Route::middleware('verified.interact:donate')->group(function () {
-            Route::get('/key', [Client\DonationController::class, 'getStripeKey']);
-            Route::post('/intent', [Client\DonationController::class, 'createIntent']);
-            Route::post('/complete', [Client\DonationController::class, 'complete']);
+            // Invoice routes
+            Route::get('/invoices', [Client\Billing\InvoiceController::class, 'index']);
+            Route::get('/invoices/{uuid}/download', [Client\Billing\InvoiceController::class, 'download']);
+            Route::get('/invoices/{uuid}/serve', [Client\Billing\InvoiceController::class, 'serve']);
         });
+
+        // Billing profile (PII — stored encrypted)
+        Route::get('/profile', [Client\Billing\BillingProfileController::class, 'show']);
+        Route::post('/profile', [Client\Billing\BillingProfileController::class, 'store']);
+        Route::put('/profile', [Client\Billing\BillingProfileController::class, 'update']);
+
+        // Address autocomplete proxy (Nominatim)
+        Route::get('/address-autocomplete', [Client\Billing\AddressAutocompleteController::class, 'search'])
+            ->middleware('throttle:30,1');
     });
 
     /*

@@ -66,7 +66,6 @@ class EverestComposer
             'billing' => [
                 'enabled' => boolval(config('modules.billing.enabled', false)),
                 'processors' => $processorConfig,
-                'donations_enabled' => boolval(Setting::get('settings::modules:billing:donations_enabled', config('modules.billing.donations_enabled', true))),
                 'currency' => [
                     'symbol' => config('modules.billing.currency.symbol'),
                     'code' => config('modules.billing.currency.code'),
