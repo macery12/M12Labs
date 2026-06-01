@@ -74,6 +74,7 @@ use Everest\Exceptions\Http\Server\ServerStateConflictException;
  * @property int|null $subusers_count
  * @property \Everest\Models\ServerTransfer|null $transfer
  * @property \Everest\Models\User $user
+ * @property \Everest\Models\Billing\Product|null $product
  * @property \Illuminate\Database\Eloquent\Collection|\Everest\Models\EggVariable[] $variables
  * @property int|null $variables_count
  *
@@ -303,10 +304,12 @@ class Server extends Model
 
     /**
      * Gets information for the product associated with this server.
+     *
+     * @return BelongsTo<Product, $this>
      */
-    public function product(): HasOne
+    public function product(): BelongsTo
     {
-        return $this->hasOne(Product::class, 'id', 'billing_product_id');
+        return $this->belongsTo(Product::class, 'billing_product_id', 'id');
     }
 
     /**
@@ -417,7 +420,7 @@ class Server extends Model
      */
     public function billable(): bool
     {
-        return $this->order_id ? true : false;
+        return !is_null($this->billing_product_id);
     }
 
     /**

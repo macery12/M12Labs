@@ -198,7 +198,7 @@ class PluginInstallService
 
         if (!$base && !empty($fileName)) {
             $fileParts = pathinfo($fileName);
-            $baseFromFile = $this->slugify($fileParts['filename'] ?? '');
+            $baseFromFile = $this->slugify($fileParts['filename']);
             $fileExt = $fileParts['extension'] ?? null;
             if (!empty($fileExt)) {
                 $extension = strtolower($fileExt);
@@ -331,7 +331,8 @@ class PluginInstallService
 
         /** @var Product|null $product */
         $product = $server->product()->with('category')->first();
-        $allowedEggs = $product?->category?->getAllowedEggs() ?? [];
+        $category = $product?->category;
+        $allowedEggs = $category ? $category->getAllowedEggs() : [];
 
         if (!empty($allowedEggs) && !in_array($egg->id, $allowedEggs)) {
             throw new ModsServiceException('Plugins can only be installed on permitted eggs for this server.');
@@ -341,7 +342,7 @@ class PluginInstallService
     /**
      * Determine the maximum allowed download size (in bytes) for the provided install type.
      */
-    private function getMaxSizeForType(string $type): ?int
+    private function getMaxSizeForType(string $type): int
     {
         return match ($type) {
             'plugin' => (int) config('modules.mods.max_plugin_size', self::DEFAULT_MAX_PLUGIN_SIZE),
@@ -389,7 +390,7 @@ class PluginInstallService
         if ($parsed !== false && !empty($parsed['host'])) {
             $scheme = $parsed['scheme'] ?? '[unknown-scheme]';
 
-            return $scheme . '://' . ($parsed['host'] ?? '') . ($parsed['path'] ?? '');
+            return $scheme . '://' . $parsed['host'] . ($parsed['path'] ?? '');
         }
 
         $parts = preg_split('/[?#]/', $url, 2);

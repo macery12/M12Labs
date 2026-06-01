@@ -42,7 +42,7 @@ class OrderTransformer extends Transformer
                 'currency'    => $model->transaction->currency,
                 'payer_id'    => $model->transaction->payer_id,
                 'payer_email' => $model->transaction->payer_email,
-                'captured_at' => $model->transaction->captured_at?->toIso8601String(),
+                'captured_at' => $model->transaction->captured_at->toIso8601String(),
             ] : null,
             'subtotal' => $model->subtotal,
             'discount' => $model->discount,

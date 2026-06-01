@@ -39,10 +39,10 @@ class CategoryTransformer extends Transformer
             'nest_id' => $model->nest_id,
             'egg_id' => $model->egg_id,
             'allowedEggs' => $model->getAllowedEggs(),
-            'allowEggChanges' => $model->allow_egg_changes ?? true,
-            'allowPlanChanges' => $model->allow_plan_changes ?? true,
+            'allowEggChanges' => $model->allow_egg_changes,
+            'allowPlanChanges' => $model->allow_plan_changes,
             'created_at' => $model->created_at->toIso8601String(),
-            'updated_at' => $model->updated_at ? $model->updated_at->toIso8601String() : null,
+            'updated_at' => $model->updated_at->toIso8601String(),
         ];
     }
 

@@ -76,8 +76,9 @@ class WebhookEventService
      */
     public function send(User $user, WebhookEvent $event, array $fields = []): void
     {
-        $colorHex = $this->theme->get('theme::colors:primary');
-        $url = $this->settings->get('settings::modules:webhooks:url');
+        $colorHex = (string) $this->theme->get('theme::colors:primary', '#5865F2');
+        $url = (string) $this->settings->get('settings::modules:webhooks:url', '');
+        $appUrl = (string) config('app.url', '');
 
         if (!$url) {
             throw new DisplayException('No Webhook URL has been defined.');
@@ -89,7 +90,7 @@ class WebhookEventService
         $embed = [
             'title' => $event->key,
             'description' => $event->description,
-            'url' => env('APP_URL') . '/admin',
+            'url' => rtrim($appUrl, '/') . '/admin',
             'color' => $colorInt,
             'timestamp' => now()->toIso8601String(),
             'footer' => [
@@ -98,7 +99,7 @@ class WebhookEventService
             ],
             'author' => [
                 'name' => $user->email,
-                'url' => env('APP_URL') . '/admin/users/' . $user->id,
+                'url' => rtrim($appUrl, '/') . '/admin/users/' . $user->id,
             ],
         ];
 

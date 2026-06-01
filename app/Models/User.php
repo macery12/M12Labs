@@ -46,6 +46,7 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
  * @property string $avatar_url
  * @property string $recovery_code
  * @property string|null $admin_role_name
+ * @property bool $email_verified
  * @property string $md5
  * @property \Everest\Models\AdminRole|null $adminRole
  * @property \Illuminate\Database\Eloquent\Collection|\Everest\Models\ApiKey[] $apiKeys

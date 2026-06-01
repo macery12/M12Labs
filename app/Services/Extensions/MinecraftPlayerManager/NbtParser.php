@@ -39,13 +39,14 @@ class NbtParser
         
         // Check for gzip magic number
         if (substr($compressed, 0, 2) === "\x1f\x8b") {
-            $this->data = gzdecode($compressed);
+            $decoded = gzdecode($compressed);
+            if ($decoded === false) {
+                throw new \Exception("Failed to decompress NBT file");
+            }
+
+            $this->data = $decoded;
         } else {
             $this->data = $compressed;
-        }
-
-        if ($this->data === false) {
-            throw new \Exception("Failed to decompress NBT file");
         }
 
         $this->offset = 0;
@@ -641,9 +642,9 @@ class NbtParser
             $maxDurability = self::getMaxDurability($displayId);
             if ($maxDurability > 0) {
                 $parsed['durability'] = [
-                    'current' => $maxDurability - ($parsed['damage'] ?? 0),
+                    'current' => $maxDurability - $parsed['damage'],
                     'max' => $maxDurability,
-                    'percentage' => round((($maxDurability - ($parsed['damage'] ?? 0)) / $maxDurability) * 100, 1),
+                    'percentage' => round((($maxDurability - $parsed['damage']) / $maxDurability) * 100, 1),
                 ];
             }
         }

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Contracts\Auth\PasswordBroker;
+use Everest\Services\Billing\StripeCustomerService;
 use Everest\Contracts\Repository\UserRepositoryInterface;
 
 class UserCreationService
@@ -55,7 +56,7 @@ class UserCreationService
         $this->connection->commit();
 
         if (config('modules.billing.stripe.keys.secret')) {
-            $user->createAsStripeCustomer();
+            app(StripeCustomerService::class)->resolveForUser($user);
         }
 
         return $user;

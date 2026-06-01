@@ -37,9 +37,9 @@ class ExtensionRepositoryBootstrapService
 
     private function getOfficialManifestUrl(): string
     {
-        $override = env('M12LABS_EXTENSIONS_MANIFEST_URL');
+        $override = config('modules.extensions.official_manifest_url');
         if (!empty($override)) {
-            return $override;
+            return (string) $override;
         }
 
         return self::OFFICIAL_REPOSITORY_MANIFEST_URL;
