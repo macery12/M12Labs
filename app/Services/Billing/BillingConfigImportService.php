@@ -3,6 +3,7 @@
 namespace Everest\Services\Billing;
 
 use Illuminate\Support\Str;
+use Everest\Models\Billing\BillingCycle;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
 
@@ -32,6 +33,9 @@ class BillingConfigImportService
                     'visible' => (bool) $category['visible'],
                     'egg_id' => (int) $category['egg_id'],
                     'nest_id' => (int) $category['nest_id'],
+                    'allowed_eggs' => $category['allowed_eggs'] ?? null,
+                    'allow_egg_changes' => isset($category['allow_egg_changes']) ? (bool) $category['allow_egg_changes'] : true,
+                    'allow_plan_changes' => isset($category['allow_plan_changes']) ? (bool) $category['allow_plan_changes'] : true,
                 ]);
 
                 // Map the old category UUID to the new category UUID
@@ -57,25 +61,43 @@ class BillingConfigImportService
                 }
 
                 // If no valid category_id was assigned, throw an error
-                if ($category_id) {
-                    // Create the product with the new category_id
-                    Product::create([
-                        'uuid' => $new_uuid, // don't overlap UUIDs
-                        'name' => $product['name'],
-                        'icon' => $product['icon'] ?? null,
-                        'price' => (int) $product['price'],
-                        'description' => $product['description'],
-                        'visible' => (bool) $product['visible'],
-                        'cpu_limit' => (int) $product['cpu_limit'],
-                        'memory_limit' => (int) $product['memory_limit'],
-                        'disk_limit' => (int) $product['disk_limit'],
-                        'backup_limit' => (int) $product['backup_limit'],
-                        'database_limit' => (int) $product['database_limit'],
-                        'allocation_limit' => (int) $product['allocation_limit'],
-                        'subdomain_limit' => array_key_exists('subdomain_limit', $product) ? (is_null($product['subdomain_limit']) ? null : (int) $product['subdomain_limit']) : null,
-                        'category_uuid' => $category_id, // Correctly assign the new category ID
-                        'stripe_id' => null, // deprecated
-                    ]);
+                if (!$category_id) {
+                    throw new \RuntimeException(
+                        "Import failed: product '{$product['name']}' references unknown category UUID '{$product['category_uuid']}'. " .
+                        'Ensure the category is included in the import data.'
+                    );
+                }
+
+                // Create the product with the new category_id
+                $new_product = Product::create([
+                    'uuid' => $new_uuid, // don't overlap UUIDs
+                    'name' => $product['name'],
+                    'icon' => $product['icon'] ?? null,
+                    'price' => (float) $product['price'],
+                    'base_price' => isset($product['base_price']) ? (float) $product['base_price'] : null,
+                    'description' => $product['description'],
+                    'visible' => (bool) $product['visible'],
+                    'cpu_limit' => (int) $product['cpu_limit'],
+                    'memory_limit' => (int) $product['memory_limit'],
+                    'disk_limit' => (int) $product['disk_limit'],
+                    'backup_limit' => (int) $product['backup_limit'],
+                    'database_limit' => (int) $product['database_limit'],
+                    'allocation_limit' => (int) $product['allocation_limit'],
+                    'subdomain_limit' => array_key_exists('subdomain_limit', $product) ? (is_null($product['subdomain_limit']) ? null : (int) $product['subdomain_limit']) : null,
+                    'category_uuid' => $category_id, // Correctly assign the new category ID
+                    'stripe_id' => null, // deprecated
+                ]);
+
+                // Import billing cycles if present — backwards compatible: older exports
+                // from other software may not include this key, so we silently skip it.
+                if (!empty($product['billing_cycles'])) {
+                    foreach ($product['billing_cycles'] as $cycle) {
+                        BillingCycle::create([
+                            'product_id' => $new_product->id,
+                            'days' => (int) $cycle['days'],
+                            'is_enabled' => (bool) ($cycle['is_enabled'] ?? true),
+                        ]);
+                    }
                 }
             }
         }

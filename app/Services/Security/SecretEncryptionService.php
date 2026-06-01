@@ -22,7 +22,6 @@ class SecretEncryptionService
         'settings::modules:billing:keys:secret',
         'settings::modules:billing:paypal_standalone:client_id',
         'settings::modules:billing:paypal_standalone:client_secret',
-        'settings::modules:billing:mollie:api_key',
         'settings::modules:email:resend:api_key',
         'settings::modules:mods:curseforge_api_key',
         'settings::modules:email:resend:api_key',

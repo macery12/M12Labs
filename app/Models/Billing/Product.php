@@ -3,7 +3,6 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
-use Everest\Models\Setting;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -110,17 +109,6 @@ class Product extends Model
     }
 
     /**
-     * Get the suspension threshold in days for this product.
-     * This is deprecated - use getSuspensionThresholdForBillingCycle() instead.
-     */
-    public function getSuspensionThresholdDays(): int
-    {
-        return $this->isFree()
-            ? config('modules.billing.renewal.free_suspension_days', 7)
-            : config('modules.billing.renewal.paid_suspension_days', 30);
-    }
-
-    /**
      * Calculate suspension threshold based on billing cycle length.
      * Uses a capped percentage-based model with maximum 7-day grace period.
      *
@@ -179,6 +167,9 @@ class Product extends Model
     /**
      * Calculate price for a specific billing cycle.
      *
+     * Delegates to BillingCycleService. Call sites may switch directly to
+     * BillingCycleService::calculatePrice() — this shim will be removed in Phase 3.
+     *
      * @param int $days Number of billing days
      * @param int|null $nodeId Optional node ID to apply node pricing multiplier
      *
@@ -186,76 +177,6 @@ class Product extends Model
      */
     public function calculatePrice(int $days, ?int $nodeId = null): array
     {
-        $defaultBillingDays = (int) Setting::get('settings::modules:billing:renewal:default_billing_days', 30);
-        $basePrice = $this->getEffectiveBasePrice();
-        $perDayPrice = $basePrice / $defaultBillingDays;
-
-        // Get multiplier steps from settings
-        $stepsJson = Setting::get('settings::modules:billing:renewal:multiplier_steps');
-        $steps = [];
-
-        if ($stepsJson) {
-            $decoded = json_decode($stepsJson, true);
-            if (is_array($decoded)) {
-                $steps = $decoded;
-                // Sort by maxDays to ensure correct matching
-                usort($steps, function ($a, $b) {
-                    return $a['maxDays'] <=> $b['maxDays'];
-                });
-            }
-        }
-
-        // Default steps if none configured
-        if (empty($steps)) {
-            $steps = [
-                ['maxDays' => 10, 'multiplier' => 1.30],
-                ['maxDays' => 20, 'multiplier' => 1.20],
-                ['maxDays' => 29, 'multiplier' => 1.10],
-                ['maxDays' => 30, 'multiplier' => 1.00],
-                ['maxDays' => 59, 'multiplier' => 0.95],
-                ['maxDays' => 89, 'multiplier' => 0.90],
-                ['maxDays' => 999, 'multiplier' => 0.85],
-            ];
-        }
-
-        // Find the first matching step (billing cycle multiplier)
-        $billingMultiplier = 1.0;
-        $matchedStep = false;
-        foreach ($steps as $step) {
-            if ($days <= $step['maxDays']) {
-                $billingMultiplier = $step['multiplier'];
-                $matchedStep = true;
-                break;
-            }
-        }
-
-        // If no step matched (days > all maxDays), use the last step's multiplier
-        if (!$matchedStep && !empty($steps)) {
-            $billingMultiplier = end($steps)['multiplier'];
-        }
-
-        // Get node pricing multiplier (default to 1.0 if node not found or no node specified)
-        $nodeMultiplier = 1.0;
-        if ($nodeId) {
-            $node = \Everest\Models\Node::find($nodeId);
-            if ($node && isset($node->price_multiplier)) {
-                $nodeMultiplier = (float) $node->price_multiplier;
-            }
-        }
-
-        // Calculate final price: per_day_price * days * billing_multiplier * node_multiplier
-        // Rounded to 2 decimal places (standard for currency)
-        $finalPrice = round($perDayPrice * $days * $billingMultiplier * $nodeMultiplier, 2);
-
-        // Calculate discount percentage (negative = premium, positive = discount)
-        $standardPrice = $perDayPrice * $days;
-        $discountPercent = $standardPrice > 0 ? (($standardPrice - $finalPrice) / $standardPrice) * 100 : 0;
-
-        return [
-            'price' => $finalPrice,
-            'multiplier' => $billingMultiplier,
-            'node_multiplier' => $nodeMultiplier,
-            'discount_percent' => round($discountPercent, 1),
-        ];
+        return app(\Everest\Services\Billing\BillingCycleService::class)->calculatePrice($this, $days, $nodeId);
     }
 }

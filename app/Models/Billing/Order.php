@@ -3,6 +3,10 @@
 namespace Everest\Models\Billing;
 
 use Everest\Models\Model;
+use Everest\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -27,7 +31,6 @@ use Everest\Models\Model;
  * @property int $threat_index
  * @property string $payment_intent_id
  * @property string $payment_processor
- * @property string|null $mollie_payment_id
  * @property string|null $paypal_order_id
  * @property string|null $paypal_capture_id
  * @property string|null $paypal_payer_id
@@ -42,6 +45,7 @@ use Everest\Models\Model;
 class Order extends Model
 {
     public const STATUS_FAILED = 'failed';
+    public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_EXPIRED = 'expired';
     public const STATUS_PENDING = 'pending';
     public const STATUS_PROCESSED = 'processed';
@@ -65,7 +69,7 @@ class Order extends Model
      * Fields that are mass assignable.
      */
     protected $fillable = [
-        'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'mollie_payment_id', 'paypal_order_id',
+        'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'paypal_order_id',
         'paypal_capture_id', 'paypal_payer_id', 'paypal_payer_email', 'paypal_status', 'paypal_amount', 'paypal_currency', 'paypal_captured_at',
         'payment_token', 'total', 'status', 'product_id', 'billing_days', 'final_price', 'multiplier_used', 'node_multiplier_used', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
         'domain_payload',
@@ -101,17 +105,30 @@ class Order extends Model
         'user_id' => 'required|exists:users,id',
         'description' => 'required|string|min:3',
         'total' => 'required|min:0',
-        'status' => 'required|in:expired,pending,failed,processed',
+        'status' => 'required|in:expired,pending,failed,cancelled,processed',
         'product_id' => 'exists:products,id',
         'egg_id' => 'nullable|exists:eggs,id',
         'domain_payload' => 'nullable|array',
         'type' => 'required|in:new,upg,ren',
         'threat_index' => 'nullable|int|min:-1|max:100',
-        'payment_intent_id' => 'required|string|unique:orders,payment_intent_id',
+        'payment_intent_id' => 'nullable|string',
         'coupon_id' => 'nullable|exists:coupons,id',
         'subtotal' => 'nullable|numeric|min:0',
         'discount' => 'nullable|numeric|min:0',
     ];
+
+    /**
+     * Resolve the order type from an HTTP request.
+     *
+     * Consolidates the `getOrderType()` logic that was previously duplicated
+     * across CheckoutController and PayPalCheckoutController.
+     */
+    public static function resolveTypeFromRequest(Request $request): string
+    {
+        return ($request->has('renewal') && $request->boolean('renewal'))
+            ? self::TYPE_REN
+            : self::TYPE_NEW;
+    }
 
     /**
      * Get the coupon associated with this order.
@@ -127,5 +144,29 @@ class Order extends Model
     public function server()
     {
         return $this->belongsTo(\Everest\Models\Server::class);
+    }
+
+    /**
+     * Get the payment transaction associated with this order.
+     */
+    public function transaction(): HasOne
+    {
+        return $this->hasOne(PaymentTransaction::class);
+    }
+
+    /**
+     * Get the product associated with this order.
+     */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Get the user associated with this order.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

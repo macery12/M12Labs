@@ -3,9 +3,11 @@
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
 use Illuminate\Http\Request;
+use Everest\Http\Requests\Api\Client\Billing\UpdateCheckoutRequest;
 use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Everest\Models\Billing\Order;
+use Everest\Models\Billing\PaymentTransaction;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\Product;
 use Illuminate\Support\Facades\Log;
@@ -13,10 +15,9 @@ use Everest\Exceptions\DisplayException;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Security\LogSanitizer;
 use Everest\Services\Billing\CreateOrderService;
-use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\PayPalPaymentService;
-use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\BillingValidationService;
+use Everest\Services\Billing\BillingDefaults;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Exceptions\Billing\BillingException as BillingExceptionClass;
@@ -29,9 +30,7 @@ class PayPalCheckoutController extends ClientApiController
     public function __construct(
         private PayPalPaymentService $paypalService,
         private BillingValidationService $validationService,
-        private OrderProcessorService $processorService,
         private CreateOrderService $orderService,
-        private CreateServerService $serverCreation,
         private ServerFulfillmentService $fulfillmentService,
     ) {
         parent::__construct();
@@ -49,7 +48,7 @@ class PayPalCheckoutController extends ClientApiController
         // Check if this is a renewal payment
         $isRenewal = $request->boolean('renewal', false);
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
-        $billingDays = (int) ($request->input('billing_days') ?? 30);
+        $billingDays = (int) ($request->input('billing_days') ?? BillingDefaults::defaultBillingDays());
 
         // Determine order type and calculate price
         $orderType = $isRenewal ? Order::TYPE_REN : Order::TYPE_NEW;
@@ -62,6 +61,12 @@ class PayPalCheckoutController extends ClientApiController
             null, // node ID
             $request->user()->id
         );
+
+        // If the coupon makes the order free, skip PayPal order creation entirely.
+        // The frontend should route to processFree when total is $0.
+        if ($couponId !== null && $priceInfo['finalPrice'] <= 0.0001) {
+            return response()->json(['free' => true]);
+        }
 
         // Validate this is not a free order
         $this->validationService->validatePriceType($priceInfo['finalPrice'], false);
@@ -107,7 +112,10 @@ class PayPalCheckoutController extends ClientApiController
             $orderType,
             $couponId,
             null, // egg_id will be set in updateOrder for new orders
-            $orderData
+            $orderData,
+            $priceInfo['finalPrice'],
+            $priceInfo['subtotal'],
+            $priceInfo['discount']
         );
 
         // Get approval URL for redirect
@@ -130,9 +138,11 @@ class PayPalCheckoutController extends ClientApiController
     public function redirectToApproval(Request $request, string $orderId): RedirectResponse
     {
         // Authorization guard: ensure the order belongs to the current user before redirecting.
-        $order = Order::where('paypal_order_id', $orderId)
-            ->where('user_id', $request->user()->id)
+        $transaction = PaymentTransaction::where('processor', 'paypal')
+            ->where('external_id', $orderId)
             ->firstOrFail();
+        $order = $transaction->order;
+        abort_if($order->user_id !== $request->user()->id, 403);
 
         $paypalOrder = $this->paypalService->getOrder($orderId);
         $approvalUrl = $this->paypalService->getApprovalUrl($paypalOrder);
@@ -151,7 +161,7 @@ class PayPalCheckoutController extends ClientApiController
      *
      * @param int $id Product ID
      */
-    public function updateOrder(Request $request, int $id): Response
+    public function updateOrder(UpdateCheckoutRequest $request, int $id): Response
     {
         $product = Product::findOrFail($id);
         $paypalOrderId = $request->input('order_id');
@@ -179,20 +189,22 @@ class PayPalCheckoutController extends ClientApiController
         // For renewals, egg_id is not required
         $requestedEggId = $request->input('egg_id') ? (int) $request->input('egg_id') : null;
         $eggId = $isRenewal ? null : $this->validationService->validateAndGetEggId($product, $requestedEggId);
-        $billingDays = (int) ($request->input('billing_days') ?? 30);
+        $billingDays = (int) ($request->input('billing_days') ?? BillingDefaults::defaultBillingDays());
 
         // Determine order type
-        $orderType = $this->getOrderType($request);
+        $orderType = Order::resolveTypeFromRequest($request);
         $couponId = $request->input('coupon_id') ? (int) $request->input('coupon_id') : null;
         $variables = $request->input('variables', []);
         $domainPayload = $request->input('domain_payload', []);
         $serverId = $request->input('server_id') ? (int) $request->input('server_id') : null;
 
         // Find the existing pending order and update it
-        $order = Order::where('paypal_order_id', $paypalOrderId)
-            ->where('user_id', $request->user()->id)
-            ->where('status', Order::STATUS_PENDING)
+        $transaction = PaymentTransaction::where('processor', 'paypal')
+            ->where('external_id', $paypalOrderId)
             ->firstOrFail();
+        $order = $transaction->order;
+        abort_if($order->user_id !== $request->user()->id, 403);
+        abort_if($order->status !== Order::STATUS_PENDING, 404);
 
         $order->update([
             'name' => $isRenewal ? 'Server Renewal' : $serverName,
@@ -235,9 +247,11 @@ class PayPalCheckoutController extends ClientApiController
 
         try {
             // Find our order record
-            $order = Order::where('paypal_order_id', $paypalOrderId)
-                ->where('user_id', $request->user()->id)
+            $tx = PaymentTransaction::where('processor', 'paypal')
+                ->where('external_id', $paypalOrderId)
                 ->firstOrFail();
+            $order = $tx->order;
+            abort_if($order->user_id !== $request->user()->id, 403);
 
             Log::info('Found order for capture', [
                 'order_id' => $order->id,
@@ -286,7 +300,7 @@ class PayPalCheckoutController extends ClientApiController
                     'actual_status' => $captureStatus,
                 ]);
                 // Dispatch PaymentFailed email
-                $this->dispatchPaymentFailedEmail($order, 'PayPal capture failed. Status: ' . $captureStatus, 'paypal');
+                $this->fulfillmentService->dispatchPaymentFailedEmail($order, 'PayPal capture failed. Status: ' . $captureStatus, 'paypal');
                 throw new BillingExceptionClass('PayPal capture failed', 'Failed to capture PayPal payment. Status: ' . $captureStatus . '. Please try again or contact support.', BillingException::TYPE_PAYMENT, $order->id, 'paypal', $paypalOrderId, [
                     'capture_status' => $captureStatus,
                     'capture_summary' => LogSanitizer::summarizeProviderPayload($captureResult),
@@ -312,6 +326,27 @@ class PayPalCheckoutController extends ClientApiController
             }
 
             $order->save();
+
+            // Sync captured PayPal details to the payment_transactions record
+            try {
+                $transaction = $order->transaction;
+                if ($transaction) {
+                    $transaction->update([
+                        'status'      => $order->paypal_status,
+                        'capture_id'  => $order->paypal_capture_id,
+                        'amount'      => $order->paypal_amount,
+                        'currency'    => $order->paypal_currency,
+                        'payer_id'    => $order->paypal_payer_id,
+                        'payer_email' => $order->paypal_payer_email,
+                        'captured_at' => $order->paypal_captured_at,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to sync PayPal capture to PaymentTransaction', [
+                    'order_id' => $order->id,
+                    'error'    => $e->getMessage(),
+                ]);
+            }
 
             Log::info('Saved PayPal transaction details', [
                 'order_id' => $order->id,
@@ -352,9 +387,10 @@ class PayPalCheckoutController extends ClientApiController
                 'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
             ], LogSanitizer::exceptionContext($e)));
 
-            $order = Order::where('paypal_order_id', $paypalOrderId)
-                ->where('user_id', $request->user()->id)
+            $tx = PaymentTransaction::where('processor', 'paypal')
+                ->where('external_id', $paypalOrderId)
                 ->first();
+            $order = $tx?->order;
 
             throw new BillingExceptionClass('PayPal capture error', 'An unexpected error occurred while capturing PayPal payment: ' . $e->getMessage(), BillingException::TYPE_PAYMENT, $order?->id, 'paypal', $paypalOrderId, ['error' => $e->getMessage()], $e);
         }
@@ -380,9 +416,13 @@ class PayPalCheckoutController extends ClientApiController
                 ->first();
         } else {
             // Get the order by paypal_order_id
-            $order = Order::where('paypal_order_id', $paypalOrderId)
-                ->where('user_id', $request->user()->id)
+            $transaction = PaymentTransaction::where('processor', 'paypal')
+                ->where('external_id', $paypalOrderId)
                 ->first();
+            $order = $transaction?->order;
+            if ($order?->user_id !== $request->user()->id) {
+                $order = null;
+            }
         }
 
         if (!$order) {
@@ -414,7 +454,7 @@ class PayPalCheckoutController extends ClientApiController
 
         // Map order status
         $processed = $order->status === Order::STATUS_PROCESSED;
-        $failed = $order->status === Order::STATUS_FAILED;
+        $failed = in_array($order->status, [Order::STATUS_FAILED, Order::STATUS_CANCELLED], true);
         $pending = !$processed && !$failed;
 
         Log::info('PayPal order status check result', [
@@ -438,17 +478,63 @@ class PayPalCheckoutController extends ClientApiController
     }
 
     /**
+     * Cancel a pending PayPal order when the user cancels on the PayPal site.
+     *
+     * PayPal redirects back to the cancel URL with a `token` query param equal
+     * to the PayPal Order ID. We look up the matching pending order and mark it
+     * as failed so it no longer appears as "pending" in the dashboard.
+     */
+    public function cancelOrder(Request $request): JsonResponse
+    {
+        $paypalOrderId = $request->input('order_id');
+
+        if (!$paypalOrderId) {
+            return response()->json(['success' => false, 'message' => 'No order ID provided.'], 422);
+        }
+
+        // Primary lookup via PaymentTransaction (consistent with the rest of the codebase)
+        $tx = PaymentTransaction::where('processor', 'paypal')
+            ->where('external_id', $paypalOrderId)
+            ->first();
+        $order = $tx?->order;
+
+        // Fallback: older orders may store the PayPal Order ID directly on the Order row
+        if (!$order) {
+            $order = Order::where('paypal_order_id', $paypalOrderId)->first();
+        }
+
+        if (!$order || $order->user_id !== $request->user()->id) {
+            // Return success to avoid leaking order existence
+            return response()->json(['success' => true]);
+        }
+
+        // Only update if the order is still pending; never downgrade a processed order
+        if ($order->status === Order::STATUS_PENDING) {
+            $order->update(['status' => Order::STATUS_CANCELLED]);
+
+            Log::info('PayPal order marked cancelled due to customer cancellation', [
+                'order_id' => $order->id,
+                'paypal_order_id' => LogSanitizer::maskIdentifier($paypalOrderId),
+                'user_id' => $request->user()->id,
+            ]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Get order details from token.
      */
     public function getOrderFromToken(Request $request, string $token): JsonResponse
     {
-        $order = Order::where('payment_token', $token)
-            ->where('user_id', $request->user()->id)
-            ->where('payment_processor', 'paypal')
+        $transaction = PaymentTransaction::where('processor', 'paypal')
+            ->where('payment_token', $token)
             ->firstOrFail();
+        $order = $transaction->order;
+        abort_if($order->user_id !== $request->user()->id, 403);
 
         return response()->json([
-            'order_id' => $order->paypal_order_id,
+            'order_id' => $transaction->external_id,
             'status' => $order->status,
             'product_id' => $order->product_id,
         ]);
@@ -461,18 +547,6 @@ class PayPalCheckoutController extends ClientApiController
     {
         // Use centralized fulfillment service
         $this->fulfillmentService->fulfillOrder($request, $order);
-    }
-
-    /**
-     * Determine the order type (NEW or RENEWAL).
-     */
-    private function getOrderType(Request $request): string
-    {
-        if ($request->has('renewal') && $request->boolean('renewal')) {
-            return Order::TYPE_REN;
-        }
-
-        return Order::TYPE_NEW;
     }
 
     /**
@@ -538,7 +612,11 @@ class PayPalCheckoutController extends ClientApiController
         }
 
         // Find the order by paypal_order_id
-        $order = Order::where('paypal_order_id', $paypalOrderId)->latest()->first();
+        $transaction = PaymentTransaction::where('processor', 'paypal')
+            ->where('external_id', $paypalOrderId)
+            ->latest()
+            ->first();
+        $order = $transaction?->order;
 
         if (!$order) {
             // Return 200 to prevent PayPal retries for non-existent orders
@@ -549,9 +627,9 @@ class PayPalCheckoutController extends ClientApiController
             return $this->returnNoContent();
         }
 
-        // IDEMPOTENCY: Check if payment is already in a final state (processed or failed)
+        // IDEMPOTENCY: Check if payment is already in a final state (processed, failed, or cancelled)
         // This prevents duplicate processing if webhook is called multiple times
-        if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED], true)) {
+        if (in_array($order->status, [Order::STATUS_PROCESSED, Order::STATUS_FAILED, Order::STATUS_CANCELLED], true)) {
             Log::info("PayPal webhook: Order {$order->id} already in final state: {$order->status}");
 
             return $this->returnNoContent();
@@ -649,39 +727,5 @@ class PayPalCheckoutController extends ClientApiController
         }
 
         return $this->returnNoContent();
-    }
-
-    /**
-     * Dispatch PaymentFailed email event.
-     */
-    private function dispatchPaymentFailedEmail(Order $order, string $reason, string $processor): void
-    {
-        try {
-            $user = $order->user;
-            if (!$user) {
-                Log::warning("Cannot dispatch PaymentFailed email for order {$order->id}: user not found");
-                return;
-            }
-
-            $currency = config('modules.billing.currency.code', 'USD');
-            $product = Product::find($order->product_id);
-            $amount = $order->amount ?? ($product ? $product->price : 0);
-            $isRenewal = $order->type === Order::TYPE_REN;
-
-            event(new \Everest\Events\Email\PaymentFailed(
-                user: $user,
-                amount: $amount,
-                currency: $currency,
-                reason: $reason,
-                invoiceId: (string) $order->id,
-                correlationId: \Illuminate\Support\Str::uuid()->toString(),
-                paymentMethod: ucfirst($processor),
-                isRenewal: $isRenewal,
-            ));
-
-            Log::info("Dispatched PaymentFailed email for order {$order->id}");
-        } catch (\Exception $e) {
-            Log::error("Failed to dispatch PaymentFailed email for order {$order->id}: " . $e->getMessage());
-        }
     }
 }

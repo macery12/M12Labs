@@ -78,7 +78,7 @@ class WebhookController extends ApplicationApiController
 
         Activity::event('admin:webhooks:update')
             ->property('settings', $request->all())
-            ->description('Jexactyl webhook settings were updated')
+            ->description('M12Labs webhook settings were updated')
             ->log();
 
         return $this->returnNoContent();

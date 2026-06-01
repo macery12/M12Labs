@@ -24,6 +24,7 @@ const StatusFilter: React.FC<Props> = ({ value, onChange }) => {
                 <option value="pending">Pending</option>
                 <option value="processed">Processed</option>
                 <option value="failed">Failed</option>
+                <option value="cancelled">Cancelled</option>
                 <option value="expired">Expired</option>
             </select>
         </div>

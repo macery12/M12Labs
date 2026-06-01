@@ -1,6 +1,6 @@
 # Wings-RS Integration
 
-This document describes the Wings-RS (Supercharged) integration for the Jexactyl panel.
+This document describes the Wings-RS (Supercharged) integration for the M12Labs panel.
 
 ## Overview
 

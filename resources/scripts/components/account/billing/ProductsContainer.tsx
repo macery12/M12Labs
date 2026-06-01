@@ -47,7 +47,6 @@ export default () => {
 
     const availablePaymentMethods = [
         settings.processors?.stripe?.available,
-        settings.processors?.mollie?.available,
         settings.processors?.paypal?.available,
     ].filter(Boolean).length;
 

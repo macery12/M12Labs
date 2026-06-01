@@ -134,6 +134,9 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             Route::get('/products/{id}/variables', [Client\Billing\EggController::class, 'index']);
             Route::get('/eggs/{id}', [Client\Billing\EggController::class, 'getEgg']);
             Route::get('/products/{id}/billing-cycles', [Client\Billing\BillingCycleController::class, 'index']);
+
+            // Cancel a PayPal order — only requires view permission (no purchase interaction needed)
+            Route::post('/paypal/cancel', [Client\Billing\PayPalCheckoutController::class, 'cancelOrder']);
         });
 
         Route::middleware(['verified.view:billing', 'verified.interact:billing'])->group(function () {
@@ -142,13 +145,6 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
 
             Route::post('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'createIntent']);
             Route::put('/products/{id}/intent', [Client\Billing\CheckoutController::class, 'updateIntent']);
-
-            // Mollie payment routes (webhook route is defined outside this group)
-            Route::post('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'createPayment']);
-            Route::put('/products/{id}/mollie/payment', [Client\Billing\MollieCheckoutController::class, 'updatePayment']);
-            Route::get('/mollie/status', [Client\Billing\MollieCheckoutController::class, 'checkPaymentStatus']);
-            Route::get('/mollie/token/{token}', [Client\Billing\MollieCheckoutController::class, 'getPaymentFromToken']);
-            Route::get('/mollie/payments/{payment}/redirect', [Client\Billing\MollieCheckoutController::class, 'redirectToCheckout']);
 
             // PayPal payment routes
             Route::post('/products/{id}/paypal/order', [Client\Billing\PayPalCheckoutController::class, 'createOrder']);

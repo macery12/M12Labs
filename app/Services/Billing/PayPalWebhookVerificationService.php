@@ -9,7 +9,7 @@ use Everest\Services\Security\LogSanitizer;
 
 class PayPalWebhookVerificationService
 {
-    private const REPLAY_CACHE_TTL_HOURS = 72;
+    private const REPLAY_CACHE_TTL_DAYS = 30;
     private const TIMESTAMP_TOLERANCE_SECONDS = 300;
 
     private const REQUIRED_HEADERS = [
@@ -73,7 +73,7 @@ class PayPalWebhookVerificationService
         }
 
         $cacheKey = $this->replayCacheKey($headers['transmission_id']);
-        if (!Cache::add($cacheKey, true, now()->addHours(self::REPLAY_CACHE_TTL_HOURS))) {
+        if (!Cache::add($cacheKey, true, now()->addDays(self::REPLAY_CACHE_TTL_DAYS))) {
             return $this->failure(409, 'replayed_webhook', [
                 'event_type' => $request->input('event_type'),
                 'transmission_id' => LogSanitizer::maskIdentifier($headers['transmission_id']),

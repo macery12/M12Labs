@@ -27,35 +27,6 @@ const OrderPaymentDetails: React.FC<Props> = ({ order }) => {
         </div>
     );
 
-    const renderMollieDetails = () => (
-        <div css={tw`space-y-2`}>
-            {order.mollie_payment_id && (
-                <div>
-                    <span css={tw`text-sm text-gray-400`}>Mollie Payment ID:</span>
-                    <div css={tw`mt-1`}>
-                        <CopyOnClick text={order.mollie_payment_id}>
-                            <code css={tw`text-sm font-mono bg-neutral-800 rounded px-2 py-1`}>
-                                {order.mollie_payment_id}
-                            </code>
-                        </CopyOnClick>
-                    </div>
-                </div>
-            )}
-            {order.payment_intent_id && (
-                <div>
-                    <span css={tw`text-sm text-gray-400`}>Payment Intent ID:</span>
-                    <div css={tw`mt-1`}>
-                        <CopyOnClick text={order.payment_intent_id}>
-                            <code css={tw`text-sm font-mono bg-neutral-800 rounded px-2 py-1`}>
-                                {order.payment_intent_id}
-                            </code>
-                        </CopyOnClick>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-
     const renderPayPalDetails = () => (
         <div css={tw`space-y-2`}>
             {order.paypal_order_id && (
@@ -125,12 +96,33 @@ const OrderPaymentDetails: React.FC<Props> = ({ order }) => {
         </div>
     );
 
+    const renderFreeDetails = () => (
+        <div css={tw`space-y-2`}>
+            <div>
+                <span css={tw`text-sm text-gray-400`}>Payment:</span>
+                <div css={tw`mt-1 text-white`}>No payment required ($0.00)</div>
+            </div>
+            {order.payment_intent_id && (
+                <div>
+                    <span css={tw`text-sm text-gray-400`}>Reference:</span>
+                    <div css={tw`mt-1`}>
+                        <CopyOnClick text={order.payment_intent_id}>
+                            <code css={tw`text-sm font-mono bg-neutral-800 rounded px-2 py-1`}>
+                                {order.payment_intent_id}
+                            </code>
+                        </CopyOnClick>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <div css={tw`mt-2 p-3 bg-neutral-900 rounded`}>
             <div css={tw`text-xs font-semibold text-gray-300 uppercase mb-2`}>Payment Details</div>
             {order.payment_processor === 'stripe' && renderStripeDetails()}
-            {order.payment_processor === 'mollie' && renderMollieDetails()}
             {order.payment_processor === 'paypal' && renderPayPalDetails()}
+            {order.payment_processor === 'free' && renderFreeDetails()}
         </div>
     );
 };

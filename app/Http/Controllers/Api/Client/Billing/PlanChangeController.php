@@ -79,7 +79,7 @@ class PlanChangeController extends ClientApiController
         }
 
         // Check for resource violations
-        $violations = $this->validationService->validatePlanDowngrade($server, $newProduct);
+        $violations = $this->planChangeService->validatePlanDowngrade($server, $newProduct);
 
         if (!empty($violations)) {
             return response()->json([
@@ -101,6 +101,32 @@ class PlanChangeController extends ClientApiController
     public function changePlan(GetServerRequest $request, Server $server, int $productId): JsonResponse
     {
         $newProduct = Product::findOrFail($productId);
+
+        // Re-verify that the server has a billing product
+        if (!$server->billing_product_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This server is not associated with a billing product.',
+            ], 400);
+        }
+
+        // Re-verify products are in the same category (cannot be bypassed by skipping validatePlanChange)
+        $currentProduct = Product::find($server->billing_product_id);
+        if ($currentProduct && $currentProduct->category_uuid !== $newProduct->category_uuid) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot change to a plan in a different category.',
+            ], 400);
+        }
+
+        // Re-verify that plan changes are allowed for this category (guard against bypassing validatePlanChange)
+        $category = Category::where('uuid', $newProduct->category_uuid)->first();
+        if (!$category || !$category->allow_plan_changes) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Plan changes are not allowed for this category.',
+            ], 403);
+        }
 
         // Validate and get billing_days from request
         $validated = $request->validate([

@@ -42,7 +42,7 @@ export default () => {
                 <ul className={'my-4 text-gray-300'}>
                     <li>&bull; SSH into your Webserver console</li>
                     <li className={'my-1'}>
-                        &bull; Navigate to <code className={'rounded-lg bg-black/50 p-1'}>/var/www/jexactyl</code>
+                        &bull; Navigate to <code className={'rounded-lg bg-black/50 p-1'}>/var/www/m12labs</code>
                     </li>
                     <li className={'my-1'}>
                         &bull; Open the environment file (<code className={'rounded-lg bg-black/50 p-1'}>.env</code>)
@@ -57,7 +57,7 @@ export default () => {
                 title={'Standard Mode'}
                 image={<StandardModeSvg color={primary} />}
             >
-                Standard mode enables all the typical features of Jexactyl, including our billing system, tickets, user
+                Standard mode enables all the typical features of M12Labs, including our billing system, tickets, user
                 registration and so much more.
                 <p className={'mt-2 text-right'}>
                     <Button disabled={settings.mode === 'standard'} onClick={() => updateMode('standard')}>
@@ -82,7 +82,7 @@ export default () => {
             </FeatureContainer>
             <div className={'my-4 h-px rounded-full bg-gray-700'} />
             <FeatureContainer noHeight icon={faTerminal} title={'Debug Mode'} image={<ServerSvg color={primary} />}>
-                When Jexactyl is in Debug mode, all HTTP request data is exposed and errors are reported including
+                When M12Labs is in Debug mode, all HTTP request data is exposed and errors are reported including
                 sensitive details. Use this mode with caution, and especially{' '}
                 <strong>do not use this mode in production.</strong>
                 <p className={'mt-2 text-right'}>

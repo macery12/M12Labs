@@ -7,13 +7,6 @@ return [
     'enabled' => env('BILLING_ENABLED', false),
 
     /*
-     * Select the payment processor: 'stripe' or 'mollie'.
-     * NOTE: This is deprecated. Payment processors are now managed via
-     * the integrations system in the admin panel at /admin/billing/integrations.
-     * Kept for backward compatibility.
-     */
-    'processor' => env('BILLING_PROCESSOR', 'stripe'),
-    /*
      * Enable or disable donations feature.
      */
     'donations_enabled' => env('BILLING_DONATIONS_ENABLED', false),
@@ -27,13 +20,6 @@ return [
     ],
 
     /*
-     * Configure the Mollie API key.
-     */
-    'mollie' => [
-        'api_key' => env('MOLLIE_API_KEY', ''),
-    ],
-
-    /*
      * Choose whether to add PayPal integration to the Panel (via Stripe).
      * This is for PayPal integration through Stripe's payment methods.
      */
@@ -41,12 +27,12 @@ return [
 
     /*
      * Configure standalone PayPal integration.
-     * Credentials are stored in database via Settings model.
      */
     'paypal_standalone' => [
-        'client_id' => '',
-        'client_secret' => '',
-        'mode' => 'sandbox', // 'sandbox' or 'live'
+        'client_id'     => env('PAYPAL_CLIENT_ID', ''),
+        'client_secret' => env('PAYPAL_CLIENT_SECRET', ''),
+        'mode'          => env('PAYPAL_MODE', 'sandbox'), // 'sandbox' or 'live'
+        'webhook_id'    => env('PAYPAL_WEBHOOK_ID', ''),
     ],
 
     /*
@@ -122,4 +108,13 @@ return [
      * Configure cooldown period for plan changes (in hours).
      */
     'plan_change_cooldown_hours' => env('BILLING_PLAN_CHANGE_COOLDOWN_HOURS', 72),
+
+    /*
+     * Configure the threat index scoring system for orders.
+     */
+    'threat' => [
+        // Orders with a total above this value (in the billing currency) receive
+        // an additional risk signal. Set via BILLING_THREAT_HIGH_VALUE_THRESHOLD.
+        'high_value_threshold' => env('BILLING_THREAT_HIGH_VALUE_THRESHOLD', 50.0),
+    ],
 ];

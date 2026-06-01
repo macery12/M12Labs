@@ -65,7 +65,6 @@ class EverestComposer
             ],
             'billing' => [
                 'enabled' => boolval(config('modules.billing.enabled', false)),
-                'processor' => config('modules.billing.processor', 'stripe'),
                 'processors' => $processorConfig,
                 'donations_enabled' => boolval(Setting::get('settings::modules:billing:donations_enabled', config('modules.billing.donations_enabled', true))),
                 'currency' => [
@@ -79,9 +78,6 @@ class EverestComposer
                 'integrations' => [
                     'stripe' => [
                         'enabled' => boolval(config('modules.billing.integrations.stripe.enabled', false)),
-                    ],
-                    'mollie' => [
-                        'enabled' => boolval(config('modules.billing.integrations.mollie.enabled', false)),
                     ],
                     'paypal' => [
                         'enabled' => boolval(config('modules.billing.integrations.paypal.enabled', false)),
@@ -116,6 +112,9 @@ class EverestComposer
             'extensions' => [
                 'enabled' => boolval(config('modules.extensions.enabled', false)),
             ],
+            'custom_domains' => [
+                'enabled' => boolval(config('modules.custom_domains.enabled', false)),
+            ],
         ];
         
         // Merge admin-only configuration if user is authenticated admin
@@ -138,9 +137,6 @@ class EverestComposer
                 'keys' => [
                     'publishable' => boolval(config('modules.billing.keys.publishable')),
                     'secret' => boolval(config('modules.billing.keys.secret')),
-                ],
-                'mollie' => [
-                    'api_key' => !empty(config('modules.billing.mollie.api_key')),
                 ],
                 'paypal_standalone' => [
                     'mode' => config('modules.billing.paypal_standalone.mode', 'sandbox'),

@@ -1,8 +1,6 @@
 import { faStripe, faPaypal } from '@fortawesome/free-brands-svg-icons';
-import { faCreditCard } from '@fortawesome/free-solid-svg-icons';
 import { BillingIntegration } from './types';
 import StripeSettings from './StripeSettings';
-import MollieSettings from './MollieSettings';
 import PayPalSettings from './PayPalSettings';
 import { EverestSettings } from '@/state/everest';
 
@@ -11,7 +9,6 @@ import { EverestSettings } from '@/state/everest';
  */
 export const createIntegrationRegistry = (billingSettings: EverestSettings['billing']): BillingIntegration[] => {
     const stripeConfigured = !!(billingSettings.keys?.publishable && billingSettings.keys?.secret);
-    const mollieConfigured = !!billingSettings.mollie?.api_key;
     const paypalConfigured = billingSettings.processors?.paypal?.available ?? false;
 
     return [
@@ -21,19 +18,9 @@ export const createIntegrationRegistry = (billingSettings: EverestSettings['bill
             description:
                 'Accept credit cards, digital wallets, and bank transfers with Stripe. Industry-leading payment infrastructure.',
             icon: faStripe,
-            enabled: billingSettings.integrations?.stripe?.enabled ?? billingSettings.processor === 'stripe',
+            enabled: billingSettings.integrations?.stripe?.enabled ?? false,
             configured: stripeConfigured,
             settingsComponent: StripeSettings,
-        },
-        {
-            id: 'mollie',
-            name: 'Mollie',
-            description:
-                'European payment provider supporting iDEAL, credit cards, bank transfers, and more. Popular in Europe.',
-            icon: faCreditCard,
-            enabled: billingSettings.integrations?.mollie?.enabled ?? billingSettings.processor === 'mollie',
-            configured: mollieConfigured,
-            settingsComponent: MollieSettings,
         },
         {
             id: 'paypal',

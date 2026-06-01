@@ -9,7 +9,7 @@ export default () => {
 
     return (
         <FeatureContainer image={<SupportSvg color={primary} />} icon={faTicket} title={'Ticket System'}>
-            Jexactyl&apos;s ticket interface allows your users to create tickets for support on the panel. Users can
+            M12Labs&apos; ticket interface allows your users to create tickets for support on the panel. Users can
             create, update and view tickets which admins can reply to and mark as a certain status. This feature can be
             toggled at anytime to suit your business&apos; needs.
             <p className={'text-right'}>

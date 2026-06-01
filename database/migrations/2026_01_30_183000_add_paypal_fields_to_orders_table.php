@@ -9,7 +9,7 @@ return new class () extends Migration {
     {
         Schema::table('orders', function (Blueprint $table) {
             if (!Schema::hasColumn('orders', 'paypal_order_id')) {
-                $table->string('paypal_order_id')->nullable()->after('mollie_payment_id');
+                $table->string('paypal_order_id')->nullable()->after('payment_processor');
             }
 
             if (!Schema::hasColumn('orders', 'paypal_capture_id')) {

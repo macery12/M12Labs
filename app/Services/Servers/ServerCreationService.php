@@ -160,6 +160,8 @@ class ServerCreationService
             'startup' => Arr::get($data, 'startup'),
             'image' => Arr::get($data, 'image'),
             'billing_product_id' => Arr::get($data, 'billing_product_id') ?? null,
+            'billing_days' => Arr::get($data, 'billing_days') ?? null,
+            'billing_amount' => Arr::get($data, 'billing_amount') ?? null,
             'renewal_date' => Arr::get($data, 'renewal_date') ?? null,
             'database_limit' => Arr::get($data, 'database_limit') ?? 0,
             'allocation_limit' => Arr::get($data, 'allocation_limit') ?? 0,

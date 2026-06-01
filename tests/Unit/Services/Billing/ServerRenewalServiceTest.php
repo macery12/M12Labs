@@ -243,6 +243,40 @@ class ServerRenewalServiceTest extends TestCase
     }
 
     /**
+     * Test that selected billing cycle is persisted for future renewals.
+     */
+    public function testRenewalPersistsSelectedBillingDays()
+    {
+        $server = $this->createMockServer(-2, false);
+        $product = $this->createMockProduct(false, 30);
+
+        $order = $this->createMockOrder();
+        $this->orderService->shouldReceive('create')->once()->andReturn($order);
+
+        $server->shouldReceive('isSuspended')->andReturn(false);
+
+        $selectedBillingDays = 60;
+        $server->shouldReceive('update')
+            ->once()
+            ->with(
+                \Mockery::on(function ($arg) use ($selectedBillingDays) {
+                    return isset($arg['billing_days'])
+                        && (int) $arg['billing_days'] === $selectedBillingDays
+                        && isset($arg['renewal_date']);
+                })
+            )
+            ->andReturnNull();
+
+        $order->shouldReceive('update')->once()->andReturnNull();
+        $order->shouldReceive('getAttribute')->with('name')->andReturn('Renewal Order ');
+
+        $result = $this->service->renew($server, $product, null, $selectedBillingDays);
+
+        $this->assertArrayHasKey('server', $result);
+        $this->assertArrayHasKey('order', $result);
+    }
+
+    /**
      * Test that renewal throws exception when server doesn't match product.
      */
     public function testRenewalThrowsExceptionWhenProductMismatch()

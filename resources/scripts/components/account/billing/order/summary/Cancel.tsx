@@ -1,9 +1,25 @@
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useStoreState } from '@/state/hooks';
 import CancelSvg from '@/assets/images/themed/CancelSvg';
 import PageContentBlock from '@/elements/PageContentBlock';
+import http from '@/api/http';
 
 export default () => {
     const { colors } = useStoreState(s => s.theme.data!);
+    const { search } = useLocation();
+
+    useEffect(() => {
+        // PayPal passes the Order ID as `token` on the cancel redirect URL.
+        // Mark the order as failed so it doesn't remain "pending".
+        const params = new URLSearchParams(search);
+        const token = params.get('token');
+        if (token) {
+            http.post('/api/client/billing/paypal/cancel', { order_id: token }).catch(() => {
+                // Silently ignore – the order will expire on PayPal's side eventually.
+            });
+        }
+    }, []);
 
     return (
         <PageContentBlock>
