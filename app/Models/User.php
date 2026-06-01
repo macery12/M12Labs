@@ -323,6 +323,11 @@ class User extends Model implements
         return $this->hasOne(\Everest\Models\Billing\UserBillingProfile::class);
     }
 
+    public function billingProfile(): HasOne
+    {
+        return $this->hasOne(\Everest\Models\Billing\UserBillingProfile::class);
+    }
+
     /**
      * Returns all the servers that a user can access by way of being the owner of the
      * server, or because they are assigned as a subuser for that server.
