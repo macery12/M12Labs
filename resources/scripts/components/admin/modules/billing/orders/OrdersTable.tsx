@@ -255,6 +255,10 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
             filters.payer_email = payerEmail.trim();
             hasFilters = true;
         }
+        if (transactionId.trim()) { filters.transaction_id = transactionId.trim(); hasFilters = true; }
+        if (captureId.trim()) { filters.capture_id = captureId.trim(); hasFilters = true; }
+        if (payerId.trim()) { filters.payer_id = payerId.trim(); hasFilters = true; }
+        if (payerEmail.trim()) { filters.payer_email = payerEmail.trim(); hasFilters = true; }
 
         return hasFilters ? filters : null;
     };

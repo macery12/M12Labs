@@ -140,38 +140,14 @@ function OrderTable() {
         const filters: OrderFilters = {};
         let hasFilters = false;
 
-        if (paymentProcessor) {
-            filters.payment_processor = paymentProcessor;
-            hasFilters = true;
-        }
-        if (status) {
-            filters.status = status;
-            hasFilters = true;
-        }
-        if (orderType) {
-            filters.type = orderType;
-            hasFilters = true;
-        }
-        if (minAmount !== null) {
-            filters.min_amount = minAmount;
-            hasFilters = true;
-        }
-        if (maxAmount !== null) {
-            filters.max_amount = maxAmount;
-            hasFilters = true;
-        }
-        if (startDate) {
-            filters.start_date = startDate;
-            hasFilters = true;
-        }
-        if (endDate) {
-            filters.end_date = endDate;
-            hasFilters = true;
-        }
-        if (searchQuery && searchQuery.length >= 2) {
-            filters.search = searchQuery;
-            hasFilters = true;
-        }
+        if (paymentProcessor) { filters.payment_processor = paymentProcessor; hasFilters = true; }
+        if (status) { filters.status = status; hasFilters = true; }
+        if (orderType) { filters.type = orderType; hasFilters = true; }
+        if (minAmount !== null) { filters.min_amount = minAmount; hasFilters = true; }
+        if (maxAmount !== null) { filters.max_amount = maxAmount; hasFilters = true; }
+        if (startDate) { filters.start_date = startDate; hasFilters = true; }
+        if (endDate) { filters.end_date = endDate; hasFilters = true; }
+        if (searchQuery && searchQuery.length >= 2) { filters.search = searchQuery; hasFilters = true; }
 
         return hasFilters ? filters : null;
     };
