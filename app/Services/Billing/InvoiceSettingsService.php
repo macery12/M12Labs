@@ -52,6 +52,6 @@ class InvoiceSettingsService
     {
         DB::table('invoice_settings')
             ->where('id', 1)
-            ->update(['r2_bytes_used' => DB::raw("GREATEST(0, r2_bytes_used - {$bytes})")]);
+            ->update(['r2_bytes_used' => DB::raw('GREATEST(0, r2_bytes_used - ' . (int) $bytes . ')')]);
     }
 }

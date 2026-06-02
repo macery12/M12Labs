@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
+use Illuminate\Support\Facades\Cache;
 use Everest\Models\Billing\Category;
 use Everest\Models\Billing\BillingException;
 use Everest\Transformers\Api\Client\CategoryTransformer;
@@ -19,9 +20,16 @@ class CategoryController extends ClientApiController
      */
     public function index(): array
     {
-        $categories = Category::where('visible', true)->get();
+        // Storefront catalog is read by every browsing user. Cache the visible-category
+        // list briefly to absorb concurrent load; staleness is bounded to the TTL so no
+        // explicit invalidation is needed when an admin toggles visibility.
+        $categories = Cache::remember(
+            'billing.storefront.categories',
+            60,
+            fn () => Category::where('visible', true)->get(),
+        );
 
-        if ($categories->count() == 0) {
+        if ($categories->isEmpty()) {
             BillingException::create([
                 'title' => 'No product categories are visible',
                 'exception_type' => BillingException::TYPE_STOREFRONT,

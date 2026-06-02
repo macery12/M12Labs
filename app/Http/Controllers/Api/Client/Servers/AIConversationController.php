@@ -66,11 +66,7 @@ class AIConversationController extends ClientApiController
      */
     public function show(Request $request, Server $server, int $conversationId): JsonResponse
     {
-        $conversation = AiConversation::findOrFail($conversationId);
-
-        if ($conversation->user_id !== $request->user()->id || $conversation->server_uuid !== $server->uuid) {
-            abort(403);
-        }
+        $conversation = $this->resolveConversation($request, $server, $conversationId);
 
         $messages = $conversation->messages()->get(['role', 'content', 'created_at']);
 
@@ -87,11 +83,7 @@ class AIConversationController extends ClientApiController
      */
     public function destroy(Request $request, Server $server, int $conversationId): JsonResponse
     {
-        $conversation = AiConversation::findOrFail($conversationId);
-
-        if ($conversation->user_id !== $request->user()->id || $conversation->server_uuid !== $server->uuid) {
-            abort(403);
-        }
+        $conversation = $this->resolveConversation($request, $server, $conversationId);
 
         $conversation->delete();
 
@@ -104,11 +96,7 @@ class AIConversationController extends ClientApiController
      */
     public function toggleSave(Request $request, Server $server, int $conversationId): JsonResponse
     {
-        $conversation = AiConversation::findOrFail($conversationId);
-
-        if ($conversation->user_id !== $request->user()->id || $conversation->server_uuid !== $server->uuid) {
-            abort(403);
-        }
+        $conversation = $this->resolveConversation($request, $server, $conversationId);
 
         $nowSaved = !$conversation->is_saved;
 
@@ -126,11 +114,7 @@ class AIConversationController extends ClientApiController
      */
     public function appendMessages(Request $request, Server $server, int $conversationId): JsonResponse
     {
-        $conversation = AiConversation::findOrFail($conversationId);
-
-        if ($conversation->user_id !== $request->user()->id || $conversation->server_uuid !== $server->uuid) {
-            abort(403);
-        }
+        $conversation = $this->resolveConversation($request, $server, $conversationId);
 
         $request->validate([
             'messages' => 'required|array|min:1|max:20',
@@ -165,5 +149,18 @@ class AIConversationController extends ClientApiController
         $conversation->save();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Resolve a conversation scoped to the authenticated user and the given server.
+     * Throws a 404 if it does not exist or does not belong to this user/server, so
+     * ownership enforcement is structural rather than a manual per-action check.
+     */
+    private function resolveConversation(Request $request, Server $server, int $conversationId): AiConversation
+    {
+        return AiConversation::query()
+            ->where('user_id', $request->user()->id)
+            ->where('server_uuid', $server->uuid)
+            ->findOrFail($conversationId);
     }
 }

@@ -141,30 +141,29 @@ class AccountModpacksController extends ClientApiController
         try {
             $user = $request->user();
 
-            // Get all servers owned by the user
-            $servers = Server::where('owner_id', $user->id)->get();
+            // Get all servers owned by the user (only the columns we need).
+            $servers = Server::where('owner_id', $user->id)->get(['uuid', 'name', 'egg_id']);
 
-            // Filter servers to only those with CurseForge-compatible eggs
-            $compatibleServers = [];
+            // Resolve which eggs are CurseForge-compatible in a single query instead of
+            // two existence checks per server. An egg is compatible when it exposes BOTH
+            // the PROJECT_ID and API_KEY variables.
+            $compatibleEggIds = EggVariable::query()
+                ->whereIn('egg_id', $servers->pluck('egg_id')->unique()->filter()->all())
+                ->whereIn('env_variable', ['PROJECT_ID', 'API_KEY'])
+                ->groupBy('egg_id')
+                ->havingRaw('COUNT(DISTINCT env_variable) = 2')
+                ->pluck('egg_id')
+                ->flip();
 
-            foreach ($servers as $server) {
-                // Check if the egg has the required environment variables
-                $hasProjectId = EggVariable::where('egg_id', $server->egg_id)
-                    ->where('env_variable', 'PROJECT_ID')
-                    ->exists();
-
-                $hasApiKey = EggVariable::where('egg_id', $server->egg_id)
-                    ->where('env_variable', 'API_KEY')
-                    ->exists();
-
-                if ($hasProjectId && $hasApiKey) {
-                    $compatibleServers[] = [
-                        'uuid' => $server->uuid,
-                        'name' => $server->name,
-                        'eggId' => $server->egg_id,
-                    ];
-                }
-            }
+            $compatibleServers = $servers
+                ->filter(fn ($server) => $compatibleEggIds->has($server->egg_id))
+                ->map(fn ($server) => [
+                    'uuid' => $server->uuid,
+                    'name' => $server->name,
+                    'eggId' => $server->egg_id,
+                ])
+                ->values()
+                ->all();
 
             return response()->json([
                 'servers' => $compatibleServers,

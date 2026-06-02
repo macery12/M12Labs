@@ -7,6 +7,7 @@ use Everest\Models\Server;
 use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
@@ -65,6 +66,17 @@ class BillingController extends ApplicationApiController
      */
     public function analytics(GetBillingAnalyticsRequest $request): array
     {
+        // Cache the assembled dashboard briefly. The endpoint takes no parameters, so a
+        // single key is correct; a short TTL absorbs repeated polling while keeping the
+        // figures effectively live. Staleness is bounded to the TTL.
+        return Cache::remember('billing.analytics.dashboard', 60, fn () => $this->buildAnalytics());
+    }
+
+    /**
+     * Assemble the billing analytics payload. Extracted so {@see analytics()} can cache it.
+     */
+    private function buildAnalytics(): array
+    {
         // Load a lightweight order list for the last year (only the fields the
         // dashboard charts require). Capped at 10 000 rows so very large installs
         // never pull unbounded data into memory.
@@ -77,53 +89,25 @@ class BillingController extends ApplicationApiController
         // Calculate upcoming renewals
         $now = Carbon::now();
 
-        // Use DB-level date filtering to avoid loading all servers into memory.
-        $overdueRenewals = Server::whereNotNull('renewal_date')
-            ->whereNotNull('billing_product_id')
-            ->where('renewal_date', '<', $now)
-            ->with('product')
-            ->get();
-
-        $renewalsIn7Days = Server::whereNotNull('renewal_date')
-            ->whereNotNull('billing_product_id')
-            ->whereBetween('renewal_date', [$now, $now->copy()->addDays(7)])
-            ->with('product')
-            ->get();
-
-        $renewalsIn8to14Days = Server::whereNotNull('renewal_date')
-            ->whereNotNull('billing_product_id')
-            ->whereBetween('renewal_date', [$now->copy()->addDays(7), $now->copy()->addDays(14)])
-            ->with('product')
-            ->get();
-
-        $expectedRevenueOverdue = $overdueRenewals->sum(function ($server) {
-            return $server->product ? $server->product->price : 0;
-        });
-
-        $expectedRevenue7Days = $renewalsIn7Days->sum(function ($server) {
-            return $server->product ? $server->product->price : 0;
-        });
-
-        $expectedRevenue8to14Days = $renewalsIn8to14Days->sum(function ($server) {
-            return $server->product ? $server->product->price : 0;
-        });
+        // Aggregate counts + expected revenue at the database level (joining products for
+        // price) instead of hydrating every renewable server into memory.
+        $overdue = $this->renewalAggregate(fn ($q) => $q->where('renewal_date', '<', $now));
+        $in7Days = $this->renewalAggregate(fn ($q) => $q->whereBetween('renewal_date', [$now, $now->copy()->addDays(7)]));
+        $in8to14Days = $this->renewalAggregate(fn ($q) => $q->whereBetween('renewal_date', [$now->copy()->addDays(7), $now->copy()->addDays(14)]));
 
         // Total for all renewals in next 14 days (including overdue)
-        $totalRenewalsIn14Days = $overdueRenewals->count() + $renewalsIn7Days->count() + $renewalsIn8to14Days->count();
-        $totalExpectedRevenue14Days = $expectedRevenueOverdue + $expectedRevenue7Days + $expectedRevenue8to14Days;
+        $totalRenewalsIn14Days = $overdue['count'] + $in7Days['count'] + $in8to14Days['count'];
+        $totalExpectedRevenue14Days = $overdue['expectedRevenue'] + $in7Days['expectedRevenue'] + $in8to14Days['expectedRevenue'];
 
-        // Calculate forecast based on ALL active billing servers (including past-due)
-        // A server with a billing subscription is still generating revenue even if past due
-        $activeServers = Server::whereNotNull('billing_product_id')
+        // Calculate forecast based on ALL active billing servers (including past-due): a
+        // server with a billing subscription is still generating revenue even if past due.
+        // Use the actual billed amount (billing_amount), not the catalog base price, so
+        // coupon discounts and cycle multipliers are reflected. Summed in the database.
+        $totalDailyRevenue = (float) Server::whereNotNull('billing_product_id')
             ->where('billing_days', '>', 0)
             ->where('billing_amount', '>', 0)
-            ->get();
-
-        // Calculate total daily revenue using the actual billed amount (billing_amount),
-        // not the catalog base price, so coupon discounts and cycle multipliers are reflected.
-        $totalDailyRevenue = $activeServers->sum(function ($server) {
-            return $server->billing_amount / $server->billing_days;
-        });
+            ->selectRaw('COALESCE(SUM(billing_amount / billing_days), 0) as daily')
+            ->value('daily');
 
         $forecast7Days = $totalDailyRevenue * 7;
         $forecast30Days = $totalDailyRevenue * 30;
@@ -168,18 +152,9 @@ class BillingController extends ApplicationApiController
             'categories' => Category::all(),
             'products' => Product::all(),
             'upcomingRenewals' => [
-                'overdue' => [
-                    'count' => $overdueRenewals->count(),
-                    'expectedRevenue' => $expectedRevenueOverdue,
-                ],
-                'in7Days' => [
-                    'count' => $renewalsIn7Days->count(),
-                    'expectedRevenue' => $expectedRevenue7Days,
-                ],
-                'in8to14Days' => [
-                    'count' => $renewalsIn8to14Days->count(),
-                    'expectedRevenue' => $expectedRevenue8to14Days,
-                ],
+                'overdue' => $overdue,
+                'in7Days' => $in7Days,
+                'in8to14Days' => $in8to14Days,
                 'total14Days' => [
                     'count' => $totalRenewalsIn14Days,
                     'expectedRevenue' => $totalExpectedRevenue14Days,
@@ -191,6 +166,32 @@ class BillingController extends ApplicationApiController
             ],
             'suspendedServers' => $suspendedServers,
             'recentEvents' => $recentEvents,
+        ];
+    }
+
+    /**
+     * Aggregate the renewable-server count and expected revenue for a date window,
+     * computed entirely in the database (no model hydration). The $constrain closure
+     * applies the renewal_date filter that distinguishes each window.
+     *
+     * @return array{count: int, expectedRevenue: float}
+     */
+    private function renewalAggregate(callable $constrain): array
+    {
+        $query = Server::query()
+            ->whereNotNull('renewal_date')
+            ->whereNotNull('billing_product_id')
+            ->leftJoin('products', 'servers.billing_product_id', '=', 'products.id');
+
+        $constrain($query);
+
+        $row = $query
+            ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(products.price), 0) as revenue')
+            ->first();
+
+        return [
+            'count' => (int) ($row->cnt ?? 0),
+            'expectedRevenue' => (float) ($row->revenue ?? 0),
         ];
     }
 

@@ -121,6 +121,13 @@ class ExtensionPanelRebuildService
             'PNPM_HOME' => $pnpmHome,
             'PNPM_STORE_DIR' => $pnpmStore,
             'pnpm_config_store_dir' => $pnpmStore,
+            // Keep using the host pnpm binary instead of switching into
+            // a runtime-managed CLI under storage (can fail with EACCES on
+            // hardened/noexec mounts during extension install rebuilds).
+            'NPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS' => 'false',
+            'npm_config_manage_package_manager_versions' => 'false',
+            'PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS' => 'false',
+            'pnpm_config_manage_package_manager_versions' => 'false',
         ];
     }
 }

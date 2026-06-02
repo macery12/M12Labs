@@ -9,6 +9,7 @@ import ExportConfigButton from './config/ExportConfigButton';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import ImportConfigButton from './config/ImportConfigButton';
 import { updateSettings } from '@/api/routes/admin/billing';
+import { updateInvoiceSettings } from '@/api/routes/admin/billing/invoices';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
 import Switch from '@/elements/Switch';
 
@@ -36,7 +37,7 @@ export default () => {
     };
 
     const handleCustomerRequirementChange = async (checked: boolean) => {
-        await updateSettings('require_billing_address', checked);
+        await updateInvoiceSettings({ require_billing_address: checked });
         updateEverest({ billing: { ...settings, require_billing_address: checked } });
     };
 
