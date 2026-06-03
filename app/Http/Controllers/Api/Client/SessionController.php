@@ -2,13 +2,13 @@
 
 namespace Everest\Http\Controllers\Api\Client;
 
+use Everest\Facades\Activity;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Models\UserSession;
 use Everest\Services\Auth\UserSessionService;
 use Everest\Transformers\Api\Client\UserSessionTransformer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 
 class SessionController extends ClientApiController
 {
@@ -18,7 +18,7 @@ class SessionController extends ClientApiController
     }
 
     /**
-     * List sessions for the authenticated user.
+     * List active sessions for the authenticated user.
      */
     public function index(ClientApiRequest $request): array
     {
@@ -28,10 +28,21 @@ class SessionController extends ClientApiController
             ->orderByDesc('created_at')
             ->get();
 
-        Log::info('SessionController@index returning sessions', [
-            'user_id' => $request->user()->id,
-            'count' => $sessions->count(),
-        ]);
+        return $this->fractal->collection($sessions)
+            ->transformWith(UserSessionTransformer::class)
+            ->toArray();
+    }
+
+    /**
+     * List all sessions including revoked ones (for history view).
+     */
+    public function history(ClientApiRequest $request): array
+    {
+        $sessions = $request->user()->sessions()
+            ->whereNotNull('revoked_at')
+            ->orderByDesc('revoked_at')
+            ->limit(20)
+            ->get();
 
         return $this->fractal->collection($sessions)
             ->transformWith(UserSessionTransformer::class)
@@ -46,6 +57,12 @@ class SessionController extends ClientApiController
         abort_unless($session->user_id === $request->user()->id, Response::HTTP_NOT_FOUND);
 
         $this->service->revokeSession($request->user(), $session);
+
+        Activity::withRequestMetadata()
+            ->subject($request->user())
+            ->event('auth:session_revoked')
+            ->property('session_db_id', $session->id)
+            ->log();
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }
@@ -64,10 +81,30 @@ class SessionController extends ClientApiController
 
         $this->service->revokeAll($request->user(), $except);
 
+        Activity::withRequestMetadata()
+            ->subject($request->user())
+            ->event('auth:session_revoked')
+            ->property('all', true)
+            ->property('include_current', $includeCurrent)
+            ->log();
+
         if ($includeCurrent && $request->hasSession()) {
             $request->session()->invalidate();
             $request->session()->regenerateToken();
         }
+
+        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Set a user-defined label for a session.
+     */
+    public function updateLabel(ClientApiRequest $request, UserSession $session): JsonResponse
+    {
+        abort_unless($session->user_id === $request->user()->id, Response::HTTP_NOT_FOUND);
+
+        $label = $request->input('label');
+        $session->update(['device_label' => $label ? mb_substr(trim($label), 0, 100) : null]);
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }

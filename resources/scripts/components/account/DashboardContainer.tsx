@@ -23,8 +23,6 @@ import { faCircleArrowRight, faList } from '@fortawesome/free-solid-svg-icons';
 import { getServerGroups } from '@/api/routes/server/groups';
 import { type ServerGroup } from '@definitions/server';
 import ServerGroupDialog, { VisibleDialog } from '@account/groups/ServerGroupDialog';
-import ActivityLogContainer from './activity/ActivityLogContainer';
-import classNames from 'classnames';
 
 export default () => {
     const { search } = useLocation();
@@ -40,7 +38,6 @@ export default () => {
     const uuid = useStoreState(state => state.user.data!.uuid);
     const user = useStoreState(state => state.user.data!);
     const billing = useStoreState(state => state.everest.data!.billing.enabled);
-    const activityEnabled = useStoreState(state => state.settings.data!.activity.enabled.account);
     const [showOnlyAdmin, setShowOnlyAdmin] = usePersistedState(`${uuid}:show_all_servers`, false);
 
     const { data: servers, error } = useSWR<PaginatedResult<Server>>(
@@ -78,7 +75,7 @@ export default () => {
             <DashboardAlert />
             {open && <ServerGroupDialog open={open} setOpen={setOpen} groups={groups} setGroups={setGroups} />}
             <FlashMessageRender className={'my-4'} byKey={'dashboard'} />
-            <div className={classNames('grid gap-4', activityEnabled ? 'lg:grid-cols-3' : 'lg:grid-cols-2')}>
+            <div className={'grid gap-4 lg:grid-cols-2'}>
                 <div className="relative overflow-x-auto lg:col-span-2">
                     <h2 css={tw`text-neutral-300 mb-4 px-4 text-2xl flex flex-wrap items-center justify-between gap-2`}>
                         <div className={'inline-flex'}>
@@ -174,11 +171,7 @@ export default () => {
                         )}
                     </ContentBox>
                 </div>
-                {activityEnabled && (
-                    <ContentBox title={'Account Activity'}>
-                        <ActivityLogContainer />
-                    </ContentBox>
-                )}
+
             </div>
         </PageContentBlock>
     );

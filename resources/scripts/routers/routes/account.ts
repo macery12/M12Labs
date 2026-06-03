@@ -5,6 +5,7 @@ import { route, type RouteDefinition } from '@/routers/routes/utils';
 const CredentialsContainer = lazy(() => import('@account/CredentialsContainer'));
 const AccountOverviewContainer = lazy(() => import('@account/AccountOverviewContainer'));
 const SecurityContainer = lazy(() => import('@account/SecurityContainer'));
+const UserActivityContainer = lazy(() => import('@account/activity/UserActivityContainer'));
 
 const TicketContainer = lazy(() => import('@account/tickets/TicketContainer'));
 const ViewTicketContainer = lazy(() => import('@account/tickets/view/ViewTicketContainer'));
@@ -24,6 +25,7 @@ const account: RouteDefinition[] = [
     route('', AccountOverviewContainer, { name: 'Account', end: true, icon: UserIcon }),
     route('credentials', CredentialsContainer, { name: 'Credentials', icon: KeyIcon }),
     route('security', SecurityContainer, { name: 'Security', icon: ShieldCheckIcon }),
+    route('activity', UserActivityContainer, { name: 'Activity', icon: ClipboardListIcon }),
 
     /**
      * Account - Ticket Routes

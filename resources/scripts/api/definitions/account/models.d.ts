@@ -32,6 +32,7 @@ interface ApiKey extends Model {
 interface AccountSession extends Model {
     id: number;
     deviceName: string;
+    deviceLabel: string | null;
     ipAddress: string | null;
     location: string | null;
     userAgent: string | null;

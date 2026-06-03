@@ -88,6 +88,7 @@ export default class Transformers {
     static toAccountSession = ({ attributes }: FractalResponseData): Models.AccountSession => ({
         id: attributes.id,
         deviceName: attributes.device_name,
+        deviceLabel: attributes.device_label ?? null,
         ipAddress: attributes.ip_address,
         location: attributes.location ?? null,
         userAgent: attributes.user_agent,

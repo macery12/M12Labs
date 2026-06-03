@@ -63,13 +63,23 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             ->middleware('verified.view:credentials')
             ->name('api:client.account.activity');
 
+        Route::get('/owned-servers', [Client\ActivityLogController::class, 'servers'])
+            ->middleware('verified.view:credentials')
+            ->name('api:client.account.owned-servers');
+
         Route::prefix('/sessions')->group(function () {
             Route::get('/', [Client\SessionController::class, 'index'])
                 ->middleware('verified.view:credentials')
                 ->name('api:client.account.sessions');
+            Route::get('/history', [Client\SessionController::class, 'history'])
+                ->middleware('verified.view:credentials')
+                ->name('api:client.account.sessions.history');
             Route::post('/{session}/revoke', [Client\SessionController::class, 'revoke'])
                 ->middleware('verified.interact:credentials')
                 ->name('api:client.account.sessions.revoke');
+            Route::patch('/{session}/label', [Client\SessionController::class, 'updateLabel'])
+                ->middleware('verified.interact:credentials')
+                ->name('api:client.account.sessions.label');
             Route::post('/revoke-all', [Client\SessionController::class, 'revokeAll'])
                 ->middleware('verified.interact:credentials')
                 ->name('api:client.account.sessions.revoke-all');
