@@ -164,8 +164,8 @@ class ExtensionFilesystemOwnershipService
      */
     private function resolveOwnershipTarget(): ?array
     {
-        $envUser = env('M12LABS_PANEL_OWNER');
-        $envGroup = env('M12LABS_PANEL_GROUP');
+        $envUser = config('modules.extensions.panel_owner');
+        $envGroup = config('modules.extensions.panel_group');
         if (is_string($envUser) && is_string($envGroup) && function_exists('posix_getpwnam') && function_exists('posix_getgrnam')) {
             $userInfo = posix_getpwnam($envUser);
             $groupInfo = posix_getgrnam($envGroup);

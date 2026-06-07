@@ -52,9 +52,7 @@ export default function MessageBubble({ message }: { message: Message }) {
             )}
             <div
                 className={`group relative max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                    isUser
-                        ? 'rounded-tr-sm bg-violet-600 text-white'
-                        : 'rounded-tl-sm bg-neutral-800 text-neutral-100'
+                    isUser ? 'rounded-tr-sm bg-violet-600 text-white' : 'rounded-tl-sm bg-neutral-800 text-neutral-100'
                 }`}
             >
                 {isUser ? (

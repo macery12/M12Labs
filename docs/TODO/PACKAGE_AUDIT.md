@@ -1,5 +1,14 @@
 # Dependency Audit
 
+> Status (reviewed 2026-05-31): this file contains useful historical detail, but it is no longer the canonical plan.
+>
+> Use these docs as current source of truth:
+> - `UPGRADE_ROADMAP_2026.md`
+> - `LARAVEL11_UPGRADE.md`
+> - `LARAVEL12_UPGRADE.md`
+> - `LARAVEL13_UPGRADE.md`
+> - `FRONTEND_VITE8_TAILWIND4_PLAN.md`
+
 Full audit of outdated and deprecated dependencies across the frontend (`package.json`) and backend
 (`composer.json`). Conducted after the Vite 5 upgrade (April 2026).
 

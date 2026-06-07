@@ -23,8 +23,8 @@ class ActivityLogController extends ClientApiController
 
         $activity = QueryBuilder::for($this->serverScopedQuery($server))
             ->with('actor')
-            ->allowedSorts(['timestamp'])
-            ->allowedFilters([
+            ->allowedSorts(...['timestamp'])
+            ->allowedFilters(...[
                 AllowedFilter::partial('event'),
                 AllowedFilter::partial('ip'),
                 AllowedFilter::partial('description'),

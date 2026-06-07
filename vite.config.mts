@@ -1,3 +1,4 @@
+import babel from '@rolldown/plugin-babel';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { dirname, resolve } from 'pathe';
@@ -5,10 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 const plugins = [
-    react({
-        babel: {
-            plugins: ['babel-plugin-macros', 'babel-plugin-styled-components'],
-        },
+    react(),
+    babel({
+        include: /resources\/scripts\/.*\.[jt]sx?$/,
+        plugins: ['babel-plugin-macros', 'babel-plugin-styled-components'],
     }),
 ];
 
@@ -45,6 +46,11 @@ export default defineConfig({
                     // Otherwise Rollup can place the preload helper into a large feature chunk,
                     // forcing that chunk onto the initial page load.
                     if (id.includes('vite/preload-helper')) return 'vendor-react';
+                    if (
+                        id.includes('twin.macro') ||
+                        id.includes('babel-plugin-macros') ||
+                        id.includes('babel-plugin-styled-components')
+                    ) return 'vendor-macros';
                     if (!id.includes('node_modules')) return;
                     // CodeMirror core runtime + @codemirror/view + Lezer parser runtime.
                     // @codemirror/view MUST be in the same chunk as @codemirror/state: they share

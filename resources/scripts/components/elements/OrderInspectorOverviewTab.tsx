@@ -104,7 +104,9 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
                     <div css={tw`flex flex-wrap justify-between items-start gap-1`}>
                         <span css={tw`text-sm text-gray-400`}>Plan / Product</span>
                         <span css={tw`text-sm text-white font-medium`}>
-                            {'product_name' in order && order.product_name ? order.product_name : (
+                            {'product_name' in order && order.product_name ? (
+                                order.product_name
+                            ) : (
                                 <span css={tw`text-gray-500`}>Unknown (#{order.product_id})</span>
                             )}
                         </span>
@@ -155,7 +157,9 @@ const OrderInspectorOverviewTab: React.FC<Props> = ({ order, isAdmin = false }) 
                             ${order.total.toFixed(2)}
                             {order.type === 'ren' && <span css={tw`text-sm text-gray-400`}>/mo</span>}
                             {(order.total === 0 || order.payment_processor === 'free') && (
-                                <Pill size="small" type="success">Free</Pill>
+                                <Pill size="small" type="success">
+                                    Free
+                                </Pill>
                             )}
                         </span>
                     </div>

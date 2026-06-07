@@ -8,7 +8,7 @@ import { Textarea } from '@/elements/Input';
 import styled from 'styled-components';
 import { useFlashKey } from '@/plugins/useFlash';
 import FlashMessageRender from '@/elements/FlashMessageRender';
-import { createMessage } from '@/api/routes/account/tickets';
+import { createMessage, useTicketFromRoute } from '@/api/routes/account/tickets';
 import DeleteTicketDialog from './DeleteTicketDialog';
 
 interface Values {
@@ -21,13 +21,15 @@ const CustomTextarea = styled(Textarea)`
 
 export default ({ ticketId }: { ticketId: number }) => {
     const { clearAndAddHttpError } = useFlashKey('account:tickets:view');
+    const { mutate } = useTicketFromRoute();
 
-    const submit = (values: Values, { setSubmitting }: FormikHelpers<Values>) => {
+    const submit = (values: Values, { setSubmitting, resetForm }: FormikHelpers<Values>) => {
         clearAndAddHttpError();
 
         createMessage(ticketId, values.message)
             .then(() => {
-                window.location.reload();
+                resetForm();
+                mutate();
             })
             .catch(error => clearAndAddHttpError(error))
             .then(() => setSubmitting(false));
@@ -39,7 +41,7 @@ export default ({ ticketId }: { ticketId: number }) => {
                 onSubmit={submit}
                 initialValues={{ message: '' }}
                 validationSchema={object().shape({
-                    message: string().required().min(3).max(300),
+                    message: string().required().min(3).max(2000),
                 })}
             >
                 {({ isSubmitting }) => (

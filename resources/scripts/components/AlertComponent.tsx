@@ -83,8 +83,8 @@ export const AlertComponent: React.FC<AlertComponentProps> = ({ alert, onDismiss
                 isClosing
                     ? 'translate-x-4 scale-95 opacity-0'
                     : isVisible
-                    ? 'translate-x-0 scale-100 opacity-100'
-                    : 'translate-x-4 scale-95 opacity-0',
+                      ? 'translate-x-0 scale-100 opacity-100'
+                      : 'translate-x-4 scale-95 opacity-0',
                 className,
             )}
             role="alert"

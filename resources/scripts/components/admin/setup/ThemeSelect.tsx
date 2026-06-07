@@ -30,7 +30,9 @@ export default ({ defaultColor }: { defaultColor: string }) => {
     const [appliedId, setAppliedId] = useState<number | null>(null);
 
     useEffect(() => {
-        getPresets().then(setPresets).catch(() => undefined);
+        getPresets()
+            .then(setPresets)
+            .catch(() => undefined);
     }, []);
 
     const changeColor = (hex: string) => {
@@ -134,7 +136,9 @@ export default ({ defaultColor }: { defaultColor: string }) => {
                                             k => (
                                                 <span
                                                     key={k}
-                                                    className={'inline-block h-4 w-4 rounded-full border border-black/30'}
+                                                    className={
+                                                        'inline-block h-4 w-4 rounded-full border border-black/30'
+                                                    }
                                                     style={{ background: preset.colors[k] }}
                                                     title={k}
                                                 />

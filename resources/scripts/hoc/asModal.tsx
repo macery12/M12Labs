@@ -17,7 +17,7 @@ interface State {
     propOverrides: Partial<SettableModalProps>;
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 function asModal<P extends {}>(
     modalProps?: SettableModalProps | ((props: P) => SettableModalProps),
 ): (Component: any) => any {

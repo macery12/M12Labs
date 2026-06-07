@@ -9,6 +9,14 @@ const getAccountSessions = (): Promise<AccountSession[]> => {
     });
 };
 
+const getAccountSessionHistory = (): Promise<AccountSession[]> => {
+    return new Promise((resolve, reject) => {
+        http.get('/api/client/account/sessions/history')
+            .then(({ data }) => resolve((data.data || []).map(Transformers.toAccountSession)))
+            .catch(reject);
+    });
+};
+
 const revokeAccountSession = (id: number): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/account/sessions/${id}/revoke`)
@@ -25,4 +33,12 @@ const revokeAllAccountSessions = (includeCurrent = false): Promise<void> => {
     });
 };
 
-export { getAccountSessions, revokeAccountSession, revokeAllAccountSessions };
+const labelAccountSession = (id: number, label: string | null): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        http.patch(`/api/client/account/sessions/${id}/label`, { label })
+            .then(() => resolve())
+            .catch(reject);
+    });
+};
+
+export { getAccountSessions, getAccountSessionHistory, revokeAccountSession, revokeAllAccountSessions, labelAccountSession };

@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { type BillingProfile, type BillingProfileInput, saveBillingProfile } from '@/api/routes/account/billing/billingProfile';
+import {
+    type BillingProfile,
+    type BillingProfileInput,
+    saveBillingProfile,
+} from '@/api/routes/account/billing/billingProfile';
 import AddressAutocompleteInput from '@account/billing/AddressAutocompleteInput';
 import { type AddressSuggestion } from '@/api/routes/account/billing/addressAutocomplete';
 import { Button } from '@/elements/button';
@@ -134,7 +138,10 @@ export default function BillingProfileForm({ existing, onSaved }: Props) {
             </div>
 
             {field('address_line1', 'Address Line 1')}
-            {field('address_line2', 'Address Line 2', { required: false, placeholder: 'Apartment, suite, etc. (optional)' })}
+            {field('address_line2', 'Address Line 2', {
+                required: false,
+                placeholder: 'Apartment, suite, etc. (optional)',
+            })}
 
             <div className={'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
                 {field('city', 'City')}
@@ -146,7 +153,11 @@ export default function BillingProfileForm({ existing, onSaved }: Props) {
                 {field('country', 'Country Code', { placeholder: 'US' })}
             </div>
 
-            {field('phone', 'Phone Number', { required: false, placeholder: '+1 555 000 0000 (optional)', type: 'tel' })}
+            {field('phone', 'Phone Number', {
+                required: false,
+                placeholder: '+1 555 000 0000 (optional)',
+                type: 'tel',
+            })}
 
             <div className={'flex justify-end pt-2'}>
                 <Button type={'submit'} disabled={formik.isSubmitting || !formik.dirty}>

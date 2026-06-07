@@ -129,10 +129,10 @@ export default () => {
                                 {delay === 0
                                     ? '0 minutes (instant)'
                                     : delay < 60
-                                    ? `${delay} minute${delay !== 1 ? 's' : ''}`
-                                    : delay % 60 === 0
-                                    ? `${delay / 60} hour${delay / 60 !== 1 ? 's' : ''}`
-                                    : `${Math.floor(delay / 60)}h ${delay % 60}m`}
+                                      ? `${delay} minute${delay !== 1 ? 's' : ''}`
+                                      : delay % 60 === 0
+                                        ? `${delay / 60} hour${delay / 60 !== 1 ? 's' : ''}`
+                                        : `${Math.floor(delay / 60)}h ${delay % 60}m`}
                             </strong>
                             .
                         </p>
@@ -188,10 +188,10 @@ export default () => {
                             {delay === 0
                                 ? '0 minutes'
                                 : delay < 60
-                                ? `${delay} minute${delay !== 1 ? 's' : ''}`
-                                : delay % 60 === 0
-                                ? `${delay / 60} hour${delay / 60 !== 1 ? 's' : ''}`
-                                : `${Math.floor(delay / 60)}h ${delay % 60}m`}
+                                  ? `${delay} minute${delay !== 1 ? 's' : ''}`
+                                  : delay % 60 === 0
+                                    ? `${delay / 60} hour${delay / 60 !== 1 ? 's' : ''}`
+                                    : `${Math.floor(delay / 60)}h ${delay % 60}m`}
                         </strong>{' '}
                         before they automatically gain access.
                     </span>

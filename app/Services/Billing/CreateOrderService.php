@@ -81,6 +81,7 @@ class CreateOrderService
         $order->node_multiplier_used = $nodeMultiplierUsed;
         $order->status = $status ?? Order::STATUS_EXPIRED;
         $order->product_id = $product->id;
+        $order->product_name = $product->name;
         $order->coupon_id = $couponId;
         $order->egg_id = $eggId;
         $order->node_id = $nodeId;

@@ -29,7 +29,7 @@ class OrderController extends ClientApiController
         }
 
         $orders = QueryBuilder::for(Order::query()->where('user_id', $request->user()->id)->with('server', 'transaction', 'product'))
-            ->allowedFilters([
+            ->allowedFilters(...[
                 'id', 'name', 'payment_processor', 'status', 'type',
                 AllowedFilter::callback('search', function (Builder $query, $value) {
                     $query->where(function ($q) use ($value) {
@@ -57,7 +57,7 @@ class OrderController extends ClientApiController
                     $query->where('created_at', '<=', $value);
                 }),
             ])
-            ->allowedSorts(['id', 'name', 'total', 'is_renewal', 'created_at', 'threat_index'])
+            ->allowedSorts(...['id', 'name', 'total', 'is_renewal', 'created_at', 'threat_index'])
             ->defaultSort('-created_at')
             ->paginate($perPage);
 

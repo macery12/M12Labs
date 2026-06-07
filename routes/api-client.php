@@ -63,13 +63,23 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             ->middleware('verified.view:credentials')
             ->name('api:client.account.activity');
 
+        Route::get('/owned-servers', [Client\ActivityLogController::class, 'servers'])
+            ->middleware('verified.view:credentials')
+            ->name('api:client.account.owned-servers');
+
         Route::prefix('/sessions')->group(function () {
             Route::get('/', [Client\SessionController::class, 'index'])
                 ->middleware('verified.view:credentials')
                 ->name('api:client.account.sessions');
+            Route::get('/history', [Client\SessionController::class, 'history'])
+                ->middleware('verified.view:credentials')
+                ->name('api:client.account.sessions.history');
             Route::post('/{session}/revoke', [Client\SessionController::class, 'revoke'])
                 ->middleware('verified.interact:credentials')
                 ->name('api:client.account.sessions.revoke');
+            Route::patch('/{session}/label', [Client\SessionController::class, 'updateLabel'])
+                ->middleware('verified.interact:credentials')
+                ->name('api:client.account.sessions.label');
             Route::post('/revoke-all', [Client\SessionController::class, 'revokeAll'])
                 ->middleware('verified.interact:credentials')
                 ->name('api:client.account.sessions.revoke-all');
@@ -164,22 +174,6 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
         Route::middleware('verified.view:orders')->group(function () {
             Route::get('/orders', [Client\Billing\OrderController::class, 'index']);
             Route::get('/orders/{id}', [Client\Billing\OrderController::class, 'view']);
-
-            // Invoice routes
-            Route::get('/invoices', [Client\Billing\InvoiceController::class, 'index']);
-            Route::get('/invoices/{uuid}/download', [Client\Billing\InvoiceController::class, 'download']);
-            Route::get('/invoices/{uuid}/serve', [Client\Billing\InvoiceController::class, 'serve']);
-        });
-
-        // Billing profile (PII — stored encrypted)
-        Route::get('/profile', [Client\Billing\BillingProfileController::class, 'show']);
-        Route::post('/profile', [Client\Billing\BillingProfileController::class, 'store']);
-        Route::put('/profile', [Client\Billing\BillingProfileController::class, 'update']);
-
-        // Address autocomplete proxy (Nominatim)
-        Route::get('/address-autocomplete', [Client\Billing\AddressAutocompleteController::class, 'search'])
-            ->middleware('throttle:30,1');
-    });
 
             // Invoice routes
             Route::get('/invoices', [Client\Billing\InvoiceController::class, 'index']);

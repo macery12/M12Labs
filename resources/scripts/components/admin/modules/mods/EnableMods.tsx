@@ -3,7 +3,6 @@ import { faCube } from '@fortawesome/free-solid-svg-icons';
 import ToggleFeatureButton from '@admin/modules/mods/ToggleFeatureButton';
 
 export default () => {
-
     return (
         <FeatureContainer icon={faCube} title={'Marketplace Module'}>
             Enable the Marketplace module to integrate Modrinth, CurseForge, and Spiget with M12Labs, allowing users to

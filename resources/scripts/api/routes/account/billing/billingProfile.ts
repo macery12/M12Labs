@@ -26,10 +26,7 @@ export const getBillingProfile = (): Promise<BillingProfile | null> =>
  * Create or update the authenticated user's billing profile.
  * Uses POST on first creation (404 → no profile), PUT on subsequent updates (409 → already exists).
  */
-export const saveBillingProfile = async (
-    data: BillingProfileInput,
-    exists: boolean,
-): Promise<BillingProfile> => {
+export const saveBillingProfile = async (data: BillingProfileInput, exists: boolean): Promise<BillingProfile> => {
     const response = exists
         ? await http.put('/api/client/billing/profile', data)
         : await http.post('/api/client/billing/profile', data);

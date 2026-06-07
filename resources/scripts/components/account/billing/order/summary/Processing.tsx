@@ -49,11 +49,7 @@ export default () => {
         }
 
         // Handle PayPal payment
-        if (
-            token &&
-            (paymentProcessor === 'paypal' ||
-                (billing.processors?.paypal?.available && !paymentProcessor))
-        ) {
+        if (token && (paymentProcessor === 'paypal' || (billing.processors?.paypal?.available && !paymentProcessor))) {
             console.log('[PayPal Processing] Starting PayPal payment processing', {
                 token,
                 paymentProcessor,

@@ -139,19 +139,19 @@ export default ({
     const compatibilityHeading = !hasPanelRestrictions
         ? 'Compatible with any panel version'
         : installBlockedByPanelVersion
-        ? 'Unsupported on this panel version'
-        : canEvaluatePanelCompatibility
-        ? 'Supports the current panel version'
-        : 'Declared supported panel versions';
+          ? 'Unsupported on this panel version'
+          : canEvaluatePanelCompatibility
+            ? 'Supports the current panel version'
+            : 'Declared supported panel versions';
     const compatibilityMessage = !hasPanelRestrictions
         ? 'This package does not declare panel version restrictions.'
         : installBlockedByPanelVersion
-        ? extension.installable
-            ? `This package cannot be installed on panel ${currentPanelVersion}. Install is blocked until the panel version matches one of the supported releases below.`
-            : `This installed package does not list panel ${currentPanelVersion} as supported. Update the panel or package if you see compatibility issues.`
-        : canEvaluatePanelCompatibility
-        ? `Panel ${currentPanelVersion} is included in this package's supported version list.`
-        : 'This package declares support for the panel versions listed below.';
+          ? extension.installable
+              ? `This package cannot be installed on panel ${currentPanelVersion}. Install is blocked until the panel version matches one of the supported releases below.`
+              : `This installed package does not list panel ${currentPanelVersion} as supported. Update the panel or package if you see compatibility issues.`
+          : canEvaluatePanelCompatibility
+            ? `Panel ${currentPanelVersion} is included in this package's supported version list.`
+            : 'This package declares support for the panel versions listed below.';
     const alpha = (color: string, opacity: string) => `${color}${opacity}`;
     const cardStyle = { backgroundColor: colors.secondary, borderColor: colors.headers };
     const surfaceStyle = { backgroundColor: colors.background, borderColor: colors.headers };

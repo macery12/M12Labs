@@ -22,7 +22,7 @@ interface ProcessorCardProps {
 const PROCESSOR_META: Record<PaymentMethod, { label: string; subtitle: (billing: { link?: boolean }) => string }> = {
     stripe: {
         label: 'Stripe',
-        subtitle: (billing) => `Card, PayPal${billing.link ? ', Link' : ''}`,
+        subtitle: billing => `Card, PayPal${billing.link ? ', Link' : ''}`,
     },
     paypal: {
         label: 'PayPal',

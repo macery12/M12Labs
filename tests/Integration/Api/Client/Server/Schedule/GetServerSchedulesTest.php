@@ -6,6 +6,7 @@ use Everest\Models\Task;
 use Everest\Models\Schedule;
 use Everest\Models\Permission;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class GetServerSchedulesTest extends ClientApiIntegrationTestCase
 {
@@ -22,9 +23,8 @@ class GetServerSchedulesTest extends ClientApiIntegrationTestCase
 
     /**
      * Test that schedules for a server are returned.
-     *
-     * @dataProvider permissionsDataProvider
-     */
+     **/
+    #[DataProvider('permissionsDataProvider')]
     public function testServerSchedulesAreReturned(array $permissions, bool $individual)
     {
         [$user, $server] = $this->generateTestAccount($permissions);

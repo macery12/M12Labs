@@ -223,7 +223,7 @@ export default ({ category }: { category?: Category }) => {
 
     const formContent = (
         <Formik
-            onSubmit={category ? update : submit as any}
+            onSubmit={category ? update : (submit as any)}
             enableReinitialize={true}
             initialValues={{
                 name: category?.name ?? '',

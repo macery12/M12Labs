@@ -20,7 +20,7 @@ class CompleteDiscordRegistrationRequest extends FormRequest
                 'required',
                 'string',
                 'same:confirm_password',
-                Password::min(8)
+                Password::min(12)
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
@@ -32,7 +32,7 @@ class CompleteDiscordRegistrationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'password.min' => 'Password must be at least 8 characters long.',
+            'password.min' => 'Password must be at least 12 characters long.',
             'password.mixed' => 'Password must contain both uppercase and lowercase letters.',
             'password.numbers' => 'Password must contain at least one number.',
             'password.symbols' => 'Password must contain at least one special character.',

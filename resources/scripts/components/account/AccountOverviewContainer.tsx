@@ -41,11 +41,7 @@ export default () => {
     const emailEnabled = useStoreState(s => {
         const email = s.everest.data?.email;
         const resend = email?.resend;
-        return Boolean(
-            email?.enabled ??
-                (typeof resend !== 'boolean' ? resend?.enabled : undefined) ??
-                resend,
-        );
+        return Boolean(email?.enabled ?? (typeof resend !== 'boolean' ? resend?.enabled : undefined) ?? resend);
     });
     const discordEnabled = useStoreState(s => Boolean(s.everest.data?.auth?.modules?.discord?.enabled));
 
@@ -80,17 +76,15 @@ export default () => {
                     <UpdatePasswordForm />
                 </ContentBox>
 
-                <ContentBox
-                    css={tw`mt-8 sm:mt-0 sm:ml-8`}
-                    title={`Update Email Address ${emailEnabled ? '' : '(email sending disabled)'}`}
-                    showFlashes="account:email"
-                >
-                    <div className="mb-4 flex items-center justify-between">
-                        <span className="text-sm text-gray-300">Status</span>
-                        <Pill type={user.emailVerified ? 'success' : 'warn'}>
-                            {user.emailVerified ? 'Verified' : 'Not Verified'}
-                        </Pill>
-                    </div>
+                <ContentBox css={tw`mt-8 sm:mt-0 sm:ml-8`} title="Update Email Address" showFlashes="account:email">
+                    {emailEnabled && (
+                        <div className="mb-4 flex items-center justify-between">
+                            <span className="text-sm text-gray-300">Status</span>
+                            <Pill type={user.emailVerified ? 'success' : 'warn'}>
+                                {user.emailVerified ? 'Verified' : 'Not Verified'}
+                            </Pill>
+                        </div>
+                    )}
                     <UpdateEmailAddressForm />
                 </ContentBox>
 
@@ -101,7 +95,7 @@ export default () => {
 
             {/* Billing Information */}
             {billingLoaded && (
-                <div css={tw`mb-10`}>
+                <div css={tw`mb-10 lg:w-1/3`}>
                     <ContentBox title="Billing Information">
                         {billingProfile ? (
                             <div className={'space-y-1 text-sm text-neutral-300'}>
@@ -116,7 +110,9 @@ export default () => {
                                     {billingProfile.postal_code}
                                 </p>
                                 <p>{billingProfile.country}</p>
-                                {billingProfile.phone && <p className={'mt-1 text-neutral-400'}>{billingProfile.phone}</p>}
+                                {billingProfile.phone && (
+                                    <p className={'mt-1 text-neutral-400'}>{billingProfile.phone}</p>
+                                )}
                             </div>
                         ) : (
                             <p className={'text-sm text-neutral-400'}>

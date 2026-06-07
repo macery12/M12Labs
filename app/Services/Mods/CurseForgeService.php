@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Everest\Models\CurseForgeRequestLog;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
 use Everest\Models\Setting;
 
@@ -282,7 +283,7 @@ class CurseForgeService
 
             return $data;
         } catch (GuzzleException $e) {
-            if ($e->hasResponse()) {
+            if ($e instanceof RequestException && $e->hasResponse()) {
                 $statusCode = $e->getResponse()->getStatusCode();
 
                 // Handle 429 with delay and tracking

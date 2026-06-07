@@ -36,20 +36,6 @@ export default () => {
 
     if (!enabled) return <EnableBilling />;
 
-    // Define invoice dropdown items
-    const invoiceDropdownItems = [
-        {
-            to: '/admin/billing/invoices',
-            name: 'Invoices',
-            icon: CalendarIcon,
-        },
-        {
-            to: '/admin/billing/invoice-settings',
-            name: 'Invoice Settings',
-            icon: CogIcon,
-        },
-    ];
-
     return (
         <AdminContentBlock title={'Billing'}>
             <div className={'mb-6 flex w-full flex-col gap-2 sm:flex-row sm:items-center'}>

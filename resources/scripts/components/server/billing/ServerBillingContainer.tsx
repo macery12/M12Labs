@@ -113,8 +113,8 @@ export default () => {
         product && billingDays
             ? calculateGracePeriodDays(billingDays, product.price === 0)
             : product && product.price === 0
-            ? freeGraceDays
-            : suspensionThreshold;
+              ? freeGraceDays
+              : suspensionThreshold;
 
     useEffect(() => {
         clearFlashes();
@@ -154,7 +154,12 @@ export default () => {
 
         // Use renewFreeServer for free products and paid products made free by coupons
         // Pass the selected renewal days (allows cycle change at renewal)
-        renewFreeServer(billingProductId, Number(serverId), couponData?.coupon.id, selectedRenewalDays > 0 ? selectedRenewalDays : (billingDays != null ? Number(billingDays) : undefined))
+        renewFreeServer(
+            billingProductId,
+            Number(serverId),
+            couponData?.coupon.id,
+            selectedRenewalDays > 0 ? selectedRenewalDays : billingDays != null ? Number(billingDays) : undefined,
+        )
             .then(() => {
                 // Force a full page reload to refresh the renewal date
                 window.location.reload();
@@ -290,8 +295,8 @@ export default () => {
                                 {currentBillingCycle
                                     ? currentBillingCycle.price.toFixed(2)
                                     : product
-                                    ? product.price
-                                    : '...'}
+                                      ? product.price
+                                      : '...'}
                                 <span css={tw`text-sm font-normal text-gray-400 ml-1`}>
                                     {settings.currency.code.toUpperCase()}
                                 </span>
@@ -381,13 +386,19 @@ export default () => {
                                                 </p>
                                                 {billingCycles.length > 1 && (
                                                     <div className={'mb-4'}>
-                                                        <p css={tw`text-gray-400 text-xs mb-2`}>Select renewal cycle:</p>
+                                                        <p css={tw`text-gray-400 text-xs mb-2`}>
+                                                            Select renewal cycle:
+                                                        </p>
                                                         <div className={'grid gap-2'}>
                                                             {billingCycles.map(cycle => (
                                                                 <BillingCycleBox
                                                                     key={cycle.days}
                                                                     cycle={cycle}
-                                                                    selected={selectedRenewalDays > 0 ? selectedRenewalDays : (billingDays ?? 30)}
+                                                                    selected={
+                                                                        selectedRenewalDays > 0
+                                                                            ? selectedRenewalDays
+                                                                            : (billingDays ?? 30)
+                                                                    }
                                                                     setSelected={setSelectedRenewalDays}
                                                                 />
                                                             ))}
@@ -476,7 +487,11 @@ export default () => {
                                                         <PaymentContainer
                                                             id={Number(product.id)}
                                                             couponId={couponData?.coupon.id}
-                                                            billingDays={selectedRenewalDays > 0 ? selectedRenewalDays : billingDays}
+                                                            billingDays={
+                                                                selectedRenewalDays > 0
+                                                                    ? selectedRenewalDays
+                                                                    : billingDays
+                                                            }
                                                         />
                                                     )}
                                                 </div>

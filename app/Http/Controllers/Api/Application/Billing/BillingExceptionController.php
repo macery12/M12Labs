@@ -33,8 +33,8 @@ class BillingExceptionController extends ApplicationApiController
         }
 
         $categories = QueryBuilder::for(BillingException::query())
-            ->allowedFilters(['id', 'title'])
-            ->allowedSorts(['id', 'title', 'exception_type', 'created_at'])
+            ->allowedFilters(...['id', 'title'])
+            ->allowedSorts(...['id', 'title', 'exception_type', 'created_at'])
             ->paginate($perPage);
 
         return $this->fractal->collection($categories)

@@ -118,9 +118,12 @@ abstract class Transformer extends TransformerAbstract
      */
     protected static function assertSameNamespace($transformer)
     {
-        Assert::subclassOf($transformer, TransformerAbstract::class);
+        $transformerClass = is_object($transformer) ? get_class($transformer) : $transformer;
 
-        $namespace = substr(get_class($transformer), 0, strlen(class_basename($transformer)) * -1);
+        Assert::string($transformerClass);
+        Assert::subclassOf($transformerClass, TransformerAbstract::class);
+
+        $namespace = substr($transformerClass, 0, strlen(class_basename($transformerClass)) * -1);
         $expected = substr(static::class, 0, strlen(class_basename(static::class)) * -1);
 
         Assert::same($namespace, $expected, 'Cannot invoke a new transformer (%s) that is not in the same namespace (%s).');

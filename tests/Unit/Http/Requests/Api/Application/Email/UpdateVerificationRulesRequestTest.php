@@ -21,7 +21,6 @@ class UpdateVerificationRulesRequestTest extends TestCase
         $this->assertSame([
             'billing' => ['can_view' => true, 'can_interact' => false],
             'orders' => ['can_view' => true, 'can_interact' => false],
-            'donate' => ['can_view' => false, 'can_interact' => false],
             'credentials' => ['can_view' => true, 'can_interact' => true],
             'tickets' => ['can_view' => true, 'can_interact' => false],
         ], $request->normalizedRules());

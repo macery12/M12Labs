@@ -96,7 +96,9 @@ class TicketController extends ClientApiController
             'message' => $data['message'],
         ]);
 
-        return $this->fractal->item($ticket)
+        $ticket->update(['last_reply_at' => now()]);
+
+        return $this->fractal->item($ticket->fresh())
             ->transformWith(TicketTransformer::class)
             ->toArray();
     }

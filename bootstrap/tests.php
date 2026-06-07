@@ -24,7 +24,7 @@ $kernel->bootstrap();
 $output = new ConsoleOutput();
 
 $prefix = 'database.connections.' . config('database.default');
-if (!Str::contains(config("$prefix.database"), 'test')) {
+if (!Str::contains(config("$prefix.database"), ['test', ':memory:'])) {
     $output->writeln(PHP_EOL . '<error>Cannot run test process against non-testing database.</error>');
     $output->writeln(PHP_EOL . '<error>Environment is currently pointed at: "' . config("$prefix.database") . '".</error>');
     exit(1);

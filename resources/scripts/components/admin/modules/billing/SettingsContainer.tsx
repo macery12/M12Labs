@@ -9,6 +9,7 @@ import ExportConfigButton from './config/ExportConfigButton';
 import FlashMessageRender from '@/elements/FlashMessageRender';
 import ImportConfigButton from './config/ImportConfigButton';
 import { updateSettings } from '@/api/routes/admin/billing';
+import { updateInvoiceSettings } from '@/api/routes/admin/billing/invoices';
 import BillingLinksForm from '@admin/modules/billing/BillingLinksForm';
 import Switch from '@/elements/Switch';
 
@@ -36,7 +37,7 @@ export default () => {
     };
 
     const handleCustomerRequirementChange = async (checked: boolean) => {
-        await updateSettings('require_billing_address', checked);
+        await updateInvoiceSettings({ require_billing_address: checked });
         updateEverest({ billing: { ...settings, require_billing_address: checked } });
     };
 
@@ -97,7 +98,9 @@ export default () => {
                     <Switch
                         name={'require_billing_address'}
                         label={'Require billing address to checkout'}
-                        description={'When enabled, customers must add a billing address in their account settings before they can complete a purchase. The address is included on invoices.'}
+                        description={
+                            'When enabled, customers must add a billing address in their account settings before they can complete a purchase. The address is included on invoices.'
+                        }
                         defaultChecked={settings.require_billing_address ?? false}
                         onChange={e => handleCustomerRequirementChange(e.target.checked)}
                     />

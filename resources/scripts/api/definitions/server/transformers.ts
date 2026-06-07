@@ -6,7 +6,7 @@ export default class Transformers {
         serverOwner: data.server_owner,
         id: data.identifier,
         internalId: data.internal_id,
-        groupId: data.group_id,
+        groupIds: data.group_ids ?? [],
         uuid: data.uuid,
         name: data.name,
         node: data.node,

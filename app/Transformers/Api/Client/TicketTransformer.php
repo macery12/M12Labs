@@ -28,16 +28,21 @@ class TicketTransformer extends Transformer
             'id' => $model->id,
             'title' => $model->title,
             'status' => $model->status,
+            'priority' => $model->priority,
+            'last_reply_at' => $model->last_reply_at?->toIso8601String(),
             'created_at' => $model->created_at->toIso8601String(),
-            'updated_at' => $model->updated_at->toIso8601String(),
+            'updated_at' => $model->updated_at?->toIso8601String(),
         ];
     }
 
     /**
-     * Return the messages associated with this ticket.
+     * Return the messages associated with this ticket, excluding internal admin notes.
      */
     public function includeMessages(Ticket $ticket): Collection|NullResource
     {
-        return $this->collection($ticket->messages, new TicketMessageTransformer());
+        return $this->collection(
+            $ticket->messages()->where('internal_note', false)->get(),
+            new TicketMessageTransformer()
+        );
     }
 }

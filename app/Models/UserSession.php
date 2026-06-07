@@ -20,6 +20,7 @@ class UserSession extends Model
         'session_id',
         'device_fingerprint',
         'device_name',
+        'device_label',
         'user_agent',
         'ip_address',
         'location',

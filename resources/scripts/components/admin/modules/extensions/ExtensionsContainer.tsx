@@ -125,7 +125,7 @@ export default () => {
 
         extensions.forEach(extension => {
             const value = getCatalogValue(extension);
-            const label = extension.source?.type === 'core' ? 'Core' : extension.source?.label ?? 'Unknown';
+            const label = extension.source?.type === 'core' ? 'Core' : (extension.source?.label ?? 'Unknown');
             const existing = counts.get(value);
 
             counts.set(value, {

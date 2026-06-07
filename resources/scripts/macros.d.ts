@@ -1,5 +1,5 @@
 import { ComponentType, ReactElement } from 'react';
-// eslint-disable-next-line no-restricted-imports
+
 import styledImport, { css as cssImport, CSSProp, StyledComponentProps } from 'styled-components';
 
 declare module 'react' {
@@ -11,9 +11,9 @@ declare module 'react' {
 declare module 'styled-components' {
     interface StyledComponentBase<
         C extends string | ComponentType<any>,
-        // eslint-disable-next-line @typescript-eslint/ban-types
+        // eslint-disable-next-line @typescript-eslint/no-empty-object-type
         T extends object,
-        // eslint-disable-next-line @typescript-eslint/ban-types
+        // eslint-disable-next-line @typescript-eslint/no-empty-object-type
         O extends object = {},
         A extends keyof any = never,
     > extends ForwardRefExoticBase<StyledComponentProps<C, T, O, A>> {

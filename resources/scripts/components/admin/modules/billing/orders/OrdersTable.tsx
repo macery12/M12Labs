@@ -151,7 +151,11 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
     const debouncedApplySearch = useCallback(
         debounce((raw: string) => {
             const trimmed = raw.trim();
-            if (!trimmed) { setSearchBarFilter(null); setSearchLoading(false); return; }
+            if (!trimmed) {
+                setSearchBarFilter(null);
+                setSearchLoading(false);
+                return;
+            }
             if (trimmed.startsWith('#')) {
                 setSearchBarFilter({ type: 'search', value: trimmed.slice(1).trim() });
             } else if (trimmed.startsWith('@')) {
@@ -175,7 +179,11 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSearchInputText(value);
-        if (!value.trim()) { setSearchBarFilter(null); setSearchLoading(false); return; }
+        if (!value.trim()) {
+            setSearchBarFilter(null);
+            setSearchLoading(false);
+            return;
+        }
         setSearchLoading(true);
         debouncedApplySearch(value);
     };
@@ -185,25 +193,67 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
         const filters: OrderFilters = {};
         let hasFilters = false;
 
-        if (paymentProcessor) { filters.payment_processor = paymentProcessor; hasFilters = true; }
-        if (status) { filters.status = status; hasFilters = true; }
-        if (orderType) { filters.type = orderType; hasFilters = true; }
-        if (minAmount !== null) { filters.min_amount = minAmount; hasFilters = true; }
-        if (maxAmount !== null) { filters.max_amount = maxAmount; hasFilters = true; }
-        if (startDate) { filters.start_date = startDate; hasFilters = true; }
-        if (endDate) { filters.end_date = endDate; hasFilters = true; }
+        if (paymentProcessor) {
+            filters.payment_processor = paymentProcessor;
+            hasFilters = true;
+        }
+        if (status) {
+            filters.status = status;
+            hasFilters = true;
+        }
+        if (orderType) {
+            filters.type = orderType;
+            hasFilters = true;
+        }
+        if (minAmount !== null) {
+            filters.min_amount = minAmount;
+            hasFilters = true;
+        }
+        if (maxAmount !== null) {
+            filters.max_amount = maxAmount;
+            hasFilters = true;
+        }
+        if (startDate) {
+            filters.start_date = startDate;
+            hasFilters = true;
+        }
+        if (endDate) {
+            filters.end_date = endDate;
+            hasFilters = true;
+        }
         if (searchBarFilter?.value) {
             if (searchBarFilter.type === 'search' && searchBarFilter.value.length >= 2) {
-                filters.search = searchBarFilter.value; hasFilters = true;
+                filters.search = searchBarFilter.value;
+                hasFilters = true;
             } else if (searchBarFilter.type === 'transaction_id' && searchBarFilter.value.length >= 2) {
-                filters.transaction_id = searchBarFilter.value; hasFilters = true;
+                filters.transaction_id = searchBarFilter.value;
+                hasFilters = true;
             } else if (searchBarFilter.type === 'capture_id' && searchBarFilter.value.length >= 2) {
-                filters.capture_id = searchBarFilter.value; hasFilters = true;
+                filters.capture_id = searchBarFilter.value;
+                hasFilters = true;
             } else if (searchBarFilter.type === 'payer_id' && searchBarFilter.value.length >= 2) {
-                filters.payer_id = searchBarFilter.value; hasFilters = true;
+                filters.payer_id = searchBarFilter.value;
+                hasFilters = true;
             } else if (searchBarFilter.type === 'payer_email' && searchBarFilter.value.length >= 2) {
-                filters.payer_email = searchBarFilter.value; hasFilters = true;
+                filters.payer_email = searchBarFilter.value;
+                hasFilters = true;
             }
+        }
+        if (transactionId.trim()) {
+            filters.transaction_id = transactionId.trim();
+            hasFilters = true;
+        }
+        if (captureId.trim()) {
+            filters.capture_id = captureId.trim();
+            hasFilters = true;
+        }
+        if (payerId.trim()) {
+            filters.payer_id = payerId.trim();
+            hasFilters = true;
+        }
+        if (payerEmail.trim()) {
+            filters.payer_email = payerEmail.trim();
+            hasFilters = true;
         }
         if (transactionId.trim()) { filters.transaction_id = transactionId.trim(); hasFilters = true; }
         if (captureId.trim()) { filters.capture_id = captureId.trim(); hasFilters = true; }
@@ -218,7 +268,21 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
         if (!minimal) {
             setFilters(buildFilters());
         }
-    }, [paymentProcessor, status, orderType, minAmount, maxAmount, startDate, endDate, searchBarFilter, transactionId, captureId, payerId, payerEmail, minimal]);
+    }, [
+        paymentProcessor,
+        status,
+        orderType,
+        minAmount,
+        maxAmount,
+        startDate,
+        endDate,
+        searchBarFilter,
+        transactionId,
+        captureId,
+        payerId,
+        payerEmail,
+        minimal,
+    ]);
 
     const clearFilters = () => {
         setPaymentProcessor(null);
@@ -237,8 +301,18 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
     };
 
     const hasActiveFilters =
-        paymentProcessor || status || orderType || minAmount !== null || maxAmount !== null ||
-        startDate || endDate || searchBarFilter?.value || transactionId || captureId || payerId || payerEmail;
+        paymentProcessor ||
+        status ||
+        orderType ||
+        minAmount !== null ||
+        maxAmount !== null ||
+        startDate ||
+        endDate ||
+        searchBarFilter?.value ||
+        transactionId ||
+        captureId ||
+        payerId ||
+        payerEmail;
 
     useEffect(() => {
         if (!error) {
@@ -282,7 +356,22 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                 Filters
                                 {hasActiveFilters && (
                                     <span css={tw`ml-1 bg-white/20 text-white text-xs rounded-full px-1.5 py-0.5`}>
-                                        {[paymentProcessor, status, orderType, minAmount, maxAmount, startDate, endDate, searchBarFilter?.value, transactionId, captureId, payerId, payerEmail].filter(Boolean).length}
+                                        {
+                                            [
+                                                paymentProcessor,
+                                                status,
+                                                orderType,
+                                                minAmount,
+                                                maxAmount,
+                                                startDate,
+                                                endDate,
+                                                searchBarFilter?.value,
+                                                transactionId,
+                                                captureId,
+                                                payerId,
+                                                payerEmail,
+                                            ].filter(Boolean).length
+                                        }
                                     </span>
                                 )}
                                 <FontAwesomeIcon icon={showFilters ? faChevronUp : faChevronDown} css={tw`text-xs`} />
@@ -300,14 +389,36 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
 
                         {/* Search prefix hint chips */}
                         <div css={tw`flex flex-wrap gap-1.5 mb-3`}>
-                            {([
-                                { prefix: '#', label: '# Order ID', title: 'Filter by order ID. e.g. #36' },
-                                { prefix: '@', label: '@ Username', title: 'Filter by username or email. e.g. @macery12' },
-                                { prefix: 'txn:', label: 'txn: Transaction', title: 'Filter by transaction ID. e.g. txn:5AM70990' },
-                                { prefix: 'cap:', label: 'cap: Capture ID', title: 'Filter by capture ID. e.g. cap:5KE26461' },
-                                { prefix: 'pid:', label: 'pid: Payer ID', title: 'Filter by PayPal payer ID. e.g. pid:BS2XZBZ' },
-                                { prefix: 'pay:', label: 'pay: Payer Email', title: 'Filter by payer email. e.g. pay:tester@' },
-                            ] as const).map(({ prefix, label, title }) => (
+                            {(
+                                [
+                                    { prefix: '#', label: '# Order ID', title: 'Filter by order ID. e.g. #36' },
+                                    {
+                                        prefix: '@',
+                                        label: '@ Username',
+                                        title: 'Filter by username or email. e.g. @macery12',
+                                    },
+                                    {
+                                        prefix: 'txn:',
+                                        label: 'txn: Transaction',
+                                        title: 'Filter by transaction ID. e.g. txn:5AM70990',
+                                    },
+                                    {
+                                        prefix: 'cap:',
+                                        label: 'cap: Capture ID',
+                                        title: 'Filter by capture ID. e.g. cap:5KE26461',
+                                    },
+                                    {
+                                        prefix: 'pid:',
+                                        label: 'pid: Payer ID',
+                                        title: 'Filter by PayPal payer ID. e.g. pid:BS2XZBZ',
+                                    },
+                                    {
+                                        prefix: 'pay:',
+                                        label: 'pay: Payer Email',
+                                        title: 'Filter by payer email. e.g. pay:tester@',
+                                    },
+                                ] as const
+                            ).map(({ prefix, label, title }) => (
                                 <button
                                     key={prefix}
                                     title={title}
@@ -348,7 +459,9 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
 
                                 {/* Admin-only transaction filters */}
                                 <div css={tw`border-t border-neutral-700 pt-3`}>
-                                    <p css={tw`text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3`}>Transaction Lookup</p>
+                                    <p css={tw`text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3`}>
+                                        Transaction Lookup
+                                    </p>
                                     <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3`}>
                                         <div>
                                             <label css={tw`block text-xs text-gray-400 mb-1`}>Transaction ID</label>
@@ -409,10 +522,7 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                         css={tw`w-full overflow-x-auto`}
                         onScroll={syncHorizontalScroll('bottom')}
                     >
-                        <table
-                            css={tw`w-full table-auto`}
-                            style={{ minWidth: tableMinWidth }}
-                        >
+                        <table css={tw`w-full table-auto`} style={{ minWidth: tableMinWidth }}>
                             <TableHead>
                                 {!minimal && (
                                     <TableHeader
@@ -467,7 +577,9 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                                         <div>
                                                             <div css={tw`text-white font-medium`}>{order.username}</div>
                                                             {order.user_email && (
-                                                                <div css={tw`text-gray-500 text-xs`}>{order.user_email}</div>
+                                                                <div css={tw`text-gray-500 text-xs`}>
+                                                                    {order.user_email}
+                                                                </div>
                                                             )}
                                                         </div>
                                                     ) : (
@@ -478,7 +590,9 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                             {/* Server column */}
                                             <td className={'px-6 py-4'}>
                                                 {order.server_name || order.name ? (
-                                                    <span css={tw`text-white font-medium`}>{order.server_name || order.name}</span>
+                                                    <span css={tw`text-white font-medium`}>
+                                                        {order.server_name || order.name}
+                                                    </span>
                                                 ) : (
                                                     <span css={tw`text-gray-600`}>—</span>
                                                 )}
@@ -516,8 +630,8 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                                             order.threat_index >= 50
                                                                 ? 'danger'
                                                                 : order.threat_index >= 25
-                                                                ? 'warn'
-                                                                : 'success'
+                                                                  ? 'warn'
+                                                                  : 'success'
                                                         }
                                                     >
                                                         {order.threat_index}
@@ -530,7 +644,9 @@ function OrderTable({ minimal }: { minimal?: boolean }) {
                                                 {order.total === 0 || order.payment_processor === 'free' ? (
                                                     <span css={tw`flex items-center gap-1.5`}>
                                                         <span>${order.total.toFixed(2)}</span>
-                                                        <Pill size="small" type="success">Free</Pill>
+                                                        <Pill size="small" type="success">
+                                                            Free
+                                                        </Pill>
                                                     </span>
                                                 ) : (
                                                     <span>

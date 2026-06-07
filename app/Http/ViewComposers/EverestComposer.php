@@ -4,6 +4,7 @@ namespace Everest\Http\ViewComposers;
 
 use Illuminate\View\View;
 use Everest\Models\Setting;
+use Everest\Services\Billing\InvoiceSettingsService;
 use Everest\Services\Billing\PaymentProcessorConfigService;
 use Everest\Services\Email\EmailVerificationGate;
 use Everest\Services\Email\EmailManager;
@@ -12,7 +13,8 @@ class EverestComposer
 {
     public function __construct(
         private PaymentProcessorConfigService $processorConfigService,
-        private EmailVerificationGate $emailVerificationGate
+        private EmailVerificationGate $emailVerificationGate,
+        private InvoiceSettingsService $invoiceSettingsService
     ) {
     }
 
@@ -131,6 +133,8 @@ class EverestComposer
      */
     private function getAdminConfiguration(): array
     {
+        $invoiceSettings = $this->invoiceSettingsService->get();
+
         return [
             'billing' => [
                 'keys' => [
@@ -153,6 +157,7 @@ class EverestComposer
                     'multiplier_steps' => Setting::get('settings::modules:billing:renewal:multiplier_steps', config('modules.billing.renewal.multiplier_steps')),
                 ],
                 'plan_change_cooldown_hours' => config('modules.billing.plan_change_cooldown_hours', 72),
+                'require_billing_address' => (bool) $invoiceSettings->require_billing_address,
             ],
         ];
     }

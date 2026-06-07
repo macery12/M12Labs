@@ -105,8 +105,7 @@ class EmailController extends ApplicationApiController
             ->description('Email settings were updated')
             ->log();
 
-        // Return updated settings instead of 204
-        return $this->getSettings();
+        return response()->json($this->settings->adminSettings());
     }
 
     /**

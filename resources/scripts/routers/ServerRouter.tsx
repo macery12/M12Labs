@@ -57,17 +57,17 @@ const ServerRoutes = ({ location, flags }: { location: ReturnType<typeof useLoca
             {routes.server
                 .filter(route => !route.condition || route.condition(flags))
                 .map(({ route, permission, component: Component }) => (
-                <Route
-                    key={route}
-                    path={route}
-                    element={
-                        <PermissionRoute permission={permission}>
-                            <Spinner.Suspense>
-                                <Component />
-                            </Spinner.Suspense>
-                        </PermissionRoute>
-                    }
-                />
+                    <Route
+                        key={route}
+                        path={route}
+                        element={
+                            <PermissionRoute permission={permission}>
+                                <Spinner.Suspense>
+                                    <Component />
+                                </Spinner.Suspense>
+                            </PermissionRoute>
+                        }
+                    />
                 ))}
 
             <Route path="*" element={<NotFound />} />
@@ -237,9 +237,7 @@ function ServerRouter() {
                         {routes.server
                             .filter(
                                 route =>
-                                    !route.category &&
-                                    route.name &&
-                                        (!route.condition || route.condition(routeFlags)),
+                                    !route.category && route.name && (!route.condition || route.condition(routeFlags)),
                             )
                             .map(route => (
                                 <MobileDrawer.Link
@@ -255,7 +253,7 @@ function ServerRouter() {
                                 route =>
                                     route.category === category &&
                                     route.name &&
-                                        (!route.condition || route.condition(routeFlags)),
+                                    (!route.condition || route.condition(routeFlags)),
                             );
                             if (categoryRoutes.length === 0) return null;
 

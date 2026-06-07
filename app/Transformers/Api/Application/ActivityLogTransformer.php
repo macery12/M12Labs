@@ -154,9 +154,7 @@ class ActivityLogTransformer extends Transformer
 
     protected function context(ActivityLog $model): string
     {
-        $properties = $model->properties ?? collect();
-
-        $context = is_array($properties) ? $properties['context'] ?? null : $properties->get('context');
+        $context = $model->properties?->get('context');
 
         if (is_string($context)) {
             return $context;
@@ -181,8 +179,7 @@ class ActivityLogTransformer extends Transformer
 
     protected function source(ActivityLog $model): string
     {
-        $properties = $model->properties ?? collect();
-        $source = is_array($properties) ? $properties['source'] ?? null : $properties->get('source');
+        $source = $model->properties?->get('source');
 
         if (is_string($source)) {
             return $source;

@@ -126,8 +126,8 @@ export default ({ mods, loading, contentType = 'mods', pagination, onModClick, o
                             mod.downloadCount >= 1000000
                                 ? `${(mod.downloadCount / 1000000).toFixed(1)}M`
                                 : mod.downloadCount >= 1000
-                                ? `${(mod.downloadCount / 1000).toFixed(0)}K`
-                                : mod.downloadCount.toString();
+                                  ? `${(mod.downloadCount / 1000).toFixed(0)}K`
+                                  : mod.downloadCount.toString();
 
                         return (
                             <ModCard key={mod.id} onClick={() => onModClick(mod)} $backgroundColor={background}>

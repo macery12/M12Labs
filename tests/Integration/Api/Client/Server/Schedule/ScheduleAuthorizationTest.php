@@ -5,6 +5,7 @@ namespace Everest\Tests\Integration\Api\Client\Server\Schedule;
 use Everest\Models\Subuser;
 use Everest\Models\Schedule;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class ScheduleAuthorizationTest extends ClientApiIntegrationTestCase
 {
@@ -16,9 +17,8 @@ class ScheduleAuthorizationTest extends ClientApiIntegrationTestCase
      *
      * The comments within the test code itself are better at explaining exactly what is
      * being tested and protected against.
-     *
-     * @dataProvider methodDataProvider
-     */
+     **/
+    #[DataProvider('methodDataProvider')]
     public function testAccessToAServersSchedulesIsRestrictedProperly(string $method, string $endpoint)
     {
         // The API $user is the owner of $server1.

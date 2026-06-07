@@ -28,16 +28,15 @@ export default () => {
             .finally(() => setLoadingAdminSettings(false));
     }, [settings.enabled]);
 
-            if (!settings.enabled) return <EnableAI />;
+    if (!settings.enabled) return <EnableAI />;
 
     // For Ollama mode, key is not required, only check for endpoint and model.
     // For OpenAI mode, key is required.
-    const needsConfiguration =
-        adminAiSettings
-            ? (adminAiSettings.mode === 'ollama'
-                ? !adminAiSettings.endpoint || !adminAiSettings.model
-                : !adminAiSettings.key || !adminAiSettings.endpoint || !adminAiSettings.model)
-            : true;
+    const needsConfiguration = adminAiSettings
+        ? adminAiSettings.mode === 'ollama'
+            ? !adminAiSettings.endpoint || !adminAiSettings.model
+            : !adminAiSettings.key || !adminAiSettings.endpoint || !adminAiSettings.model
+        : true;
 
     const handleDismissConfiguration = () => {
         // Disable AI when user dismisses configuration dialog

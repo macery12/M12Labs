@@ -40,8 +40,8 @@ class CategoryController extends ApplicationApiController
         }
 
         $categories = QueryBuilder::for(Category::query())
-            ->allowedFilters(['id', 'name'])
-            ->allowedSorts(['id', 'name', 'created_at', 'visible'])
+            ->allowedFilters(...['id', 'name'])
+            ->allowedSorts(...['id', 'name', 'created_at', 'visible'])
             ->paginate($perPage);
 
         return $this->fractal->collection($categories)
@@ -160,9 +160,9 @@ class CategoryController extends ApplicationApiController
     public function delete(DeleteBillingCategoryRequest $request, Category $category): Response
     {
         DB::transaction(function () use ($category) {
-            foreach ($category->products()->get() as $product) {
-                $product->forceDelete();
-            }
+            // Bulk delete linked products in a single statement. Product has no delete
+            // events/observers, so per-row iteration is unnecessary.
+            $category->products()->forceDelete();
 
             $category->forceDelete();
         });

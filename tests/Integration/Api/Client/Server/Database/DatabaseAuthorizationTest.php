@@ -9,12 +9,12 @@ use Everest\Contracts\Extensions\HashidsInterface;
 use Everest\Services\Databases\DatabasePasswordService;
 use Everest\Services\Databases\DatabaseManagementService;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class DatabaseAuthorizationTest extends ClientApiIntegrationTestCase
 {
-    /**
-     * @dataProvider methodDataProvider
-     */
+    /***/
+    #[DataProvider('methodDataProvider')]
     public function testAccessToAServersDatabasesIsRestrictedProperly(string $method, string $endpoint)
     {
         // The API $user is the owner of $server1.

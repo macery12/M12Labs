@@ -20,6 +20,7 @@ class UserSessionTransformer extends Transformer
         return [
             'id' => $model->id,
             'device_name' => $model->device_name ?: 'Unknown device',
+            'device_label' => $model->device_label,
             'ip_address' => $model->ip_address,
             'location' => $model->location,
             'user_agent' => $model->user_agent,

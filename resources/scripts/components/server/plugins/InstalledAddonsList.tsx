@@ -85,7 +85,6 @@ const InstalledAddonsList = ({ serverUuid }: Props) => {
                 addError(httpErrorToHuman(error));
             })
             .finally(() => setLoading(false));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serverUuid, fetchInstalled]);
 
     const handleToggle = async (item: InstalledAddon) => {

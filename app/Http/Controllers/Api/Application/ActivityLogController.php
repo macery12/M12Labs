@@ -29,7 +29,7 @@ class ActivityLogController extends ApplicationApiController
 
         $activity = QueryBuilder::for($activityQuery)
             ->with('actor')
-            ->allowedFilters([
+            ->allowedFilters(...[
                 AllowedFilter::partial('event'),
                 AllowedFilter::partial('ip'),
                 AllowedFilter::partial('description'),
@@ -50,7 +50,7 @@ class ActivityLogController extends ApplicationApiController
                     });
                 }),
             ])
-            ->allowedSorts(['timestamp'])
+            ->allowedSorts(...['timestamp'])
             ->defaultSort('-timestamp')
             ->paginate(min($request->query('per_page', 25), 100))
             ->appends($request->query());

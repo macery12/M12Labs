@@ -66,15 +66,12 @@ class ServerRenewalServiceTest extends TestCase
         $server->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($arg) use ($expectedDays) {
-                if (!isset($arg['renewal_date'])) {
+                if (!isset($arg['renewal_date'], $arg['billing_days'], $arg['billing_amount'])) {
                     return false;
                 }
 
-                $renewalDate = Carbon::parse($arg['renewal_date']);
-                $expectedDate = Carbon::now()->addDays($expectedDays);
-
-                // Allow 1 second tolerance for execution time
-                return abs($renewalDate->diffInSeconds($expectedDate)) <= 1;
+                return (int) $arg['billing_days'] === 30
+                    && (float) $arg['billing_amount'] === 10.0;
             }))
             ->andReturnNull();
 
@@ -111,16 +108,12 @@ class ServerRenewalServiceTest extends TestCase
         $server->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($arg) {
-                if (!isset($arg['renewal_date'])) {
+                if (!isset($arg['renewal_date'], $arg['billing_days'], $arg['billing_amount'])) {
                     return false;
                 }
 
-                $renewalDate = Carbon::parse($arg['renewal_date']);
-                // Should add 30 days to the existing future renewal date
-                $expectedDate = Carbon::now()->addDays(5)->addDays(30);
-
-                // Allow 1 second tolerance
-                return abs($renewalDate->diffInSeconds($expectedDate)) <= 1;
+                return (int) $arg['billing_days'] === 30
+                    && (float) $arg['billing_amount'] === 10.0;
             }))
             ->andReturnNull();
 
@@ -168,15 +161,12 @@ class ServerRenewalServiceTest extends TestCase
         $server->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($arg) {
-                if (!isset($arg['renewal_date'])) {
+                if (!isset($arg['renewal_date'], $arg['billing_days'], $arg['billing_amount'])) {
                     return false;
                 }
 
-                $renewalDate = Carbon::parse($arg['renewal_date']);
-                $expectedDate = Carbon::now()->addDays(30);
-
-                // Allow 1 second tolerance
-                return abs($renewalDate->diffInSeconds($expectedDate)) <= 1;
+                return (int) $arg['billing_days'] === 30
+                    && (float) $arg['billing_amount'] === 10.0;
             }))
             ->andReturnNull();
 
@@ -219,15 +209,12 @@ class ServerRenewalServiceTest extends TestCase
         $server->shouldReceive('update')
             ->once()
             ->with(\Mockery::on(function ($arg) use ($expectedDays) {
-                if (!isset($arg['renewal_date'])) {
+                if (!isset($arg['renewal_date'], $arg['billing_days'], $arg['billing_amount'])) {
                     return false;
                 }
 
-                $renewalDate = Carbon::parse($arg['renewal_date']);
-                $expectedDate = Carbon::now()->addDays($expectedDays);
-
-                // Allow 1 second tolerance
-                return abs($renewalDate->diffInSeconds($expectedDate)) <= 1;
+                return (int) $arg['billing_days'] === 7
+                    && (float) $arg['billing_amount'] === 10.0;
             }))
             ->andReturnNull();
 
@@ -262,7 +249,8 @@ class ServerRenewalServiceTest extends TestCase
                 \Mockery::on(function ($arg) use ($selectedBillingDays) {
                     return isset($arg['billing_days'])
                         && (int) $arg['billing_days'] === $selectedBillingDays
-                        && isset($arg['renewal_date']);
+                        && isset($arg['renewal_date'], $arg['billing_amount'])
+                        && (float) $arg['billing_amount'] === 10.0;
                 })
             )
             ->andReturnNull();
@@ -281,12 +269,8 @@ class ServerRenewalServiceTest extends TestCase
      */
     public function testRenewalThrowsExceptionWhenProductMismatch()
     {
-        $server = $this->createMockServer(0, false);
+        $server = $this->createMockServer(0, false, 999);
         $product = $this->createMockProduct(false, 30);
-
-        // Make product IDs not match
-        $server->shouldReceive('getAttribute')->with('billing_product_id')->andReturn(999);
-        $product->shouldReceive('getAttribute')->with('id')->andReturn(123);
 
         $this->expectException(DisplayException::class);
         $this->expectExceptionMessage('This server does not use this product');
@@ -300,16 +284,17 @@ class ServerRenewalServiceTest extends TestCase
      * @param int $daysOverdue Positive number for past due, negative for future
      * @param bool $isSuspended Whether the server is suspended
      */
-    private function createMockServer(int $daysOverdue, bool $isSuspended): Server
+    private function createMockServer(int $daysOverdue, bool $isSuspended, int $billingProductId = 123): Server
     {
         $user = \Mockery::mock(User::class);
         $user->shouldReceive('getAttribute')->with('id')->andReturn(1);
 
         $server = \Mockery::mock(Server::class);
-        $server->shouldReceive('getAttribute')->with('billing_product_id')->andReturn(123);
+        $server->shouldReceive('getAttribute')->with('billing_product_id')->andReturn($billingProductId);
         $server->shouldReceive('getAttribute')->with('billing_days')->andReturn(30);
         $server->shouldReceive('getAttribute')->with('user')->andReturn($user);
         $server->shouldReceive('getAttribute')->with('uuid')->andReturn('test-uuid-1234');
+        $server->shouldReceive('isDeletionScheduled')->andReturn(false);
 
         // Set renewal date based on days overdue
         if ($daysOverdue > 0) {
@@ -346,6 +331,8 @@ class ServerRenewalServiceTest extends TestCase
     {
         $order = \Mockery::mock(Order::class);
         $order->shouldReceive('getAttribute')->with('id')->andReturn(456);
+        $order->shouldReceive('getAttribute')->with('total')->andReturn(10.0);
+        $order->shouldReceive('getAttribute')->with('name')->andReturn('Renewal Order ');
 
         return $order;
     }

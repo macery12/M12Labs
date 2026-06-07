@@ -48,6 +48,11 @@ class TicketMessage extends Model
         'ticket_id',
         'user_id',
         'message',
+        'internal_note',
+    ];
+
+    protected $casts = [
+        'internal_note' => 'boolean',
     ];
 
     /**
@@ -55,7 +60,8 @@ class TicketMessage extends Model
      */
     public static array $validationRules = [
         'ticket_id' => 'required|int',
-        'message' => 'required|string|min:3|max:500',
+        'message' => 'required|string|min:3|max:2000',
+        'internal_note' => 'sometimes|boolean',
     ];
 
     /**

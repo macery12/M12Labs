@@ -32,6 +32,7 @@ interface ApiKey extends Model {
 interface AccountSession extends Model {
     id: number;
     deviceName: string;
+    deviceLabel: string | null;
     ipAddress: string | null;
     location: string | null;
     userAgent: string | null;
@@ -45,6 +46,8 @@ interface Ticket extends Model {
     id: number;
     title: string;
     status: 'resolved' | 'unresolved' | 'pending' | 'in-progress';
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    lastReplyAt: Date | null;
     createdAt: Date;
     updatedAt: Date | null;
     relationships: {

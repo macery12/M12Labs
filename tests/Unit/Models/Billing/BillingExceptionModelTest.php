@@ -4,6 +4,7 @@ namespace Everest\Tests\Unit\Models\Billing;
 
 use Everest\Tests\TestCase;
 use Everest\Models\Billing\BillingException;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class BillingExceptionModelTest extends TestCase
 {
@@ -22,9 +23,8 @@ class BillingExceptionModelTest extends TestCase
 
     /**
      * Test that all new exception types are included in validation rules.
-     *
-     * @dataProvider exceptionTypeProvider
-     */
+     **/
+    #[DataProvider('exceptionTypeProvider')]
     public function testNewExceptionTypesAreValidated(string $type)
     {
         $rules = BillingException::$validationRules;

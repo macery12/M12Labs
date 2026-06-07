@@ -18,7 +18,7 @@ const createApiKey = (description: string, allowedIps: string): Promise<ApiKey &
             .then(({ data }) =>
                 resolve({
                     ...Transformers.toApiKey(data),
-                    // eslint-disable-next-line camelcase
+
                     secretToken: data.meta?.secret_token ?? '',
                 }),
             )

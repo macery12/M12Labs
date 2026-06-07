@@ -4,12 +4,11 @@ namespace Everest\Tests\Unit\Helpers;
 
 use Everest\Tests\TestCase;
 use Everest\Traits\Commands\EnvironmentWriterTrait;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class EnvironmentWriterTraitTest extends TestCase
 {
-    /**
-     * @dataProvider variableDataProvider
-     */
+    #[DataProvider('variableDataProvider')]
     public function testVariableIsEscapedProperly($input, $expected)
     {
         $output = (new FooClass())->escapeEnvironmentValue($input);

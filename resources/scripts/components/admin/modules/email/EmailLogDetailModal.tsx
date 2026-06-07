@@ -326,10 +326,10 @@ export default ({ logId, onClose }: Props) => {
                                                             status.tone === 'success'
                                                                 ? 'bg-green-900 text-green-300'
                                                                 : status.tone === 'danger'
-                                                                ? 'bg-red-900 text-red-300'
-                                                                : status.tone === 'warning'
-                                                                ? 'bg-yellow-900 text-yellow-300'
-                                                                : 'bg-gray-700 text-neutral-300'
+                                                                  ? 'bg-red-900 text-red-300'
+                                                                  : status.tone === 'warning'
+                                                                    ? 'bg-yellow-900 text-yellow-300'
+                                                                    : 'bg-gray-700 text-neutral-300'
                                                         }`}
                                                     >
                                                         {status.label}

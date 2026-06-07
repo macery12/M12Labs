@@ -7,7 +7,12 @@ import { ActivityLog, Transformers } from '@definitions/account';
 import useFilteredObject from '@/plugins/useFilteredObject';
 import { useUserSWRKey } from '@/plugins/useSWRKey';
 
-export type ActivityLogFilters = QueryBuilderParams<'ip' | 'event', 'timestamp'>;
+export type ActivityLogFilters = QueryBuilderParams<'ip' | 'event' | 'scope' | 'server', 'timestamp'>;
+
+export interface OwnedServer {
+    uuid: string;
+    name: string;
+}
 
 const useActivityLogs = (
     filters?: ActivityLogFilters,
@@ -31,4 +36,17 @@ const useActivityLogs = (
     );
 };
 
-export { useActivityLogs };
+const useOwnedServers = (config?: SWRConfiguration<OwnedServer[], AxiosError>) => {
+    const key = useUserSWRKey(['account', 'owned-servers']);
+
+    return useSWR<OwnedServer[]>(
+        key,
+        async () => {
+            const { data } = await http.get('/api/client/account/owned-servers');
+            return (data.data as OwnedServer[]) ?? [];
+        },
+        { revalidateOnMount: true, revalidateOnFocus: false, ...(config || {}) },
+    );
+};
+
+export { useActivityLogs, useOwnedServers };

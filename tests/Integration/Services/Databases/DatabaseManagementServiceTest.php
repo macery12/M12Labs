@@ -11,6 +11,7 @@ use Everest\Services\Databases\DatabaseManagementService;
 use Everest\Exceptions\Repository\DuplicateDatabaseNameException;
 use Everest\Exceptions\Service\Database\TooManyDatabasesException;
 use Everest\Exceptions\Service\Database\DatabaseClientFeatureNotEnabledException;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class DatabaseManagementServiceTest extends IntegrationTestCase
 {
@@ -69,9 +70,8 @@ class DatabaseManagementServiceTest extends IntegrationTestCase
 
     /**
      * Test that a missing or invalid database name format causes an exception to be thrown.
-     *
-     * @dataProvider invalidDataDataProvider
-     */
+     **/
+    #[DataProvider('invalidDataDataProvider')]
     public function testEmptyDatabaseNameOrInvalidNameTriggersAnException(array $data)
     {
         $server = $this->createServerModel();

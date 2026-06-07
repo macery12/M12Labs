@@ -7,7 +7,12 @@ import SpinnerOverlay from '@/elements/SpinnerOverlay';
 import useFlash from '@/plugins/useFlash';
 import Switch from '@/elements/Switch';
 import { Alert } from '@/elements/alert';
-import { importBillingConfiguration } from '@/api/routes/admin/billing/config';
+import {
+    BillingImportConflictResponse,
+    BillingImportResolution,
+    importBillingConfiguration,
+} from '@/api/routes/admin/billing/config';
+import ImportConflictDialog from './ImportConflictDialog';
 
 export default () => {
     const [open, setOpen] = useState<boolean>(false);
@@ -15,6 +20,9 @@ export default () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [override, setOverride] = useState<boolean>(false);
     const [ignoreDuplicates, setIgnoreDuplicates] = useState<boolean>(true);
+    const [uploadedJson, setUploadedJson] = useState<object | null>(null);
+    const [conflictPayload, setConflictPayload] = useState<BillingImportConflictResponse | null>(null);
+    const [conflictOpen, setConflictOpen] = useState<boolean>(false);
 
     const { clearAndAddHttpError, clearFlashes, addFlash } = useFlash();
 
@@ -39,14 +47,30 @@ export default () => {
         reader.onload = async e => {
             try {
                 const jsonData = JSON.parse(e.target?.result as string);
+                setUploadedJson(jsonData);
 
                 await importBillingConfiguration(jsonData, override, ignoreDuplicates)
                     .then(() => {
                         setLoading(false);
                         setOpen(false);
+                        setConflictOpen(false);
+                        setConflictPayload(null);
                         addFlash({ key: 'billing:config', type: 'success', message: 'Import completed successfully' });
                     })
                     .catch(error => {
+                        const conflictResponse =
+                            error?.response?.status === 409
+                                ? (error.response.data as BillingImportConflictResponse)
+                                : null;
+
+                        if (conflictResponse?.object === 'billing_import_conflict') {
+                            setLoading(false);
+                            setOpen(false);
+                            setConflictPayload(conflictResponse);
+                            setConflictOpen(true);
+                            return;
+                        }
+
                         setLoading(false);
                         setOpen(false);
                         clearAndAddHttpError({ key: 'billing:config', error });
@@ -59,6 +83,44 @@ export default () => {
         };
 
         reader.readAsText(file);
+    };
+
+    const handleResolutionSubmit = async (resolution: BillingImportResolution) => {
+        if (!uploadedJson) {
+            addFlash({
+                key: 'billing:config',
+                type: 'error',
+                message: 'Original import data was not found. Please upload the JSON file again.',
+            });
+            setConflictOpen(false);
+            return;
+        }
+
+        setLoading(true);
+        clearFlashes();
+
+        await importBillingConfiguration(uploadedJson, override, ignoreDuplicates, resolution)
+            .then(() => {
+                setLoading(false);
+                setConflictOpen(false);
+                setConflictPayload(null);
+                addFlash({ key: 'billing:config', type: 'success', message: 'Import completed successfully' });
+            })
+            .catch(error => {
+                const conflictResponse =
+                    error?.response?.status === 409 ? (error.response.data as BillingImportConflictResponse) : null;
+
+                if (conflictResponse?.object === 'billing_import_conflict') {
+                    setLoading(false);
+                    setConflictPayload(conflictResponse);
+                    setConflictOpen(true);
+                    return;
+                }
+
+                setLoading(false);
+                setConflictOpen(false);
+                clearAndAddHttpError({ key: 'billing:config', error });
+            });
     };
 
     return (
@@ -103,6 +165,13 @@ export default () => {
             <Button onClick={() => setOpen(true)} className={'ml-2'}>
                 <FontAwesomeIcon icon={faUpload} className={'mr-1'} /> Import
             </Button>
+            <ImportConflictDialog
+                open={conflictOpen}
+                loading={loading}
+                payload={conflictPayload}
+                onClose={() => setConflictOpen(false)}
+                onSubmit={handleResolutionSubmit}
+            />
         </>
     );
 };

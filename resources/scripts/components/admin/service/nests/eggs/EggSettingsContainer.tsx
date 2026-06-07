@@ -76,10 +76,7 @@ function QuickReferenceRow() {
     return (
         <div css={tw`grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6`}>
             {stats.map(stat => (
-                <div
-                    key={stat.label}
-                    css={tw`rounded-lg border border-neutral-700 bg-neutral-800/50 px-4 py-3`}
-                >
+                <div key={stat.label} css={tw`rounded-lg border border-neutral-700 bg-neutral-800/50 px-4 py-3`}>
                     <p css={tw`text-xs uppercase tracking-widest text-neutral-500 mb-1`}>{stat.label}</p>
                     <p
                         css={[
@@ -182,7 +179,10 @@ export interface EggProcessContainerRef {
     getFilesConfiguration: () => Promise<string | null>;
 }
 
-export const EggProcessContainer = forwardRef<any, EggProcessSectionProps>(function EggProcessContainer({ className }, ref) {
+export const EggProcessContainer = forwardRef<any, EggProcessSectionProps>(function EggProcessContainer(
+    { className },
+    ref,
+) {
     const { isSubmitting, values } = useFormikContext<any>();
 
     let fetchStartupConfiguration: (() => Promise<string>) | null = null;
@@ -310,7 +310,10 @@ export function EggDockerContainer() {
                         <DockerImageManager name={'dockerImages'} label={'Image URL | Label'} />
                     </AdminBox>
 
-                    <div css={tw`rounded shadow-md px-4 xl:px-5 py-3 mb-16 mt-6`} style={{ backgroundColor: secondary }}>
+                    <div
+                        css={tw`rounded shadow-md px-4 xl:px-5 py-3 mb-16 mt-6`}
+                        style={{ backgroundColor: secondary }}
+                    >
                         <div css={tw`flex flex-row`}>
                             <Button type={'submit'} css={tw`ml-auto`} disabled={isSubmitting || !isValid}>
                                 Save Docker
@@ -347,7 +350,12 @@ export function EggAdvancedContainer() {
                 clearAndAddHttpError({ key: 'egg', error });
             })
             .then(() => {
-                addFlash({ key: 'egg', type: 'success', title: 'Saved', message: 'Advanced settings saved successfully.' });
+                addFlash({
+                    key: 'egg',
+                    type: 'success',
+                    title: 'Saved',
+                    message: 'Advanced settings saved successfully.',
+                });
                 setSubmitting(false);
             });
     };
@@ -382,7 +390,9 @@ export function EggAdvancedContainer() {
                         <FlashMessageRender byKey={'egg'} className={'mb-4'} />
 
                         <AdminBox icon={faShieldAlt} title={'Advanced'} css={tw`mb-6`}>
-                            <SectionHint text={'Rarely used controls are grouped here so they do not clutter the About tab.'} />
+                            <SectionHint
+                                text={'Rarely used controls are grouped here so they do not clutter the About tab.'}
+                            />
 
                             <div css={tw`grid grid-cols-1 md:grid-cols-2 gap-3 mb-6`}>
                                 {IMPLEMENTED_FEATURE_OPTIONS.map(feature => (
@@ -436,7 +446,10 @@ export function EggAdvancedContainer() {
                             />
                         </AdminBox>
 
-                        <div css={tw`rounded shadow-md px-4 xl:px-5 py-3 mb-16 mt-6`} style={{ backgroundColor: secondary }}>
+                        <div
+                            css={tw`rounded shadow-md px-4 xl:px-5 py-3 mb-16 mt-6`}
+                            style={{ backgroundColor: secondary }}
+                        >
                             <div css={tw`flex flex-row`}>
                                 <Button type={'submit'} css={tw`ml-auto`} disabled={isSubmitting || !isValid}>
                                     Save Advanced
@@ -475,7 +488,12 @@ export default function EggSettingsContainer() {
                 clearAndAddHttpError({ key: 'egg', error });
             })
             .then(() => {
-                addFlash({ key: 'egg', type: 'success', title: 'Saved', message: 'About settings saved successfully.' });
+                addFlash({
+                    key: 'egg',
+                    type: 'success',
+                    title: 'Saved',
+                    message: 'About settings saved successfully.',
+                });
                 setSubmitting(false);
             });
     };
@@ -512,9 +530,27 @@ export default function EggSettingsContainer() {
 
                         <div css={tw`grid grid-cols-1 xl:grid-cols-2 gap-x-8`}>
                             <Field id={'name'} name={'name'} label={'Name'} type={'text'} css={tw`mb-5`} />
-                            <Field id={'description'} name={'description'} label={'Description'} type={'text'} css={tw`mb-5`} />
-                            <Field id={'configStop'} name={'configStop'} label={'Stop Command'} type={'text'} css={tw`mb-5`} />
-                            <Field id={'updateUrl'} name={'updateUrl'} label={'Update URL'} type={'text'} css={tw`mb-5`} />
+                            <Field
+                                id={'description'}
+                                name={'description'}
+                                label={'Description'}
+                                type={'text'}
+                                css={tw`mb-5`}
+                            />
+                            <Field
+                                id={'configStop'}
+                                name={'configStop'}
+                                label={'Stop Command'}
+                                type={'text'}
+                                css={tw`mb-5`}
+                            />
+                            <Field
+                                id={'updateUrl'}
+                                name={'updateUrl'}
+                                label={'Update URL'}
+                                type={'text'}
+                                css={tw`mb-5`}
+                            />
                         </div>
 
                         {/* Startup command spans full width */}

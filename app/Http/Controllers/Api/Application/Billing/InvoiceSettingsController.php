@@ -84,9 +84,14 @@ class InvoiceSettingsController extends ApplicationApiController
                 $invoicePath = storage_path('app/invoices');
                 $bytes = 0;
                 if (is_dir($invoicePath)) {
-                    $output = shell_exec("du -sb {$invoicePath} 2>/dev/null");
-                    if ($output) {
-                        $bytes = (int) explode("\t", trim($output))[0];
+                    $iterator = new \RecursiveIteratorIterator(
+                        new \RecursiveDirectoryIterator($invoicePath, \FilesystemIterator::SKIP_DOTS),
+                        \RecursiveIteratorIterator::LEAVES_ONLY
+                    );
+                    foreach ($iterator as $file) {
+                        if ($file->isFile()) {
+                            $bytes += $file->getSize();
+                        }
                     }
                 }
                 $usage['local_bytes_used'] = $bytes;

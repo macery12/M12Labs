@@ -1,6 +1,37 @@
 <?php
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+
+if (!function_exists('array_get')) {
+    /**
+     * Get an item from an array using dot notation.
+     */
+    function array_get($array, ?string $key, $default = null): mixed
+    {
+        return Arr::get($array, $key, $default);
+    }
+}
+
+if (!function_exists('snake_case')) {
+    /**
+     * Convert a string to snake case.
+     */
+    function snake_case(string $value, string $delimiter = '_'): string
+    {
+        return Str::snake($value, $delimiter);
+    }
+}
+
+if (!function_exists('str_random')) {
+    /**
+     * Generate a cryptographically secure random string.
+     */
+    function str_random(int $length = 16): string
+    {
+        return Str::random($length);
+    }
+}
 
 if (!function_exists('is_digit')) {
     /**

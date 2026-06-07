@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $total
  * @property string $status
  * @property int $product_id
+ * @property string|null $product_name
  * @property int|null $billing_days
  * @property float|null $final_price
  * @property float|null $multiplier_used
@@ -41,6 +42,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Carbon\Carbon|null $paypal_captured_at
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
+ * @property-read \Everest\Models\Server|null $server
+ * @property-read \Everest\Models\Billing\Product|null $product
+ * @property-read \Everest\Models\User|null $user
+ * @property-read \Everest\Models\Billing\Coupon|null $coupon
+ * @property-read \Everest\Models\Billing\PaymentTransaction|null $transaction
  */
 class Order extends Model
 {
@@ -71,7 +77,7 @@ class Order extends Model
     protected $fillable = [
         'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'paypal_order_id',
         'paypal_capture_id', 'paypal_payer_id', 'paypal_payer_email', 'paypal_status', 'paypal_amount', 'paypal_currency', 'paypal_captured_at',
-        'payment_token', 'total', 'status', 'product_id', 'billing_days', 'final_price', 'multiplier_used', 'node_multiplier_used', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
+        'payment_token', 'total', 'status', 'product_id', 'product_name', 'billing_days', 'final_price', 'multiplier_used', 'node_multiplier_used', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
         'domain_payload',
         'coupon_id', 'subtotal', 'discount',
     ];
@@ -132,22 +138,28 @@ class Order extends Model
 
     /**
      * Get the coupon associated with this order.
+     *
+     * @return BelongsTo<Coupon, $this>
      */
-    public function coupon()
+    public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);
     }
 
     /**
      * Get the server associated with this order.
+     *
+     * @return BelongsTo<\Everest\Models\Server, $this>
      */
-    public function server()
+    public function server(): BelongsTo
     {
         return $this->belongsTo(\Everest\Models\Server::class);
     }
 
     /**
      * Get the payment transaction associated with this order.
+     *
+     * @return HasOne<PaymentTransaction, $this>
      */
     public function transaction(): HasOne
     {
@@ -156,6 +168,8 @@ class Order extends Model
 
     /**
      * Get the product associated with this order.
+     *
+     * @return BelongsTo<Product, $this>
      */
     public function product(): BelongsTo
     {
@@ -164,6 +178,8 @@ class Order extends Model
 
     /**
      * Get the user associated with this order.
+     *
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {

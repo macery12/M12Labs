@@ -31,10 +31,12 @@ class TicketTransformer extends Transformer
             'id' => $model->id,
             'title' => $model->title,
             'status' => $model->status,
+            'priority' => $model->priority,
+            'last_reply_at' => $model->last_reply_at?->toIso8601String(),
             'user' => $model->user,
             'assigned_to' => $model->assignedTo,
             'created_at' => $model->created_at->toIso8601String(),
-            'updated_at' => $model->updated_at->toIso8601String() ? $model->updated_at->toIso8601String() : null,
+            'updated_at' => $model->updated_at?->toIso8601String(),
         ];
     }
 

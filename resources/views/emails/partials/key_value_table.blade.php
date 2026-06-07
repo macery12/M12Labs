@@ -4,13 +4,7 @@
         @if(isset($value) && $value !== '')
             <tr>
                 <td style="padding: 8px 8px 6px 0; width: {{ $labelWidth }}; font-weight:700; color:#111827; font-size:14px; line-height:1.4;">{{ $label }}</td>
-                <td style="padding: 8px 0 6px; color:#111827; font-size:14px; line-height:1.5; word-break: break-word;">
-                    @if($value instanceof \Illuminate\Support\HtmlString)
-                        {!! $value !!}
-                    @else
-                        {{ $value }}
-                    @endif
-                </td>
+                <td style="padding: 8px 0 6px; color:#111827; font-size:14px; line-height:1.5; word-break: break-word;">{{ $value }}</td>
             </tr>
         @endif
     @endforeach

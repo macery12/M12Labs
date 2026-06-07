@@ -6,15 +6,15 @@ use Everest\Models\User;
 use Everest\Models\Permission;
 use Everest\Models\EggVariable;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class GetStartupAndVariablesTest extends ClientApiIntegrationTestCase
 {
     /**
      * Test that the startup command and variables are returned for a server, but only the variables
      * that can be viewed by a user (e.g. user_viewable=true).
-     *
-     * @dataProvider permissionsDataProvider
-     */
+     **/
+    #[DataProvider('permissionsDataProvider')]
     public function testStartupVariablesAreReturnedForServer(array $permissions)
     {
         /** @var \Everest\Models\Server $server */

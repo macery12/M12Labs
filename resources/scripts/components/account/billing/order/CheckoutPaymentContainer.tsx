@@ -24,6 +24,7 @@ import { loadStripeOnce } from '@/lib/stripe';
 import { Stripe } from '@stripe/stripe-js';
 import { ValidateCouponResponse, validateCoupon } from '@/api/routes/account/billing/coupons';
 import { useCheckoutDraft } from '@/hooks/useCheckoutDraft';
+import { getBillingProfile, type BillingProfile } from '@/api/routes/account/billing/billingProfile';
 
 interface CheckoutState {
     productId: number;
@@ -35,6 +36,24 @@ interface CheckoutState {
     couponData?: ValidateCouponResponse | null;
     serverName: string;
 }
+
+const hasCompleteBillingProfile = (profile: BillingProfile | null): boolean => {
+    if (!profile) {
+        return false;
+    }
+
+    const requiredFields = [
+        profile.first_name,
+        profile.last_name,
+        profile.address_line1,
+        profile.city,
+        profile.state,
+        profile.postal_code,
+        profile.country,
+    ];
+
+    return requiredFields.every(value => typeof value === 'string' && value.trim().length > 0);
+};
 
 export default () => {
     const { state } = useLocation();
@@ -48,7 +67,8 @@ export default () => {
     // Fall back to sessionStorage draft when router state is missing (e.g. after a page refresh)
     const productIdHint = routerState?.productId ?? 0;
     const { draft } = useCheckoutDraft(productIdHint);
-    const checkoutState: CheckoutState | undefined = routerState ?? (draft.productId ? draft as unknown as CheckoutState : undefined);
+    const checkoutState: CheckoutState | undefined =
+        routerState ?? (draft.productId ? (draft as unknown as CheckoutState) : undefined);
 
     const [product, setProduct] = useState<Product | undefined>();
     const [billingCycles, setBillingCycles] = useState<BillingCycle[]>([]);
@@ -101,6 +121,28 @@ export default () => {
         loadData();
     }, [checkoutState?.productId]);
 
+    useEffect(() => {
+        if (!billing.require_billing_address) {
+            return;
+        }
+
+        getBillingProfile()
+            .then(profile => {
+                if (hasCompleteBillingProfile(profile)) {
+                    return;
+                }
+
+                addFlash({
+                    key: 'account:billing:order',
+                    type: 'error',
+                    message:
+                        'Billing address verification is required before purchase. Please add your billing address in Account Overview first.',
+                });
+                navigate('/checkout/configure/' + checkoutState!.productId, { replace: true });
+            })
+            .catch(error => clearAndAddHttpError({ key: 'account:billing:order', error }));
+    }, [billing.require_billing_address, checkoutState?.productId]);
+
     // Re-validate coupon on mount — price may have changed since step 1
     useEffect(() => {
         if (!checkoutState?.couponData || !product) return;
@@ -109,11 +151,7 @@ export default () => {
             setCouponRevalidating(true);
             setCouponWarning(undefined);
             try {
-                const result = await validateCoupon(
-                    checkoutState.couponData!.coupon.code,
-                    product.price,
-                    'new',
-                );
+                const result = await validateCoupon(checkoutState.couponData!.coupon.code, product.price, 'new');
                 setCouponData(result);
                 setCouponId(result.coupon.id);
             } catch {

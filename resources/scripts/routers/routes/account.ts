@@ -1,17 +1,11 @@
 import { lazy } from 'react';
-import {
-    CashIcon,
-    ClipboardListIcon,
-    KeyIcon,
-    ShieldCheckIcon,
-    TicketIcon,
-    UserIcon,
-} from '@heroicons/react/outline';
+import {ShoppingCartIcon, ClipboardListIcon, KeyIcon, ShieldCheckIcon, ShoppingBagIcon, TicketIcon, UserIcon, EyeIcon } from '@heroicons/react/outline';
 import { route, type RouteDefinition } from '@/routers/routes/utils';
 
 const CredentialsContainer = lazy(() => import('@account/CredentialsContainer'));
 const AccountOverviewContainer = lazy(() => import('@account/AccountOverviewContainer'));
 const SecurityContainer = lazy(() => import('@account/SecurityContainer'));
+const UserActivityContainer = lazy(() => import('@account/activity/UserActivityContainer'));
 
 const TicketContainer = lazy(() => import('@account/tickets/TicketContainer'));
 const ViewTicketContainer = lazy(() => import('@account/tickets/view/ViewTicketContainer'));
@@ -31,6 +25,7 @@ const account: RouteDefinition[] = [
     route('', AccountOverviewContainer, { name: 'Account', end: true, icon: UserIcon }),
     route('credentials', CredentialsContainer, { name: 'Credentials', icon: KeyIcon }),
     route('security', SecurityContainer, { name: 'Security', icon: ShieldCheckIcon }),
+    route('activity', UserActivityContainer, { name: 'Activity', icon: EyeIcon }),
 
     /**
      * Account - Ticket Routes
@@ -46,8 +41,8 @@ const account: RouteDefinition[] = [
      * Account - Billing Routes
      */
     route('billing/order', ProductsContainer, {
-        name: 'Billing',
-        icon: CashIcon,
+        name: 'Store',
+        icon: ShoppingCartIcon,
         condition: flags => flags.billing.enabled,
     }),
     route('/checkout/configure/:id', OrderContainer),

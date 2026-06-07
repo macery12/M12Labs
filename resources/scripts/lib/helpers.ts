@@ -36,7 +36,10 @@ function hashToPath(hash: string): string {
     return hash.length > 0 ? decodeURIComponent(hash.substring(1)) : '/';
 }
 
-const withSubComponents = <C extends ((...args: any[]) => any) | StyledComponent<any, any>, P extends Record<string, any>>(
+const withSubComponents = <
+    C extends ((...args: any[]) => any) | StyledComponent<any, any>,
+    P extends Record<string, any>,
+>(
     component: C,
     properties: P,
 ): C & P => {
@@ -57,4 +60,12 @@ function isValidServerUuid(uuid: string | null | undefined): uuid is string {
     return typeof uuid === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
 }
 
-export { hexToRgba, randomInt, cleanDirectoryPath, encodePathSegments, hashToPath, withSubComponents, isValidServerUuid };
+export {
+    hexToRgba,
+    randomInt,
+    cleanDirectoryPath,
+    encodePathSegments,
+    hashToPath,
+    withSubComponents,
+    isValidServerUuid,
+};

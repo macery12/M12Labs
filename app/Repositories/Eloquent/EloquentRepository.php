@@ -262,7 +262,7 @@ abstract class EloquentRepository extends Repository implements RepositoryInterf
             $values[$key] = $value;
         }
 
-        $bindings = array_values(array_filter(array_flatten($values, 1), function ($binding) {
+        $bindings = array_values(array_filter(\Illuminate\Support\Arr::flatten($values, 1), function ($binding) {
             return !$binding instanceof Expression;
         }));
 

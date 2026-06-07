@@ -169,8 +169,14 @@ function OrderTable() {
     };
 
     const hasActiveFilters =
-        paymentProcessor || status || orderType || minAmount !== null || maxAmount !== null ||
-        startDate || endDate || searchQuery;
+        paymentProcessor ||
+        status ||
+        orderType ||
+        minAmount !== null ||
+        maxAmount !== null ||
+        startDate ||
+        endDate ||
+        searchQuery;
 
     useEffect(() => {
         clearFlashes();
@@ -221,7 +227,18 @@ function OrderTable() {
                             Filters
                             {hasActiveFilters && (
                                 <span css={tw`ml-1 bg-white/20 text-white text-xs rounded-full px-1.5 py-0.5`}>
-                                    {[paymentProcessor, status, orderType, minAmount, maxAmount, startDate, endDate, searchQuery].filter(Boolean).length}
+                                    {
+                                        [
+                                            paymentProcessor,
+                                            status,
+                                            orderType,
+                                            minAmount,
+                                            maxAmount,
+                                            startDate,
+                                            endDate,
+                                            searchQuery,
+                                        ].filter(Boolean).length
+                                    }
                                 </span>
                             )}
                             <FontAwesomeIcon icon={showFilters ? faChevronUp : faChevronDown} css={tw`text-xs`} />
@@ -310,7 +327,9 @@ function OrderTable() {
                                             {/* Server column */}
                                             <td className={'px-6 py-4'}>
                                                 {order.server_name || order.name ? (
-                                                    <span css={tw`text-white font-medium`}>{order.server_name || order.name}</span>
+                                                    <span css={tw`text-white font-medium`}>
+                                                        {order.server_name || order.name}
+                                                    </span>
                                                 ) : (
                                                     <span css={tw`text-gray-600`}>—</span>
                                                 )}
@@ -344,7 +363,9 @@ function OrderTable() {
                                                 {order.total === 0 || order.payment_processor === 'free' ? (
                                                     <span css={tw`flex items-center gap-1.5`}>
                                                         <span>${order.total.toFixed(2)}</span>
-                                                        <Pill size="small" type="success">Free</Pill>
+                                                        <Pill size="small" type="success">
+                                                            Free
+                                                        </Pill>
                                                     </span>
                                                 ) : (
                                                     <span>
@@ -390,7 +411,7 @@ export default () => {
     return (
         <OrderContext.Provider value={hooks}>
             {/* Tab switcher */}
-            <div className='flex border-b border-neutral-700 mb-6'>
+            <div className="flex border-b border-neutral-700 mb-6">
                 {(['orders', 'invoices'] as const).map(t => (
                     <button
                         key={t}

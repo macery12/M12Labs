@@ -171,16 +171,18 @@ class UserSessionService
      */
     protected function fingerprint(string $deviceId): string
     {
-        $ip = $this->ip();
-        $ipKey = $ip;
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-            $parts = explode('.', $ip);
-            $ipKey = implode('.', array_slice($parts, 0, 3));
-        } elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            $ipKey = substr($ip, 0, 19);
-        }
+        return hash('sha256', implode('|', [$deviceId, strtolower($this->userAgent()), $this->ipCIDR($this->ip())]));
+    }
 
-        return hash('sha256', implode('|', [$deviceId, strtolower($this->userAgent()), $ipKey]));
+    protected function ipCIDR(string $ip): string
+    {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return implode('.', array_slice(explode('.', $ip), 0, 3));
+        }
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return substr($ip, 0, 19);
+        }
+        return $ip;
     }
 
     protected function shouldNotify(?UserSession $session): bool
@@ -209,15 +211,7 @@ class UserSessionService
 
     protected function fallbackDeviceId(): string
     {
-        $ipKey = $this->ip();
-        if (filter_var($ipKey, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-            $parts = explode('.', $ipKey);
-            $ipKey = implode('.', array_slice($parts, 0, 3));
-        } elseif (filter_var($ipKey, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            $ipKey = substr($ipKey, 0, 19);
-        }
-
-        return hash('sha256', implode('|', [strtolower($this->userAgent()), $ipKey]));
+        return hash('sha256', implode('|', [strtolower($this->userAgent()), $this->ipCIDR($this->ip())]));
     }
 
     /**

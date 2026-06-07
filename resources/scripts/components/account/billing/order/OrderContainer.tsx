@@ -29,6 +29,7 @@ import AdminCheckbox from '@/elements/AdminCheckbox';
 import { ValidateCouponResponse } from '@/api/routes/account/billing/coupons';
 import { AvailableCustomDomain, getAvailableCustomDomains } from '@/api/routes/account/billing/customDomains';
 import { processUnpaidOrder } from '@/api/routes/account/billing/orders/process';
+import { getBillingProfile, type BillingProfile } from '@/api/routes/account/billing/billingProfile';
 import classNames from 'classnames';
 import { useCheckoutDraft } from '@/hooks/useCheckoutDraft';
 
@@ -63,6 +64,7 @@ export default () => {
     const [serverName, setServerName] = useState<string>('');
     const [serverNameTouched, setServerNameTouched] = useState<boolean>(false);
     const [legalAgreed, setLegalAgreed] = useState<boolean>(false);
+    const [checkingBillingAddress, setCheckingBillingAddress] = useState<boolean>(false);
 
     const hasValidSelectedNode = Number.isInteger(selectedNode) && selectedNode > 0;
     const hasEditableVariables = eggs?.some(v => v.isEditable) ?? false;
@@ -103,7 +105,7 @@ export default () => {
 
     const getCurrentPrice = () => {
         const selectedCycle = billingCycles.find(c => c.days === selectedBillingDays);
-        return selectedCycle ? selectedCycle.price : product?.price ?? 0;
+        return selectedCycle ? selectedCycle.price : (product?.price ?? 0);
     };
 
     const calculatedOrderTotal = couponData ? couponData.total : getCurrentPrice();
@@ -126,8 +128,62 @@ export default () => {
             record_type: mapping.record_type,
         }));
 
-    const createFree = () => {
+    const hasCompleteBillingProfile = (profile: BillingProfile | null): boolean => {
+        if (!profile) {
+            return false;
+        }
+
+        const requiredFields = [
+            profile.first_name,
+            profile.last_name,
+            profile.address_line1,
+            profile.city,
+            profile.state,
+            profile.postal_code,
+            profile.country,
+        ];
+
+        return requiredFields.every(value => typeof value === 'string' && value.trim().length > 0);
+    };
+
+    const assertBillingAddressBeforeCheckout = async (): Promise<boolean> => {
+        if (!billing.require_billing_address) {
+            return true;
+        }
+
+        setCheckingBillingAddress(true);
+
+        try {
+            const profile = await getBillingProfile();
+
+            if (hasCompleteBillingProfile(profile)) {
+                return true;
+            }
+
+            clearFlashes('account:billing:order');
+            addFlash({
+                key: 'account:billing:order',
+                type: 'error',
+                message:
+                    'Billing address verification is required before purchase. Please add your billing address in Account Overview, then continue to payment.',
+            });
+
+            return false;
+        } catch (error) {
+            clearAndAddHttpError({ key: 'account:billing:order', error });
+            return false;
+        } finally {
+            setCheckingBillingAddress(false);
+        }
+    };
+
+    const createFree = async () => {
         if (product && serverName.trim()) {
+            const canContinue = await assertBillingAddressBeforeCheckout();
+            if (!canContinue) {
+                return;
+            }
+
             const variables = Array.from(vars, ([key, value]) => ({ key, value }));
             processUnpaidOrder(
                 product.id,
@@ -289,7 +345,6 @@ export default () => {
         }
         // Note: couponData is intentionally NOT in the dependency array to avoid infinite loops
         // We only want to clear it when selectedBillingDays changes
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedBillingDays]);
 
     if (!product) return <Spinner centered />;
@@ -548,18 +603,24 @@ export default () => {
 
                             {totalIsFree ? (
                                 <Button
-                                    onClick={createFree}
+                                    onClick={() => void createFree()}
                                     size={Button.Sizes.Large}
                                     className={'w-full'}
-                                    disabled={!reviewReady}
+                                    disabled={!reviewReady || checkingBillingAddress}
                                 >
-                                    Create Server
+                                    {checkingBillingAddress ? 'Verifying Billing Address...' : 'Create Server'}
                                 </Button>
                             ) : (
                                 <Button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         setServerNameTouched(true);
                                         if (!reviewReady) return;
+
+                                        const canContinue = await assertBillingAddressBeforeCheckout();
+                                        if (!canContinue) {
+                                            return;
+                                        }
+
                                         const checkoutPayload = {
                                             productId: product.id,
                                             selectedNode,
@@ -578,9 +639,9 @@ export default () => {
                                     }}
                                     size={Button.Sizes.Large}
                                     className={'w-full'}
-                                    disabled={!reviewReady}
+                                    disabled={!reviewReady || checkingBillingAddress}
                                 >
-                                    Continue to Payment →
+                                    {checkingBillingAddress ? 'Verifying Billing Address...' : 'Continue to Payment →'}
                                 </Button>
                             )}
                         </div>

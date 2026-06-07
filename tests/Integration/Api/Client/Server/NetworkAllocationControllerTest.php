@@ -7,6 +7,7 @@ use Illuminate\Http\Response;
 use Everest\Models\Allocation;
 use Everest\Models\Permission;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class NetworkAllocationControllerTest extends ClientApiIntegrationTestCase
 {
@@ -48,9 +49,8 @@ class NetworkAllocationControllerTest extends ClientApiIntegrationTestCase
 
     /**
      * Tests that notes on an allocation can be set correctly.
-     *
-     * @dataProvider updatePermissionsDataProvider
-     */
+     **/
+    #[DataProvider('updatePermissionsDataProvider')]
     public function testAllocationNotesCanBeUpdated(array $permissions)
     {
         [$user, $server] = $this->generateTestAccount($permissions);
@@ -96,9 +96,8 @@ class NetworkAllocationControllerTest extends ClientApiIntegrationTestCase
         $this->actingAs($user)->postJson($this->link($server->allocation))->assertForbidden();
     }
 
-    /**
-     * @dataProvider updatePermissionsDataProvider
-     */
+    /***/
+    #[DataProvider('updatePermissionsDataProvider')]
     public function testPrimaryAllocationCanBeModified(array $permissions)
     {
         [$user, $server] = $this->generateTestAccount($permissions);

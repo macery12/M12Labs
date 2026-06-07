@@ -477,12 +477,7 @@ class ExtensionCatalogService
             throw new DisplayException(sprintf('Repository manifest "%s" does not exist on disk.', $path));
         }
 
-        $contents = File::get($path);
-        if ($contents === false) {
-            throw new DisplayException(sprintf('Unable to read repository manifest "%s".', $path));
-        }
-
-        return $contents;
+        return File::get($path);
     }
 
     private function resolveLocation(string $baseLocation, string $path): string

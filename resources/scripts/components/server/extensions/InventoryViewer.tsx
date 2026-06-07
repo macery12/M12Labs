@@ -154,8 +154,8 @@ const ItemTooltip = ({ item, position }: ItemTooltipProps) => {
                                     item.durability.percentage > 50
                                         ? '#22c55e'
                                         : item.durability.percentage > 20
-                                        ? '#eab308'
-                                        : '#ef4444',
+                                          ? '#eab308'
+                                          : '#ef4444',
                             }}
                         />
                     </div>
@@ -314,8 +314,8 @@ const InventorySlot = ({ item, slotType = 'normal', label }: InventorySlotProps)
                                             item.durability.percentage > 50
                                                 ? '#22c55e'
                                                 : item.durability.percentage > 20
-                                                ? '#eab308'
-                                                : '#ef4444',
+                                                  ? '#eab308'
+                                                  : '#ef4444',
                                     }}
                                 />
                             </div>

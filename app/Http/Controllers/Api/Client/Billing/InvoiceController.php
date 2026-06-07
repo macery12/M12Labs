@@ -33,8 +33,8 @@ class InvoiceController extends ClientApiController
                     ->where('user_id', $request->user()->id)
                     ->with('order')
             )
-            ->allowedFilters(['status'])
-            ->allowedSorts(['generated_at', 'total'])
+            ->allowedFilters(...['status'])
+            ->allowedSorts(...['generated_at', 'total'])
             ->defaultSort('-generated_at')
             ->paginate($perPage);
 

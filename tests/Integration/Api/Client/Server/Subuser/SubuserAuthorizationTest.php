@@ -5,6 +5,7 @@ namespace Everest\Tests\Integration\Api\Client\Server\Subuser;
 use Everest\Models\User;
 use Mockery\MockInterface;
 use Everest\Models\Subuser;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Everest\Repositories\Wings\DaemonRevocationRepository;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
 
@@ -12,9 +13,8 @@ class SubuserAuthorizationTest extends ClientApiIntegrationTestCase
 {
     /**
      * Test that mismatched subusers are not accessible to a server.
-     *
-     * @dataProvider methodDataProvider
      */
+    #[DataProvider('methodDataProvider')]
     public function testUserCannotAccessResourceBelongingToOtherServers(string $method)
     {
         // Generic subuser, the specific resource we're trying to access.

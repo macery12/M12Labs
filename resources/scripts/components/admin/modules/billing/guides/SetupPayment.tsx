@@ -81,52 +81,43 @@ export default ({ extOpen }: { extOpen?: boolean }) => {
                     </a>
                     to obtain your API key and secret key, then paste them here.
                 </p>
-                    <div className={'relative mt-4'}>
-                        <Input
-                            placeholder={'Enter "publishable" key here...'}
-                            onChange={e => setData({ ...data, stripePublishable: e.currentTarget.value })}
-                        />
-                        {!data?.stripePublishable ||
-                        data.stripePublishable.length < 100 ||
-                        data.stripePublishable.length > 120 ? (
-                            <Tooltip
-                                placement={'right'}
-                                content={'You must enter a valid Stripe publishable key to continue.'}
-                            >
-                                <FontAwesomeIcon
-                                    icon={faExclamationTriangle}
-                                    className={'absolute top-1/3 right-4 text-yellow-500'}
-                                />
-                            </Tooltip>
-                        ) : (
+                <div className={'relative mt-4'}>
+                    <Input
+                        placeholder={'Enter "publishable" key here...'}
+                        onChange={e => setData({ ...data, stripePublishable: e.currentTarget.value })}
+                    />
+                    {!data?.stripePublishable ||
+                    data.stripePublishable.length < 100 ||
+                    data.stripePublishable.length > 120 ? (
+                        <Tooltip
+                            placement={'right'}
+                            content={'You must enter a valid Stripe publishable key to continue.'}
+                        >
                             <FontAwesomeIcon
-                                icon={faCheckCircle}
-                                className={'absolute top-1/3 right-4 text-green-500'}
+                                icon={faExclamationTriangle}
+                                className={'absolute top-1/3 right-4 text-yellow-500'}
                             />
-                        )}
-                    </div>
-                    <div className={'relative mt-4'}>
-                        <Input
-                            placeholder={'Enter "secret" key here...'}
-                            onChange={e => setData({ ...data, stripeSecret: e.currentTarget.value })}
-                        />
-                        {!data?.stripeSecret || data.stripeSecret.length < 100 || data.stripeSecret.length > 120 ? (
-                            <Tooltip
-                                placement={'right'}
-                                content={'You must enter a valid Stripe secret key to continue.'}
-                            >
-                                <FontAwesomeIcon
-                                    icon={faExclamationTriangle}
-                                    className={'absolute top-1/3 right-4 text-yellow-500'}
-                                />
-                            </Tooltip>
-                        ) : (
+                        </Tooltip>
+                    ) : (
+                        <FontAwesomeIcon icon={faCheckCircle} className={'absolute top-1/3 right-4 text-green-500'} />
+                    )}
+                </div>
+                <div className={'relative mt-4'}>
+                    <Input
+                        placeholder={'Enter "secret" key here...'}
+                        onChange={e => setData({ ...data, stripeSecret: e.currentTarget.value })}
+                    />
+                    {!data?.stripeSecret || data.stripeSecret.length < 100 || data.stripeSecret.length > 120 ? (
+                        <Tooltip placement={'right'} content={'You must enter a valid Stripe secret key to continue.'}>
                             <FontAwesomeIcon
-                                icon={faCheckCircle}
-                                className={'absolute top-1/3 right-4 text-green-500'}
+                                icon={faExclamationTriangle}
+                                className={'absolute top-1/3 right-4 text-yellow-500'}
                             />
-                        )}
-                    </div>
+                        </Tooltip>
+                    ) : (
+                        <FontAwesomeIcon icon={faCheckCircle} className={'absolute top-1/3 right-4 text-green-500'} />
+                    )}
+                </div>
             </>
             <div className={'mt-4 w-full text-right'}>
                 <Button onClick={submit} disabled={!isValid()}>

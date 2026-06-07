@@ -13,6 +13,7 @@ use Everest\Http\Middleware\Api\Daemon\DaemonAuthenticate;
 use Everest\Tests\Unit\Http\Middleware\MiddlewareTestCase;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class DaemonAuthenticateTest extends MiddlewareTestCase
 {
@@ -64,9 +65,8 @@ class DaemonAuthenticateTest extends MiddlewareTestCase
     /**
      * Test that passing in an invalid node daemon secret will result in a bad request
      * exception being returned.
-     *
-     * @dataProvider badTokenDataProvider
-     */
+     **/
+    #[DataProvider('badTokenDataProvider')]
     public function testResponseShouldFailIfTokenFormatIsIncorrect(string $token)
     {
         $this->expectException(BadRequestHttpException::class);

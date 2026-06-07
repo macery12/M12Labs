@@ -28,8 +28,10 @@ export default class Transformers {
             id: attributes.id,
             title: attributes.title,
             status: attributes.status,
+            priority: attributes.priority ?? 'medium',
+            lastReplyAt: attributes.last_reply_at ? new Date(attributes.last_reply_at) : null,
             createdAt: new Date(attributes.created_at),
-            updatedAt: attributes.updatedAt ? new Date(attributes.updated_at) : null,
+            updatedAt: attributes.updated_at ? new Date(attributes.updated_at) : null,
             relationships: {
                 messages: transform(messages as FractalResponseList, this.toTicketMessage, null),
             },
@@ -88,6 +90,7 @@ export default class Transformers {
     static toAccountSession = ({ attributes }: FractalResponseData): Models.AccountSession => ({
         id: attributes.id,
         deviceName: attributes.device_name,
+        deviceLabel: attributes.device_label ?? null,
         ipAddress: attributes.ip_address,
         location: attributes.location ?? null,
         userAgent: attributes.user_agent,

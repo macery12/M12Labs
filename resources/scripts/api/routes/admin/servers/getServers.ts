@@ -153,17 +153,16 @@ export const rawDataToServer = ({ attributes }: FractalResponseData): Server =>
                 rawDataToServerVariable,
             ),
         },
-    } as Server);
+    }) as Server;
 
 export interface Filters {
     id?: string;
     uuid?: string;
     name?: string;
-    /* eslint-disable camelcase */
+
     owner_id?: string;
     node_id?: string;
     external_id?: string;
-    /* eslint-enable camelcase */
 }
 
 export const Context = createContext<Filters>();

@@ -33,8 +33,8 @@ class TicketMessageController extends ApplicationApiController
         }
 
         $messages = QueryBuilder::for(TicketMessage::query())
-            ->allowedFilters(['id'])
-            ->allowedSorts(['id'])
+            ->allowedFilters(...['id'])
+            ->allowedSorts(...['id'])
             ->where('ticket_id', $ticket->id)
             ->paginate($perPage);
 
@@ -50,11 +50,18 @@ class TicketMessageController extends ApplicationApiController
     {
         $ticket = Ticket::findOrFail($request['ticket_id']);
 
+        $isInternalNote = (bool) $request->input('internal_note', false);
+
         $message = TicketMessage::create([
             'ticket_id' => $ticket->id,
             'user_id' => $request->user()->id,
             'message' => $request->input('message'),
+            'internal_note' => $isInternalNote,
         ]);
+
+        if (!$isInternalNote) {
+            $ticket->update(['last_reply_at' => now()]);
+        }
 
         return $this->fractal->item($message)
             ->transformWith(TicketMessageTransformer::class)

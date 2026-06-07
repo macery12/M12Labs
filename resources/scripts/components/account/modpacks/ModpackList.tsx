@@ -121,8 +121,8 @@ export default ({ modpacks, loading, pagination, onModpackClick, onPageChange }:
                                 modpack.downloadCount >= 1000000
                                     ? `${(modpack.downloadCount / 1000000).toFixed(1)}M`
                                     : modpack.downloadCount >= 1000
-                                    ? `${(modpack.downloadCount / 1000).toFixed(0)}K`
-                                    : modpack.downloadCount.toString();
+                                      ? `${(modpack.downloadCount / 1000).toFixed(0)}K`
+                                      : modpack.downloadCount.toString();
 
                             return (
                                 <ModpackCard

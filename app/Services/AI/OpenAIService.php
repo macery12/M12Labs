@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Everest\Exceptions\Service\AI\AIServiceException;
 use Everest\Models\Setting;
 
@@ -169,7 +170,7 @@ class OpenAIService
             throw new AIServiceException('Invalid response format from AI service.');
         } catch (GuzzleException $e) {
             Log::error('OpenAI Service Error: ' . $e->getMessage());
-            if ($e->hasResponse()) {
+            if ($e instanceof RequestException && $e->hasResponse()) {
                 Log::error('OpenAI Response Body: ' . (string) $e->getResponse()->getBody());
             }
             throw new AIServiceException('Failed to communicate with AI service: ' . $e->getMessage());
@@ -348,7 +349,7 @@ class OpenAIService
             }
         } catch (GuzzleException $e) {
             Log::error('OpenAI Service Streaming Error: ' . $e->getMessage());
-            if ($e->hasResponse()) {
+            if ($e instanceof RequestException && $e->hasResponse()) {
                 Log::error('OpenAI Streaming Response Body: ' . (string) $e->getResponse()->getBody());
             }
             throw new AIServiceException('Failed to communicate with AI service: ' . $e->getMessage());

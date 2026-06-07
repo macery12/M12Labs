@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Controllers\Api\Client\Billing;
 
+use Illuminate\Support\Facades\Cache;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
 use Everest\Models\Billing\BillingException;
@@ -21,9 +22,16 @@ class ProductController extends ClientApiController
     public function index(int $id): array
     {
         $category = Category::findOrFail($id);
-        $products = Product::where('category_uuid', $category->uuid)->get();
 
-        if ($products->count() == 0) {
+        // Per-category product list is a hot storefront read; cache briefly to absorb
+        // concurrent load. Staleness is bounded to the TTL.
+        $products = Cache::remember(
+            "billing.storefront.products.{$category->uuid}",
+            60,
+            fn () => Product::where('category_uuid', $category->uuid)->get(),
+        );
+
+        if ($products->isEmpty()) {
             BillingException::create([
                 'title' => 'No products in category ' . $category->name . ' are visible',
                 'exception_type' => BillingException::TYPE_STOREFRONT,

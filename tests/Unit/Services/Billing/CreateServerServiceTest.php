@@ -2,11 +2,13 @@
 
 namespace Everest\Tests\Unit\Services\Billing;
 
-use Everest\Models\Egg;
 use Everest\Models\Server;
+use Everest\Models\User;
 use Everest\Tests\TestCase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
-use Everest\Models\Allocation;
 use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Models\Billing\Category;
@@ -30,6 +32,39 @@ class CreateServerServiceTest extends TestCase
     {
         parent::setUp();
 
+        Schema::dropIfExists('allocations');
+        Schema::create('allocations', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedInteger('node_id');
+            $table->unsignedInteger('server_id')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::dropIfExists('eggs');
+        Schema::create('eggs', function (Blueprint $table) {
+            $table->id();
+            $table->string('startup');
+            $table->json('docker_images');
+            $table->timestamps();
+        });
+
+        Schema::dropIfExists('egg_variables');
+        Schema::create('egg_variables', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedInteger('egg_id');
+            $table->string('env_variable');
+            $table->string('default_value')->nullable();
+            $table->timestamps();
+        });
+
+        DB::table('eggs')->insert([
+            'id' => 1,
+            'startup' => 'startup command',
+            'docker_images' => json_encode(['image1']),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $this->serverCreation = \Mockery::mock(ServerCreationService::class);
         $this->variableValidator = \Mockery::mock(VariableValidatorService::class);
 
@@ -52,9 +87,7 @@ class CreateServerServiceTest extends TestCase
         $metadata->node_id = 1;
         $metadata->variables = null;
 
-        // Mock Allocation query to return null
-        Allocation::shouldReceive('where')->andReturnSelf();
-        Allocation::shouldReceive('first')->andReturn(null);
+        DB::table('allocations')->delete();
 
         $this->expectException(BillingException::class);
         $this->expectExceptionMessage('No allocations are available for deployment');
@@ -81,20 +114,12 @@ class CreateServerServiceTest extends TestCase
         $metadata->node_id = 1;
         $metadata->variables = null;
 
-        // Mock allocation exists
-        $allocation = \Mockery::mock(Allocation::class);
-        $allocation->shouldReceive('getAttribute')->with('id')->andReturn(100);
-
-        Allocation::shouldReceive('where')->andReturnSelf();
-        Allocation::shouldReceive('first')->andReturn($allocation);
-
-        // Mock egg
-        $egg = \Mockery::mock(Egg::class);
-        $egg->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $egg->shouldReceive('getAttribute')->with('startup')->andReturn('startup command');
-        $egg->shouldReceive('getAttribute')->with('docker_images')->andReturn(['image1']);
-
-        Egg::shouldReceive('findOrFail')->andReturn($egg);
+        DB::table('allocations')->insert([
+            'node_id' => 1,
+            'server_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         // Mock server creation to fail
         $this->serverCreation->shouldReceive('handle')
@@ -126,20 +151,12 @@ class CreateServerServiceTest extends TestCase
         $metadata->node_id = 1;
         $metadata->variables = null;
 
-        // Mock allocation exists
-        $allocation = \Mockery::mock(Allocation::class);
-        $allocation->shouldReceive('getAttribute')->with('id')->andReturn(100);
-
-        Allocation::shouldReceive('where')->andReturnSelf();
-        Allocation::shouldReceive('first')->andReturn($allocation);
-
-        // Mock egg
-        $egg = \Mockery::mock(Egg::class);
-        $egg->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $egg->shouldReceive('getAttribute')->with('startup')->andReturn('startup command');
-        $egg->shouldReceive('getAttribute')->with('docker_images')->andReturn(['image1']);
-
-        Egg::shouldReceive('findOrFail')->andReturn($egg);
+        DB::table('allocations')->insert([
+            'node_id' => 1,
+            'server_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         // Mock server creation to throw unexpected exception
         $this->serverCreation->shouldReceive('handle')
@@ -160,9 +177,11 @@ class CreateServerServiceTest extends TestCase
      */
     private function createMockRequest(): Request
     {
-        $user = \Mockery::mock('Everest\Models\User');
-        $user->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $user->shouldReceive('getAttribute')->with('username')->andReturn('testuser');
+        $user = new User();
+        $user->setRawAttributes([
+            'id' => 1,
+            'username' => 'testuser',
+        ], true);
 
         $request = \Mockery::mock(Request::class);
         $request->shouldReceive('user')->andReturn($user);
@@ -199,9 +218,14 @@ class CreateServerServiceTest extends TestCase
      */
     private function createMockOrder(): Order
     {
-        $order = \Mockery::mock(Order::class);
-        $order->shouldReceive('getAttribute')->with('id')->andReturn(456);
-        $order->shouldReceive('getAttribute')->with('egg_id')->andReturn(1);
+        $order = new Order();
+        $order->setRawAttributes([
+            'id' => 456,
+            'egg_id' => 1,
+            'billing_days' => 30,
+            'total' => 10.0,
+            'name' => 'Test Order',
+        ], true);
 
         return $order;
     }

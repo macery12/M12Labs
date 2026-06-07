@@ -261,11 +261,11 @@ const AddPlayerModal = ({ visible, onDismissed, type, serverUuid, onAction }: Ad
                       .matches(/^[\d.]+$/, 'Invalid IP format'),
               })
             : type === 'op'
-            ? object().shape({
-                  target: string().required('Player name is required'),
-                  level: number().min(1).max(4).default(4),
-              })
-            : object().shape({ target: string().required('Player name is required') });
+              ? object().shape({
+                    target: string().required('Player name is required'),
+                    level: number().min(1).max(4).default(4),
+                })
+              : object().shape({ target: string().required('Player name is required') });
 
     return (
         <Modal visible={visible} onDismissed={onDismissed} closeOnBackground showSpinnerOverlay={loading}>

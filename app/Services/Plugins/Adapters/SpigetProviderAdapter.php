@@ -58,7 +58,7 @@ class SpigetProviderAdapter implements ProviderAdapterInterface
             'pageSize' => 10,
         ]);
 
-        $versions = $files['data'] ?? $files ?? [];
+        $versions = $files['data'] ?? [];
         $version = collect($versions)->firstWhere('id', (int) $versionId) ?? ($versions[0] ?? []);
         if (isset($version['data'])) {
             $version = $version['data'];

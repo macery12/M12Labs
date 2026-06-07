@@ -4,6 +4,7 @@ namespace Everest\Tests\Unit\Rules;
 
 use Everest\Rules\Username;
 use Everest\Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class UsernameTest extends TestCase
 {
@@ -17,9 +18,8 @@ class UsernameTest extends TestCase
 
     /**
      * Test valid usernames.
-     *
-     * @dataProvider validUsernameDataProvider
-     */
+     **/
+    #[DataProvider('validUsernameDataProvider')]
     public function testValidUsernames(string $username)
     {
         $this->assertTrue((new Username())->passes('test', $username), 'Assert username is valid.');
@@ -27,9 +27,8 @@ class UsernameTest extends TestCase
 
     /**
      * Test invalid usernames return false.
-     *
-     * @dataProvider invalidUsernameDataProvider
-     */
+     **/
+    #[DataProvider('invalidUsernameDataProvider')]
     public function testInvalidUsernames(string $username)
     {
         $this->assertFalse((new Username())->passes('test', $username), 'Assert username is not valid.');

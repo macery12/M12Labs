@@ -99,7 +99,13 @@ const EditInformationContainer = () => {
 
                     <Form>
                         <Field id={'name'} name={'name'} label={'Name'} type={'text'} css={tw`mb-6`} />
-                        <Field id={'description'} name={'description'} label={'Description'} type={'text'} css={tw`mb-6`} />
+                        <Field
+                            id={'description'}
+                            name={'description'}
+                            label={'Description'}
+                            type={'text'}
+                            css={tw`mb-6`}
+                        />
 
                         <div css={tw`w-full flex flex-row items-center mt-6`}>
                             <div css={tw`flex`}>
@@ -213,7 +219,9 @@ const NestEditContainer = () => {
                             <span css={tw`italic`}>No description</span>
                         </p>
                     ) : (
-                        <p css={tw`hidden md:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}>
+                        <p
+                            css={tw`hidden md:block text-base text-neutral-400 whitespace-nowrap overflow-ellipsis overflow-hidden`}
+                        >
                             {nest.description}
                         </p>
                     )}

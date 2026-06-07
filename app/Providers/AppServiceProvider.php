@@ -122,6 +122,16 @@ class AppServiceProvider extends ServiceProvider
                     {
                         return null;
                     }
+
+                    public function getAllKeys(): array
+                    {
+                        return [];
+                    }
+
+                    public function getPreviousKeys(): array
+                    {
+                        return [];
+                    }
                 };
             });
         }

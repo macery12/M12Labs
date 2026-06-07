@@ -6,6 +6,7 @@ use Everest\Models\Schedule;
 use Everest\Helpers\Utilities;
 use Everest\Models\Permission;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class UpdateServerScheduleTest extends ClientApiIntegrationTestCase
 {
@@ -25,9 +26,8 @@ class UpdateServerScheduleTest extends ClientApiIntegrationTestCase
 
     /**
      * Test that a schedule can be updated.
-     *
-     * @dataProvider permissionsDataProvider
-     */
+     **/
+    #[DataProvider('permissionsDataProvider')]
     public function testScheduleCanBeUpdated(array $permissions)
     {
         [$user, $server] = $this->generateTestAccount($permissions);

@@ -43,12 +43,10 @@ export default () => {
             .then(keys => setApiKeys(keys))
             .then(() => setLoadingApi(false))
             .catch(error => clearAndAddHttpError(error));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         clearAndAddHttpError(sshError);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sshError]);
 
     const doDeletion = (identifier: string) => {

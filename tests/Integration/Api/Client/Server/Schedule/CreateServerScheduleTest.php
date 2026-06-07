@@ -6,14 +6,14 @@ use Everest\Models\Schedule;
 use Illuminate\Http\Response;
 use Everest\Models\Permission;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class CreateServerScheduleTest extends ClientApiIntegrationTestCase
 {
     /**
      * Test that a schedule can be created for the server.
-     *
-     * @dataProvider permissionsDataProvider
-     */
+     **/
+    #[DataProvider('permissionsDataProvider')]
     public function testScheduleCanBeCreatedForServer(array $permissions)
     {
         [$user, $server] = $this->generateTestAccount($permissions);

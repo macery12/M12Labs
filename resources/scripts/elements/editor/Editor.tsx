@@ -120,9 +120,8 @@ export function Editor(props: EditorProps) {
 
     const [view, setView] = useState<EditorView>();
 
-    // eslint-disable-next-line react/hook-use-state
     const [languageConfig] = useState(new Compartment());
-    // eslint-disable-next-line react/hook-use-state
+
     const [keybindings] = useState(new Compartment());
 
     const [languageSupport, setLanguageSupport] = useState<LanguageSupport>();

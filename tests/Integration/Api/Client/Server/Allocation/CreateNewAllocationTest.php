@@ -6,6 +6,7 @@ use Illuminate\Http\Response;
 use Everest\Models\Allocation;
 use Everest\Models\Permission;
 use Everest\Tests\Integration\Api\Client\ClientApiIntegrationTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class CreateNewAllocationTest extends ClientApiIntegrationTestCase
 {
@@ -23,9 +24,8 @@ class CreateNewAllocationTest extends ClientApiIntegrationTestCase
 
     /**
      * Tests that a new allocation can be properly assigned to a server.
-     *
-     * @dataProvider permissionDataProvider
-     */
+     **/
+    #[DataProvider('permissionDataProvider')]
     public function testNewAllocationCanBeAssignedToServer(array $permission)
     {
         /** @var \Everest\Models\Server $server */

@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $subdomain_limit
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
+ * @property-read \Everest\Models\Billing\Category|null $category
  */
 class Product extends Model
 {
@@ -84,6 +85,8 @@ class Product extends Model
 
     /**
      * Gets information for the category associated with this product.
+     *
+     * @return BelongsTo<Category, $this>
      */
     public function category(): BelongsTo
     {

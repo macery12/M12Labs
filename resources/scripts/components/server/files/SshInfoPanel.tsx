@@ -37,9 +37,7 @@ export default () => {
     // Don't render at all if not supercharged, or done loading with no data
     if (!isSupercharged || (!loading && !sshInfo)) return null;
 
-    const sshCommand = sshInfo
-        ? sshInfo.command || `ssh ${sshInfo.username}@${sshInfo.host} -p ${sshInfo.port}`
-        : '';
+    const sshCommand = sshInfo ? sshInfo.command || `ssh ${sshInfo.username}@${sshInfo.host} -p ${sshInfo.port}` : '';
 
     return (
         <div css={tw`relative mt-6 border-t border-black/30 pt-6`}>
@@ -72,9 +70,7 @@ export default () => {
                         style={{ borderColor: sshInfo.container_supported ? '#22c55e' : '#06b6d4' }}
                     >
                         <p css={tw`text-xs text-neutral-200`}>
-                            {sshInfo.container_supported
-                                ? 'Direct container SSH is supported on this node. '
-                                : ''}
+                            {sshInfo.container_supported ? 'Direct container SSH is supported on this node. ' : ''}
                             Use your panel password to authenticate.
                         </p>
                     </div>

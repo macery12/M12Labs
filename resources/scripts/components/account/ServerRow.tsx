@@ -49,8 +49,8 @@ const UtilBox = ({
     const stateLabel = server?.isTransferring
         ? 'Transferring'
         : server?.status === 'suspended'
-        ? 'Suspended'
-        : 'Offline';
+          ? 'Suspended'
+          : 'Offline';
 
     return (
         <div
@@ -81,11 +81,11 @@ type Timer = ReturnType<typeof setInterval>;
 
 export default ({
     server,
-    group,
+    groups = [],
     setOpen,
 }: {
     server: Server;
-    group?: ServerGroup;
+    groups?: ServerGroup[];
     setOpen: React.Dispatch<React.SetStateAction<VisibleDialog>>;
 }) => {
     const { clearFlashes, addFlash, clearAndAddHttpError } = useFlash();
@@ -93,16 +93,17 @@ export default ({
     const colors = useStoreState(state => state.theme.data!.colors);
     const interval = useRef<Timer>(null) as React.MutableRefObject<Timer>;
     const [isSuspended, setIsSuspended] = useState(server.status === 'suspended');
-    const [removed, setRemoved] = useState(false);
+    const [removedGroupIds, setRemovedGroupIds] = useState<number[]>([]);
 
-    const onDelete = () => {
+    const visibleGroups = groups.filter(g => !removedGroupIds.includes(g.id));
+
+    const onDelete = (groupId: number) => {
         clearFlashes();
 
-        removeServerFromGroup(group!.id, server.uuid)
+        removeServerFromGroup(groupId, server.uuid)
             .then(() => {
                 addFlash({ type: 'success', key: 'dashboard:groups', message: 'Server group removed successfully.' });
-                setOpen({ open: 'none', serverId: undefined });
-                setRemoved(true);
+                setRemovedGroupIds(prev => [...prev, groupId]);
             })
             .catch(error => clearAndAddHttpError({ key: 'dashboard:groups', error }));
     };
@@ -155,30 +156,29 @@ export default ({
                         {server.allocations[0]?.ip.toString()}:{server.allocations[0]?.port.toString()}
                     </div>
                 </Link>
-                <div className={'col-span-full my-auto mr-2 lg:col-span-2'}>
-                    {group && group.id === server.groupId && !removed ? (
-                        <Pill size={'small'} type={'unknown'}>
-                            <span style={{ color: group?.color }} className={'ml-3 cursor-default'}>
+                <div className={'col-span-full my-auto mr-2 flex flex-wrap gap-1 lg:col-span-2'}>
+                    {visibleGroups.map(group => (
+                        <Pill size={'small'} type={'unknown'} key={group.id}>
+                            <span style={{ color: group.color }} className={'ml-3 cursor-default'}>
                                 {group.name}
                                 <div
-                                    onClick={onDelete}
+                                    onClick={() => onDelete(group.id)}
                                     className={'inline-flex opacity-0 transition duration-200 hover:opacity-100'}
                                 >
                                     <FontAwesomeIcon icon={faTrash} size={'xs'} color={'red'} className={'ml-1'} />
                                 </div>
                             </span>
                         </Pill>
-                    ) : (
-                        <div
-                            onClick={() => setOpen({ open: 'add', serverId: server.uuid })}
-                            className={
-                                'py-0.25 hidden cursor-pointer rounded-full border border-dashed border-gray-400 px-2 text-2xs font-medium leading-5 text-gray-500 transition duration-300 hover:bg-white/10 hover:text-white xl:inline-flex'
-                            }
-                        >
-                            <FontAwesomeIcon icon={faPlus} className={'my-auto mr-1'} />
-                            Add Group
-                        </div>
-                    )}
+                    ))}
+                    <div
+                        onClick={() => setOpen({ open: 'add', serverId: server.uuid, serverGroupIds: visibleGroups.map(g => g.id) })}
+                        className={
+                            'py-0.25 hidden cursor-pointer rounded-full border border-dashed border-gray-400 px-2 text-2xs font-medium leading-5 text-gray-500 transition duration-300 hover:bg-white/10 hover:text-white xl:inline-flex'
+                        }
+                    >
+                        <FontAwesomeIcon icon={faPlus} className={'my-auto mr-1'} />
+                        Add Group
+                    </div>
                 </div>
                 {isSuspended || server.status === 'offline' || (stats?.status ?? 'offline') === 'offline' ? (
                     <UtilBox rounded={'full'} utilised={-1} icon={faInfoCircle} server={server} />

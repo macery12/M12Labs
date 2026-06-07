@@ -53,3 +53,4 @@ Caddyfile
 *.pem
 package-lock.json
 wings/wings-rs/
+.aider*

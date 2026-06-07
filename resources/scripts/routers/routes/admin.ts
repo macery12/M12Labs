@@ -48,8 +48,19 @@ const admin: AdminRouteDefinition[] = [
     /**
      * Admin - General Routes
      */
-    route('', OverviewContainer, { name: 'Overview', end: true, icon: Icon.OfficeBuildingIcon, category: 'general', permission: 'overview.read' }),
-    route('settings/*', SettingsRouter, { name: 'Settings', icon: Icon.CogIcon, category: 'general', permission: 'settings.read' }),
+    route('', OverviewContainer, {
+        name: 'Overview',
+        end: true,
+        icon: Icon.OfficeBuildingIcon,
+        category: 'general',
+        permission: 'overview.read',
+    }),
+    route('settings/*', SettingsRouter, {
+        name: 'Settings',
+        icon: Icon.CogIcon,
+        category: 'general',
+        permission: 'settings.read',
+    }),
     route('activity', ActivityContainer, {
         name: 'Activity',
         icon: Icon.EyeIcon,
@@ -57,7 +68,13 @@ const admin: AdminRouteDefinition[] = [
         condition: flags => flags.activityEnabled,
         permission: 'activity.read',
     }),
-    route('api/*', ApplicationApiRouter, { name: 'API', icon: Icon.CodeIcon, category: 'general', advanced: true, permission: 'api.read' }),
+    route('api/*', ApplicationApiRouter, {
+        name: 'API',
+        icon: Icon.CodeIcon,
+        category: 'general',
+        advanced: true,
+        permission: 'api.read',
+    }),
 
     /**
      * Admin - Developer Routes
@@ -73,8 +90,20 @@ const admin: AdminRouteDefinition[] = [
     /**
      * Admin - Module Routes
      */
-    route('auth/*', AuthRouter, { name: 'Auth', icon: Icon.KeyIcon, category: 'modules', advanced: true, permission: 'auth.read' }),
-    route('billing/*', BillingRouter, { name: 'Billing', icon: Icon.CashIcon, category: 'modules', advanced: true, permission: 'billing.read' }),
+    route('auth/*', AuthRouter, {
+        name: 'Auth',
+        icon: Icon.KeyIcon,
+        category: 'modules',
+        advanced: true,
+        permission: 'auth.read',
+    }),
+    route('billing/*', BillingRouter, {
+        name: 'Billing',
+        icon: Icon.CashIcon,
+        category: 'modules',
+        advanced: true,
+        permission: 'billing.read',
+    }),
     route('custom-domains/*', CustomDomainsRouter, {
         name: 'Custom Domains',
         icon: Icon.GlobeAltIcon,
@@ -82,8 +111,20 @@ const admin: AdminRouteDefinition[] = [
         advanced: true,
         permission: 'custom-domains.read',
     }),
-    route('tickets/*', TicketRouter, { name: 'Tickets', icon: Icon.TicketIcon, category: 'modules', advanced: true, permission: 'tickets.read' }),
-    route('ai/*', AIRouter, { name: 'AI', icon: Icon.SparklesIcon, category: 'modules', advanced: true, permission: 'ai.read' }),
+    route('tickets/*', TicketRouter, {
+        name: 'Tickets',
+        icon: Icon.TicketIcon,
+        category: 'modules',
+        advanced: true,
+        permission: 'tickets.read',
+    }),
+    route('ai/*', AIRouter, {
+        name: 'AI',
+        icon: Icon.SparklesIcon,
+        category: 'modules',
+        advanced: true,
+        permission: 'ai.read',
+    }),
     route('marketplace/*', ModsRouter, {
         name: 'Marketplace',
         icon: Icon.CubeIcon,
@@ -91,9 +132,27 @@ const admin: AdminRouteDefinition[] = [
         advanced: true,
         permission: 'mods.read',
     }),
-    route('plugins/*', ModsRouter, { name: undefined, icon: Icon.CubeIcon, category: 'modules', advanced: true, permission: 'mods.read' }),
-    route('mods/*', ModsRouter, { name: undefined, icon: Icon.CubeIcon, category: 'modules', advanced: true, permission: 'mods.read' }),
-    route('email/*', EmailRouter, { name: 'Email', icon: Icon.MailIcon, category: 'modules', advanced: true, permission: 'email.read' }),
+    route('plugins/*', ModsRouter, {
+        name: undefined,
+        icon: Icon.CubeIcon,
+        category: 'modules',
+        advanced: true,
+        permission: 'mods.read',
+    }),
+    route('mods/*', ModsRouter, {
+        name: undefined,
+        icon: Icon.CubeIcon,
+        category: 'modules',
+        advanced: true,
+        permission: 'mods.read',
+    }),
+    route('email/*', EmailRouter, {
+        name: 'Email',
+        icon: Icon.MailIcon,
+        category: 'modules',
+        advanced: true,
+        permission: 'email.read',
+    }),
     route('webhooks/*', WebhookRouter, {
         name: 'Webhooks',
         icon: Icon.CursorClickIcon,
@@ -112,9 +171,24 @@ const admin: AdminRouteDefinition[] = [
     /**
      * Admin - Appearance Routes
      */
-    route('theme', ThemeContainer, { name: 'Theme', icon: Icon.PencilAltIcon, category: 'appearance', permission: 'theme.read' }),
-    route('links/*', LinksContainer, { name: 'Links', icon: Icon.LinkIcon, category: 'appearance', permission: 'links.read' }),
-    route('alerts/*', AlertRouter, { name: 'Alerts', icon: Icon.ShieldExclamationIcon, category: 'appearance', permission: 'alerts.read' }),
+    route('theme', ThemeContainer, {
+        name: 'Theme',
+        icon: Icon.PencilAltIcon,
+        category: 'appearance',
+        permission: 'theme.read',
+    }),
+    route('links/*', LinksContainer, {
+        name: 'Links',
+        icon: Icon.LinkIcon,
+        category: 'appearance',
+        permission: 'links.read',
+    }),
+    route('alerts/*', AlertRouter, {
+        name: 'Alerts',
+        icon: Icon.ShieldExclamationIcon,
+        category: 'appearance',
+        permission: 'alerts.read',
+    }),
 
     /**
      * Admin - Management Routes
@@ -127,24 +201,49 @@ const admin: AdminRouteDefinition[] = [
         permission: 'databases.read',
     }),
     route('databases/:id', DatabaseEditContainer, { permission: 'databases.read' }),
-    route('nodes/*', NodesContainer, { name: 'Nodes', icon: Icon.ServerIcon, category: 'management', permission: 'nodes.read' }),
+    route('nodes/*', NodesContainer, {
+        name: 'Nodes',
+        icon: Icon.ServerIcon,
+        category: 'management',
+        permission: 'nodes.read',
+    }),
     route('nodes/new', NewNodeContainer, { permission: 'nodes.read' }),
     route('nodes/:id/*', NodeRouter, { permission: 'nodes.read' }),
-    route('servers', ServersContainer, { name: 'Servers', icon: Icon.TerminalIcon, category: 'management', permission: 'servers.read' }),
+    route('servers', ServersContainer, {
+        name: 'Servers',
+        icon: Icon.TerminalIcon,
+        category: 'management',
+        permission: 'servers.read',
+    }),
     route('servers/new', NewServerContainer, { permission: 'servers.read' }),
     route('servers/presets', ServerPresetContainer, { permission: 'server-presets.read' }),
     route('servers/presets/:id/*', ServerPresetViewContainer, { permission: 'server-presets.read' }),
     route('servers/:id/*', ServerRouter, { permission: 'servers.read' }),
-    route('users', AdminUsersContainer, { name: 'Users', icon: Icon.UserIcon, category: 'management', permission: 'users.read' }),
+    route('users', AdminUsersContainer, {
+        name: 'Users',
+        icon: Icon.UserIcon,
+        category: 'management',
+        permission: 'users.read',
+    }),
     route('users/new', NewUserContainer, { permission: 'users.read' }),
     route('users/:id/*', UserRouter, { permission: 'users.read' }),
-    route('roles', RolesContainer, { name: 'Roles', icon: Icon.UserGroupIcon, category: 'management', permission: 'roles.read' }),
+    route('roles', RolesContainer, {
+        name: 'Roles',
+        icon: Icon.UserGroupIcon,
+        category: 'management',
+        permission: 'roles.read',
+    }),
     route('roles/:id', RoleEditContainer, { permission: 'roles.read' }),
 
     /**
      * Admin - Service Routes
      */
-    route('nests', NestsContainer, { name: 'Nests', icon: Icon.ViewGridIcon, category: 'services', permission: 'nests.read' }),
+    route('nests', NestsContainer, {
+        name: 'Nests',
+        icon: Icon.ViewGridIcon,
+        category: 'services',
+        permission: 'nests.read',
+    }),
     route('nests/:nestId', NestEditContainer, { permission: 'nests.read' }),
     route('nests/:nestId/new', NewEggContainer, { permission: 'eggs.read' }),
     route('nests/:nestId/eggs/:id/*', EggRouter, { permission: 'eggs.read' }),

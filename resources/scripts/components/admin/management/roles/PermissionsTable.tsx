@@ -42,17 +42,17 @@ const GroupCard = ({ groupKey, group, selected, onToggle, onToggleAll, colors }:
     const someSelected = fullKeys.some(k => selected.includes(k));
 
     return (
-        <div
-            className={'rounded shadow-md flex flex-col'}
-            style={{ backgroundColor: colors.secondary }}
-        >
+        <div className={'rounded shadow-md flex flex-col'} style={{ backgroundColor: colors.secondary }}>
             {/* Card header */}
             <div
                 className={'flex items-center justify-between px-4 py-2.5 rounded-t border-b border-black/40'}
                 style={{ backgroundColor: colors.headers }}
             >
                 <span className={'font-semibold text-sm text-neutral-100'}>{formatLabel(groupKey)}</span>
-                <label className={'flex items-center gap-1.5 cursor-pointer select-none'} title={allSelected ? 'Deselect all' : 'Select all'}>
+                <label
+                    className={'flex items-center gap-1.5 cursor-pointer select-none'}
+                    title={allSelected ? 'Deselect all' : 'Select all'}
+                >
                     <span className={'text-xs text-neutral-400'}>All</span>
                     <Checkbox
                         checked={allSelected}
@@ -82,7 +82,9 @@ const GroupCard = ({ groupKey, group, selected, onToggle, onToggleAll, colors }:
                                     ? 'border-transparent text-white'
                                     : 'border-neutral-600 text-neutral-400 hover:border-neutral-400 hover:text-neutral-200',
                             ].join(' ')}
-                            style={isChecked ? { backgroundColor: colors.primary, borderColor: colors.primary } : undefined}
+                            style={
+                                isChecked ? { backgroundColor: colors.primary, borderColor: colors.primary } : undefined
+                            }
                         >
                             <Checkbox
                                 id={permId}
@@ -107,9 +109,7 @@ export default ({ role }: { role: UserRole }) => {
     const [saved, setSaved] = useState(false);
 
     const toggle = (perm: string) => {
-        setSelected(prev =>
-            prev.includes(perm) ? prev.filter(v => v !== perm) : [...prev, perm],
-        );
+        setSelected(prev => (prev.includes(perm) ? prev.filter(v => v !== perm) : [...prev, perm]));
         setSaved(false);
     };
 
@@ -126,9 +126,7 @@ export default ({ role }: { role: UserRole }) => {
 
     const selectAll = () => {
         if (!permissions) return;
-        const all = Object.entries(permissions).flatMap(([gk, g]) =>
-            Object.keys(g.keys).map(pk => `${gk}.${pk}`),
-        );
+        const all = Object.entries(permissions).flatMap(([gk, g]) => Object.keys(g.keys).map(pk => `${gk}.${pk}`));
         setSelected(all);
         setSaved(false);
     };
@@ -155,9 +153,7 @@ export default ({ role }: { role: UserRole }) => {
     // Build a set of known groups per section; collect any API keys not in a section into "Other"
     const knownKeys = SECTIONS.flatMap(s => s.keys);
     const remainingKeys = Object.keys(permissions).filter(k => !knownKeys.includes(k));
-    const sections = remainingKeys.length > 0
-        ? [...SECTIONS, { label: 'Other', keys: remainingKeys }]
-        : SECTIONS;
+    const sections = remainingKeys.length > 0 ? [...SECTIONS, { label: 'Other', keys: remainingKeys }] : SECTIONS;
 
     const totalPerms = Object.values(permissions).reduce((acc, g) => acc + Object.keys(g.keys).length, 0);
     const totalSelected = selected.length;

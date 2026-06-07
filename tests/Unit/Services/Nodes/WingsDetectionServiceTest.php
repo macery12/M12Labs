@@ -55,7 +55,7 @@ class WingsDetectionServiceTest extends TestCase
     public function testVersionPatternDetection()
     {
         $service = new \Everest\Services\Nodes\WingsDetectionService(
-            new \Everest\Repositories\Wings\DaemonConfigurationRepository()
+            new \Everest\Repositories\Wings\DaemonConfigurationRepository(app())
         );
 
         // RS version strings

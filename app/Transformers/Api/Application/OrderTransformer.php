@@ -35,7 +35,7 @@ class OrderTransformer extends Transformer
             'total' => $model->total,
             'status' => $model->status,
             'product_id' => $model->product_id,
-            'product_name' => $product ? $product->name : null,
+            'product_name' => $model->product_name ?? ($product ? $product->name : null),
             'type' => $model->type ?? '?',
             'payment_processor' => $paymentProcessor,
             'transaction' => $model->transaction ? [
@@ -46,7 +46,7 @@ class OrderTransformer extends Transformer
                 'currency'    => $model->transaction->currency,
                 'payer_id'    => $model->transaction->payer_id,
                 'payer_email' => $model->transaction->payer_email,
-                'captured_at' => $model->transaction->captured_at?->toIso8601String(),
+                'captured_at' => $model->transaction->captured_at->toIso8601String(),
             ] : null,
             'threat_index' => $model->threat_index,
             'subtotal' => $model->subtotal,
@@ -60,7 +60,7 @@ class OrderTransformer extends Transformer
             'server_uuid' => $server ? $server->uuid : null,
             'server_name' => $server ? $server->name : null,
             'created_at' => $model->created_at->toIso8601String(),
-            'updated_at' => $model->updated_at?->toIso8601String(),
+            'updated_at' => $model->updated_at->toIso8601String(),
         ];
     }
 

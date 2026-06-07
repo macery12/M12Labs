@@ -76,7 +76,6 @@ export const rawDataToNode = ({ attributes, meta }: FractalResponseData): Node =
     allocationsUsedPercent: meta?.utilization.allocations ?? 0,
 
     relations: {
-        // eslint-disable-next-line camelcase
         databaseHost:
             attributes.relationships?.database_host !== undefined &&
             attributes.relationships?.database_host?.object !== 'null_resource'
@@ -90,9 +89,8 @@ export interface Filters {
     uuid?: string;
     name?: string;
     image?: string;
-    /* eslint-disable camelcase */
+
     external_id?: string;
-    /* eslint-enable camelcase */
 }
 
 export const Context = createContext<Filters>();

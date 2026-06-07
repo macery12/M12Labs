@@ -12,9 +12,7 @@ use Everest\Models\Billing\Order;
 use Everest\Models\Billing\Product;
 use Everest\Models\User;
 use Everest\Services\Billing\CreateOrderService;
-use Everest\Services\Billing\CreateServerService;
 use Everest\Services\Billing\PayPalPaymentService;
-use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\BillingValidationService;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Http\Controllers\Api\Client\Billing\PayPalCheckoutController;
@@ -74,7 +72,11 @@ class PayPalCheckoutControllerTest extends TestCase
                 null,
                 42
             )
-            ->andReturn(['finalPrice' => 19.99]);
+            ->andReturn([
+                'finalPrice' => 19.99,
+                'subtotal' => 19.99,
+                'discount' => 0,
+            ]);
         $validation->shouldReceive('validatePriceType')
             ->once()
             ->with(19.99, false);
@@ -110,15 +112,16 @@ class PayPalCheckoutControllerTest extends TestCase
                 Order::TYPE_NEW,
                 77,
                 null,
-                Mockery::on(fn (array $data) => ($data['billing_days'] ?? null) === 10)
+                Mockery::on(fn (array $data) => ($data['billing_days'] ?? null) === 10),
+                19.99,
+                19.99,
+                0
             );
 
         $controller = new PayPalCheckoutController(
             $paypalService,
             $validation,
-            Mockery::mock(OrderProcessorService::class),
             $orderService,
-            Mockery::mock(CreateServerService::class),
             Mockery::mock(ServerFulfillmentService::class)
         );
 

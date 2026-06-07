@@ -5,6 +5,7 @@ namespace Everest\Tests\Unit\Exceptions\Billing;
 use Everest\Tests\TestCase;
 use Everest\Exceptions\Billing\BillingException;
 use Everest\Models\Billing\BillingException as BillingExceptionModel;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class BillingExceptionTest extends TestCase
 {
@@ -53,9 +54,8 @@ class BillingExceptionTest extends TestCase
 
     /**
      * Test different exception types.
-     *
-     * @dataProvider exceptionTypeProvider
-     */
+     **/
+    #[DataProvider('exceptionTypeProvider')]
     public function testDifferentExceptionTypes(string $type)
     {
         $exception = new BillingException(
@@ -84,9 +84,8 @@ class BillingExceptionTest extends TestCase
 
     /**
      * Test payment processor identifiers.
-     *
-     * @dataProvider paymentProcessorProvider
-     */
+     **/
+    #[DataProvider('paymentProcessorProvider')]
     public function testPaymentProcessorIdentifiers(string $processor)
     {
         $exception = new BillingException(

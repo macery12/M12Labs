@@ -5,14 +5,14 @@ namespace Everest\Tests\Unit\Services\Acl\Api;
 use Everest\Models\ApiKey;
 use Everest\Tests\TestCase;
 use Everest\Services\Acl\Api\AdminAcl;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class AdminAclTest extends TestCase
 {
     /**
      * Test that permissions return the expects values.
-     *
-     * @dataProvider permissionsDataProvider
-     */
+     **/
+    #[DataProvider('permissionsDataProvider')]
     public function testPermissions(int $permission, int $check, bool $outcome)
     {
         $this->assertSame($outcome, AdminAcl::can($permission, $check));

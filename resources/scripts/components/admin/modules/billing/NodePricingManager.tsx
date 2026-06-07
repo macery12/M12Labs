@@ -57,7 +57,6 @@ export default () => {
 
     useEffect(() => {
         void loadNodePricing();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadNodePricing = async () => {

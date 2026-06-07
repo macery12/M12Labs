@@ -545,9 +545,22 @@ class CheckoutController extends ClientApiController
     {
         $settings = $this->invoiceSettingsService->get();
 
-        if ($settings->require_billing_address && !$user->billingProfile()->exists()) {
+        if (!$settings->require_billing_address) {
+            return;
+        }
+
+        $profile = $user->billingProfile;
+        $data = is_array($profile?->encrypted_data) ? $profile->encrypted_data : [];
+        $required = ['first_name', 'last_name', 'address_line1', 'city', 'state', 'postal_code', 'country'];
+
+        $isComplete = $profile !== null && collect($required)->every(function (string $field) use ($data): bool {
+            $value = $data[$field] ?? null;
+            return is_string($value) && trim($value) !== '';
+        });
+
+        if (!$isComplete) {
             abort(response()->json([
-                'error'      => 'A billing address is required to complete checkout.',
+                'error'      => 'A valid billing address is required to complete checkout.',
                 'error_code' => 'billing_address_required',
             ], 422));
         }

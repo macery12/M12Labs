@@ -105,7 +105,9 @@ const EggsTable = () => {
                                             </td>
 
                                             <td css={tw`px-6 text-sm text-neutral-200 text-left whitespace-nowrap`}>
-                                                {egg.description || <span css={tw`text-neutral-500`}>No description</span>}
+                                                {egg.description || (
+                                                    <span css={tw`text-neutral-500`}>No description</span>
+                                                )}
                                             </td>
                                         </TableRow>
                                     ))}

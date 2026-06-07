@@ -1,5 +1,13 @@
 # Laravel 11 Upgrade Guide
 
+> Status (reviewed 2026-05-31): this plan is still the correct first backend major step, but it is now part of a larger 10 -> 11 -> 12 -> 13 program.
+>
+> Canonical sequence:
+> - `UPGRADE_ROADMAP_2026.md`
+> - `LARAVEL11_UPGRADE.md` (this file)
+> - `LARAVEL12_UPGRADE.md`
+> - `LARAVEL13_UPGRADE.md`
+
 Migration from Laravel 10 (`~10.48.29`) to Laravel 11.
 
 > **This is a large, multi-day effort.** Do not attempt in a single PR. Follow the phased
