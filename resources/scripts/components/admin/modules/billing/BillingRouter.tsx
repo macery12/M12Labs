@@ -14,7 +14,6 @@ import ProductContainer from '@admin/modules/billing/products/ProductContainer';
 import CategoryContainer from '@admin/modules/billing/products/CategoryContainer';
 import CouponsContainer from '@admin/modules/billing/coupons/CouponsContainer';
 import CouponForm from '@admin/modules/billing/coupons/CouponForm';
-import Unfinished from '@/elements/Unfinished';
 import SettingsContainer from '@admin/modules/billing/SettingsContainer';
 import BillingExceptionsContainer from './exceptions/BillingExceptionsContainer';
 import BillingRulesContainer from '@admin/modules/billing/BillingRulesContainer';
@@ -46,8 +45,6 @@ export default () => {
                     </p>
                 </div>
             </div>
-
-            <Unfinished untested />
 
             {/* Two-column layout: sidebar + content */}
             <div className={'flex gap-6'}>

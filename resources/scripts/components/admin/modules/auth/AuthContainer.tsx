@@ -11,8 +11,6 @@ import DiscordSSO from './modules/DiscordSSO';
 import Onboarding from '@admin/modules/auth/modules/Onboarding';
 import GoogleSSO from './modules/GoogleSSO';
 import JGuard from './modules/JGuard';
-import Unfinished from '@/elements/Unfinished';
-
 export default () => {
     const [visible, setVisible] = useState<boolean>(false);
     const modules = useStoreState(state => state.everest.data!.auth.modules);
@@ -46,7 +44,6 @@ export default () => {
                     </Button>
                 </div>
             </div>
-            <Unfinished untested />
             <div className={'grid gap-4 md:grid-cols-2 xl:grid-cols-3'}>
                 <Registration />
                 <Security />
