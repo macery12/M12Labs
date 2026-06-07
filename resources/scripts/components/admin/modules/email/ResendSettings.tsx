@@ -617,7 +617,7 @@ export default () => {
     }
 
     return (
-        <AdminBox title={'Email Settings'} icon={faEnvelope} status={status} byKey={'email:settings'}>
+        <AdminBox title={'Email Settings'} icon={faEnvelope} status={status}>
             <div className={'flex flex-col gap-5'}>
                 <TabList active={activeTab} onSelect={setActiveTab} primary={primary} />
 

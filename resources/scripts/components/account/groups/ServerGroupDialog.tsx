@@ -1,7 +1,7 @@
 import { Dialog } from '@/elements/dialog';
 import { Button } from '@/elements/button';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { faPlus, faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faPlus, faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { addServerToGroup, deleteServerGroup, getServerGroups } from '@/api/routes/server/groups';
 import { type ServerGroup } from '@definitions/server';
@@ -14,6 +14,7 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 export interface VisibleDialog {
     open: 'index' | 'modify' | 'delete' | 'add' | 'none';
     serverId?: string;
+    serverGroupIds?: number[];
 }
 
 interface Props {
@@ -21,9 +22,10 @@ interface Props {
     groups: ServerGroup[];
     setOpen: Dispatch<SetStateAction<VisibleDialog>>;
     setGroups: Dispatch<SetStateAction<ServerGroup[]>>;
+    onGroupAdded?: (serverUuid: string, groupId: number) => void;
 }
 
-export default ({ open, setOpen, groups, setGroups }: Props) => {
+export default ({ open, setOpen, groups, setGroups, onGroupAdded }: Props) => {
     const { clearAndAddHttpError, clearFlashes, addFlash } = useFlash();
     const [group, setGroup] = useState<ServerGroup | undefined>();
 
@@ -48,9 +50,8 @@ export default ({ open, setOpen, groups, setGroups }: Props) => {
         addServerToGroup(id, open.serverId!)
             .then(() => {
                 addFlash({ type: 'success', key: 'dashboard:groups', message: 'Server group added successfully.' });
+                onGroupAdded?.(open.serverId!, id);
                 setOpen({ open: 'none', serverId: undefined });
-
-                window.location.reload();
             })
             .catch(error => clearAndAddHttpError({ key: 'dashboard:groups', error }));
     };
@@ -62,26 +63,32 @@ export default ({ open, setOpen, groups, setGroups }: Props) => {
             <FlashMessageRender byKey={'dashboard:groups'} />
             <ModifyServerGroup open={open.open === 'modify'} group={group} setOpen={setOpen} />
             <Dialog open={open.open === 'add'} onClose={() => setOpen({ open: 'none' })} title={'Add group to server'}>
-                {groups ? (
+                {groups && groups.length > 0 ? (
                     <div
                         className={'my-3 grid cursor-pointer grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4'}
                     >
-                        {groups?.map(group => (
-                            <Pill size={'large'} type={'unknown'} key={group.id}>
-                                <span style={{ color: group.color }}>{group.name}</span>
-                                <div
-                                    className={
-                                        'absolute right-4 my-auto text-green-500/75 transition duration-250 hover:text-green-400'
-                                    }
-                                    onClick={() => {
-                                        setGroup(group);
-                                        onAdd(group.id);
-                                    }}
-                                >
-                                    <FontAwesomeIcon icon={faPlusCircle} size={'sm'} />
-                                </div>
-                            </Pill>
-                        ))}
+                        {groups.map(g => {
+                            const alreadyAdded = open.serverGroupIds?.includes(g.id) ?? false;
+                            return (
+                                <Pill size={'large'} type={'unknown'} key={g.id}>
+                                    <span style={{ color: g.color }}>{g.name}</span>
+                                    <div
+                                        className={
+                                            alreadyAdded
+                                                ? 'absolute right-4 my-auto text-green-500/50'
+                                                : 'absolute right-4 my-auto text-green-500/75 transition duration-250 hover:text-green-400'
+                                        }
+                                        onClick={() => {
+                                            if (alreadyAdded) return;
+                                            setGroup(g);
+                                            onAdd(g.id);
+                                        }}
+                                    >
+                                        <FontAwesomeIcon icon={alreadyAdded ? faCheck : faPlusCircle} size={'sm'} />
+                                    </div>
+                                </Pill>
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className={'mt-4 text-center font-semibold text-gray-400'}>

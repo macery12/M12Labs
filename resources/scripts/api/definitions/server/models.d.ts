@@ -8,7 +8,7 @@ interface Server {
     internalId: number | string;
     uuid: string;
     nodeId?: number;
-    groupId?: number | null;
+    groupIds?: number[];
     name: string;
     node: string;
     isNodeUnderMaintenance: boolean;

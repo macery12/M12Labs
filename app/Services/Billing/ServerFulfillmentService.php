@@ -113,7 +113,10 @@ class ServerFulfillmentService
                 // Renewal orders maintain their own status lifecycle
                 // Use $currentOrder (fresh instance) to ensure update operates on latest data
                 if ($currentOrder->type !== Order::TYPE_REN) {
-                    $currentOrder->update(['status' => Order::STATUS_PROCESSED]);
+                    $currentOrder->update([
+                        'status'    => Order::STATUS_PROCESSED,
+                        'server_id' => $server->id,
+                    ]);
                 }
 
                 DB::commit();
@@ -321,7 +324,10 @@ class ServerFulfillmentService
             );
         }
 
-        $order->update(['status' => Order::STATUS_PROCESSED]);
+        $order->update([
+            'status'    => Order::STATUS_PROCESSED,
+            'server_id' => $server->id,
+        ]);
 
         return ['server' => $server, 'order' => $order];
     }

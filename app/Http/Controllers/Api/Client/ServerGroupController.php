@@ -4,7 +4,6 @@ namespace Everest\Http\Controllers\Api\Client;
 
 use Illuminate\Http\JsonResponse;
 use Everest\Models\ServerGroup;
-use Everest\Exceptions\DisplayException;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
 use Everest\Http\Requests\Api\Client\ServerGroups\StoreServerGroupRequest;
 use Everest\Http\Requests\Api\Client\ServerGroups\UpdateServerGroupRequest;
@@ -51,11 +50,7 @@ class ServerGroupController extends ClientApiController
         $group = $request->user()->serverGroups()->findOrFail($id);
         $server = $request->user()->servers()->where('uuid', $data['server'])->firstOrFail();
 
-        try {
-            $server->update(['group_id' => $group->id]);
-        } catch (DisplayException $ex) {
-            throw new DisplayException('Unable to assign group to server.');
-        }
+        $server->groups()->syncWithoutDetaching([$group->id]);
 
         return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
     }
@@ -70,7 +65,7 @@ class ServerGroupController extends ClientApiController
         $request->user()->serverGroups()->findOrFail($id);
         $server = $request->user()->servers()->where('uuid', $data['server'])->firstOrFail();
 
-        $server->update(['group_id' => null]);
+        $server->groups()->detach($id);
 
         return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
     }

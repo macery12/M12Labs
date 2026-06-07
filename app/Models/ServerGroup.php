@@ -3,6 +3,7 @@
 namespace Everest\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
@@ -55,10 +56,10 @@ class ServerGroup extends Model
     }
 
     /**
-     * Gets the user associated with the server group.
+     * Gets the servers belonging to this group.
      */
-    public function servers(): HasMany
+    public function servers(): BelongsToMany
     {
-        return $this->hasMany(Server::class, 'group_id');
+        return $this->belongsToMany(Server::class, 'server_group_members', 'server_group_id', 'server_id');
     }
 }

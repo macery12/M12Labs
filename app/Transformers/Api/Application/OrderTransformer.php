@@ -35,7 +35,7 @@ class OrderTransformer extends Transformer
             'total' => $model->total,
             'status' => $model->status,
             'product_id' => $model->product_id,
-            'product_name' => $product ? $product->name : null,
+            'product_name' => $model->product_name ?? ($product ? $product->name : null),
             'type' => $model->type ?? '?',
             'payment_processor' => $paymentProcessor,
             'transaction' => $model->transaction ? [

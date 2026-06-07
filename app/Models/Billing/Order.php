@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $total
  * @property string $status
  * @property int $product_id
+ * @property string|null $product_name
  * @property int|null $billing_days
  * @property float|null $final_price
  * @property float|null $multiplier_used
@@ -76,7 +77,7 @@ class Order extends Model
     protected $fillable = [
         'name', 'user_id', 'description', 'payment_intent_id', 'payment_processor', 'paypal_order_id',
         'paypal_capture_id', 'paypal_payer_id', 'paypal_payer_email', 'paypal_status', 'paypal_amount', 'paypal_currency', 'paypal_captured_at',
-        'payment_token', 'total', 'status', 'product_id', 'billing_days', 'final_price', 'multiplier_used', 'node_multiplier_used', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
+        'payment_token', 'total', 'status', 'product_id', 'product_name', 'billing_days', 'final_price', 'multiplier_used', 'node_multiplier_used', 'egg_id', 'node_id', 'server_id', 'variables', 'type', 'threat_index',
         'domain_payload',
         'coupon_id', 'subtotal', 'discount',
     ];

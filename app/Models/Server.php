@@ -4,6 +4,7 @@ namespace Everest\Models;
 
 use Carbon\Carbon;
 use Everest\Models\Billing\Product;
+use Everest\Models\ServerGroup;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Query\JoinClause;
 use Znck\Eloquent\Traits\BelongsToThrough;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Everest\Exceptions\Http\Server\ServerStateConflictException;
 
@@ -19,7 +21,6 @@ use Everest\Exceptions\Http\Server\ServerStateConflictException;
  *
  * @property int $id
  * @property string|null $external_id
- * @property int|null $group_id
  * @property string $uuid
  * @property string $uuidShort
  * @property int $node_id
@@ -157,7 +158,6 @@ class Server extends Model
     public static array $validationRules = [
         'external_id' => 'sometimes|nullable|string|between:1,191|unique:servers',
         'owner_id' => 'required|integer|exists:users,id',
-        'group_id' => 'nullable|integer|exists:server_groups,id',
         'name' => 'required|string|min:1|max:191',
         'node_id' => 'required|exists:nodes,id',
         'description' => 'string',
@@ -227,7 +227,6 @@ class Server extends Model
      */
     protected $casts = [
         'node_id' => 'integer',
-        'group_id' => 'integer',
         'skip_scripts' => 'boolean',
         'owner_id' => 'integer',
         'memory' => 'integer',
@@ -276,6 +275,14 @@ class Server extends Model
     public function isSuspended(): bool
     {
         return $this->status === self::STATUS_SUSPENDED;
+    }
+
+    /**
+     * Gets all groups this server belongs to.
+     */
+    public function groups(): BelongsToMany
+    {
+        return $this->belongsToMany(ServerGroup::class, 'server_group_members', 'server_id', 'server_group_id');
     }
 
     /**
