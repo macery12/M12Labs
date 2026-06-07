@@ -21,9 +21,25 @@ export interface ActiveAlert {
     updated_at: string;
 }
 
-export const getActiveAlerts = async (scope = 'global'): Promise<ActiveAlert[]> => {
-    const { data } = await http.get('/api/client/alerts', {
-        params: { scope },
-    });
-    return data;
+type AlertScope = 'global' | 'dashboard' | 'server' | 'billing' | 'account' | 'admin' | 'all';
+
+let alertCache: Promise<ActiveAlert[]> | null = null;
+
+const fetchAllAlerts = (): Promise<ActiveAlert[]> => {
+    if (!alertCache) {
+        alertCache = http
+            .get('/api/client/alerts', { params: { scope: 'all' } })
+            .then(r => r.data)
+            .catch(() => {
+                alertCache = null;
+                return [];
+            });
+    }
+    return alertCache;
+};
+
+export const getActiveAlerts = async (scope: AlertScope = 'global'): Promise<ActiveAlert[]> => {
+    const all = await fetchAllAlerts();
+    if (scope === 'all') return all;
+    return all.filter(a => a.scope === scope || a.scope === 'global');
 };

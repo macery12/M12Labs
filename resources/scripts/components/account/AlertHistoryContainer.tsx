@@ -11,23 +11,10 @@ export default () => {
     const [visible, setVisible] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
-    // Calculate unread count (notification alerts + unread regular alerts)
     useEffect(() => {
-        Promise.all([
-            getActiveAlerts('global'),
-            getActiveAlerts('dashboard'),
-            getActiveAlerts('server'),
-            getActiveAlerts('billing'),
-            getActiveAlerts('account'),
-            getActiveAlerts('admin'),
-        ])
-            .then(results => {
-                const allAlerts = results.flat();
-                const uniqueAlerts = Array.from(new Map(allAlerts.map(alert => [alert.id, alert])).values());
-
-                // Count unread: notification alerts + dismissed other alerts
-                const unread = uniqueAlerts.filter(alert => !isAlertDismissedForUser(alert, user)).length;
-
+        getActiveAlerts('all')
+            .then(alerts => {
+                const unread = alerts.filter(a => !isAlertDismissedForUser(a, user)).length;
                 setUnreadCount(unread);
             })
             .catch(() => setUnreadCount(0));

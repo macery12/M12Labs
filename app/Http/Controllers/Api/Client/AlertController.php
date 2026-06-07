@@ -15,13 +15,14 @@ class AlertController extends ClientApiController
     public function index(Request $request): JsonResponse
     {
         $scope = $request->input('scope', 'global');
-        $user = $request->user();
+        $user  = $request->user();
 
-        $alerts = Alert::active()
-            ->forScope($scope)
-            ->forUser($user->id)
-            ->get();
+        $query = Alert::active()->forUser($user->id);
 
-        return new JsonResponse($alerts);
+        if ($scope !== 'all') {
+            $query->forScope($scope);
+        }
+
+        return new JsonResponse($query->get());
     }
 }

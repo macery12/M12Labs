@@ -20,36 +20,15 @@ export default ({ open, onClose }: Props) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (open) {
-            setLoading(true);
-            // Fetch all alerts across all scopes
-            Promise.all([
-                getActiveAlerts('global'),
-                getActiveAlerts('dashboard'),
-                getActiveAlerts('server'),
-                getActiveAlerts('billing'),
-                getActiveAlerts('account'),
-                getActiveAlerts('admin'),
-            ])
-                .then(results => {
-                    // Flatten and deduplicate by ID
-                    const allAlerts = results.flat();
-                    const uniqueAlerts = Array.from(new Map(allAlerts.map(alert => [alert.id, alert])).values());
-                    // Sort by priority (highest first) then by ID (newest first)
-                    uniqueAlerts.sort((a, b) => {
-                        if (b.priority !== a.priority) {
-                            return b.priority - a.priority;
-                        }
-                        return b.id - a.id;
-                    });
-                    setAlerts(uniqueAlerts);
-                })
-                .catch(error => {
-                    console.error('Failed to load alert history:', error);
-                    setAlerts([]);
-                })
-                .finally(() => setLoading(false));
-        }
+        if (!open) return;
+        setLoading(true);
+        getActiveAlerts('all')
+            .then(alerts => {
+                alerts.sort((a, b) => b.priority - a.priority || b.id - a.id);
+                setAlerts(alerts);
+            })
+            .catch(() => setAlerts([]))
+            .finally(() => setLoading(false));
     }, [open]);
 
     // Check if an alert is dismissed
