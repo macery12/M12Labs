@@ -1,97 +1,218 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFlashKey } from '@/plugins/useFlash';
-import ContentBox from '@/elements/ContentBox';
-import { useTicketFromRoute } from '@/api/routes/account/tickets';
-import FlashMessageRender from '@/elements/FlashMessageRender';
+import { useTicketFromRoute, createMessage } from '@/api/routes/account/tickets';
 import PageContentBlock from '@/elements/PageContentBlock';
-import AddTicketMessageForm from '@account/tickets/view/AddTicketMessageForm';
 import Spinner from '@/elements/Spinner';
 import classNames from 'classnames';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { useStoreState } from '@/state/hooks';
-
-export const statusToColor = (status: string): string => {
-    switch (status) {
-        case 'in-progress':
-            return 'bg-yellow-200 text-yellow-800';
-        case 'unresolved':
-            return 'bg-red-200 text-red-800';
-        case 'resolved':
-            return 'bg-green-200 text-green-800';
-        default:
-            return 'bg-gray-400 text-gray-800';
-    }
-};
+import { Link } from 'react-router-dom';
+import MessageBubble from '@account/tickets/MessageBubble';
+import DeleteTicketDialog from './DeleteTicketDialog';
+import { statusToColor, priorityToColor, priorityDotColor } from '@/utils/ticketStatus';
+import type { TicketStatusType, TicketPriorityType } from '@/utils/ticketStatus';
 
 export default () => {
     const { email } = useStoreState(state => state.user.data!);
     const { colors } = useStoreState(state => state.theme.data!);
-    const { data: ticket, error, isLoading } = useTicketFromRoute();
+    const { data: ticket, error, isLoading, mutate } = useTicketFromRoute();
     const { clearAndAddHttpError } = useFlashKey('account:tickets');
+    const bottomRef = useRef<HTMLDivElement>(null);
+
+    const [message, setMessage] = useState('');
+    const [sending, setSending] = useState(false);
 
     useEffect(() => {
         clearAndAddHttpError(error);
     }, [error]);
 
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [ticket?.relationships.messages?.length]);
+
+    const handleSend = async () => {
+        if (!ticket || !message.trim() || sending) return;
+        const trimmed = message.trim();
+        setSending(true);
+
+        try {
+            await createMessage(ticket.id, trimmed);
+            setMessage('');
+            await mutate();
+        } catch (err) {
+            clearAndAddHttpError(err as any);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
+
     return (
-        <PageContentBlock title={`View Ticket`}>
-            <FlashMessageRender byKey={'account:tickets'} />
+        <PageContentBlock title={'View Ticket'}>
             {isLoading || !ticket ? (
                 <Spinner size={'large'} centered />
             ) : (
-                <div className={'grid gap-4 lg:grid-cols-3'}>
-                    <div className={'lg:col-span-2'}>
-                        <h2 className={'mb-4 px-4 text-2xl text-neutral-300'}>
-                            {ticket.title}
+                <>
+                    <div className={'mb-6 flex items-center gap-3'}>
+                        <Link to={'/account/tickets'} className={'text-sm text-gray-400 hover:text-gray-200'}>
+                            ← Tickets
+                        </Link>
+                        <span className={'text-gray-600'}>/</span>
+                        <h1 className={'truncate text-lg font-semibold text-neutral-100'}>{ticket.title}</h1>
+                        <span
+                            className={classNames(
+                                statusToColor(ticket.status as TicketStatusType),
+                                'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize',
+                            )}
+                        >
+                            {ticket.status}
+                        </span>
+                        {ticket.priority !== 'medium' && (
                             <span
                                 className={classNames(
-                                    statusToColor(ticket.status),
-                                    'ml-2 hidden rounded-full px-2 py-1 text-sm font-medium sm:inline',
+                                    priorityToColor(ticket.priority as TicketPriorityType),
+                                    'hidden shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize sm:inline-flex',
                                 )}
                             >
-                                {ticket.status[0]?.toUpperCase() + ticket.status.slice(1)}
+                                <span
+                                    className={classNames(
+                                        priorityDotColor(ticket.priority as TicketPriorityType),
+                                        'h-1.5 w-1.5 rounded-full',
+                                    )}
+                                />
+                                {ticket.priority}
                             </span>
-                        </h2>
-                        <ContentBox>
-                            {!ticket.relationships.messages ? (
-                                'There are no messages assigned to this ticket.'
-                            ) : (
-                                <>
-                                    {ticket.relationships.messages
-                                        .map(message => (
-                                            <div key={message.id} className={'mb-4'}>
-                                                <div
-                                                    key={message.id}
-                                                    style={{ backgroundColor: colors.headers }}
-                                                    className={'flex rounded-lg p-4'}
-                                                >
-                                                    <p className={'mr-2 font-semibold text-primary-400'}>
-                                                        {message.author.email === email
-                                                            ? 'You'
-                                                            : 'Support - Administrator'}
-                                                        :
-                                                    </p>
-                                                    {message.message.toString()}
-                                                </div>
-                                                <p className={'mt-1 text-right text-2xs text-gray-300'}>
-                                                    Sent&nbsp;
-                                                    {formatDistanceToNow(message.createdAt, {
-                                                        includeSeconds: true,
-                                                        addSuffix: true,
-                                                    })}
-                                                </p>
-                                            </div>
-                                        ))
-                                        .toReversed()}
-                                </>
-                            )}
-                        </ContentBox>
-                        <p className={'mt-2 text-xs text-gray-400'}>Sorted by latest message</p>
+                        )}
                     </div>
-                    <ContentBox title={'Add Message'}>
-                        <AddTicketMessageForm ticketId={ticket.id} />
-                    </ContentBox>
-                </div>
+
+                    <div className={'grid gap-6 lg:grid-cols-3'}>
+                        <div className={'flex flex-col lg:col-span-2'}>
+                            <div
+                                className={'flex flex-1 flex-col rounded-xl p-4'}
+                                style={{ minHeight: '400px', backgroundColor: 'rgba(255,255,255,0.03)' }}
+                            >
+                                {!ticket.relationships.messages || ticket.relationships.messages.length === 0 ? (
+                                    <p className={'m-auto text-sm text-gray-500'}>No messages yet.</p>
+                                ) : (
+                                    <div className={'flex flex-col'}>
+                                        {[...ticket.relationships.messages].reverse().map(msg => (
+                                            <MessageBubble
+                                                key={msg.id}
+                                                message={msg}
+                                                isOwn={msg.author?.email === email}
+                                            />
+                                        ))}
+                                        <div ref={bottomRef} />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className={'mt-4'}>
+                                <textarea
+                                    value={message}
+                                    onChange={e => setMessage(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    rows={4}
+                                    placeholder={'Type your message… (Ctrl+Enter to send)'}
+                                    disabled={sending || ticket.status === 'resolved'}
+                                    className={
+                                        'w-full resize-none rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-3 text-sm text-neutral-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-neutral-500 disabled:opacity-50'
+                                    }
+                                />
+                                <div className={'mt-2 flex justify-end'}>
+                                    <button
+                                        onClick={handleSend}
+                                        disabled={!message.trim() || sending || ticket.status === 'resolved'}
+                                        className={
+                                            'rounded-lg px-5 py-2 text-sm font-medium text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50'
+                                        }
+                                        style={{ backgroundColor: colors.primary }}
+                                    >
+                                        {sending ? 'Sending…' : 'Send Message'}
+                                    </button>
+                                </div>
+                                {ticket.status === 'resolved' && (
+                                    <p className={'mt-2 text-center text-xs text-gray-500'}>
+                                        This ticket is resolved and closed to new replies.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className={'space-y-4'}>
+                            <div className={'rounded-xl p-5 shadow-lg'} style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                                <h3 className={'mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400'}>
+                                    Ticket Info
+                                </h3>
+                                <dl className={'space-y-3 text-sm'}>
+                                    <div className={'flex justify-between'}>
+                                        <dt className={'text-gray-400'}>ID</dt>
+                                        <dd className={'font-mono font-medium text-neutral-200'}>#{ticket.id}</dd>
+                                    </div>
+                                    <div className={'flex justify-between'}>
+                                        <dt className={'text-gray-400'}>Status</dt>
+                                        <dd>
+                                            <span
+                                                className={classNames(
+                                                    statusToColor(ticket.status as TicketStatusType),
+                                                    'rounded-full px-2 py-0.5 text-xs font-medium capitalize',
+                                                )}
+                                            >
+                                                {ticket.status}
+                                            </span>
+                                        </dd>
+                                    </div>
+                                    <div className={'flex justify-between'}>
+                                        <dt className={'text-gray-400'}>Priority</dt>
+                                        <dd>
+                                            <span
+                                                className={classNames(
+                                                    priorityToColor(ticket.priority as TicketPriorityType),
+                                                    'rounded-full px-2 py-0.5 text-xs font-medium capitalize',
+                                                )}
+                                            >
+                                                {ticket.priority}
+                                            </span>
+                                        </dd>
+                                    </div>
+                                    <div className={'flex justify-between'}>
+                                        <dt className={'text-gray-400'}>Opened</dt>
+                                        <dd className={'text-neutral-300'}>
+                                            {format(ticket.createdAt, 'MMM do, yyyy')}
+                                        </dd>
+                                    </div>
+                                    {ticket.lastReplyAt && (
+                                        <div className={'flex justify-between'}>
+                                            <dt className={'text-gray-400'}>Last reply</dt>
+                                            <dd className={'text-neutral-300'}>
+                                                {format(ticket.lastReplyAt, 'MMM do, yyyy')}
+                                            </dd>
+                                        </div>
+                                    )}
+                                    <div className={'flex justify-between'}>
+                                        <dt className={'text-gray-400'}>Messages</dt>
+                                        <dd className={'text-neutral-300'}>
+                                            {ticket.relationships.messages?.length ?? 0}
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </div>
+
+                            <div className={'rounded-xl p-5'} style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                                <h3 className={'mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400'}>
+                                    Actions
+                                </h3>
+                                <DeleteTicketDialog />
+                            </div>
+                        </div>
+                    </div>
+                </>
             )}
         </PageContentBlock>
     );

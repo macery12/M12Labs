@@ -42,7 +42,7 @@ export default () => {
                 initialValues={{ title: '', message: '' }}
                 validationSchema={object().shape({
                     title: string().required(),
-                    message: string().required().min(3).max(300),
+                    message: string().required().min(3).max(2000),
                 })}
             >
                 {({ isSubmitting }) => (

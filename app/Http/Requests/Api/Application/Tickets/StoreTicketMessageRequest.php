@@ -10,7 +10,9 @@ class StoreTicketMessageRequest extends ApplicationApiRequest
 {
     public function rules(): array
     {
-        return TicketMessage::rules();
+        return array_merge(TicketMessage::rules(), [
+            'internal_note' => 'sometimes|boolean',
+        ]);
     }
 
     public function permission(): string

@@ -34,6 +34,11 @@ class Ticket extends Model
     public const STATUS_UNRESOLVED = 'unresolved';
     public const STATUS_IN_PROGRESS = 'in-progress';
 
+    public const PRIORITY_LOW = 'low';
+    public const PRIORITY_MEDIUM = 'medium';
+    public const PRIORITY_HIGH = 'high';
+    public const PRIORITY_CRITICAL = 'critical';
+
     /**
      * The table associated with the model.
      */
@@ -42,7 +47,10 @@ class Ticket extends Model
     /**
      * Default values when creating the model.
      */
-    protected $attributes = ['status' => self::STATUS_PENDING];
+    protected $attributes = [
+        'status' => self::STATUS_PENDING,
+        'priority' => self::PRIORITY_MEDIUM,
+    ];
 
     /**
      * The attributes that should be mutated to dates.
@@ -62,6 +70,12 @@ class Ticket extends Model
         'title',
         'assigned_to',
         'status',
+        'priority',
+        'last_reply_at',
+    ];
+
+    protected $casts = [
+        'last_reply_at' => 'datetime',
     ];
 
     /**
@@ -72,6 +86,7 @@ class Ticket extends Model
         'title' => 'required|string|min:3|max:191',
         'assigned_to' => 'nullable|int|exists:users,id',
         'status' => 'required|string|in:pending,resolved,unresolved,in-progress',
+        'priority' => 'sometimes|string|in:low,medium,high,critical',
     ];
 
     /**

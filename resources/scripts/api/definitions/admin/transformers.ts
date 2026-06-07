@@ -147,6 +147,8 @@ export default class Transformers {
         id: attributes.id,
         title: attributes.title,
         status: attributes.status,
+        priority: attributes.priority ?? 'medium',
+        last_reply_at: attributes.last_reply_at ? new Date(attributes.last_reply_at) : null,
         user: attributes.user,
         assigned_to: attributes.assigned_to,
         created_at: new Date(attributes.created_at),
@@ -159,6 +161,7 @@ export default class Transformers {
     static toTicketMessage = ({ attributes }: FractalResponseData): Models.TicketMessage => ({
         id: attributes.id,
         message: attributes.message,
+        internal_note: Boolean(attributes.internal_note),
         author: attributes.author,
         created_at: new Date(attributes.created_at),
         updated_at: attributes.updated_at ? new Date(attributes.updated_at) : null,

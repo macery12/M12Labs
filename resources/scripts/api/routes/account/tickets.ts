@@ -36,12 +36,7 @@ const createTicket = async (title: string, message: string): Promise<Ticket> => 
 };
 
 const createMessage = async (ticketId: number, message: string): Promise<Ticket> => {
-    const { data } = await http.post(`/api/client/account/tickets/${ticketId}/messages`, {
-        message,
-        params: {
-            include: ['messages'],
-        },
-    });
+    const { data } = await http.post(`/api/client/account/tickets/${ticketId}/messages`, { message });
 
     return Transformers.toTicket(data);
 };
@@ -63,7 +58,9 @@ const getTicket = async (id: number): Promise<Ticket> => {
 const useTicketFromRoute = (): SWRResponse<Ticket, AxiosError> => {
     const params = useParams<'id'>();
 
-    return useSWR(`/api/client/account/tickets/${params.id}`, async () => getTicket(Number(params.id)));
+    return useSWR(`/api/client/account/tickets/${params.id}`, async () => getTicket(Number(params.id)), {
+        refreshInterval: 15000,
+    });
 };
 
 const deleteTicket = async (id: number): Promise<void> => await http.delete(`/api/client/account/tickets/${id}`);

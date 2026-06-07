@@ -46,6 +46,8 @@ interface Ticket extends Model {
     id: number;
     title: string;
     status: 'resolved' | 'unresolved' | 'pending' | 'in-progress';
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    lastReplyAt: Date | null;
     createdAt: Date;
     updatedAt: Date | null;
     relationships: {

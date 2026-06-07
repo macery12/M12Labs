@@ -3,6 +3,7 @@ import { Server } from '@/api/routes/admin/server';
 import { OrderType } from '@/api/routes/account/billing/orders/types';
 
 type BillingExceptionType = 'payment' | 'deployment' | 'storefront' | 'webhook' | 'refund' | 'validation';
+type TicketPriority = 'low' | 'medium' | 'high' | 'critical';
 type OrderStatus = 'pending' | 'expired' | 'failed' | 'cancelled' | 'processed';
 
 interface PaymentTransaction {
@@ -85,6 +86,8 @@ interface Ticket extends Model {
     user: User;
     assigned_to?: User | undefined;
     status: TicketStatus;
+    priority: TicketPriority;
+    last_reply_at?: Date | null;
     created_at: Date;
     updated_at?: Date | null;
     relationships: {
@@ -95,6 +98,7 @@ interface Ticket extends Model {
 interface TicketMessage extends Model {
     id: number;
     message: string;
+    internal_note: boolean;
     author: User;
     created_at: Date;
     updated_at?: Date | null;

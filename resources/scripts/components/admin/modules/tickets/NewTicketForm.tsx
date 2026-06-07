@@ -24,6 +24,7 @@ const initialValues: Values = {
     user_id: 0,
     assigned_to: null,
     status: 'pending',
+    priority: 'medium',
 };
 
 export default () => {
@@ -73,6 +74,7 @@ export default () => {
                     user_id: number().required(),
                     assigned_to: number().nullable(),
                     status: string().nullable(),
+                    priority: string().nullable(),
                 })}
             >
                 {({ isSubmitting, isValid }) => (
@@ -111,6 +113,16 @@ export default () => {
                                             <p className={'pt-2 text-xs'}>
                                                 Before the ticket is created, you can change the status.
                                             </p>
+                                        </div>
+                                        <div>
+                                            <Label>Priority</Label>
+                                            <Select id={'priority'} name={'priority'}>
+                                                <option value={'low'}>Low</option>
+                                                <option value={'medium'}>Medium</option>
+                                                <option value={'high'}>High</option>
+                                                <option value={'critical'}>Critical</option>
+                                            </Select>
+                                            <p className={'pt-2 text-xs'}>Set the urgency level for this ticket.</p>
                                         </div>
                                     </FieldRow>
                                 </AdminBox>
