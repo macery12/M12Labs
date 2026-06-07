@@ -115,12 +115,7 @@ export default () => {
                             You are currently running version&nbsp;
                             <CopyOnClick text={versionData?.panel.current}>
                                 <Code>{versionData?.panel.current}</Code>
-                            </CopyOnClick>
-                            , with the latest release being &nbsp;
-                            <CopyOnClick text={versionData?.panel.latest}>
-                                <Code>{versionData?.panel.latest}</Code>
-                            </CopyOnClick>
-                            .
+                            </CopyOnClick>.
                         </div>
                         {versionData?.panel.current.startsWith('v4.0.0-') && (
                             <Alert type={'danger'} className={'mt-4'}>
