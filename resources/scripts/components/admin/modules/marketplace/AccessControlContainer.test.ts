@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { rulesAreEqual } from './AccessControlContainer';
-import { ProviderRule } from '@/api/routes/admin/plugins/providers';
+import { ProviderRule } from '@/api/routes/admin/marketplace/providers';
 
 describe('rulesAreEqual', () => {
     const base: ProviderRule = {

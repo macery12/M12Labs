@@ -12,6 +12,7 @@ use Everest\Services\Plugins\Adapters\SpigetProviderAdapter;
 use Everest\Services\Plugins\Adapters\ModrinthProviderAdapter;
 use Everest\Services\Plugins\Adapters\CurseForgeProviderAdapter;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
+use Everest\Models\MarketplaceInstallLog;
 
 class PluginInstallService
 {
@@ -160,8 +161,33 @@ class PluginInstallService
 
             $content = file_get_contents($tempPath);
             $this->fileRepository->setServer($server)->putContent($targetPath, $content);
+
+            MarketplaceInstallLog::create([
+                'provider'        => $this->normalizeProviderForAnalytics($providerKey),
+                'type'            => $type,
+                'project_id'      => (string) $projectId,
+                'file_size_bytes' => $downloadedSize ?? 0,
+                'status'          => MarketplaceInstallLog::STATUS_SUCCESS,
+                'server_id'       => $server->id,
+                'user_id'         => auth()->id(),
+            ]);
         } catch (\Exception $e) {
             Log::error('PluginInstallService download error: ' . $e->getMessage());
+
+            try {
+                MarketplaceInstallLog::create([
+                    'provider'        => $this->normalizeProviderForAnalytics($providerKey),
+                    'type'            => $type,
+                    'project_id'      => (string) $projectId,
+                    'file_size_bytes' => 0,
+                    'status'          => MarketplaceInstallLog::STATUS_FAILED,
+                    'server_id'       => $server->id,
+                    'user_id'         => auth()->id(),
+                ]);
+            } catch (\Exception) {
+                // never let analytics recording break the user-facing error
+            }
+
             throw $e instanceof ModsServiceException ? $e : new ModsServiceException('An unexpected error occurred while downloading the file.');
         } finally {
             if (is_resource($fileHandle)) {
@@ -406,5 +432,13 @@ class PluginInstallService
         }
 
         return is_array($header) ? $header : [$header];
+    }
+
+    private function normalizeProviderForAnalytics(string $providerKey): string
+    {
+        return match ($providerKey) {
+            'spiget', 'spigot' => 'spigot',
+            default => $providerKey,
+        };
     }
 }

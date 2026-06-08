@@ -55,6 +55,7 @@ return [
      */
     'spiget_api_url' => env('SPIGET_API_URL', 'https://api.spiget.org/v2'),
     'spiget_enabled' => env('SPIGET_ENABLED', true),
+    'allow_external_downloads' => env('MODS_ALLOW_EXTERNAL_DOWNLOADS', false),
 
     /*
      * Maximum download sizes (in bytes).

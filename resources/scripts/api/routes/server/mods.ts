@@ -193,6 +193,15 @@ export interface ProviderAccessResponse {
 export const getProviderAccess = (uuid: string): Promise<ProviderAccessResponse> =>
     http.get(`/api/client/servers/${uuid}/mods/providers`).then(r => r.data);
 
+export interface ServerModsConfig {
+    detectedVersion: string | null;
+    detectedLoader: { id: number; name: string; slug: string } | null;
+    detectedPlatform: string | null;
+}
+
+export const getServerModsConfig = (uuid: string): Promise<ServerModsConfig> =>
+    http.get(`/api/client/servers/${uuid}/mods/server-config`).then(r => r.data);
+
 export interface MinecraftVersion {
     id: number;
     gameVersionId: number;

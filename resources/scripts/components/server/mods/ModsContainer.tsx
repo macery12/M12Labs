@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import { ServerContext } from '@/state/server';
 import { useStoreState } from '@/state/hooks';
-import PageContentBlock from '@/elements/PageContentBlock';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import ModSearch from './ModSearch';
 import ModList from './ModList';
 import ModDetails from './ModDetails';
-import { type CurseForgeMod, type ModSearchParams, searchMods } from '@/api/routes/server/mods';
+import { type CurseForgeMod, type ModSearchParams, type ServerModsConfig, searchMods, getServerModsConfig } from '@/api/routes/server/mods';
 import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
 import Spinner from '@/elements/Spinner';
@@ -33,8 +33,6 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
             : 'modrinth'
     ) as ModSource;
     const { addError } = useFlash();
-    const contentLabel = contentType === 'plugins' ? 'Plugins' : 'Mods';
-    const contentLabelLower = contentType === 'plugins' ? 'plugins' : 'mods';
 
     const [loading, setLoading] = useState(false);
     const [mods, setMods] = useState<CurseForgeMod[]>([]);
@@ -47,6 +45,8 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
         totalCount: 0,
     });
     const [filtersMeta, setFiltersMeta] = useState<any>(null);
+    const [detectedConfig, setDetectedConfig] = useState<ServerModsConfig | null>(null);
+    const [configLoaded, setConfigLoaded] = useState(false);
 
     const [searchParams, setSearchParams] = useState<ModSearchParams>({
         searchFilter: '',
@@ -62,6 +62,23 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
         categoryId: undefined,
         resource: contentType,
     });
+
+    useEffect(() => {
+        getServerModsConfig(uuid)
+            .then(config => {
+                setDetectedConfig(config);
+                setSearchParams(prev => ({
+                    ...prev,
+                    gameVersion: config.detectedVersion ?? undefined,
+                    modLoaderType: config.detectedLoader?.id ?? undefined,
+                    platform: (contentType === 'plugins' && config.detectedPlatform) ? config.detectedPlatform : undefined,
+                }));
+            })
+            .catch(() => {
+                // If the endpoint fails, just proceed without pre-population
+            })
+            .finally(() => setConfigLoaded(true));
+    }, [uuid]);
 
     useEffect(() => {
         if (!sourceOverride) return;
@@ -85,7 +102,7 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
     }, [sourceOverride, contentType]);
 
     useEffect(() => {
-        if (!globalModsEnabled) return;
+        if (!globalModsEnabled || !configLoaded) return;
 
         setLoading(true);
         searchMods(uuid, searchParams)
@@ -101,7 +118,7 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             })
             .finally(() => setLoading(false));
-    }, [uuid, searchParams, globalModsEnabled]);
+    }, [uuid, searchParams, globalModsEnabled, configLoaded]);
 
     const handleSearch = (params: ModSearchParams) => {
         setSelectedMod(null); // Close modal when searching
@@ -125,45 +142,39 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
             ...searchParams,
             source,
             index: 0,
-            // Reset filters when switching sources
             searchFilter: '',
-            gameVersion: undefined,
-            modLoaderType: undefined,
+            gameVersion: source !== 'spigot' ? (detectedConfig?.detectedVersion ?? undefined) : undefined,
+            modLoaderType: source !== 'spigot' ? (detectedConfig?.detectedLoader?.id ?? undefined) : undefined,
+            platform: (source !== 'spigot' && contentType === 'plugins')
+                ? (detectedConfig?.detectedPlatform ?? undefined)
+                : undefined,
             sortField: source === 'spigot' ? 'downloads' : '2',
             minRating: undefined,
-            platform: undefined,
             categoryId: undefined,
             resource: contentType,
         });
         setFiltersMeta(null);
     };
 
+    const handleShowAll = () => {
+        setSearchParams(prev => ({ ...prev, gameVersion: undefined, modLoaderType: undefined, platform: undefined, index: 0 }));
+        setSelectedMod(null);
+    };
+
     if (!globalModsEnabled) {
         return (
-            <PageContentBlock
-                title={`${contentLabel} Browser`}
-                header
-                description={`Browse and install Minecraft ${contentLabelLower}.`}
-            >
-                <div css={tw`text-center py-16`}>
-                    <p css={tw`text-neutral-300 text-lg mb-4`}>The Mods module is not enabled.</p>
-                    <p css={tw`text-neutral-400 text-sm`}>
-                        Contact your panel administrator to enable the Mods module in the admin area.
-                    </p>
-                </div>
-            </PageContentBlock>
+            <div css={tw`text-center py-16`}>
+                <p css={tw`text-neutral-300 text-lg mb-4`}>The Mods module is not enabled.</p>
+                <p css={tw`text-neutral-400 text-sm`}>
+                    Contact your panel administrator to enable the Mods module in the admin area.
+                </p>
+            </div>
         );
     }
 
     return (
-        <PageContentBlock
-            title={`${contentLabel} Browser`}
-            header
-            description={`Browse and install Minecraft ${contentLabelLower} from ${
-                activeSource === 'modrinth' ? 'Modrinth' : activeSource === 'curseforge' ? 'CurseForge' : 'Spigot'
-            }.`}
-            showFlashKey={'mods'}
-        >
+        <>
+            <FlashMessageRender byKey={'mods'} css={tw`mb-4`} />
             {/* Source Tabs */}
             {!sourceOverride && (
                 <div css={tw`flex gap-2 mb-6 border-b border-neutral-700`}>
@@ -181,7 +192,7 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                     >
                         Modrinth
                     </button>
-                    {curseforgeConfigured && (
+                    {curseforgeConfigured && contentType !== 'plugins' && (
                         <button
                             css={[
                                 tw`px-4 py-2 font-medium transition-colors`,
@@ -222,6 +233,8 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                 source={activeSource}
                 contentType={contentType}
                 filtersMeta={filtersMeta}
+                detectedConfig={detectedConfig}
+                onShowAll={handleShowAll}
             />
 
             {loading && !mods.length ? (
@@ -233,6 +246,7 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                     mods={mods}
                     loading={loading}
                     contentType={contentType}
+                    gameVersion={searchParams.gameVersion}
                     pagination={pagination}
                     onModClick={handleModClick}
                     onPageChange={handlePageChange}
@@ -251,6 +265,6 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                     platform={searchParams.platform}
                 />
             )}
-        </PageContentBlock>
+        </>
     );
 };

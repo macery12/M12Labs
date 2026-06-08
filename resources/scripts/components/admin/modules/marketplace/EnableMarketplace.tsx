@@ -1,6 +1,6 @@
 import FeatureContainer from '@/elements/FeatureContainer';
 import { faCube } from '@fortawesome/free-solid-svg-icons';
-import ToggleFeatureButton from '@admin/modules/mods/ToggleFeatureButton';
+import ToggleFeatureButton from '@admin/modules/marketplace/ToggleFeatureButton';
 
 export default () => {
     return (

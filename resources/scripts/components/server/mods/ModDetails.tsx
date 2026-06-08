@@ -118,6 +118,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
     const { colors } = useStoreState(state => state.theme.data!);
+    const allowExternalDownloads = useStoreState(state => state.everest.data?.mods?.allow_external_downloads ?? false);
 
     const [files, setFiles] = useState<CurseForgeFile[]>([]);
     const [loading, setLoading] = useState(true);
@@ -130,6 +131,9 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
         if (!value) return null;
         try {
             const decoded = atob(value);
+            // Spiget descriptions arrive as base64-encoded HTML. We parse with DOMParser then
+            // read textContent (NOT innerHTML) so all tags are stripped — preserving this is
+            // essential; switching to innerHTML would introduce stored XSS from provider data.
             const doc = new DOMParser().parseFromString(decoded, 'text/html');
             return doc.body.textContent || '';
         } catch {
@@ -212,7 +216,14 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
 
                 <ModSummary>{mod.summary}</ModSummary>
 
-                {isExternal && (
+                {isExternal && allowExternalDownloads && (
+                    <div css={tw`mb-4 rounded-md border border-yellow-500 border-opacity-30 bg-yellow-500 bg-opacity-10 px-3 py-2 text-xs text-yellow-400`}>
+                        <strong>External source:</strong> This plugin is hosted outside of SpigotMC (e.g. GitHub or the
+                        author&apos;s website). Downloads from unknown sources have been enabled by your administrator.
+                    </div>
+                )}
+
+                {isExternal && !allowExternalDownloads && (
                     <Section>
                         <SectionTitle>External Download</SectionTitle>
                         <p css={tw`text-neutral-300 mb-3`}>
@@ -222,7 +233,8 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                         <div css={tw`flex gap-2 flex-wrap`}>
                             {externalUrl && (
                                 <button
-                                    css={tw`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors text-sm`}
+                                    css={tw`px-4 py-2 text-white rounded transition-colors text-sm`}
+                                    style={{ backgroundColor: colors.primary }}
                                     onClick={() => window.open(externalUrl, '_blank', 'noopener,noreferrer')}
                                     type="button"
                                 >
@@ -239,7 +251,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                         {mod.testedVersions && mod.testedVersions.length > 0 && (
                             <p css={tw`text-neutral-300 mb-2`}>
                                 Tested versions (provided by author, may be incomplete):{' '}
-                                <span css={tw`text-blue-300`}>{mod.testedVersions.join(', ')}</span>
+                                <span css={tw`text-neutral-300`}>{mod.testedVersions.join(', ')}</span>
                             </p>
                         )}
                         {descriptionText && (
@@ -286,7 +298,8 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                                 href={mod.file.externalUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                css={tw`text-blue-400 underline text-sm`}
+                                css={tw`underline text-sm`}
+                                style={{ color: colors.primary }}
                                 onClick={e => e.stopPropagation()}
                             >
                                 Open external download
@@ -300,10 +313,10 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                         Available Files
                         {(gameVersion || modLoaderType) && (
                             <span css={tw`ml-2 text-sm font-normal text-neutral-400`}>
-                                (Filtered: {gameVersion && <span css={tw`text-blue-400`}>{gameVersion}</span>}
+                                (Filtered: {gameVersion && <span style={{ color: colors.primary }}>{gameVersion}</span>}
                                 {gameVersion && modLoaderType && ' • '}
                                 {modLoaderType && (
-                                    <span css={tw`text-blue-400`}>{LOADER_NAMES[modLoaderType] || 'Unknown'}</span>
+                                    <span style={{ color: colors.primary }}>{LOADER_NAMES[modLoaderType] || 'Unknown'}</span>
                                 )}
                                 )
                             </span>
@@ -348,7 +361,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
                                             disabledReason={
                                                 isPremium
                                                     ? 'Premium (blocked)'
-                                                    : isExternal
+                                                    : isExternal && !allowExternalDownloads
                                                       ? 'External only'
                                                       : undefined
                                             }

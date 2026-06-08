@@ -17,7 +17,7 @@ const BillingRouter = lazy(() => import('@/components/admin/modules/billing/Bill
 const CustomDomainsRouter = lazy(() => import('@/components/admin/modules/customDomains/CustomDomainsRouter'));
 const TicketRouter = lazy(() => import('@/components/admin/modules/tickets/TicketRouter'));
 const AIRouter = lazy(() => import('@/components/admin/modules/ai/AIRouter'));
-const ModsRouter = lazy(() => import('@/components/admin/modules/mods/ModsRouter'));
+const ModsRouter = lazy(() => import('@/components/admin/modules/marketplace/MarketplaceRouter'));
 const EmailRouter = lazy(() => import('@/components/admin/modules/email/EmailRouter'));
 const WebhookRouter = lazy(() => import('@/components/admin/modules/webhooks/WebhookRouter'));
 const ExtensionsRouter = lazy(() => import('@/components/admin/modules/extensions/ExtensionsRouter'));

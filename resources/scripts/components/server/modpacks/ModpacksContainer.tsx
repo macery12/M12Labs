@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import { ServerContext } from '@/state/server';
 import { useStoreState } from '@/state/hooks';
-import PageContentBlock from '@/elements/PageContentBlock';
+import FlashMessageRender from '@/elements/FlashMessageRender';
 import ModpackSearch from './ModpackSearch';
 import ModpackList from './ModpackList';
 import ModpackDetails from './ModpackDetails';
@@ -102,51 +102,41 @@ export default () => {
 
     if (!globalModsEnabled) {
         return (
-            <PageContentBlock title={'Modpacks Browser'} header description={'Browse and install Minecraft modpacks.'}>
-                <div css={tw`text-center py-16`}>
-                    <p css={tw`text-neutral-300 text-lg mb-4`}>The Mods module is not enabled.</p>
-                    <p css={tw`text-neutral-400 text-sm`}>
-                        Contact your panel administrator to enable the Mods module in the admin area.
-                    </p>
-                </div>
-            </PageContentBlock>
+            <div css={tw`text-center py-16`}>
+                <p css={tw`text-neutral-300 text-lg mb-4`}>The Mods module is not enabled.</p>
+                <p css={tw`text-neutral-400 text-sm`}>
+                    Contact your panel administrator to enable the Mods module in the admin area.
+                </p>
+            </div>
         );
     }
 
     if (checkingSupport) {
         return (
-            <PageContentBlock title={'Modpacks Browser'} header description={'Browse and install Minecraft modpacks.'}>
-                <div css={tw`flex justify-center py-16`}>
-                    <Spinner size={'large'} />
-                </div>
-            </PageContentBlock>
+            <div css={tw`flex justify-center py-16`}>
+                <Spinner size={'large'} />
+            </div>
         );
     }
 
     if (!modpacksSupported) {
         return (
-            <PageContentBlock title={'Modpacks Browser'} header description={'Browse and install Minecraft modpacks.'}>
-                <div css={tw`text-center py-16`}>
-                    <p css={tw`text-neutral-300 text-lg mb-4`}>Your server does not have modpack support.</p>
-                    <p css={tw`text-neutral-400 text-sm mb-2`}>
-                        This server is not configured with the required environment variables for modpack installation.
-                    </p>
-                    <p css={tw`text-neutral-400 text-xs`}>
-                        Please contact an administrator to change your server to use a modpack-compatible egg (e.g.,
-                        CurseForge Generic).
-                    </p>
-                </div>
-            </PageContentBlock>
+            <div css={tw`text-center py-16`}>
+                <p css={tw`text-neutral-300 text-lg mb-4`}>Your server does not have modpack support.</p>
+                <p css={tw`text-neutral-400 text-sm mb-2`}>
+                    This server is not configured with the required environment variables for modpack installation.
+                </p>
+                <p css={tw`text-neutral-400 text-xs`}>
+                    Please contact an administrator to change your server to use a modpack-compatible egg (e.g.,
+                    CurseForge Generic).
+                </p>
+            </div>
         );
     }
 
     return (
-        <PageContentBlock
-            title={'Modpacks Browser'}
-            header
-            description={'Browse and install Minecraft modpacks from CurseForge.'}
-            showFlashKey={'modpacks'}
-        >
+        <>
+            <FlashMessageRender byKey={'modpacks'} css={tw`mb-4`} />
             <ModpackSearch onSearch={handleSearch} initialParams={searchParams} />
 
             {loading && !modpacks.length ? (
@@ -170,6 +160,6 @@ export default () => {
                     onClose={() => setSelectedModpack(null)}
                 />
             )}
-        </PageContentBlock>
+        </>
     );
 };

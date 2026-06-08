@@ -17,6 +17,8 @@ use Everest\Services\Mods\CurseForgeService;
 use Everest\Services\Mods\SpigetService;
 use Everest\Services\Plugins\ProviderAccessService;
 use Everest\Repositories\Wings\DaemonFileRepository;
+use Everest\Extensions\Packages\minecraft_startup_editor\MinecraftStartupOptions;
+use Everest\Models\MarketplaceInstallLog;
 use Everest\Services\Plugins\PluginInstallService;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
@@ -30,6 +32,17 @@ use Everest\Http\Requests\Api\Client\Servers\Mods\GetInstalledAddonsRequest;
 
 class ModsController extends ClientApiController
 {
+    /**
+     * Allowed hosts for CurseForge CDN download URLs.
+     * Validated before any HTTP request to prevent SSRF via a compromised API response.
+     */
+    private const CURSEFORGE_ALLOWED_HOSTS = [
+        'cdn.curseforge.com',
+        'edge.forgecdn.net',
+        'media.forgecdn.net',
+        'mediafilez.forgecdn.net',
+    ];
+
     /**
      * Directories to skip when scanning for installed addons.
      * These contain internal/remapped files that are not real user plugins.
@@ -134,6 +147,46 @@ class ModsController extends ClientApiController
 
         return response()->json([
             'providers' => $result,
+        ]);
+    }
+
+    public function serverConfig(Server $server): JsonResponse
+    {
+        $versionVarNames = ['MINECRAFT_VERSION', 'MC_VERSION', 'VANILLA_VERSION'];
+        $detectedVersion = null;
+        foreach ($server->variables as $variable) {
+            if (in_array($variable->env_variable, $versionVarNames, true) && !empty($variable->server_value)) {
+                $detectedVersion = $variable->server_value;
+                break;
+            }
+        }
+
+        $loaderName = MinecraftStartupOptions::detectLoader($server->egg->name ?? '');
+
+        // Plugin server platforms — not mod loaders
+        $pluginPlatforms = ['paper', 'spigot', 'bukkit', 'folia', 'purpur', 'velocity', 'waterfall', 'bungeecord', 'sponge'];
+
+        $detectedLoader   = null;
+        $detectedPlatform = null;
+
+        if ($loaderName !== null) {
+            if (in_array($loaderName, $pluginPlatforms, true)) {
+                $detectedPlatform = $loaderName;
+            } else {
+                $loaderIdMap = [
+                    'forge'    => ['id' => 1, 'name' => 'Forge',    'slug' => 'forge'],
+                    'neoforge' => ['id' => 6, 'name' => 'NeoForge', 'slug' => 'neoforge'],
+                    'fabric'   => ['id' => 4, 'name' => 'Fabric',   'slug' => 'fabric'],
+                    'quilt'    => ['id' => 5, 'name' => 'Quilt',    'slug' => 'quilt'],
+                ];
+                $detectedLoader = $loaderIdMap[$loaderName] ?? null;
+            }
+        }
+
+        return response()->json([
+            'detectedVersion'  => $detectedVersion,
+            'detectedLoader'   => $detectedLoader,
+            'detectedPlatform' => $detectedPlatform,
         ]);
     }
 
@@ -573,6 +626,7 @@ class ModsController extends ClientApiController
                     throw new ModsServiceException('Failed to create temporary file for modpack download.');
                 }
 
+                $this->validateCurseForgeDownloadUrl($downloadUrl);
                 $response = Http::timeout(300)->sink($fileHandle)->get($downloadUrl);
                 // Note: sink() automatically closes the file handle, so we don't call fclose() here
 
@@ -663,6 +717,11 @@ class ModsController extends ClientApiController
                 throw new ModsServiceException('Invalid modpack manifest format.');
             }
 
+            if (count($manifest['files']) > 500) {
+                $this->deleteDirectory($tempDir);
+                throw new ModsServiceException('Modpack contains too many mods (maximum 500).');
+            }
+
             // Create /mods folder if it doesn't exist
             try {
                 $this->fileRepository->setServer($server)->createDirectory('mods', '/');
@@ -690,7 +749,11 @@ class ModsController extends ClientApiController
 
                     // Get mod file details to get the filename (cached, serialized API call)
                     $modFileDetails = $this->curseForgeService->getModFile($projectId, $modFileId);
-                    $modFileName = $modFileDetails['data']['fileName'] ?? "mod_{$projectId}_{$modFileId}.jar";
+                    // basename() prevents path traversal if the API ever returns a crafted fileName
+                    $modFileName = basename($modFileDetails['data']['fileName'] ?? "mod_{$projectId}_{$modFileId}.jar");
+                    if ($modFileName === '' || $modFileName === '.' || $modFileName === '..') {
+                        $modFileName = "mod_{$projectId}_{$modFileId}.jar";
+                    }
 
                     // Download the mod file to a temporary location first to avoid memory issues
                     $tempModPath = $tempDir . '/temp_' . $modFileName;
@@ -703,6 +766,7 @@ class ModsController extends ClientApiController
                     }
 
                     try {
+                        $this->validateCurseForgeDownloadUrl($modDownloadUrl);
                         $modResponse = Http::timeout(120)->sink($modFileHandle)->get($modDownloadUrl);
                         // Note: sink() automatically closes the file handle, so we don't call fclose() here
 
@@ -740,6 +804,20 @@ class ModsController extends ClientApiController
 
             // Invalidate cache after modpack install.
             $this->invalidateInstalledCache($server, 'mods');
+
+            try {
+                MarketplaceInstallLog::create([
+                    'provider'        => 'curseforge',
+                    'type'            => 'modpack',
+                    'project_id'      => (string) $modpackId,
+                    'file_size_bytes' => $fileSize,
+                    'status'          => MarketplaceInstallLog::STATUS_SUCCESS,
+                    'server_id'       => $server->id,
+                    'user_id'         => auth()->id(),
+                ]);
+            } catch (\Exception) {
+                // never let analytics recording break the user-facing response
+            }
 
             return response()->json([
                 'success' => true,
@@ -1042,6 +1120,25 @@ class ModsController extends ClientApiController
                 $this->fileRepository->setServer($server)->putContent($remoteItemPath, $content);
             }
         }
+    }
+
+    /**
+     * Throw if the download URL does not resolve to a known CurseForge CDN host.
+     *
+     * @throws ModsServiceException
+     */
+    private function validateCurseForgeDownloadUrl(string $url): void
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!$host) {
+            throw new ModsServiceException('Invalid download URL: unable to parse host.');
+        }
+        foreach (self::CURSEFORGE_ALLOWED_HOSTS as $allowed) {
+            if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
+                return;
+            }
+        }
+        throw new ModsServiceException('Download URL host is not permitted.');
     }
 
     /**

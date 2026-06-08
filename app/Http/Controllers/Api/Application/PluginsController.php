@@ -6,6 +6,8 @@ use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Everest\Models\MarketplaceInstallLog;
 use Everest\Services\Email\EmailRedactor;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Services\Mods\CurseForgeService;
@@ -52,22 +54,51 @@ class PluginsController extends ApplicationApiController
         $curseForgeRateLimit = $this->curseForgeService->getRateLimitUsage();
         $modrinthRateLimit = $this->modrinthService->getRateLimitUsage();
 
+        $totalInstalls = MarketplaceInstallLog::where('status', MarketplaceInstallLog::STATUS_SUCCESS)->count();
+        $totalFailures = MarketplaceInstallLog::where('status', MarketplaceInstallLog::STATUS_FAILED)->count();
+        $totalBandwidth = MarketplaceInstallLog::where('status', MarketplaceInstallLog::STATUS_SUCCESS)->sum('file_size_bytes');
+        $bandwidth24h = MarketplaceInstallLog::where('status', MarketplaceInstallLog::STATUS_SUCCESS)
+            ->where('created_at', '>=', now()->subHours(24))
+            ->sum('file_size_bytes');
+
+        $byProvider = MarketplaceInstallLog::where('status', MarketplaceInstallLog::STATUS_SUCCESS)
+            ->select('provider', DB::raw('count(*) as count'))
+            ->groupBy('provider')
+            ->pluck('count', 'provider')
+            ->toArray();
+
+        $last24h = MarketplaceInstallLog::where('status', MarketplaceInstallLog::STATUS_SUCCESS)
+            ->where('created_at', '>=', now()->subHours(24))
+            ->select(DB::raw('DATE_FORMAT(created_at, "%Y-%m-%dT%H:00:00Z") as timestamp'), DB::raw('count(*) as installs'))
+            ->groupBy('timestamp')
+            ->orderBy('timestamp')
+            ->get()
+            ->toArray();
+
+        $last7d = MarketplaceInstallLog::where('status', MarketplaceInstallLog::STATUS_SUCCESS)
+            ->where('created_at', '>=', now()->subDays(7))
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as installs'))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->toArray();
+
         return response()->json([
             'totals' => [
-                'installs' => 0,
+                'installs' => $totalInstalls,
                 'by_provider' => [
-                    'modrinth' => 0,
-                    'curseforge' => 0,
-                    'spigot' => 0,
+                    'modrinth' => $byProvider['modrinth'] ?? 0,
+                    'curseforge' => $byProvider['curseforge'] ?? 0,
+                    'spigot' => $byProvider['spigot'] ?? 0,
                 ],
-                'failures' => 0,
+                'failures' => $totalFailures,
                 'retries' => 0,
-                'bandwidth_bytes' => 0,
-                'bandwidth_bytes_24h' => 0,
+                'bandwidth_bytes' => (int) $totalBandwidth,
+                'bandwidth_bytes_24h' => (int) $bandwidth24h,
             ],
             'trends' => [
-                'last_24h' => [],
-                'last_7d' => [],
+                'last_24h' => $last24h,
+                'last_7d' => $last7d,
             ],
             'provider_health' => [
                 'modrinth' => [

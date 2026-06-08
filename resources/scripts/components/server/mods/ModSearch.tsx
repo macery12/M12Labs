@@ -5,9 +5,32 @@ import Input from '@/elements/Input';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
 import { Button } from '@/elements/button';
-import { type ModSearchParams, getMinecraftVersions } from '@/api/routes/server/mods';
+import { type ModSearchParams, type ServerModsConfig, getMinecraftVersions } from '@/api/routes/server/mods';
 import { httpErrorToHuman } from '@/api/http';
 import useFlash from '@/plugins/useFlash';
+
+const PLACEHOLDER_VERSIONS = new Set(['latest', 'recommended', 'stable', 'release', 'current', 'snapshot', '0', '0.0', '0.0.0']);
+const isVersionPlaceholder = (v: string) => !!v && PLACEHOLDER_VERSIONS.has(v.toLowerCase().trim());
+
+const LOADER_OPTIONS = [
+    { value: '', label: 'All Loaders' },
+    { value: '1', label: 'Forge' },
+    { value: '4', label: 'Fabric' },
+    { value: '5', label: 'Quilt' },
+    { value: '6', label: 'NeoForge' },
+];
+
+const PLATFORM_DISPLAY_NAMES: Record<string, string> = {
+    paper: 'Paper',
+    spigot: 'Spigot',
+    bukkit: 'Bukkit',
+    folia: 'Folia',
+    purpur: 'Purpur',
+    velocity: 'Velocity',
+    waterfall: 'Waterfall',
+    bungeecord: 'BungeeCord',
+    sponge: 'Sponge',
+};
 
 interface Props {
     onSearch: (params: ModSearchParams) => void;
@@ -23,6 +46,8 @@ interface Props {
         };
         unsupported?: Record<string, string>;
     };
+    detectedConfig?: ServerModsConfig | null;
+    onShowAll?: () => void;
 }
 
 const DEFAULT_SORT_OPTIONS = [
@@ -34,7 +59,7 @@ const DEFAULT_SORT_OPTIONS = [
     { value: '6', label: 'Total Downloads' },
 ];
 
-export default ({ onSearch, initialParams, source, contentType = 'mods', filtersMeta }: Props) => {
+export default ({ onSearch, initialParams, source, contentType = 'mods', filtersMeta, detectedConfig, onShowAll }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
 
@@ -48,12 +73,17 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
         Array.isArray(initialParams.platform) ? (initialParams.platform[0] ?? '') : (initialParams.platform ?? ''),
     );
 
-    const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
+    // Sync all filter state from parent whenever the parent's params change (e.g. detected config applied)
     useEffect(() => {
-        if (contentType !== 'plugins' || source !== 'modrinth') {
-            setPlatform('');
-        }
-    }, [contentType, source]);
+        setGameVersion(initialParams.gameVersion || '');
+        setModLoaderType(initialParams.modLoaderType?.toString() || '');
+        const rawPlatform = Array.isArray(initialParams.platform)
+            ? (initialParams.platform[0] ?? '')
+            : (initialParams.platform ?? '');
+        setPlatform(rawPlatform);
+    }, [initialParams.gameVersion, initialParams.modLoaderType, initialParams.platform]);
+
+    const [minecraftVersions, setMinecraftVersions] = useState<string[]>([]);
 
     useEffect(() => {
         if (source === 'spigot') {
@@ -84,6 +114,27 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             });
     }, [uuid, source, contentType]);
+
+    // When versions load or gameVersion becomes a placeholder, resolve to the highest real version
+    useEffect(() => {
+        if (source === 'spigot' || minecraftVersions.length === 0) return;
+        if (!gameVersion || !isVersionPlaceholder(gameVersion)) return;
+
+        const resolved = minecraftVersions[0];
+        if (!resolved) return;
+        setGameVersion(resolved);
+        onSearch({
+            searchFilter: searchFilter || undefined,
+            sortField,
+            sortOrder: 'desc',
+            gameVersion: resolved,
+            modLoaderType: modLoaderType ? parseInt(modLoaderType, 10) : undefined,
+            platform: platform || undefined,
+            resource: contentType,
+            pageSize: 20,
+            index: 0,
+        });
+    }, [minecraftVersions, gameVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         if (source !== 'spigot') return;
@@ -121,17 +172,24 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
     };
 
     const handleClear = () => {
+        const detectedVersion = source !== 'spigot' ? (detectedConfig?.detectedVersion ?? '') : '';
+        const detectedLoader = source !== 'spigot' ? (detectedConfig?.detectedLoader?.id?.toString() ?? '') : '';
+        const detectedPlatformValue = (source !== 'spigot' && contentType === 'plugins')
+            ? (detectedConfig?.detectedPlatform ?? '')
+            : '';
         setSearchFilter('');
         setSortField(source === 'spigot' ? 'downloads' : '2');
-        setGameVersion('');
-        setModLoaderType('');
+        setGameVersion(detectedVersion);
+        setModLoaderType(detectedLoader);
         setCategoryId('');
         setMinRating('');
-        setPlatform('');
+        setPlatform(detectedPlatformValue);
         onSearch({
             sortField: source === 'spigot' ? 'downloads' : '2',
             sortOrder: 'desc',
-            platform: undefined,
+            gameVersion: detectedVersion || undefined,
+            modLoaderType: detectedLoader ? parseInt(detectedLoader, 10) : undefined,
+            platform: detectedPlatformValue || undefined,
             resource: contentType,
             pageSize: 20,
             index: 0,
@@ -153,7 +211,10 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
                   { id: 3.5, label: '3.5+' },
                   { id: 3.0, label: '3.0+' },
               ];
+
+    const isPluginServer = !!detectedConfig?.detectedPlatform;
     const showMinecraftVersion = source !== 'spigot';
+    const showModLoaderFilter = showMinecraftVersion && !isPluginServer && contentType !== 'plugins';
     const showPlatformFilter = contentType === 'plugins' && source === 'modrinth';
     const platformOptions = filtersMeta?.options?.platforms?.map(option => ({
         value: option.id,
@@ -171,9 +232,39 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
     ];
     const searchPlaceholder = contentType === 'plugins' ? 'Search plugins...' : 'Search mods...';
 
+    const detectedSoftwareLabel =
+        detectedConfig?.detectedLoader?.name ??
+        (detectedConfig?.detectedPlatform ? (PLATFORM_DISPLAY_NAMES[detectedConfig.detectedPlatform] ?? detectedConfig.detectedPlatform) : null);
+
+    const isFilteringByDetected =
+        source !== 'spigot' &&
+        detectedConfig &&
+        (detectedConfig.detectedVersion || detectedConfig.detectedLoader || detectedConfig.detectedPlatform);
+
+    const detectedLabel = [detectedConfig?.detectedVersion, detectedSoftwareLabel].filter(Boolean).join(' • ');
+
     return (
         <form onSubmit={handleSubmit}>
-            <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6`}>
+            {isFilteringByDetected && (
+                <div css={tw`flex items-center gap-3 mb-4 px-3 py-2 rounded text-sm bg-neutral-800 border border-neutral-700`}>
+                    <span css={tw`text-neutral-400`}>Detected:</span>
+                    <span css={tw`text-neutral-200 font-medium`}>{detectedLabel}</span>
+                    <span css={tw`text-neutral-500 text-xs`}>— filters pre-applied</span>
+                    <button
+                        type={'button'}
+                        css={tw`ml-auto text-xs text-neutral-400 hover:text-neutral-200 underline transition-colors`}
+                        onClick={() => {
+                            setGameVersion('');
+                            setModLoaderType('');
+                            setPlatform('');
+                            if (onShowAll) onShowAll();
+                        }}
+                    >
+                        Show all
+                    </button>
+                </div>
+            )}
+            <div css={tw`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6`}>
                 <div>
                     <Label>Search</Label>
                     <Input
@@ -209,20 +300,22 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
                     </div>
                 )}
 
-                <div>
-                    <Label>Sort By</Label>
-                    <Select value={sortField} onChange={e => setSortField(e.target.value)}>
-                        {sortOptions.map(option => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </Select>
-                </div>
+                {showModLoaderFilter && (
+                    <div>
+                        <Label>Mod Loader</Label>
+                        <Select value={modLoaderType} onChange={e => setModLoaderType(e.target.value)}>
+                            {LOADER_OPTIONS.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+                )}
 
                 {showPlatformFilter && (
                     <div>
-                        <Label>Platforms (any)</Label>
+                        <Label>Platform</Label>
                         <Select value={platform} onChange={e => setPlatform(e.target.value)}>
                             <option value="">Any Platform</option>
                             {platformOptions.map(option => (
@@ -233,6 +326,17 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
                         </Select>
                     </div>
                 )}
+
+                <div>
+                    <Label>Sort By</Label>
+                    <Select value={sortField} onChange={e => setSortField(e.target.value)}>
+                        {sortOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </Select>
+                </div>
 
                 {source === 'spigot' && (
                     <div>

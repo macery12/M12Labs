@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ProviderRulesResponse } from '@/api/routes/admin/plugins/providers';
-import * as providerApi from '@/api/routes/admin/plugins/providers';
+import type { ProviderRulesResponse } from '@/api/routes/admin/marketplace/providers';
+import * as providerApi from '@/api/routes/admin/marketplace/providers';
 import { saveAllProviders } from './AccessControlContainer';
 
 const sampleRules: ProviderRulesResponse = {

@@ -1,6 +1,6 @@
 import { Button } from '@/elements/button';
 import { useStoreState } from '@/state/hooks';
-import { updateSettings } from '@/api/routes/admin/mods/settings';
+import { updateSettings } from '@/api/routes/admin/marketplace/settings';
 
 export default () => {
     const mods = useStoreState(state => state.everest.data!.mods);

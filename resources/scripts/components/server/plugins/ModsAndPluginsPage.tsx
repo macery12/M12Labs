@@ -10,6 +10,8 @@ import { ContentType, getPluginCapabilities, PluginCapabilityResponse, ProviderK
 import { useStoreState } from '@/state/hooks';
 import { ServerContext } from '@/state/server';
 import InstalledAddonsList from '@server/plugins/InstalledAddonsList';
+import { getServerModsConfig, ServerModsConfig } from '@/api/routes/server/mods';
+import { ExclamationIcon } from '@heroicons/react/outline';
 
 type ContentTab = ContentType | 'installed';
 
@@ -59,6 +61,8 @@ const ModsAndPluginsPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [providerAccess, setProviderAccess] = useState<PluginCapabilityResponse | null>(null);
     const [loadingProviders, setLoadingProviders] = useState(true);
+    const [detectedConfig, setDetectedConfig] = useState<ServerModsConfig | null>(null);
+    const [compatDismissed, setCompatDismissed] = useState(false);
 
     const modsFeatureEnabled = modSettings?.enabled ?? false;
     const curseforgeConfigured = !!modSettings?.curseforge_api_key;
@@ -74,6 +78,11 @@ const ModsAndPluginsPage = () => {
         getPluginCapabilities(uuid)
             .then(setProviderAccess)
             .finally(() => setLoadingProviders(false));
+    }, [uuid]);
+
+    useEffect(() => {
+        if (!uuid) return;
+        getServerModsConfig(uuid).then(setDetectedConfig).catch(() => {});
     }, [uuid]);
 
     const providersByType = useMemo<ProvidersByType>(() => {
@@ -134,6 +143,10 @@ const ModsAndPluginsPage = () => {
     );
 
     useEffect(() => {
+        setCompatDismissed(false);
+    }, [activeType]);
+
+    useEffect(() => {
         const resolvedType = resolveActive(activeType, availableContentTypes);
         const preferred = resolvedType ?? defaultType;
         if (preferred !== activeType) {
@@ -179,6 +192,85 @@ const ModsAndPluginsPage = () => {
             </div>
         ) : null;
 
+    const renderCompatWarning = () => {
+        if (compatDismissed || !detectedConfig) return null;
+
+        if ((activeType === 'mods' || activeType === 'modpacks') && detectedConfig.detectedPlatform) {
+            const platform = detectedConfig.detectedPlatform;
+            const label = activeType === 'mods' ? 'mods' : 'modpacks';
+            const canSwitchToPlugins = availableContentTypes.includes('plugins');
+            return (
+                <div className={'mb-5 flex items-start gap-3 rounded-lg border border-amber-700 bg-amber-950 p-4'}>
+                    <ExclamationIcon className={'h-5 w-5 flex-shrink-0 text-amber-400 mt-0.5'} />
+                    <div className={'flex-1'}>
+                        <p className={'text-sm font-medium text-amber-300'}>
+                            Your server software (<span className={'capitalize'}>{platform}</span>) is a plugin-based platform that does not support {label}.
+                        </p>
+                        <p className={'text-xs text-amber-500 mt-1'}>
+                            {label === 'mods' ? 'Mods require a mod loader like Forge or Fabric.' : 'Modpacks require a mod loader like Forge or Fabric.'} You may want to browse Plugins instead.
+                        </p>
+                        <div className={'flex gap-2 mt-3'}>
+                            {canSwitchToPlugins && (
+                                <button
+                                    className={'rounded px-3 py-1.5 text-xs font-medium bg-neutral-700 hover:bg-neutral-600 text-neutral-100 transition-colors'}
+                                    onClick={() => setActiveType('plugins')}
+                                    type="button"
+                                >
+                                    Go to Plugins
+                                </button>
+                            )}
+                            <button
+                                className={'px-3 py-1.5 text-xs font-medium text-amber-400 hover:text-amber-300 transition-colors'}
+                                onClick={() => setCompatDismissed(true)}
+                                type="button"
+                            >
+                                Proceed Anyway
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (activeType === 'plugins' && detectedConfig.detectedLoader) {
+            const loaderName = detectedConfig.detectedLoader.name;
+            const canSwitchToMods = availableContentTypes.includes('mods');
+            return (
+                <div className={'mb-5 flex items-start gap-3 rounded-lg border border-amber-700 bg-amber-950 p-4'}>
+                    <ExclamationIcon className={'h-5 w-5 flex-shrink-0 text-amber-400 mt-0.5'} />
+                    <div className={'flex-1'}>
+                        <p className={'text-sm font-medium text-amber-300'}>
+                            Your server software (<span className={'font-semibold'}>{loaderName}</span>) is a mod loader that does not support plugins.
+                        </p>
+                        <p className={'text-xs text-amber-500 mt-1'}>
+                            Plugins require a plugin-based platform like Spigot or Paper. You may want to browse Mods instead.
+                        </p>
+                        <div className={'flex gap-2 mt-3'}>
+                            {canSwitchToMods && (
+                                <button
+                                    className={'rounded px-3 py-1.5 text-xs font-medium bg-neutral-700 hover:bg-neutral-600 text-neutral-100 transition-colors'}
+                                    onClick={() => setActiveType('mods')}
+                                    type="button"
+                                >
+                                    Go to Mods
+                                </button>
+                            )}
+                            <button
+                                className={'px-3 py-1.5 text-xs font-medium text-amber-400 hover:text-amber-300 transition-colors'}
+                                onClick={() => setCompatDismissed(true)}
+                                type="button"
+                            >
+                                Proceed Anyway
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        return null;
+    };
+
     const renderContent = () => {
         if (loadingProviders && activeType !== 'installed') {
             return <Spinner size={'large'} centered />;
@@ -196,12 +288,14 @@ const ModsAndPluginsPage = () => {
 
         if (activeType === 'mods') {
             if (!activeProvider) return null;
+            const modsBlocked = !!detectedConfig?.detectedPlatform && !compatDismissed;
             return (
                 <>
-                    {renderProviderTabs(providersByType.mods, activeProvider)}
-                    {activeProvider === 'modrinth' && <ModsContainer sourceOverride="modrinth" />}
-                    {activeProvider === 'curseforge' && <ModsContainer sourceOverride="curseforge" />}
-                    {activeProvider === 'spigot' && <ModsContainer sourceOverride="spigot" />}
+                    {renderCompatWarning()}
+                    {!modsBlocked && renderProviderTabs(providersByType.mods, activeProvider)}
+                    {!modsBlocked && activeProvider === 'modrinth' && <ModsContainer sourceOverride="modrinth" />}
+                    {!modsBlocked && activeProvider === 'curseforge' && <ModsContainer sourceOverride="curseforge" />}
+                    {!modsBlocked && activeProvider === 'spigot' && <ModsContainer sourceOverride="spigot" />}
                 </>
             );
         }
@@ -210,8 +304,13 @@ const ModsAndPluginsPage = () => {
             const modpackProvider = activeProvider ?? providersByType.modpacks[0] ?? null;
             return (
                 <>
-                    {renderProviderTabs(providersByType.modpacks, modpackProvider)}
-                    {modpackProvider === 'curseforge' ? <ModpacksContainer /> : <ComingSoon label={'Modpacks'} />}
+                    {renderCompatWarning()}
+                    {(!compatDismissed && detectedConfig?.detectedPlatform) ? null : (
+                        <>
+                            {renderProviderTabs(providersByType.modpacks, modpackProvider)}
+                            {modpackProvider === 'curseforge' ? <ModpacksContainer /> : <ComingSoon label={'Modpacks'} />}
+                        </>
+                    )}
                 </>
             );
         }
@@ -220,14 +319,19 @@ const ModsAndPluginsPage = () => {
             const pluginProvider = activeProvider ?? providersByType.plugins[0] ?? null;
             return (
                 <>
-                    {renderProviderTabs(providersByType.plugins, pluginProvider)}
-                    {pluginProvider === 'spigot' ? (
-                        <ModsContainer sourceOverride="spigot" contentType="plugins" />
-                    ) : null}
-                    {pluginProvider === 'modrinth' ? (
-                        <ModsContainer sourceOverride="modrinth" contentType="plugins" />
-                    ) : null}
-                    {!['spigot', 'modrinth'].includes(pluginProvider ?? '') && <ComingSoon label={'Plugins'} />}
+                    {renderCompatWarning()}
+                    {(!compatDismissed && detectedConfig?.detectedLoader) ? null : (
+                        <>
+                            {renderProviderTabs(providersByType.plugins, pluginProvider)}
+                            {pluginProvider === 'spigot' ? (
+                                <ModsContainer sourceOverride="spigot" contentType="plugins" />
+                            ) : null}
+                            {pluginProvider === 'modrinth' ? (
+                                <ModsContainer sourceOverride="modrinth" contentType="plugins" />
+                            ) : null}
+                            {!['spigot', 'modrinth'].includes(pluginProvider ?? '') && <ComingSoon label={'Plugins'} />}
+                        </>
+                    )}
                 </>
             );
         }

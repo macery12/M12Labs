@@ -18,6 +18,7 @@ interface Props {
     mods: CurseForgeMod[];
     loading: boolean;
     contentType?: 'mods' | 'plugins';
+    gameVersion?: string;
     pagination: {
         index: number;
         pageSize: number;
@@ -82,7 +83,7 @@ const PaginationButton = styled(Button)`
     }
 `;
 
-export default ({ mods, loading, contentType = 'mods', pagination, onModClick, onPageChange }: Props) => {
+export default ({ mods, loading, contentType = 'mods', gameVersion, pagination, onModClick, onPageChange }: Props) => {
     const { background } = useStoreState(state => state.theme.data!.colors);
     const contentLabelLower = contentType === 'plugins' ? 'plugins' : 'mods';
 
@@ -121,7 +122,11 @@ export default ({ mods, loading, contentType = 'mods', pagination, onModClick, o
                 <div css={tw`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3`}>
                     {mods.map(mod => {
                         const latestFile = mod.latestFiles?.[0];
-                        const gameVersion = latestFile?.gameVersions?.[0] || 'Unknown';
+                        const displayVersion =
+                            latestFile?.gameVersions?.[0] ||
+                            mod.latestFilesIndexes?.[0]?.gameVersion ||
+                            gameVersion ||
+                            undefined;
                         const downloadCount =
                             mod.downloadCount >= 1000000
                                 ? `${(mod.downloadCount / 1000000).toFixed(1)}M`
@@ -168,10 +173,12 @@ export default ({ mods, loading, contentType = 'mods', pagination, onModClick, o
                                     </ModInfo>
                                 </ModHeader>
                                 <ModStats>
-                                    <StatItem>
-                                        <StatLabel>Version:</StatLabel>
-                                        <StatValue>{gameVersion}</StatValue>
-                                    </StatItem>
+                                    {displayVersion && (
+                                        <StatItem>
+                                            <StatLabel>Version:</StatLabel>
+                                            <StatValue>{displayVersion}</StatValue>
+                                        </StatItem>
+                                    )}
                                     <StatItem css={tw`ml-auto`}>
                                         <FontAwesomeIcon icon={faDownload} css={tw`text-neutral-500`} />
                                         <StatValue>{downloadCount}</StatValue>

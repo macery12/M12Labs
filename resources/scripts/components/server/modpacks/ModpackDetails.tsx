@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import styled from 'styled-components';
+import { useStoreState } from '@/state/hooks';
 import Modal from '@/elements/Modal';
 import { type CurseForgeModpack, type CurseForgeFile, getModpackFiles } from '@/api/routes/server/modpacks';
 import { ServerContext } from '@/state/server';
@@ -57,8 +58,9 @@ const FileList = styled.div`
     ${tw`space-y-2`}
 `;
 
-const FileItem = styled.div`
-    ${tw`bg-neutral-700 rounded p-3 flex items-center justify-between`}
+const FileItem = styled.div<{ $backgroundColor?: string }>`
+    ${tw`rounded p-3 flex items-center justify-between`}
+    background-color: ${props => props.$backgroundColor || '#404040'};
 `;
 
 const FileInfo = styled.div`
@@ -102,6 +104,7 @@ const getReleaseTypeColor = (type: number) => {
 export default ({ modpack, onClose }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { addError } = useFlash();
+    const { colors } = useStoreState(state => state.theme.data!);
 
     const [files, setFiles] = useState<CurseForgeFile[]>([]);
     const [loading, setLoading] = useState(true);
@@ -161,7 +164,7 @@ export default ({ modpack, onClose }: Props) => {
                         <FadeTransition duration="duration-150" show>
                             <FileList>
                                 {displayFiles.map(file => (
-                                    <FileItem key={file.id}>
+                                    <FileItem key={file.id} $backgroundColor={colors.secondary}>
                                         <FileInfo>
                                             <FileName>{file.displayName}</FileName>
                                             <FileDetails>
