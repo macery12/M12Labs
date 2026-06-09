@@ -10,7 +10,6 @@ use Everest\Models\Billing\Product;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Services\Plugins\Adapters\SpigetProviderAdapter;
 use Everest\Services\Plugins\Adapters\ModrinthProviderAdapter;
-use Everest\Services\Plugins\Adapters\CurseForgeProviderAdapter;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
 use Everest\Models\MarketplaceInstallLog;
 
@@ -27,13 +26,11 @@ class PluginInstallService
     private const BODY_PREVIEW_READ_BYTES = 512;
 
     public function __construct(
-        CurseForgeProviderAdapter $curseForgeProviderAdapter,
         ModrinthProviderAdapter $modrinthProviderAdapter,
         SpigetProviderAdapter $spigetProviderAdapter,
         private DaemonFileRepository $fileRepository
     ) {
         $this->adapters = [
-            'curseforge' => $curseForgeProviderAdapter,
             'modrinth' => $modrinthProviderAdapter,
             'spiget' => $spigetProviderAdapter,
             'spigot' => $spigetProviderAdapter,
@@ -333,14 +330,9 @@ class PluginInstallService
     private function validateProviderEnabled(string $provider): void
     {
         $modsEnabled = (bool) Setting::get('settings::modules:mods:enabled', config('modules.mods.enabled', false));
-        $curseforgeKey = Setting::get('settings::modules:mods:curseforge_api_key', config('modules.mods.curseforge_api_key'));
 
         if (!$modsEnabled) {
             throw new ModsServiceException('Mods module is not enabled.');
-        }
-
-        if ($provider === 'curseforge' && empty($curseforgeKey)) {
-            throw new ModsServiceException('CurseForge is not configured.');
         }
     }
 

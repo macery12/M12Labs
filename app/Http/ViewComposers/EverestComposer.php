@@ -103,13 +103,8 @@ class EverestComposer
             ],
             'mods' => [
                 'enabled' => boolval(Setting::get('settings::modules:mods:enabled', config('modules.mods.enabled', false))),
-                'curseforge_api_key' => !empty(Setting::get('settings::modules:mods:curseforge_api_key', config('modules.mods.curseforge_api_key'))),
                 'default_source' => Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth')),
                 'allow_external_downloads' => (bool) Setting::get('settings::modules:mods:allow_external_downloads', config('modules.mods.allow_external_downloads', false)),
-                'rate_limit' => [
-                    'requests_per_minute' => config('modules.mods.rate_limit.requests_per_minute', 30),
-                    'requests_per_hour' => config('modules.mods.rate_limit.requests_per_hour', 1800),
-                ],
             ],
             'extensions' => [
                 'enabled' => boolval(config('modules.extensions.enabled', false)),

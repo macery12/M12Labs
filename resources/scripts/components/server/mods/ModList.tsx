@@ -1,6 +1,6 @@
 import tw from 'twin.macro';
 import styled from 'styled-components';
-import { type CurseForgeMod } from '@/api/routes/server/mods';
+import { type Mod } from '@/api/routes/server/mods';
 import Spinner from '@/elements/Spinner';
 import { Button } from '@/elements/button';
 import FadeTransition from '@/elements/transitions/FadeTransition';
@@ -15,7 +15,7 @@ import {
 import { useStoreState } from '@/state/hooks';
 
 interface Props {
-    mods: CurseForgeMod[];
+    mods: Mod[];
     loading: boolean;
     contentType?: 'mods' | 'plugins';
     gameVersion?: string;
@@ -25,7 +25,7 @@ interface Props {
         resultCount: number;
         totalCount: number;
     };
-    onModClick: (mod: CurseForgeMod) => void;
+    onModClick: (mod: Mod) => void;
     onPageChange: (index: number) => void;
 }
 

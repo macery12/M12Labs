@@ -212,7 +212,6 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::group(['prefix' => '/plugins'], function () {
         Route::put('/settings', [Application\PluginsController::class, 'update']);
         Route::get('/analytics', [Application\PluginsController::class, 'analytics']);
-        Route::delete('/key', [Application\PluginsController::class, 'resetKey']);
 
         Route::get('/providers', [Application\PluginProviderRulesController::class, 'index']);
         Route::put('/providers', [Application\PluginProviderRulesController::class, 'update']);
@@ -222,7 +221,6 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::group(['prefix' => '/mods'], function () {
         Route::put('/settings', [Application\PluginsController::class, 'update']);
         Route::get('/analytics', [Application\PluginsController::class, 'analytics']);
-        Route::delete('/key', [Application\PluginsController::class, 'resetKey']);
     });
 
     /*

@@ -11,8 +11,7 @@ class UpdateModsSettingsRequest extends ApplicationApiRequest
     {
         return [
             'enabled' => 'nullable|bool',
-            'default_source' => 'nullable|string|in:modrinth,curseforge,spigot,spiget',
-            'curseforge_api_key' => 'nullable|string|min:10|max:255',
+            'default_source' => 'nullable|string|in:modrinth,spigot,spiget',
             'spiget_enabled' => 'nullable|bool',
             'allow_external_downloads' => 'nullable|bool',
         ];

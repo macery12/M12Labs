@@ -4,7 +4,6 @@ import tw from 'twin.macro';
 import PageContentBlock from '@/elements/PageContentBlock';
 import Spinner from '@/elements/Spinner';
 import ModsContainer from '@server/mods/ModsContainer';
-import ModpacksContainer from '@server/modpacks/ModpacksContainer';
 import ContentTypeTabPanel from '@server/plugins/ContentTypeTabPanel';
 import { ContentType, getPluginCapabilities, PluginCapabilityResponse, ProviderKey } from '@/api/routes/server/plugins';
 import { useStoreState } from '@/state/hooks';
@@ -17,20 +16,18 @@ type ContentTab = ContentType | 'installed';
 
 const contentLabels: Record<ContentTab, string> = {
     mods: 'Mods',
-    modpacks: 'Modpacks',
     plugins: 'Plugins',
     installed: 'Installed',
 };
 
 const providerLabels: Record<ProviderKey, string> = {
     modrinth: 'Modrinth',
-    curseforge: 'CurseForge',
     spigot: 'Spigot',
 };
 
 const EmptyState = () => (
     <div css={tw`py-12 text-center`}>
-        <p css={tw`text-lg text-neutral-200 mb-2`}>No marketplace integrations are enabled for this server’s egg.</p>
+        <p css={tw`text-lg text-neutral-200 mb-2`}>No marketplace integrations are enabled for this server's egg.</p>
         <p css={tw`text-sm text-neutral-400`}>
             Ask your admin to enable providers in Admin → Plugins → Access Control.
         </p>
@@ -41,13 +38,13 @@ const ComingSoon = ({ label }: { label: string }) => (
     <div css={tw`py-12 text-center text-neutral-300`}>{label} (coming soon)</div>
 );
 
-const contentOrder: ContentTab[] = ['installed', 'mods', 'modpacks', 'plugins'];
+const contentOrder: ContentTab[] = ['installed', 'mods', 'plugins'];
 
 const resolveActive = <T,>(preferred: T | null, available: T[]): T | null =>
     preferred && available.includes(preferred) ? preferred : (available[0] ?? null);
 
 type ProvidersByType = Record<ContentType, ProviderKey[]>;
-const marketplaceTypes: ContentType[] = ['mods', 'modpacks', 'plugins'];
+const marketplaceTypes: ContentType[] = ['mods', 'plugins'];
 const isMarketplaceType = (type: ContentTab | null): type is ContentType =>
     !!type && marketplaceTypes.includes(type as ContentType);
 
@@ -65,11 +62,10 @@ const ModsAndPluginsPage = () => {
     const [compatDismissed, setCompatDismissed] = useState(false);
 
     const modsFeatureEnabled = modSettings?.enabled ?? false;
-    const curseforgeConfigured = !!modSettings?.curseforge_api_key;
 
     useEffect(() => {
         if (!uuid) {
-            setProviderAccess({ mods: [], modpacks: [], plugins: [] });
+            setProviderAccess({ mods: [], plugins: [] });
             setLoadingProviders(false);
             return;
         }
@@ -87,26 +83,18 @@ const ModsAndPluginsPage = () => {
 
     const providersByType = useMemo<ProvidersByType>(() => {
         if (!modsFeatureEnabled || !providerAccess) {
-            return { mods: [], modpacks: [], plugins: [] };
+            return { mods: [], plugins: [] };
         }
 
-        const filterByConfig = (providers: ProviderKey[]) =>
-            providers.filter(provider => {
-                if (provider === 'curseforge' && !curseforgeConfigured) return false;
-                return true;
-            });
-
         return {
-            mods: filterByConfig(providerAccess.mods ?? []),
-            modpacks: filterByConfig(providerAccess.modpacks ?? []),
-            plugins: filterByConfig(providerAccess.plugins ?? []),
+            mods: providerAccess.mods ?? [],
+            plugins: providerAccess.plugins ?? [],
         };
-    }, [modsFeatureEnabled, providerAccess, curseforgeConfigured]);
+    }, [modsFeatureEnabled, providerAccess]);
 
     const availableContentTypes = useMemo(() => {
         const result: ContentTab[] = ['installed'];
         if (providersByType.mods.length) result.push('mods');
-        if (providersByType.modpacks.length) result.push('modpacks');
         if (providersByType.plugins.length) result.push('plugins');
         return result;
     }, [providersByType]);
@@ -128,7 +116,6 @@ const ModsAndPluginsPage = () => {
     const initialProvider = (searchParams.get('provider') as ProviderKey | null) ?? lastMarketplaceState?.provider;
     const providerPools: Record<ContentType, ProviderKey[]> = {
         mods: providersByType.mods,
-        modpacks: providersByType.modpacks,
         plugins: providersByType.plugins,
     };
     const initialProviderPool = isMarketplaceType(initialType) ? providerPools[initialType] : providersByType.mods;
@@ -195,19 +182,18 @@ const ModsAndPluginsPage = () => {
     const renderCompatWarning = () => {
         if (compatDismissed || !detectedConfig) return null;
 
-        if ((activeType === 'mods' || activeType === 'modpacks') && detectedConfig.detectedPlatform) {
+        if (activeType === 'mods' && detectedConfig.detectedPlatform) {
             const platform = detectedConfig.detectedPlatform;
-            const label = activeType === 'mods' ? 'mods' : 'modpacks';
             const canSwitchToPlugins = availableContentTypes.includes('plugins');
             return (
                 <div className={'mb-5 flex items-start gap-3 rounded-lg border border-amber-700 bg-amber-950 p-4'}>
                     <ExclamationIcon className={'h-5 w-5 flex-shrink-0 text-amber-400 mt-0.5'} />
                     <div className={'flex-1'}>
                         <p className={'text-sm font-medium text-amber-300'}>
-                            Your server software (<span className={'capitalize'}>{platform}</span>) is a plugin-based platform that does not support {label}.
+                            Your server software (<span className={'capitalize'}>{platform}</span>) is a plugin-based platform that does not support mods.
                         </p>
                         <p className={'text-xs text-amber-500 mt-1'}>
-                            {label === 'mods' ? 'Mods require a mod loader like Forge or Fabric.' : 'Modpacks require a mod loader like Forge or Fabric.'} You may want to browse Plugins instead.
+                            Mods require a mod loader like Forge or Fabric. You may want to browse Plugins instead.
                         </p>
                         <div className={'flex gap-2 mt-3'}>
                             {canSwitchToPlugins && (
@@ -294,23 +280,7 @@ const ModsAndPluginsPage = () => {
                     {renderCompatWarning()}
                     {!modsBlocked && renderProviderTabs(providersByType.mods, activeProvider)}
                     {!modsBlocked && activeProvider === 'modrinth' && <ModsContainer sourceOverride="modrinth" />}
-                    {!modsBlocked && activeProvider === 'curseforge' && <ModsContainer sourceOverride="curseforge" />}
                     {!modsBlocked && activeProvider === 'spigot' && <ModsContainer sourceOverride="spigot" />}
-                </>
-            );
-        }
-
-        if (activeType === 'modpacks') {
-            const modpackProvider = activeProvider ?? providersByType.modpacks[0] ?? null;
-            return (
-                <>
-                    {renderCompatWarning()}
-                    {(!compatDismissed && detectedConfig?.detectedPlatform) ? null : (
-                        <>
-                            {renderProviderTabs(providersByType.modpacks, modpackProvider)}
-                            {modpackProvider === 'curseforge' ? <ModpacksContainer /> : <ComingSoon label={'Modpacks'} />}
-                        </>
-                    )}
                 </>
             );
         }

@@ -24,12 +24,6 @@ const sampleRules: ProviderRulesResponse = {
             allowed_nest_ids: [],
             allowed_egg_ids: [],
         },
-        curseforge: {
-            provider_key: 'curseforge',
-            enabled_global: true,
-            allowed_nest_ids: [],
-            allowed_egg_ids: [],
-        },
         'spigot.plugins': {
             provider_key: 'spigot.plugins',
             enabled_global: true,
@@ -55,7 +49,7 @@ describe('saveAllProviders', () => {
     it('updates every provider and returns refreshed rules', async () => {
         const result = await saveAllProviders(sampleRules);
 
-        expect(mockUpdateProviderRules).toHaveBeenCalledTimes(4);
+        expect(mockUpdateProviderRules).toHaveBeenCalledTimes(3);
         expect(mockUpdateProviderRules).toHaveBeenCalledWith(
             expect.objectContaining({ provider_key: 'modrinth.mods', enabled_global: true }),
         );

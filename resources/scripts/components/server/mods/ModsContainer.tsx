@@ -6,12 +6,12 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 import ModSearch from './ModSearch';
 import ModList from './ModList';
 import ModDetails from './ModDetails';
-import { type CurseForgeMod, type ModSearchParams, type ServerModsConfig, searchMods, getServerModsConfig } from '@/api/routes/server/mods';
+import { type Mod, type ModSearchParams, type ServerModsConfig, searchMods, getServerModsConfig } from '@/api/routes/server/mods';
 import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
 import Spinner from '@/elements/Spinner';
 
-type ModSource = 'modrinth' | 'curseforge' | 'spigot';
+type ModSource = 'modrinth' | 'spigot';
 
 interface Props {
     sourceOverride?: ModSource;
@@ -22,11 +22,10 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { colors } = useStoreState(state => state.theme.data!);
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
-    const curseforgeConfigured = useStoreState(state => state.everest.data?.mods?.curseforge_api_key ?? false);
     const spigotEnabled = useStoreState(state => state.everest.data?.mods?.spiget_enabled ?? false);
     const defaultSource = useStoreState(state => state.everest.data?.mods?.default_source ?? 'modrinth');
     const normalizedDefaultSource = defaultSource === 'spiget' ? 'spigot' : defaultSource;
-    const validSources: ModSource[] = ['modrinth', 'curseforge', 'spigot'];
+    const validSources: ModSource[] = ['modrinth', 'spigot'];
     const resolvedDefaultSource = (
         validSources.includes(normalizedDefaultSource as ModSource)
             ? (normalizedDefaultSource as ModSource)
@@ -35,8 +34,8 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
     const { addError } = useFlash();
 
     const [loading, setLoading] = useState(false);
-    const [mods, setMods] = useState<CurseForgeMod[]>([]);
-    const [selectedMod, setSelectedMod] = useState<CurseForgeMod | null>(null);
+    const [mods, setMods] = useState<Mod[]>([]);
+    const [selectedMod, setSelectedMod] = useState<Mod | null>(null);
     const [activeSource, setActiveSource] = useState<ModSource>(sourceOverride ?? resolvedDefaultSource);
     const [pagination, setPagination] = useState({
         index: 0,
@@ -130,7 +129,7 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
         setSearchParams({ ...searchParams, index: newIndex });
     };
 
-    const handleModClick = (mod: CurseForgeMod) => {
+    const handleModClick = (mod: Mod) => {
         setSelectedMod(mod);
     };
 
@@ -192,22 +191,6 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
                     >
                         Modrinth
                     </button>
-                    {curseforgeConfigured && contentType !== 'plugins' && (
-                        <button
-                            css={[
-                                tw`px-4 py-2 font-medium transition-colors`,
-                                activeSource !== 'curseforge' && tw`text-neutral-400 hover:text-neutral-300`,
-                            ]}
-                            style={
-                                activeSource === 'curseforge'
-                                    ? { color: colors.primary, borderBottom: `2px solid ${colors.primary}` }
-                                    : undefined
-                            }
-                            onClick={() => handleSourceChange('curseforge')}
-                        >
-                            CurseForge
-                        </button>
-                    )}
                     {spigotEnabled && (
                         <button
                             css={[

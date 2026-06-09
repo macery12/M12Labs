@@ -1,11 +1,10 @@
 import http, { PaginatedResult } from '@/api/http';
 
-export type ProviderKey = 'modrinth' | 'curseforge' | 'spigot';
-export type ContentType = 'mods' | 'modpacks' | 'plugins';
+export type ProviderKey = 'modrinth' | 'spigot';
+export type ContentType = 'mods' | 'plugins';
 
 export interface PluginCapabilityResponse {
     mods: ProviderKey[];
-    modpacks: ProviderKey[];
     plugins: ProviderKey[];
 }
 

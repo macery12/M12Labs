@@ -1,7 +1,6 @@
 import http from '@/api/http';
 
 export interface MarketplaceSettings {
-    curseforge_api_key?: string | boolean;
     enabled?: boolean;
     default_source?: string;
     allow_external_downloads?: boolean;
@@ -20,7 +19,7 @@ export interface RateLimitUsage {
 export interface MarketplaceAnalytics {
     totals: {
         installs: number;
-        by_provider: { modrinth: number; curseforge: number; spigot: number };
+        by_provider: { modrinth: number; spigot: number };
         failures: number;
         retries: number;
         bandwidth_bytes: number;
@@ -43,4 +42,3 @@ export interface MarketplaceAnalytics {
 export const getMarketplaceAnalytics = (): Promise<MarketplaceAnalytics> =>
     http.get(`/api/application/plugins/analytics`).then(({ data }) => data);
 
-export const resetCurseForgeKey = (): Promise<void> => http.delete(`/api/application/plugins/key`).then(() => {});

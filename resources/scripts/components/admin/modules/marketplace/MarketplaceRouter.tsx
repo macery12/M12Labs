@@ -33,7 +33,7 @@ export default () => {
                             'hidden overflow-hidden overflow-ellipsis whitespace-nowrap text-base text-neutral-400 lg:block'
                         }
                     >
-                        Integrate Modrinth, CurseForge, and Spiget for add-ons, mods, and plugins.
+                        Integrate Modrinth and Spigot for add-ons, mods, and plugins.
                     </p>
                 </div>
             </div>

@@ -8,7 +8,7 @@ export interface ModSearchParams {
     modLoaderType?: number;
     pageSize?: number;
     index?: number;
-    source?: 'modrinth' | 'curseforge' | 'spigot';
+    source?: 'modrinth' | 'spigot';
     categoryId?: number;
     minRating?: number;
     resource?: 'mods' | 'plugins';
@@ -20,18 +20,18 @@ export interface ModFileParams {
     modLoaderType?: number;
     pageSize?: number;
     index?: number;
-    source?: 'modrinth' | 'curseforge' | 'spigot';
+    source?: 'modrinth' | 'spigot';
     resource?: 'mods' | 'plugins';
     platform?: string | string[];
 }
 
-export interface CurseForgeAuthor {
+export interface ModAuthor {
     id: number;
     name: string;
     url: string;
 }
 
-export interface CurseForgeFile {
+export interface ModFile {
     id: number;
     gameId: number;
     modId: number;
@@ -60,7 +60,7 @@ export interface CurseForgeFile {
     modules: Array<{ name: string; fingerprint: number }>;
 }
 
-export interface CurseForgeCategory {
+export interface ModCategory {
     id: number;
     gameId: number;
     name: string;
@@ -73,7 +73,7 @@ export interface CurseForgeCategory {
     parentCategoryId: number;
 }
 
-export interface CurseForgeMod {
+export interface Mod {
     id: number;
     gameId: number;
     name: string;
@@ -89,9 +89,9 @@ export interface CurseForgeMod {
     downloadCount: number;
     isFeatured: boolean;
     primaryCategoryId: number;
-    categories: CurseForgeCategory[];
+    categories: ModCategory[];
     classId: number;
-    authors: CurseForgeAuthor[];
+    authors: ModAuthor[];
     logo: {
         id: number;
         modId: number;
@@ -109,7 +109,7 @@ export interface CurseForgeMod {
         url: string;
     }>;
     mainFileId: number;
-    latestFiles: CurseForgeFile[];
+    latestFiles: ModFile[];
     latestFilesIndexes: Array<{
         gameVersion: string;
         fileId: number;
@@ -147,7 +147,7 @@ export interface CurseForgeMod {
 }
 
 export interface ModSearchResponse {
-    data: CurseForgeMod[];
+    data: Mod[];
     pagination: {
         index: number;
         pageSize: number;
@@ -173,11 +173,11 @@ export interface ModSearchResponse {
 }
 
 export interface ModResponse {
-    data: CurseForgeMod;
+    data: Mod;
 }
 
 export interface ModFilesResponse {
-    data: CurseForgeFile[];
+    data: ModFile[];
     pagination: {
         index: number;
         pageSize: number;

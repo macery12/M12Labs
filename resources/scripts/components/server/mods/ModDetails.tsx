@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import styled from 'styled-components';
 import Modal from '@/elements/Modal';
-import { type CurseForgeMod, type CurseForgeFile, getModFiles } from '@/api/routes/server/mods';
+import { type Mod, type ModFile, getModFiles } from '@/api/routes/server/mods';
 import { ServerContext } from '@/state/server';
 import Spinner from '@/elements/Spinner';
 import { httpErrorToHuman } from '@/api/http';
@@ -12,9 +12,9 @@ import FadeTransition from '@/elements/transitions/FadeTransition';
 import { useStoreState } from '@/state/hooks';
 
 interface Props {
-    mod: CurseForgeMod;
+    mod: Mod;
     onClose: () => void;
-    source: 'modrinth' | 'curseforge' | 'spigot' | string;
+    source: 'modrinth' | 'spigot' | string;
     gameVersion?: string;
     modLoaderType?: number;
     contentType?: 'mods' | 'plugins';
@@ -120,7 +120,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
     const { colors } = useStoreState(state => state.theme.data!);
     const allowExternalDownloads = useStoreState(state => state.everest.data?.mods?.allow_external_downloads ?? false);
 
-    const [files, setFiles] = useState<CurseForgeFile[]>([]);
+    const [files, setFiles] = useState<ModFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAllFiles, setShowAllFiles] = useState(false);
     const isPremium = mod.isPremium;
@@ -149,7 +149,7 @@ export default ({ mod, onClose, source, gameVersion, modLoaderType, contentType 
         getModFiles(uuid, mod.id, {
             pageSize: 20,
             index: 0,
-            source: source as 'modrinth' | 'curseforge' | 'spigot' | undefined,
+            source: source as 'modrinth' | 'spigot' | undefined,
             gameVersion,
             modLoaderType,
             resource: contentType,

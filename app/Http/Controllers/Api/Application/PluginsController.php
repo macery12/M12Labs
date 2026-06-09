@@ -10,15 +10,12 @@ use Illuminate\Support\Facades\DB;
 use Everest\Models\MarketplaceInstallLog;
 use Everest\Services\Email\EmailRedactor;
 use Everest\Services\Mods\ModrinthService;
-use Everest\Services\Mods\CurseForgeService;
 use Everest\Http\Requests\Api\Application\Mods\GetModsAnalyticsRequest;
 use Everest\Http\Requests\Api\Application\Mods\UpdateModsSettingsRequest;
-use Everest\Http\Requests\Api\Application\Mods\DeleteCurseForgeKeyRequest;
 
 class PluginsController extends ApplicationApiController
 {
     public function __construct(
-        private CurseForgeService $curseForgeService,
         private ModrinthService $modrinthService
     ) {
         parent::__construct();
@@ -27,10 +24,6 @@ class PluginsController extends ApplicationApiController
     public function update(UpdateModsSettingsRequest $request): Response
     {
         foreach ($request->normalize() as $key => $value) {
-            if ($key == 'curseforge_api_key' && is_bool($value)) {
-                continue;
-            }
-
             Setting::set('settings::modules:mods:' . $key, $value);
         }
 
@@ -51,7 +44,6 @@ class PluginsController extends ApplicationApiController
 
     public function analytics(GetModsAnalyticsRequest $request): JsonResponse
     {
-        $curseForgeRateLimit = $this->curseForgeService->getRateLimitUsage();
         $modrinthRateLimit = $this->modrinthService->getRateLimitUsage();
 
         $totalInstalls = MarketplaceInstallLog::where('status', MarketplaceInstallLog::STATUS_SUCCESS)->count();
@@ -88,7 +80,6 @@ class PluginsController extends ApplicationApiController
                 'installs' => $totalInstalls,
                 'by_provider' => [
                     'modrinth' => $byProvider['modrinth'] ?? 0,
-                    'curseforge' => $byProvider['curseforge'] ?? 0,
                     'spigot' => $byProvider['spigot'] ?? 0,
                 ],
                 'failures' => $totalFailures,
@@ -106,11 +97,6 @@ class PluginsController extends ApplicationApiController
                     'rate_limit' => $modrinthRateLimit,
                     'denied_by_policy' => 0,
                 ],
-                'curseforge' => [
-                    'enabled' => (bool) Setting::get('settings::modules:mods:curseforge_api_key'),
-                    'rate_limit' => $curseForgeRateLimit,
-                    'denied_by_policy' => 0,
-                ],
                 'spigot' => [
                     'enabled' => true,
                     'rate_limit' => null,
@@ -118,18 +104,5 @@ class PluginsController extends ApplicationApiController
                 ],
             ],
         ]);
-    }
-
-    public function resetKey(DeleteCurseForgeKeyRequest $request): Response
-    {
-        Setting::forget('settings::modules:mods:curseforge_api_key');
-
-        \Artisan::call('config:clear');
-
-        Activity::event('admin:plugins:reset-key')
-            ->description('CurseForge API key for plugins was reset')
-            ->log();
-
-        return $this->returnNoContent();
     }
 }

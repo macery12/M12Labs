@@ -3,7 +3,6 @@ import { useStoreState } from '@/state/hooks';
 import { useEffect, useState } from 'react';
 import { useFlashKey } from '@/plugins/useFlash';
 import Spinner from '@/elements/Spinner';
-import { Alert } from '@/elements/alert';
 import { getMarketplaceAnalytics, MarketplaceAnalytics } from '@/api/routes/admin/marketplace/settings';
 import { formatBytes } from '@/lib/formatBytes';
 import {
@@ -22,14 +21,12 @@ import { Button } from '@/elements/button';
 
 const providerLabels: Record<string, string> = {
     modrinth: 'Modrinth',
-    curseforge: 'CurseForge',
     spigot: 'Spigot',
 };
 
 const healthProviderLabels: Record<string, string> = {
     'modrinth.mods': 'Modrinth Mods',
     'modrinth.plugins': 'Modrinth Plugins',
-    curseforge: 'CurseForge',
     'spigot.plugins': 'Spigot',
 };
 
@@ -86,7 +83,6 @@ export default function OverviewContainer() {
     const [analytics, setAnalytics] = useState<MarketplaceAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
     const { clearFlashes, clearAndAddHttpError } = useFlashKey('admin:marketplace');
-    const hasApiKey = useStoreState(s => s.everest.data!.mods.curseforge_api_key);
     const { colors } = useStoreState(s => s.theme.data!);
 
     useEffect(() => {
@@ -113,7 +109,7 @@ export default function OverviewContainer() {
 
     const totals = analytics?.totals;
     const totalInstalls = totals?.installs ?? 0;
-    const byProvider = totals?.by_provider ?? { modrinth: 0, curseforge: 0, spigot: 0 };
+    const byProvider = totals?.by_provider ?? { modrinth: 0, spigot: 0 };
 
     return (
         <div className={'grid gap-6 lg:grid-cols-3'}>
@@ -241,13 +237,6 @@ export default function OverviewContainer() {
 
             {/* Right column */}
             <div className={'flex flex-col gap-4'}>
-                {!hasApiKey && (
-                    <Alert type={'info'}>
-                        <strong>No CurseForge API key configured.</strong> Modrinth works by default. Add a key in
-                        Settings to enable CurseForge content.
-                    </Alert>
-                )}
-
                 <AdminBox title={'Access Control'} icon={ShieldCheckIcon}>
                     <p className={'text-sm text-neutral-400'}>
                         All providers are <strong className={'text-neutral-300'}>denied by default</strong>. You must
@@ -262,7 +251,7 @@ export default function OverviewContainer() {
 
                 <AdminBox title={'Settings'} icon={CogIcon}>
                     <p className={'text-sm text-neutral-400'}>
-                        Configure providers, set your default content source, and manage your CurseForge API key.
+                        Configure providers, set your default content source, and manage marketplace settings.
                     </p>
                     <div className={'mt-3'}>
                         <Link to={'/admin/marketplace/settings'}>

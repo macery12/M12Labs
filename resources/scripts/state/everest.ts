@@ -101,7 +101,6 @@ export interface EverestSettings {
     };
     mods: {
         enabled: boolean;
-        curseforge_api_key: boolean | string;
         default_source?: string;
         spiget_enabled?: boolean;
         allow_external_downloads?: boolean;
