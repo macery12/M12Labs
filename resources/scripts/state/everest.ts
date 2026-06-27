@@ -104,6 +104,18 @@ export interface EverestSettings {
         default_source?: string;
         spiget_enabled?: boolean;
         allow_external_downloads?: boolean;
+        curseforge_cdn_fallback?: boolean;
+        curseforge?: {
+            enabled: boolean;
+            configured: boolean;
+        };
+        download?: {
+            max_concurrent_per_server?: number;
+            max_per_minute_per_user?: number;
+            max_queue_size_per_server?: number;
+            max_mod_size_mb?: number;
+            max_plugin_size_mb?: number;
+        };
     };
     webhooks: {
         enabled: boolean;

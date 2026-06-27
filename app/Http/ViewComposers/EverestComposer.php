@@ -105,6 +105,20 @@ class EverestComposer
                 'enabled' => boolval(Setting::get('settings::modules:mods:enabled', config('modules.mods.enabled', false))),
                 'default_source' => Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth')),
                 'allow_external_downloads' => (bool) Setting::get('settings::modules:mods:allow_external_downloads', config('modules.mods.allow_external_downloads', false)),
+                'curseforge_cdn_fallback'  => (bool) Setting::get('settings::modules:mods:curseforge_cdn_fallback', config('modules.mods.curseforge_cdn_fallback', true)),
+                // CurseForge powers modpacks only. Expose whether the integration is usable
+                // (enabled by an admin AND an API key is configured) — never the key itself.
+                'curseforge' => [
+                    'enabled' => (bool) Setting::get('settings::modules:mods:curseforge_enabled', config('modules.mods.curseforge_enabled', false)),
+                    'configured' => !empty(Setting::get('settings::modules:mods:curseforge_api_key', '')),
+                ],
+                'download' => [
+                    'max_concurrent_per_server' => (int) Setting::get('settings::modules:mods:download_max_concurrent', config('modules.mods.download.max_concurrent_per_server', 3)),
+                    'max_per_minute_per_user'   => (int) Setting::get('settings::modules:mods:download_max_per_minute', config('modules.mods.download.max_per_minute_per_user', 10)),
+                    'max_queue_size_per_server' => (int) Setting::get('settings::modules:mods:download_max_queue_size', config('modules.mods.download.max_queue_size_per_server', 20)),
+                    'max_mod_size_mb'           => (int) round(Setting::get('settings::modules:mods:max_mod_size', config('modules.mods.max_mod_size', 157286400)) / 1048576),
+                    'max_plugin_size_mb'        => (int) round(Setting::get('settings::modules:mods:max_plugin_size', config('modules.mods.max_plugin_size', 104857600)) / 1048576),
+                ],
             ],
             'extensions' => [
                 'enabled' => boolval(config('modules.extensions.enabled', false)),

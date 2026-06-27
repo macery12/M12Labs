@@ -96,6 +96,9 @@ class SettingsServiceProvider extends ServiceProvider
         // Mods module settings
         'modules:mods:enabled',
         'modules:mods:allow_external_downloads',
+        'modules:mods:curseforge_enabled',
+        'modules:mods:curseforge_api_key',
+        'modules:mods:curseforge_cdn_fallback',
 
         // Extensions module settings
         'modules:extensions:enabled',

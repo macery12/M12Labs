@@ -15,8 +15,8 @@ return new class extends Migration
             $table->string('project_id', 128);
             $table->unsignedBigInteger('file_size_bytes')->default(0);
             $table->string('status', 16);   // success, failed
-            $table->unsignedBigInteger('server_id')->nullable();
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedInteger('server_id')->nullable();
+            $table->unsignedInteger('user_id')->nullable();
             $table->timestamps();
 
             $table->index(['status', 'created_at']);

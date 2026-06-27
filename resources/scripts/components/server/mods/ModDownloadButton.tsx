@@ -5,67 +5,71 @@ import { Button } from '@/elements/button';
 import { downloadMod } from '@/api/routes/server/mods';
 import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
-import Spinner from '@/elements/Spinner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDownload, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faDownload, faCheck, faClock, faBan } from '@fortawesome/free-solid-svg-icons';
 import Can from '@/elements/Can';
+import { useModCooldown } from './useModCooldown';
 
 interface Props {
     modId: number | string;
     fileId: number | string;
-    fileName: string;
+    fileName?: string;
     source: string;
     contentType?: 'mods' | 'plugins';
     disabledReason?: string | null;
 }
 
-export default ({ modId, fileId, fileName, source, contentType = 'mods', disabledReason }: Props) => {
+export default ({ modId, fileId, source, contentType = 'mods', disabledReason }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
-    const { addFlash, addError } = useFlash();
+    const { addError } = useFlash();
+    const [onCooldown, startCooldown] = useModCooldown(modId);
 
-    const [downloading, setDownloading] = useState(false);
-    const [downloaded, setDownloaded] = useState(false);
+    const [queuing, setQueuing] = useState(false);
+    const [queued, setQueued] = useState(false);
 
     const handleDownload = () => {
-        setDownloading(true);
-        setDownloaded(false);
+        if (queuing || onCooldown) return;
+
+        setQueuing(true);
+        setQueued(false);
 
         downloadMod(uuid, modId, fileId, source, contentType)
-            .then(data => {
-                const resolvedName = data?.file?.name || fileName;
-                const destination = data?.file?.path && data.file.path.includes('/plugins') ? '/plugins' : '/mods';
-                setDownloaded(true);
-                addFlash({
-                    key: 'mods',
-                    type: 'success',
-                    message: `Successfully downloaded ${resolvedName} to ${destination} directory.`,
-                });
-                setTimeout(() => setDownloaded(false), 3000);
+            .then(() => {
+                setQueued(true);
+                startCooldown();
+                setTimeout(() => setQueued(false), 2500);
             })
             .catch(error => {
                 console.error(error);
                 addError({ key: 'mods', message: httpErrorToHuman(error) });
             })
-            .finally(() => setDownloading(false));
+            .finally(() => setQueuing(false));
     };
+
+    const isDisabled = queuing || queued || onCooldown || Boolean(disabledReason);
 
     return (
         <Can action={'file.create'}>
             <Button
                 size={Button.Sizes.Small}
                 onClick={handleDownload}
-                disabled={downloading || downloaded || Boolean(disabledReason)}
-                css={[downloaded && tw`bg-green-600 hover:bg-green-700`, tw`min-w-[100px]`]}
+                disabled={isDisabled}
+                css={[queued && tw`bg-green-600 hover:bg-green-700`, tw`min-w-[100px]`]}
             >
-                {downloading ? (
+                {queuing ? (
                     <>
-                        <Spinner size={'small'} css={tw`mr-2`} />
-                        Downloading...
+                        <FontAwesomeIcon icon={faClock} css={tw`mr-2 animate-pulse`} />
+                        Queuing...
                     </>
-                ) : downloaded ? (
+                ) : queued ? (
                     <>
                         <FontAwesomeIcon icon={faCheck} css={tw`mr-2`} />
-                        Downloaded
+                        Queued
+                    </>
+                ) : onCooldown ? (
+                    <>
+                        <FontAwesomeIcon icon={faBan} css={tw`mr-2 text-neutral-500`} />
+                        Wait...
                     </>
                 ) : disabledReason ? (
                     disabledReason

@@ -4,6 +4,15 @@ export interface MarketplaceSettings {
     enabled?: boolean;
     default_source?: string;
     allow_external_downloads?: boolean;
+    curseforge_cdn_fallback?: boolean;
+    curseforge_enabled?: boolean;
+    // Only sent when the admin is setting/changing the key; never returned by the API.
+    curseforge_api_key?: string;
+    download_max_concurrent?: number;
+    download_max_per_minute?: number;
+    download_max_queue_size?: number;
+    max_mod_size?: number;
+    max_plugin_size?: number;
 }
 
 export const updateSettings = (settings: MarketplaceSettings): Promise<void> =>
@@ -19,11 +28,16 @@ export interface RateLimitUsage {
 export interface MarketplaceAnalytics {
     totals: {
         installs: number;
-        by_provider: { modrinth: number; spigot: number };
+        by_provider: { modrinth: number; spigot: number; curseforge: number };
         failures: number;
         retries: number;
         bandwidth_bytes: number;
         bandwidth_bytes_24h: number;
+    };
+    queue: {
+        pending: number;
+        downloading: number;
+        failed_24h: number;
     };
     trends: {
         last_24h: Array<{ timestamp: string; installs: number }>;

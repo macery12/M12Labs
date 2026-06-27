@@ -8,6 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Everest\Models\MarketplaceInstallLog;
+use Everest\Models\DownloadQueue;
 use Everest\Services\Email\EmailRedactor;
 use Everest\Services\Mods\ModrinthService;
 use Everest\Http\Requests\Api\Application\Mods\GetModsAnalyticsRequest;
@@ -24,6 +25,12 @@ class PluginsController extends ApplicationApiController
     public function update(UpdateModsSettingsRequest $request): Response
     {
         foreach ($request->normalize() as $key => $value) {
+            // Never overwrite the stored CurseForge API key with an empty value —
+            // the admin form omits/blanks it unless they are deliberately changing it.
+            if ($key === 'curseforge_api_key' && ($value === null || $value === '')) {
+                continue;
+            }
+
             Setting::set('settings::modules:mods:' . $key, $value);
         }
 
@@ -75,17 +82,29 @@ class PluginsController extends ApplicationApiController
             ->get()
             ->toArray();
 
+        $queuedNow      = DownloadQueue::where('status', DownloadQueue::STATUS_PENDING)->count();
+        $downloadingNow = DownloadQueue::where('status', DownloadQueue::STATUS_DOWNLOADING)->count();
+        $queueFailed    = DownloadQueue::where('status', DownloadQueue::STATUS_FAILED)
+            ->where('created_at', '>=', now()->subDay())
+            ->count();
+
         return response()->json([
             'totals' => [
                 'installs' => $totalInstalls,
                 'by_provider' => [
                     'modrinth' => $byProvider['modrinth'] ?? 0,
                     'spigot' => $byProvider['spigot'] ?? 0,
+                    'curseforge' => $byProvider['curseforge'] ?? 0,
                 ],
                 'failures' => $totalFailures,
                 'retries' => 0,
                 'bandwidth_bytes' => (int) $totalBandwidth,
                 'bandwidth_bytes_24h' => (int) $bandwidth24h,
+            ],
+            'queue' => [
+                'pending'     => $queuedNow,
+                'downloading' => $downloadingNow,
+                'failed_24h'  => $queueFailed,
             ],
             'trends' => [
                 'last_24h' => $last24h,
@@ -99,6 +118,11 @@ class PluginsController extends ApplicationApiController
                 ],
                 'spigot' => [
                     'enabled' => true,
+                    'rate_limit' => null,
+                    'denied_by_policy' => 0,
+                ],
+                'curseforge' => [
+                    'enabled' => (bool) \Everest\Models\Setting::get('settings::modules:mods:curseforge_enabled', config('modules.mods.curseforge_enabled', false)),
                     'rate_limit' => null,
                     'denied_by_policy' => 0,
                 ],

@@ -251,10 +251,31 @@ export const getModFiles = (uuid: string, modId: number | string, params: ModFil
     });
 };
 
-export interface DownloadResponse {
-    success: boolean;
-    message: string;
-    file?: { name?: string; path?: string };
+export interface DownloadQueueResponse {
+    queued: boolean;
+    queue_id: string;
+    position: number;
+}
+
+export interface DownloadQueueItem {
+    uuid: string;
+    provider: string;
+    source: string;
+    project_id: string;
+    file_id: string;
+    file_name: string | null;
+    error_message: string | null;
+    // Captured install-script output for modpack parent items (for the log modal).
+    install_log: string | null;
+    // Modpack install progress (mods). phase encodes the step, e.g. "mods:2/4".
+    total_children: number | null;
+    completed_children: number | null;
+    failed_children: number | null;
+    status: 'pending' | 'downloading' | 'completed' | 'failed';
+    phase: string | null;
+    started_at: string | null;
+    completed_at: string | null;
+    created_at: string;
 }
 
 export const downloadMod = (
@@ -263,9 +284,51 @@ export const downloadMod = (
     fileId: number | string,
     source?: string,
     resource?: 'mods' | 'plugins',
-): Promise<DownloadResponse> => {
+): Promise<DownloadQueueResponse> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/servers/${uuid}/mods/${modId}/files/${fileId}/download`, { source, resource })
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const getDownloadQueue = (uuid: string): Promise<{ data: DownloadQueueItem[] }> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/client/servers/${uuid}/mods/queue`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export const cancelQueueItem = (uuid: string, queueId: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        http.delete(`/api/client/servers/${uuid}/mods/queue/${queueId}`)
+            .then(() => resolve())
+            .catch(reject);
+    });
+};
+
+export const retryQueueItem = (uuid: string, queueId: string): Promise<DownloadQueueResponse> => {
+    return new Promise((resolve, reject) => {
+        http.post(`/api/client/servers/${uuid}/mods/queue/${queueId}/retry`)
+            .then(({ data }) => resolve(data))
+            .catch(reject);
+    });
+};
+
+export interface BulkClearResponse {
+    deleted: number;
+}
+
+export interface BulkClearActiveWarning {
+    error: string;
+    active_count: number;
+    active_uuids: string[];
+}
+
+export const bulkClearQueue = (uuid: string, uuids?: string[], force = false): Promise<BulkClearResponse> => {
+    return new Promise((resolve, reject) => {
+        http.post(`/api/client/servers/${uuid}/mods/queue/bulk-clear`, { uuids: uuids ?? null, force })
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

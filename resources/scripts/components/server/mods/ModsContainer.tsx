@@ -6,19 +6,20 @@ import FlashMessageRender from '@/elements/FlashMessageRender';
 import ModSearch from './ModSearch';
 import ModList from './ModList';
 import ModDetails from './ModDetails';
-import { type Mod, type ModSearchParams, type ServerModsConfig, searchMods, getServerModsConfig } from '@/api/routes/server/mods';
+import { type Mod, type ModSearchParams, type ServerModsConfig, searchMods } from '@/api/routes/server/mods';
 import useFlash from '@/plugins/useFlash';
 import { httpErrorToHuman } from '@/api/http';
-import Spinner from '@/elements/Spinner';
 
 type ModSource = 'modrinth' | 'spigot';
 
 interface Props {
     sourceOverride?: ModSource;
     contentType?: 'mods' | 'plugins';
+    detectedConfig?: ServerModsConfig | null;
+    configLoaded?: boolean;
 }
 
-export default ({ sourceOverride, contentType = 'mods' }: Props) => {
+export default ({ sourceOverride, contentType = 'mods', detectedConfig: detectedConfigProp, configLoaded: configLoadedProp }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
     const { colors } = useStoreState(state => state.theme.data!);
     const globalModsEnabled = useStoreState(state => state.everest.data?.mods?.enabled ?? false);
@@ -44,8 +45,8 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
         totalCount: 0,
     });
     const [filtersMeta, setFiltersMeta] = useState<any>(null);
-    const [detectedConfig, setDetectedConfig] = useState<ServerModsConfig | null>(null);
-    const [configLoaded, setConfigLoaded] = useState(false);
+    const detectedConfig = detectedConfigProp ?? null;
+    const configLoaded = configLoadedProp ?? false;
 
     const [searchParams, setSearchParams] = useState<ModSearchParams>({
         searchFilter: '',
@@ -63,21 +64,15 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
     });
 
     useEffect(() => {
-        getServerModsConfig(uuid)
-            .then(config => {
-                setDetectedConfig(config);
-                setSearchParams(prev => ({
-                    ...prev,
-                    gameVersion: config.detectedVersion ?? undefined,
-                    modLoaderType: config.detectedLoader?.id ?? undefined,
-                    platform: (contentType === 'plugins' && config.detectedPlatform) ? config.detectedPlatform : undefined,
-                }));
-            })
-            .catch(() => {
-                // If the endpoint fails, just proceed without pre-population
-            })
-            .finally(() => setConfigLoaded(true));
-    }, [uuid]);
+        if (!configLoaded) return;
+        setSearchParams(prev => ({
+            ...prev,
+            gameVersion: detectedConfig?.detectedVersion ?? undefined,
+            modLoaderType: detectedConfig?.detectedLoader?.id ?? undefined,
+            platform: (contentType === 'plugins' && detectedConfig?.detectedPlatform) ? detectedConfig.detectedPlatform : undefined,
+        }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [configLoaded]);
 
     useEffect(() => {
         if (!sourceOverride) return;
@@ -221,8 +216,26 @@ export default ({ sourceOverride, contentType = 'mods' }: Props) => {
             />
 
             {loading && !mods.length ? (
-                <div css={tw`mt-8`}>
-                    <Spinner size={'large'} centered />
+                <div css={tw`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-2`}>
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="rounded border border-neutral-700 bg-neutral-800 overflow-hidden animate-pulse">
+                            <div className="flex items-start gap-3 p-3 border-b border-neutral-700/50">
+                                <div className="w-12 h-12 rounded bg-neutral-700 flex-shrink-0" />
+                                <div className="flex-1 min-w-0 space-y-2 pt-1">
+                                    <div className="h-3.5 bg-neutral-700 rounded w-3/4" />
+                                    <div className="h-3 bg-neutral-700 rounded w-1/2" />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 px-3 py-2">
+                                <div className="h-3 bg-neutral-700 rounded w-10" />
+                                <div className="h-3 bg-neutral-700 rounded w-16" />
+                            </div>
+                            <div className="px-3 pb-3 space-y-1.5">
+                                <div className="h-3 bg-neutral-700 rounded w-full" />
+                                <div className="h-3 bg-neutral-700 rounded w-4/5" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : (
                 <ModList

@@ -4,20 +4,24 @@ import tw from 'twin.macro';
 import PageContentBlock from '@/elements/PageContentBlock';
 import Spinner from '@/elements/Spinner';
 import ModsContainer from '@server/mods/ModsContainer';
+import ModpacksContainer from '@server/mods/ModpacksContainer';
+import QueueTab from '@server/mods/QueueTab';
 import ContentTypeTabPanel from '@server/plugins/ContentTypeTabPanel';
 import { ContentType, getPluginCapabilities, PluginCapabilityResponse, ProviderKey } from '@/api/routes/server/plugins';
 import { useStoreState } from '@/state/hooks';
 import { ServerContext } from '@/state/server';
 import InstalledAddonsList from '@server/plugins/InstalledAddonsList';
-import { getServerModsConfig, ServerModsConfig } from '@/api/routes/server/mods';
+import { getServerModsConfig, getDownloadQueue, ServerModsConfig } from '@/api/routes/server/mods';
 import { ExclamationIcon } from '@heroicons/react/outline';
 
-type ContentTab = ContentType | 'installed';
+type ContentTab = ContentType | 'installed' | 'queued' | 'modpacks';
 
 const contentLabels: Record<ContentTab, string> = {
-    mods: 'Mods',
-    plugins: 'Plugins',
     installed: 'Installed',
+    queued:    'Queue',
+    mods:      'Mods',
+    plugins:   'Plugins',
+    modpacks:  'Modpacks',
 };
 
 const providerLabels: Record<ProviderKey, string> = {
@@ -38,7 +42,7 @@ const ComingSoon = ({ label }: { label: string }) => (
     <div css={tw`py-12 text-center text-neutral-300`}>{label} (coming soon)</div>
 );
 
-const contentOrder: ContentTab[] = ['installed', 'mods', 'plugins'];
+const contentOrder: ContentTab[] = ['installed', 'queued', 'modpacks', 'mods', 'plugins'];
 
 const resolveActive = <T,>(preferred: T | null, available: T[]): T | null =>
     preferred && available.includes(preferred) ? preferred : (available[0] ?? null);
@@ -52,6 +56,7 @@ const ModsAndPluginsPage = () => {
     const modSettings = useStoreState(state => state.everest?.data?.mods);
     const { colors } = useStoreState(state => state.theme.data!);
     const serverUuid = ServerContext.useStoreState(state => state.server.data?.uuid);
+    const isSupercharged = ServerContext.useStoreState(state => state.server.data?.isNodeSupercharged ?? false);
     const uuidFallback = undefined as string | undefined;
     const uuid = serverUuid ?? uuidFallback;
 
@@ -59,7 +64,9 @@ const ModsAndPluginsPage = () => {
     const [providerAccess, setProviderAccess] = useState<PluginCapabilityResponse | null>(null);
     const [loadingProviders, setLoadingProviders] = useState(true);
     const [detectedConfig, setDetectedConfig] = useState<ServerModsConfig | null>(null);
+    const [configLoaded, setConfigLoaded] = useState(false);
     const [compatDismissed, setCompatDismissed] = useState(false);
+    const [activeQueueCount, setActiveQueueCount] = useState(0);
 
     const modsFeatureEnabled = modSettings?.enabled ?? false;
 
@@ -78,7 +85,28 @@ const ModsAndPluginsPage = () => {
 
     useEffect(() => {
         if (!uuid) return;
-        getServerModsConfig(uuid).then(setDetectedConfig).catch(() => {});
+        getServerModsConfig(uuid)
+            .then(setDetectedConfig)
+            .catch(() => {})
+            .finally(() => setConfigLoaded(true));
+    }, [uuid]);
+
+    // Poll queue count for the tab badge.
+    useEffect(() => {
+        if (!uuid) return;
+        const refresh = () =>
+            getDownloadQueue(uuid)
+                .then(res => {
+                    if (Array.isArray(res.data)) {
+                        setActiveQueueCount(
+                            res.data.filter(i => i.status === 'pending' || i.status === 'downloading').length,
+                        );
+                    }
+                })
+                .catch(() => {});
+        refresh();
+        const id = setInterval(refresh, 8000);
+        return () => clearInterval(id);
     }, [uuid]);
 
     const providersByType = useMemo<ProvidersByType>(() => {
@@ -92,12 +120,16 @@ const ModsAndPluginsPage = () => {
         };
     }, [modsFeatureEnabled, providerAccess]);
 
+    // Modpacks are served exclusively by CurseForge and require a mod-loader egg.
+    const curseforgeReady = !!(modSettings?.curseforge?.enabled && modSettings?.curseforge?.configured);
+
     const availableContentTypes = useMemo(() => {
-        const result: ContentTab[] = ['installed'];
+        const result: ContentTab[] = ['installed', 'queued'];
+        if (modsFeatureEnabled && curseforgeReady && !!detectedConfig?.detectedLoader) result.push('modpacks');
         if (providersByType.mods.length) result.push('mods');
         if (providersByType.plugins.length) result.push('plugins');
         return result;
-    }, [providersByType]);
+    }, [providersByType, modsFeatureEnabled, curseforgeReady, detectedConfig]);
 
     const localStorageKey = 'marketplace:last';
     const lastMarketplaceState = useMemo(() => {
@@ -144,13 +176,13 @@ const ModsAndPluginsPage = () => {
     useEffect(() => {
         if (!activeType) return;
 
-        if (activeType === 'installed') {
+        if (activeType === 'installed' || activeType === 'queued' || activeType === 'modpacks') {
             setActiveProvider(null);
             setSearchParams({ type: activeType });
             return;
         }
 
-        const currentProviders = providersByType[activeType] ?? [];
+        const currentProviders = providersByType[activeType as ContentType] ?? [];
         const resolvedProvider = resolveActive(activeProvider, currentProviders);
         if (resolvedProvider !== activeProvider) {
             setActiveProvider(resolvedProvider);
@@ -272,6 +304,14 @@ const ModsAndPluginsPage = () => {
             return <InstalledAddonsList serverUuid={uuid} />;
         }
 
+        if (activeType === 'queued') {
+            return <QueueTab />;
+        }
+
+        if (activeType === 'modpacks') {
+            return <ModpacksContainer isSupercharged={isSupercharged} detectedConfig={detectedConfig} />;
+        }
+
         if (activeType === 'mods') {
             if (!activeProvider) return null;
             const modsBlocked = !!detectedConfig?.detectedPlatform && !compatDismissed;
@@ -279,8 +319,8 @@ const ModsAndPluginsPage = () => {
                 <>
                     {renderCompatWarning()}
                     {!modsBlocked && renderProviderTabs(providersByType.mods, activeProvider)}
-                    {!modsBlocked && activeProvider === 'modrinth' && <ModsContainer sourceOverride="modrinth" />}
-                    {!modsBlocked && activeProvider === 'spigot' && <ModsContainer sourceOverride="spigot" />}
+                    {!modsBlocked && activeProvider === 'modrinth' && <ModsContainer sourceOverride="modrinth" detectedConfig={detectedConfig} configLoaded={configLoaded} />}
+                    {!modsBlocked && activeProvider === 'spigot' && <ModsContainer sourceOverride="spigot" detectedConfig={detectedConfig} configLoaded={configLoaded} />}
                 </>
             );
         }
@@ -294,10 +334,10 @@ const ModsAndPluginsPage = () => {
                         <>
                             {renderProviderTabs(providersByType.plugins, pluginProvider)}
                             {pluginProvider === 'spigot' ? (
-                                <ModsContainer sourceOverride="spigot" contentType="plugins" />
+                                <ModsContainer sourceOverride="spigot" contentType="plugins" detectedConfig={detectedConfig} configLoaded={configLoaded} />
                             ) : null}
                             {pluginProvider === 'modrinth' ? (
-                                <ModsContainer sourceOverride="modrinth" contentType="plugins" />
+                                <ModsContainer sourceOverride="modrinth" contentType="plugins" detectedConfig={detectedConfig} configLoaded={configLoaded} />
                             ) : null}
                             {!['spigot', 'modrinth'].includes(pluginProvider ?? '') && <ComingSoon label={'Plugins'} />}
                         </>
@@ -325,7 +365,7 @@ const ModsAndPluginsPage = () => {
                             <button
                                 key={type}
                                 css={[
-                                    tw`px-4 py-2 font-medium transition-colors rounded-t`,
+                                    tw`px-4 py-2 font-medium transition-colors rounded-t flex items-center gap-2`,
                                     !active && tw`text-neutral-400 hover:text-neutral-200`,
                                 ]}
                                 style={
@@ -337,6 +377,11 @@ const ModsAndPluginsPage = () => {
                                 type="button"
                             >
                                 {contentLabels[type]}
+                                {type === 'queued' && activeQueueCount > 0 && (
+                                    <span css={tw`text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded-full leading-none`}>
+                                        {activeQueueCount}
+                                    </span>
+                                )}
                             </button>
                         );
                     })}

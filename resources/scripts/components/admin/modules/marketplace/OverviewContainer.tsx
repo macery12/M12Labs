@@ -22,12 +22,16 @@ import { Button } from '@/elements/button';
 const providerLabels: Record<string, string> = {
     modrinth: 'Modrinth',
     spigot: 'Spigot',
+    curseforge: 'CurseForge',
 };
 
 const healthProviderLabels: Record<string, string> = {
     'modrinth.mods': 'Modrinth Mods',
     'modrinth.plugins': 'Modrinth Plugins',
     'spigot.plugins': 'Spigot',
+    modrinth: 'Modrinth',
+    spigot: 'Spigot',
+    curseforge: 'CurseForge',
 };
 
 function StatCard({
@@ -108,8 +112,10 @@ export default function OverviewContainer() {
     }
 
     const totals = analytics?.totals;
+    const queue = analytics?.queue;
     const totalInstalls = totals?.installs ?? 0;
-    const byProvider = totals?.by_provider ?? { modrinth: 0, spigot: 0 };
+    const byProvider = totals?.by_provider ?? { modrinth: 0, spigot: 0, curseforge: 0 };
+    const totalActive = (queue?.pending ?? 0) + (queue?.downloading ?? 0);
 
     return (
         <div className={'grid gap-6 lg:grid-cols-3'}>
@@ -148,6 +154,37 @@ export default function OverviewContainer() {
                         sub={'Auto-retry attempts'}
                         icon={RefreshIcon}
                         accent={totals?.retries ? 'amber' : undefined}
+                        primaryColor={colors.primary}
+                        secondaryColor={colors.secondary}
+                    />
+                </div>
+
+                {/* Queue health cards */}
+                <div className={'grid grid-cols-3 gap-3'}>
+                    <StatCard
+                        label={'Queued (Pending)'}
+                        value={queue?.pending ?? 0}
+                        sub={'Waiting to download'}
+                        icon={RefreshIcon}
+                        accent={queue?.pending ? 'amber' : undefined}
+                        primaryColor={colors.primary}
+                        secondaryColor={colors.secondary}
+                    />
+                    <StatCard
+                        label={'Downloading Now'}
+                        value={queue?.downloading ?? 0}
+                        sub={'Across all servers'}
+                        icon={DownloadIcon}
+                        accent={totalActive > 0 ? 'green' : undefined}
+                        primaryColor={colors.primary}
+                        secondaryColor={colors.secondary}
+                    />
+                    <StatCard
+                        label={'Queue Failures (24h)'}
+                        value={queue?.failed_24h ?? 0}
+                        sub={'Failed queue jobs'}
+                        icon={ExclamationCircleIcon}
+                        accent={queue?.failed_24h ? 'red' : undefined}
                         primaryColor={colors.primary}
                         secondaryColor={colors.secondary}
                     />

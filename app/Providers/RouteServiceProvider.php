@@ -182,6 +182,23 @@ class RouteServiceProvider extends ServiceProvider
             });
         });
 
+        // Soft HTTP-layer cap for download submissions — real rate limiting is enforced inside the controller.
+        RateLimiter::for('mods.download', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            return Limit::perMinute(60)->by($key)->response(function () {
+                return response()->json([
+                    'errors' => [
+                        [
+                            'code' => 'ThrottleRequestsException',
+                            'status' => '429',
+                            'detail' => 'Too many download requests. Please wait before submitting more.',
+                        ],
+                    ],
+                ], 429);
+            });
+        });
+
         RateLimiter::for('wings-rs.search', function (Request $request) {
             $key = optional($request->user())->uuid ?: $request->ip();
 

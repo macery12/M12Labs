@@ -251,11 +251,30 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             Route::get('/search', [Client\Servers\ModsController::class, 'search'])->middleware(['throttle:mods.browse']);
             Route::get('/providers', [Client\Servers\ModsController::class, 'providerAccess']);
             Route::get('/server-config', [Client\Servers\ModsController::class, 'serverConfig']);
-            Route::get('/{modId}', [Client\Servers\ModsController::class, 'getMod'])->middleware(['throttle:mods.browse']);
-            Route::get('/{modId}/files', [Client\Servers\ModsController::class, 'getModFiles'])->middleware(['throttle:mods.browse']);
-            Route::post('/{modId}/files/{fileId}/download', [Client\Servers\ModsController::class, 'downloadMod'])->middleware(['throttle:5,1']);
             Route::get('/minecraft/versions', [Client\Servers\ModsController::class, 'getMinecraftVersions'])->middleware(['throttle:mods.meta']);
             Route::get('/minecraft/loaders', [Client\Servers\ModsController::class, 'getModLoaderTypes'])->middleware(['throttle:mods.meta']);
+
+            // Download queue management — must be declared before /{modId} wildcard
+            Route::get('/queue', [Client\Servers\ModQueueController::class, 'index']);
+            Route::post('/queue/bulk-clear', [Client\Servers\ModQueueController::class, 'bulkClear']);
+            Route::delete('/queue/{queueUuid}', [Client\Servers\ModQueueController::class, 'cancel']);
+            Route::post('/queue/{queueUuid}/retry', [Client\Servers\ModQueueController::class, 'retry']);
+
+            // Modpack routes — declared before wildcard /{modId}
+            Route::prefix('/modpacks')->group(function () {
+                Route::get('/search', [Client\Servers\ModpackController::class, 'search'])->middleware(['throttle:mods.browse']);
+                Route::get('/minecraft-versions', [Client\Servers\ModpackController::class, 'minecraftVersions'])->middleware(['throttle:mods.meta']);
+                Route::get('/loader-status', [Client\Servers\ModpackController::class, 'loaderStatus'])->middleware(['throttle:mods.meta']);
+                Route::post('/{projectId}/versions/{versionId}/preview', [Client\Servers\ModpackController::class, 'preview'])->middleware(['throttle:mods.browse']);
+                Route::post('/{projectId}/versions/{versionId}/install', [Client\Servers\ModpackController::class, 'install']);
+                Route::get('/{projectId}/versions', [Client\Servers\ModpackController::class, 'versions'])->middleware(['throttle:mods.browse']);
+                Route::get('/{projectId}', [Client\Servers\ModpackController::class, 'show'])->middleware(['throttle:mods.browse']);
+            });
+
+            // Wildcard mod routes last so static paths above are not swallowed
+            Route::get('/{modId}', [Client\Servers\ModsController::class, 'getMod'])->middleware(['throttle:mods.browse']);
+            Route::get('/{modId}/files', [Client\Servers\ModsController::class, 'getModFiles'])->middleware(['throttle:mods.browse']);
+            Route::post('/{modId}/files/{fileId}/download', [Client\Servers\ModsController::class, 'downloadMod'])->middleware(['throttle:mods.download']);
         });
 
         Route::group(['prefix' => '/schedules'], function () {

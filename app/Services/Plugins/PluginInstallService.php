@@ -42,7 +42,7 @@ class PluginInstallService
      *
      * @throws ModsServiceException
      */
-    public function installFromProvider(Server $server, string $provider, string $type, string|int $projectId, string|int $versionId): array
+    public function installFromProvider(Server $server, string $provider, string $type, string|int $projectId, string|int $versionId, ?int $userId = null): array
     {
         $providerKey = strtolower($provider);
         $adapter = $this->adapters[$providerKey] ?? null;
@@ -156,8 +156,7 @@ class PluginInstallService
             $targetPath = $this->ensureUniqueFilePath($server, $targetPath);
             $this->createTargetDirectory($server, $type);
 
-            $content = file_get_contents($tempPath);
-            $this->fileRepository->setServer($server)->putContent($targetPath, $content);
+            $this->fileRepository->setServer($server)->putFile($targetPath, $tempPath);
 
             MarketplaceInstallLog::create([
                 'provider'        => $this->normalizeProviderForAnalytics($providerKey),
@@ -166,7 +165,7 @@ class PluginInstallService
                 'file_size_bytes' => $downloadedSize ?? 0,
                 'status'          => MarketplaceInstallLog::STATUS_SUCCESS,
                 'server_id'       => $server->id,
-                'user_id'         => auth()->id(),
+                'user_id'         => $userId ?? auth()->id(),
             ]);
         } catch (\Exception $e) {
             Log::error('PluginInstallService download error: ' . $e->getMessage());
@@ -179,7 +178,7 @@ class PluginInstallService
                     'file_size_bytes' => 0,
                     'status'          => MarketplaceInstallLog::STATUS_FAILED,
                     'server_id'       => $server->id,
-                    'user_id'         => auth()->id(),
+                    'user_id'         => $userId ?? auth()->id(),
                 ]);
             } catch (\Exception) {
                 // never let analytics recording break the user-facing error
@@ -363,8 +362,8 @@ class PluginInstallService
     private function getMaxSizeForType(string $type): int
     {
         return match ($type) {
-            'plugin' => (int) config('modules.mods.max_plugin_size', self::DEFAULT_MAX_PLUGIN_SIZE),
-            default => (int) config('modules.mods.max_mod_size', self::DEFAULT_MAX_MOD_SIZE),
+            'plugin' => (int) Setting::get('settings::modules:mods:max_plugin_size', config('modules.mods.max_plugin_size', self::DEFAULT_MAX_PLUGIN_SIZE)),
+            default  => (int) Setting::get('settings::modules:mods:max_mod_size', config('modules.mods.max_mod_size', self::DEFAULT_MAX_MOD_SIZE)),
         };
     }
 

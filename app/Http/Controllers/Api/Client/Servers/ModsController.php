@@ -18,6 +18,8 @@ use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Extensions\Packages\minecraft_startup_editor\MinecraftStartupOptions;
 use Everest\Services\Plugins\PluginInstallService;
 use Everest\Exceptions\Service\Mods\ModsServiceException;
+use Everest\Jobs\DownloadModJob;
+use Everest\Models\DownloadQueue;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetModRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\SearchModsRequest;
@@ -105,7 +107,7 @@ class ModsController extends ClientApiController
         return null;
     }
 
-    public function providerAccess(Server $server): JsonResponse
+    public function providerAccess(GetModRequest $request, Server $server): JsonResponse
     {
         $providers = [
             'modrinth.mods',
@@ -126,44 +128,49 @@ class ModsController extends ClientApiController
         ]);
     }
 
-    public function serverConfig(Server $server): JsonResponse
+    public function serverConfig(GetModRequest $request, Server $server): JsonResponse
     {
-        $versionVarNames = ['MINECRAFT_VERSION', 'MC_VERSION', 'VANILLA_VERSION'];
-        $detectedVersion = null;
-        foreach ($server->variables as $variable) {
-            if (in_array($variable->env_variable, $versionVarNames, true) && !empty($variable->server_value)) {
-                $detectedVersion = $variable->server_value;
-                break;
+        $cacheKey = "server:{$server->uuid}:server_config";
+
+        $result = Cache::remember($cacheKey, 60, function () use ($server) {
+            $versionVarNames = ['MINECRAFT_VERSION', 'MC_VERSION', 'VANILLA_VERSION'];
+            $detectedVersion = null;
+            foreach ($server->variables as $variable) {
+                if (in_array($variable->env_variable, $versionVarNames, true) && !empty($variable->server_value)) {
+                    $detectedVersion = $variable->server_value;
+                    break;
+                }
             }
-        }
 
-        $loaderName = MinecraftStartupOptions::detectLoader($server->egg->name ?? '');
+            $loaderName = MinecraftStartupOptions::detectLoader($server->egg->name ?? '');
 
-        // Plugin server platforms — not mod loaders
-        $pluginPlatforms = ['paper', 'spigot', 'bukkit', 'folia', 'purpur', 'velocity', 'waterfall', 'bungeecord', 'sponge'];
+            $pluginPlatforms = ['paper', 'spigot', 'bukkit', 'folia', 'purpur', 'velocity', 'waterfall', 'bungeecord', 'sponge'];
 
-        $detectedLoader   = null;
-        $detectedPlatform = null;
+            $detectedLoader   = null;
+            $detectedPlatform = null;
 
-        if ($loaderName !== null) {
-            if (in_array($loaderName, $pluginPlatforms, true)) {
-                $detectedPlatform = $loaderName;
-            } else {
-                $loaderIdMap = [
-                    'forge'    => ['id' => 1, 'name' => 'Forge',    'slug' => 'forge'],
-                    'neoforge' => ['id' => 6, 'name' => 'NeoForge', 'slug' => 'neoforge'],
-                    'fabric'   => ['id' => 4, 'name' => 'Fabric',   'slug' => 'fabric'],
-                    'quilt'    => ['id' => 5, 'name' => 'Quilt',    'slug' => 'quilt'],
-                ];
-                $detectedLoader = $loaderIdMap[$loaderName] ?? null;
+            if ($loaderName !== null) {
+                if (in_array($loaderName, $pluginPlatforms, true)) {
+                    $detectedPlatform = $loaderName;
+                } else {
+                    $loaderIdMap = [
+                        'forge'    => ['id' => 1, 'name' => 'Forge',    'slug' => 'forge'],
+                        'neoforge' => ['id' => 6, 'name' => 'NeoForge', 'slug' => 'neoforge'],
+                        'fabric'   => ['id' => 4, 'name' => 'Fabric',   'slug' => 'fabric'],
+                        'quilt'    => ['id' => 5, 'name' => 'Quilt',    'slug' => 'quilt'],
+                    ];
+                    $detectedLoader = $loaderIdMap[$loaderName] ?? null;
+                }
             }
-        }
 
-        return response()->json([
-            'detectedVersion'  => $detectedVersion,
-            'detectedLoader'   => $detectedLoader,
-            'detectedPlatform' => $detectedPlatform,
-        ]);
+            return [
+                'detectedVersion'  => $detectedVersion,
+                'detectedLoader'   => $detectedLoader,
+                'detectedPlatform' => $detectedPlatform,
+            ];
+        });
+
+        return response()->json($result);
     }
 
     public function installed(GetInstalledAddonsRequest $request, Server $server): JsonResponse
@@ -374,9 +381,7 @@ class ModsController extends ClientApiController
     }
 
     /**
-     * Download a mod file and upload it to the server's /mods folder.
-     *
-     * @throws ModsServiceException
+     * Queue a mod/plugin/modpack download for background processing.
      */
     public function downloadMod(DownloadModRequest $request, Server $server, string $modId, string $fileId): JsonResponse
     {
@@ -386,26 +391,58 @@ class ModsController extends ClientApiController
             return $response;
         }
 
-        try {
-            $source = $request->input('source') ?? Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth'));
-            $type = $resource === 'plugins' || in_array($source, ['spiget', 'spigot'], true) ? 'plugin' : 'mod';
-            $result = $this->pluginInstallService->installFromProvider($server, $source, $type, $modId, $fileId);
+        $source = $request->input('source') ?? Setting::get('settings::modules:mods:default_source', config('modules.mods.default_source', 'modrinth'));
+        $type   = $resource === 'plugins' || in_array($source, ['spiget', 'spigot'], true) ? 'plugin' : 'mod';
 
-            // Invalidate cache after successful download.
-            $this->invalidateInstalledCache($server, $type === 'plugin' ? 'plugins' : 'mods');
+        // Enforce per-user per-minute submission rate.
+        $maxPerMinute   = (int) Setting::get('settings::modules:mods:download_max_per_minute', config('modules.mods.download.max_per_minute_per_user', 10));
+        $userRateKey    = 'download_queue_rate:' . $server->uuid . ':' . auth()->id();
+        $userSubmissions = Cache::get($userRateKey, 0);
 
-            return response()->json($result);
-        } catch (ModsServiceException $e) {
+        if ($userSubmissions >= $maxPerMinute) {
             return response()->json([
-                'error' => $e->getMessage(),
-            ], 500);
-        } catch (\Exception $e) {
-            Log::error('Mod download failed: ' . $e->getMessage());
-
-            return response()->json([
-                'error' => 'An unexpected error occurred while downloading the mod.',
-            ], 500);
+                'error' => "You can only queue {$maxPerMinute} downloads per minute. Please wait before adding more.",
+            ], 429);
         }
+
+        // Enforce per-server queue size cap.
+        $maxQueueSize = (int) Setting::get('settings::modules:mods:download_max_queue_size', config('modules.mods.download.max_queue_size_per_server', 20));
+        $activeCount  = DownloadQueue::where('server_id', $server->id)
+            ->whereNotIn('status', DownloadQueue::TERMINAL_STATUSES)
+            ->count();
+
+        if ($activeCount >= $maxQueueSize) {
+            return response()->json([
+                'error' => "The download queue is full ({$maxQueueSize} items). Wait for current downloads to finish.",
+            ], 429);
+        }
+
+        $queueItem = DownloadQueue::create([
+            'uuid'       => Str::uuid()->toString(),
+            'server_id'  => $server->id,
+            'user_id'    => auth()->id(),
+            'provider'   => $source,
+            'source'     => $type,
+            'project_id' => $modId,
+            'file_id'    => $fileId,
+            'status'     => DownloadQueue::STATUS_PENDING,
+        ]);
+
+        dispatch(new DownloadModJob($queueItem));
+
+        // Increment the per-user rate counter.
+        Cache::put($userRateKey, $userSubmissions + 1, 60);
+
+        $position = DownloadQueue::where('server_id', $server->id)
+            ->where('status', DownloadQueue::STATUS_PENDING)
+            ->where('id', '<=', $queueItem->id)
+            ->count();
+
+        return response()->json([
+            'queued'    => true,
+            'queue_id'  => $queueItem->uuid,
+            'position'  => $position,
+        ], 202);
     }
 
     /**

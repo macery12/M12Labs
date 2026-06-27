@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import tw from 'twin.macro';
 import { ServerContext } from '@/state/server';
+import { useStoreState } from '@/state/hooks';
 import Input from '@/elements/Input';
 import Label from '@/elements/Label';
 import Select from '@/elements/Select';
@@ -61,6 +62,7 @@ const DEFAULT_SORT_OPTIONS = [
 
 export default ({ onSearch, initialParams, source, contentType = 'mods', filtersMeta, detectedConfig, onShowAll }: Props) => {
     const uuid = ServerContext.useStoreState(state => state.server.data!.uuid);
+    const { colors } = useStoreState(state => state.theme.data!);
     const { addError } = useFlash();
 
     const [searchFilter, setSearchFilter] = useState(initialParams.searchFilter || '');
@@ -246,7 +248,7 @@ export default ({ onSearch, initialParams, source, contentType = 'mods', filters
     return (
         <form onSubmit={handleSubmit}>
             {isFilteringByDetected && (
-                <div css={tw`flex items-center gap-3 mb-4 px-3 py-2 rounded text-sm bg-neutral-800 border border-neutral-700`}>
+                <div css={tw`flex items-center gap-3 mb-4 px-3 py-2 rounded text-sm border border-neutral-700`} style={{ backgroundColor: colors.secondary }}>
                     <span css={tw`text-neutral-400`}>Detected:</span>
                     <span css={tw`text-neutral-200 font-medium`}>{detectedLabel}</span>
                     <span css={tw`text-neutral-500 text-xs`}>— filters pre-applied</span>
