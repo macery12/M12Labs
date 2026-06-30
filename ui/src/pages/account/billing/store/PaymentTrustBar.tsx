@@ -1,9 +1,8 @@
-import { useTranslation } from 'react-i18next';
+import { m } from '@/i18n';
 import { Lock, Zap, CreditCard } from 'lucide-react';
 
 // Trust bar: accepted payment methods plus a couple of reassurance points.
 export function PaymentTrustBar() {
-    const { t } = useTranslation('billing');
     const methods = ['Stripe', 'PayPal'];
 
     return (
@@ -14,8 +13,8 @@ export function PaymentTrustBar() {
                         <Lock className="h-4 w-4" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-[var(--color-ink)]">{t('store.trust.secureTitle')}</p>
-                        <p className="text-xs text-[var(--color-ink-muted)]">{t('store.trust.secureBody')}</p>
+                        <p className="text-sm font-semibold text-[var(--color-ink)]">{m['billing.store.trust.secureTitle']()}</p>
+                        <p className="text-xs text-[var(--color-ink-muted)]">{m['billing.store.trust.secureBody']()}</p>
                     </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -23,8 +22,8 @@ export function PaymentTrustBar() {
                         <Zap className="h-4 w-4" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-[var(--color-ink)]">{t('store.trust.instantTitle')}</p>
-                        <p className="text-xs text-[var(--color-ink-muted)]">{t('store.trust.instantBody')}</p>
+                        <p className="text-sm font-semibold text-[var(--color-ink)]">{m['billing.store.trust.instantTitle']()}</p>
+                        <p className="text-xs text-[var(--color-ink-muted)]">{m['billing.store.trust.instantBody']()}</p>
                     </div>
                 </div>
                 {methods.length > 0 && (
@@ -33,7 +32,7 @@ export function PaymentTrustBar() {
                             <CreditCard className="h-4 w-4" />
                         </div>
                         <div>
-                            <p className="text-sm font-semibold text-[var(--color-ink)]">{t('store.trust.accepted')}</p>
+                            <p className="text-sm font-semibold text-[var(--color-ink)]">{m['billing.store.trust.accepted']()}</p>
                             <div className="mt-1 flex flex-wrap gap-1.5">
                                 {methods.map(m => (
                                     <span

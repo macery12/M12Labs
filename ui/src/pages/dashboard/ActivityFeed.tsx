@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { History } from 'lucide-react';
 import { getAccountActivity } from '@/api/activity';
 import { timeAgo } from '@/lib/format';
@@ -13,7 +13,6 @@ function prettyEvent(event: string): string {
 }
 
 export function ActivityFeed() {
-    const { t } = useTranslation(['dashboard', 'common']);
     const { data: entries, isLoading } = useQuery({
         queryKey: ['account-activity'],
         queryFn: getAccountActivity,
@@ -22,12 +21,12 @@ export function ActivityFeed() {
     return (
         <section className="flex flex-col gap-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-ink-muted)]">
-                <History className="h-4 w-4" /> {t('recentActivity')}
+                <History className="h-4 w-4" /> {m['dashboard.recentActivity']()}
             </h2>
             <div className="rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70 p-2">
-                {isLoading && <p className="px-3 py-4 text-sm text-[var(--color-ink-faint)]">{t('common:states.loading')}</p>}
+                {isLoading && <p className="px-3 py-4 text-sm text-[var(--color-ink-faint)]">{m['common.states.loading']()}</p>}
                 {!isLoading && (!entries || entries.length === 0) && (
-                    <p className="px-3 py-4 text-sm text-[var(--color-ink-faint)]">{t('noActivity')}</p>
+                    <p className="px-3 py-4 text-sm text-[var(--color-ink-faint)]">{m['dashboard.noActivity']()}</p>
                 )}
                 {entries?.map((entry, i) => (
                     <div

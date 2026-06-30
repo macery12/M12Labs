@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useState, type ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Check, Cpu, HardDrive, MemoryStick, Database, Network, Archive, Globe, Tag, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Input } from '@/components/ui/Input';
@@ -80,7 +80,6 @@ export function CycleCard({
     selected: boolean;
     onSelect: () => void;
 }) {
-    const { t } = useTranslation('billing');
     const { money } = useBilling();
     const perMonth = cycle.days > 0 ? cycle.price / (cycle.days / 30) : cycle.price;
     return (
@@ -102,17 +101,17 @@ export function CycleCard({
                     </p>
                     {cycle.discountPercent > 0 && (
                         <span className="rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent)]">
-                            {t('cycle.save', { percent: cycle.discountPercent })}
+                            {m['billing.cycle.save']({ percent: cycle.discountPercent })}
                         </span>
                     )}
                 </div>
                 <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-                    {t('cycle.perMonthBilled', { price: money(perMonth), days: cycle.days })}
+                    {m['billing.cycle.perMonthBilled']({ price: money(perMonth), days: cycle.days })}
                 </p>
             </div>
             <div className="text-right">
                 <p className="font-semibold text-[var(--color-ink)]">{money(cycle.price)}</p>
-                <p className="text-[10px] uppercase tracking-wide text-[var(--color-ink-faint)]">{t('cycle.perTerm')}</p>
+                <p className="text-[10px] uppercase tracking-wide text-[var(--color-ink-faint)]">{m['billing.cycle.perTerm']()}</p>
             </div>
         </button>
     );
@@ -166,15 +165,14 @@ export function VariableField({
 // ---- Spec chips (product limits) -------------------------------------------
 
 export function SpecChips({ limits }: { limits: ProductLimits }) {
-    const { t } = useTranslation('billing');
     const specs = [
-        { icon: Cpu, label: t('specs.cpu', { value: limits.cpu }) },
-        { icon: MemoryStick, label: t('specs.ram', { value: gb(limits.memory) }) },
-        { icon: HardDrive, label: t('specs.ssd', { value: gb(limits.disk) }) },
-        ...(limits.backup ? [{ icon: Archive, label: t('specs.backups', { count: limits.backup }) }] : []),
-        ...(limits.database ? [{ icon: Database, label: t('specs.databases', { count: limits.database }) }] : []),
-        { icon: Network, label: t('specs.ports', { count: limits.allocation }) },
-        ...(limits.subdomain != null ? [{ icon: Globe, label: t('specs.subdomains', { count: limits.subdomain }) }] : []),
+        { icon: Cpu, label: m['billing.specs.cpu']({ value: limits.cpu }) },
+        { icon: MemoryStick, label: m['billing.specs.ram']({ value: gb(limits.memory) }) },
+        { icon: HardDrive, label: m['billing.specs.ssd']({ value: gb(limits.disk) }) },
+        ...(limits.backup ? [{ icon: Archive, label: m['billing.specs.backups']({ count: limits.backup }) }] : []),
+        ...(limits.database ? [{ icon: Database, label: m['billing.specs.databases']({ count: limits.database }) }] : []),
+        { icon: Network, label: m['billing.specs.ports']({ count: limits.allocation }) },
+        ...(limits.subdomain != null ? [{ icon: Globe, label: m['billing.specs.subdomains']({ count: limits.subdomain }) }] : []),
     ];
     return (
         <div className="flex flex-wrap gap-2">
@@ -193,7 +191,6 @@ export function SpecChips({ limits }: { limits: ProductLimits }) {
 // ---- Coupon input -----------------------------------------------------------
 
 function CouponBox({ checkout }: { checkout: CheckoutController }) {
-    const { t } = useTranslation('billing');
     const [code, setCode] = useState('');
     const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
@@ -223,7 +220,7 @@ function CouponBox({ checkout }: { checkout: CheckoutController }) {
             <div className="flex gap-2">
                 <Input
                     value={code}
-                    placeholder={t('coupon.placeholder')}
+                    placeholder={m['billing.coupon.placeholder']()}
                     className="h-10"
                     onChange={e => setCode(e.target.value)}
                 />
@@ -235,7 +232,7 @@ function CouponBox({ checkout }: { checkout: CheckoutController }) {
                     disabled={checkout.couponBusy}
                     onClick={async () => setFeedback(await checkout.applyCoupon(code))}
                 >
-                    {checkout.couponBusy ? <Spinner className="h-4 w-4" /> : t('coupon.apply')}
+                    {checkout.couponBusy ? <Spinner className="h-4 w-4" /> : m['billing.coupon.apply']()}
                 </Button>
             </div>
             {feedback && !feedback.ok && <p className="text-xs text-[var(--color-danger)]">{feedback.message}</p>}
@@ -254,7 +251,6 @@ export function SummaryCart({
     cta?: ReactNode;
     showCoupon?: boolean;
 }) {
-    const { t } = useTranslation('billing');
     const { money } = useBilling();
     const { product } = checkout;
     if (!product) return null;
@@ -273,7 +269,7 @@ export function SummaryCart({
     return (
         <div className="rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)]/80 p-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
-                {t('summary.yourBuild')}
+                {m['billing.summary.yourBuild']()}
             </p>
 
             <div className="mt-3 rounded-xl bg-[var(--color-surface-2)]/60 p-3">
@@ -287,11 +283,11 @@ export function SummaryCart({
             </div>
 
             <div className="mt-4 space-y-2">
-                <Row label={t('summary.location')} value={node?.name ?? '—'} />
-                <Row label={t('summary.software')} value={egg?.name ?? '—'} />
-                <Row label={t('summary.serverName')} value={checkout.serverName.trim() || t('summary.notSet')} />
+                <Row label={m['billing.summary.location']()} value={node?.name ?? '—'} />
+                <Row label={m['billing.summary.software']()} value={egg?.name ?? '—'} />
+                <Row label={m['billing.summary.serverName']()} value={checkout.serverName.trim() || m['billing.summary.notSet']()} />
                 <Row
-                    label={t('summary.billingCycle')}
+                    label={m['billing.summary.billingCycle']()}
                     value={checkout.selectedCycle?.label ?? `${checkout.cycleDays} days`}
                 />
             </div>
@@ -299,11 +295,11 @@ export function SummaryCart({
             <div className="my-4 h-px bg-[var(--color-border)]" />
 
             <div className="space-y-2">
-                <Row label={t('summary.subtotal')} value={money(checkout.basePrice)} />
+                <Row label={m['billing.summary.subtotal']()} value={money(checkout.basePrice)} />
                 {couponSavings > 0 && (
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-[var(--color-accent)]">
-                            {t('summary.coupon', { code: checkout.couponData?.coupon.code })}
+                            {m['billing.summary.coupon']({ code: checkout.couponData?.coupon.code ?? '' })}
                         </span>
                         <span className="font-medium text-[var(--color-accent)]">−{money(couponSavings)}</span>
                     </div>
@@ -311,9 +307,9 @@ export function SummaryCart({
             </div>
 
             <div className="mt-4 flex items-end justify-between">
-                <span className="text-sm text-[var(--color-ink-muted)]">{t('summary.totalDue')}</span>
+                <span className="text-sm text-[var(--color-ink-muted)]">{m['billing.summary.totalDue']()}</span>
                 <span className="text-2xl font-bold text-[var(--color-ink)]">
-                    {checkout.isFree ? t('summary.free') : money(checkout.total)}
+                    {checkout.isFree ? m['billing.summary.free']() : money(checkout.total)}
                 </span>
             </div>
 

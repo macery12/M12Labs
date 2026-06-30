@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { ScrollText } from 'lucide-react';
 import { Panel } from './Panel';
 import { useServer } from '@/components/server/ServerContext';
@@ -12,7 +12,6 @@ function prettyEvent(event: string): string {
 }
 
 export function ActivityPanel() {
-    const { t } = useTranslation(['server', 'common']);
     const server = useServer();
     const { data: entries, isLoading } = useQuery({
         queryKey: ['server-activity', server.id],
@@ -20,10 +19,10 @@ export function ActivityPanel() {
     });
 
     return (
-        <Panel title={t('activity.title')} icon={ScrollText} bodyClassName="max-h-72 overflow-y-auto">
-            {isLoading && <p className="text-sm text-[var(--color-ink-faint)]">{t('common:states.loading')}</p>}
+        <Panel title={m['server.activity.title']()} icon={ScrollText} bodyClassName="max-h-72 overflow-y-auto">
+            {isLoading && <p className="text-sm text-[var(--color-ink-faint)]">{m['common.states.loading']()}</p>}
             {!isLoading && (!entries || entries.length === 0) && (
-                <p className="text-sm text-[var(--color-ink-faint)]">{t('activity.empty')}</p>
+                <p className="text-sm text-[var(--color-ink-faint)]">{m['server.activity.empty']()}</p>
             )}
             <div className="flex flex-col">
                 {entries?.map((entry, i) => (

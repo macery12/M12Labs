@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useEffect, useMemo, useState, lazy, Suspense } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Elements } from '@stripe/react-stripe-js';
@@ -34,7 +34,6 @@ const PayPalButton = lazy(() => import('./PayPalButton'));
 type Method = 'stripe' | 'paypal';
 
 export default function PaymentPage() {
-    const { t } = useTranslation('billing');
     const [params] = useSearchParams();
     const navigate = useNavigate();
     const push = useFlashes(s => s.push);
@@ -77,7 +76,7 @@ export default function PaymentPage() {
             .then(setCouponData)
             .catch(() => {
                 setCouponData(null);
-                push({ type: 'warning', message: t('payment.couponRemoved') });
+                push({ type: 'warning', message: m['billing.payment.couponRemoved']() });
             });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [product?.id]);
@@ -99,7 +98,7 @@ export default function PaymentPage() {
                 const instance = await loadStripeOnce(key);
                 if (!cancelled) setStripe(instance);
             } catch {
-                if (!cancelled) push({ type: 'error', message: t('payment.cardError') });
+                if (!cancelled) push({ type: 'error', message: m['billing.payment.cardError']() });
             }
         })();
         return () => {
@@ -112,7 +111,7 @@ export default function PaymentPage() {
         return (
             <div className="space-y-4">
                 <BackLink />
-                <Notice tone="warning">{t('payment.missingDraft')}</Notice>
+                <Notice tone="warning">{m['billing.payment.missingDraft']()}</Notice>
             </div>
         );
     }
@@ -129,7 +128,7 @@ export default function PaymentPage() {
         return (
             <div className="space-y-4">
                 <BackLink />
-                <Notice tone="danger">{t('payment.loadError')}</Notice>
+                <Notice tone="danger">{m['billing.payment.loadError']()}</Notice>
             </div>
         );
     }
@@ -152,32 +151,32 @@ export default function PaymentPage() {
             clearDraft(productId);
             navigate('/v2/account/billing/success');
         } catch {
-            push({ type: 'error', message: t('configure.createServerError') });
+            push({ type: 'error', message: m['billing.configure.createServerError']() });
             setCreatingFree(false);
         }
     };
 
     const summaryRows: [string, string][] = [
-        [t('payment.plan'), product.name],
-        [t('payment.serverName'), draft.serverName],
-        [t('payment.location'), node?.name ?? '—'],
-        [t('payment.software'), eggQ.data?.name ?? '—'],
-        [t('payment.billingCycle'), cycle?.label ?? `${draft.cycleDays} days`],
+        [m['billing.payment.plan'](), product.name],
+        [m['billing.payment.serverName'](), draft.serverName],
+        [m['billing.payment.location'](), node?.name ?? '—'],
+        [m['billing.payment.software'](), eggQ.data?.name ?? '—'],
+        [m['billing.payment.billingCycle'](), cycle?.label ?? `${draft.cycleDays} days`],
     ];
 
     return (
         <div className="flex flex-col gap-6">
             <div>
                 <BackLink />
-                <h1 className="mt-3 text-2xl font-semibold tracking-tight">{t('payment.title')}</h1>
-                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('payment.subtitle')}</p>
+                <h1 className="mt-3 text-2xl font-semibold tracking-tight">{m['billing.payment.title']()}</h1>
+                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['billing.payment.subtitle']()}</p>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-12">
                 <div className="space-y-6 lg:col-span-8">
                     <div className="rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)]/60 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
-                            {t('payment.orderSummary')}
+                            {m['billing.payment.orderSummary']()}
                         </p>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                             {summaryRows.map(([label, value]) => (
@@ -194,20 +193,20 @@ export default function PaymentPage() {
 
                     <div className="rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)]/60 p-5">
                         <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
-                            {t('payment.method')}
+                            {m['billing.payment.method']()}
                         </p>
 
                         {isFree ? (
                             <div className="space-y-4">
                                 <Notice tone="success">
-                                    {couponId ? t('payment.freeNoticeCoupon') : t('payment.freeNotice')}
+                                    {couponId ? m['billing.payment.freeNoticeCoupon']() : m['billing.payment.freeNotice']()}
                                 </Notice>
                                 <Button size="lg" className="w-full" disabled={creatingFree} onClick={createFree}>
-                                    {creatingFree ? <Spinner className="h-5 w-5" /> : t('payment.createServer')}
+                                    {creatingFree ? <Spinner className="h-5 w-5" /> : m['billing.payment.createServer']()}
                                 </Button>
                             </div>
                         ) : availableMethods.length === 0 ? (
-                            <Notice tone="danger">{t('payment.noMethods')}</Notice>
+                            <Notice tone="danger">{m['billing.payment.noMethods']()}</Notice>
                         ) : (
                             <div className="space-y-4">
                                 {availableMethods.length > 1 && (
@@ -273,33 +272,30 @@ export default function PaymentPage() {
                 <div className="lg:col-span-4">
                     <div className="sticky top-24 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)]/80 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
-                            {t('payment.total')}
+                            {m['billing.payment.total']()}
                         </p>
                         <div className="mt-3 space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-[var(--color-ink-muted)]">{t('payment.subtotal')}</span>
+                                <span className="text-[var(--color-ink-muted)]">{m['billing.payment.subtotal']()}</span>
                                 <span className="font-medium text-[var(--color-ink)]">{money(basePrice)}</span>
                             </div>
                             {couponData && couponData.discount > 0 && (
                                 <div className="flex justify-between">
                                     <span className="text-[var(--color-accent)]">
-                                        {t('summary.coupon', { code: couponData.coupon.code })}
+                                        {m['billing.summary.coupon']({ code: couponData.coupon.code })}
                                     </span>
                                     <span className="font-medium text-[var(--color-accent)]">−{money(couponData.discount)}</span>
                                 </div>
                             )}
                         </div>
                         <div className="mt-4 flex items-end justify-between border-t border-[var(--color-border)] pt-4">
-                            <span className="text-sm text-[var(--color-ink-muted)]">{t('payment.dueToday')}</span>
+                            <span className="text-sm text-[var(--color-ink-muted)]">{m['billing.payment.dueToday']()}</span>
                             <span className="text-2xl font-bold text-[var(--color-ink)]">
-                                {isFree ? t('payment.free') : money(total)}
+                                {isFree ? m['billing.payment.free']() : money(total)}
                             </span>
                         </div>
                         <p className="mt-3 text-[11px] text-[var(--color-ink-faint)]">
-                            {t('payment.billedEvery', {
-                                currency: billing.currency.code.toUpperCase(),
-                                days: draft.cycleDays,
-                            })}
+                            {m['billing.payment.billedEvery']({ currency: billing.currency.code.toUpperCase(), days: draft.cycleDays })}
                         </p>
                     </div>
                 </div>
@@ -324,13 +320,12 @@ function LazyPayPalButton(props: React.ComponentProps<typeof PayPalButton>) {
 }
 
 function BackLink() {
-    const { t } = useTranslation('billing');
     return (
         <Link
             to="/v2/account/billing/order"
             className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
         >
-            <ArrowLeft className="h-4 w-4" /> {t('payment.back')}
+            <ArrowLeft className="h-4 w-4" /> {m['billing.payment.back']()}
         </Link>
     );
 }

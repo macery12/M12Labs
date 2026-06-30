@@ -1,6 +1,6 @@
+import { m, td } from '@/i18n';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
 import { Cpu, MemoryStick, HardDrive, MoreVertical, Pencil, Power, PowerOff, RefreshCw, Trash2 } from 'lucide-react';
@@ -19,18 +19,16 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SERVER_STATE } from './serverState';
 
 function StateDot({ server }: { server: AdminServer }) {
-    const { t } = useTranslation('admin');
     const s = SERVER_STATE[server.state];
     return (
         <span className="flex items-center gap-2">
             <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: s.color }} />
-            <span className="text-[11px] font-medium text-[var(--color-ink-muted)]">{t(`servers.state.${server.state}` as never, { defaultValue: s.label })}</span>
+            <span className="text-[11px] font-medium text-[var(--color-ink-muted)]">{td(`admin.servers.state.${server.state}`, s.label)}</span>
         </span>
     );
 }
 
 function RowActions({ server, onEdit, onDelete }: { server: AdminServer; onEdit: () => void; onDelete: () => void }) {
-    const { t } = useTranslation('admin');
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
     const held = useAdminHeld();
@@ -45,14 +43,14 @@ function RowActions({ server, onEdit, onDelete }: { server: AdminServer; onEdit:
                 push({ type: 'success', message: msg });
                 return qc.invalidateQueries({ queryKey: ['admin', 'servers'] });
             })
-            .catch(() => push({ type: 'error', message: t('infrastructure.common.genericError') }));
+            .catch(() => push({ type: 'error', message: m['admin.infrastructure.common.genericError']() }));
 
     const suspended = server.state === 'suspended';
 
     return (
         <Dropdown.Root>
             <Dropdown.Trigger
-                aria-label={t('infrastructure.server.actionsLabel')}
+                aria-label={m['admin.infrastructure.server.actionsLabel']()}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)] focus:outline-none"
             >
                 <MoreVertical className="h-4 w-4" />
@@ -65,17 +63,17 @@ function RowActions({ server, onEdit, onDelete }: { server: AdminServer; onEdit:
                 >
                     {canUpdate && (
                         <>
-                            <Item icon={Pencil} label={t('infrastructure.server.edit')} onSelect={onEdit} />
+                            <Item icon={Pencil} label={m['admin.infrastructure.server.edit']()} onSelect={onEdit} />
                             {suspended ? (
-                                <Item icon={Power} label={t('infrastructure.server.unsuspend')} onSelect={() => act(() => unsuspendServer(server.id), t('infrastructure.server.unsuspended'))} />
+                                <Item icon={Power} label={m['admin.infrastructure.server.unsuspend']()} onSelect={() => act(() => unsuspendServer(server.id), m['admin.infrastructure.server.unsuspended']())} />
                             ) : (
-                                <Item icon={PowerOff} label={t('infrastructure.server.suspend')} onSelect={() => act(() => suspendServer(server.id), t('infrastructure.server.suspended'))} />
+                                <Item icon={PowerOff} label={m['admin.infrastructure.server.suspend']()} onSelect={() => act(() => suspendServer(server.id), m['admin.infrastructure.server.suspended']())} />
                             )}
-                            <Item icon={RefreshCw} label={t('infrastructure.server.reinstall')} onSelect={() => act(() => reinstallServer(server.id), t('infrastructure.server.reinstalled'))} />
+                            <Item icon={RefreshCw} label={m['admin.infrastructure.server.reinstall']()} onSelect={() => act(() => reinstallServer(server.id), m['admin.infrastructure.server.reinstalled']())} />
                         </>
                     )}
                     {canDelete && (
-                        <Item icon={Trash2} label={t('infrastructure.common.delete')} danger onSelect={onDelete} />
+                        <Item icon={Trash2} label={m['admin.infrastructure.common.delete']()} danger onSelect={onDelete} />
                     )}
                 </Dropdown.Content>
             </Dropdown.Portal>
@@ -97,7 +95,6 @@ function Item({ icon: Icon, label, onSelect, danger }: { icon: typeof Pencil; la
 }
 
 export function ServersTable({ servers }: { servers: AdminServer[] }) {
-    const { t } = useTranslation('admin');
     const navigate = useNavigate();
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
@@ -106,11 +103,11 @@ export function ServersTable({ servers }: { servers: AdminServer[] }) {
     const del = useMutation({
         mutationFn: ({ id, force }: { id: number; force: boolean }) => deleteServer(id, force),
         onSuccess: async () => {
-            push({ type: 'success', message: t('infrastructure.server.deleted') });
+            push({ type: 'success', message: m['admin.infrastructure.server.deleted']() });
             await qc.invalidateQueries({ queryKey: ['admin', 'servers'] });
             setToDelete(null);
         },
-        onError: () => push({ type: 'error', message: t('infrastructure.common.genericError') }),
+        onError: () => push({ type: 'error', message: m['admin.infrastructure.common.genericError']() }),
     });
 
     return (
@@ -118,11 +115,11 @@ export function ServersTable({ servers }: { servers: AdminServer[] }) {
             <table className="w-full border-collapse text-sm">
                 <thead>
                     <tr className="border-b border-[var(--color-border-strong)] text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
-                        <th className="px-4 py-2.5 font-semibold">{t('servers.table.status')}</th>
-                        <th className="px-4 py-2.5 font-semibold">{t('servers.table.server')}</th>
-                        <th className="hidden px-4 py-2.5 font-semibold md:table-cell">{t('servers.table.node')}</th>
-                        <th className="hidden px-4 py-2.5 font-semibold lg:table-cell">{t('servers.table.owner')}</th>
-                        <th className="px-4 py-2.5 text-right font-semibold">{t('servers.table.limits')}</th>
+                        <th className="px-4 py-2.5 font-semibold">{m['admin.servers.table.status']()}</th>
+                        <th className="px-4 py-2.5 font-semibold">{m['admin.servers.table.server']()}</th>
+                        <th className="hidden px-4 py-2.5 font-semibold md:table-cell">{m['admin.servers.table.node']()}</th>
+                        <th className="hidden px-4 py-2.5 font-semibold lg:table-cell">{m['admin.servers.table.owner']()}</th>
+                        <th className="px-4 py-2.5 text-right font-semibold">{m['admin.servers.table.limits']()}</th>
                         <th className="w-8 px-4 py-2.5" />
                     </tr>
                 </thead>
@@ -149,15 +146,15 @@ export function ServersTable({ servers }: { servers: AdminServer[] }) {
                             </td>
                             <td className="px-4 py-3">
                                 <div className="flex items-center justify-end gap-3 font-mono text-[11px] tabular-nums text-[var(--color-ink-muted)]">
-                                    <span className="flex items-center gap-1" title={t('servers.table.cpuLimit')}>
+                                    <span className="flex items-center gap-1" title={m['admin.servers.table.cpuLimit']()}>
                                         <Cpu className="h-3 w-3 text-[var(--color-ink-faint)]" />
                                         {s.limits.cpu > 0 ? `${s.limits.cpu}%` : '∞'}
                                     </span>
-                                    <span className="flex items-center gap-1" title={t('servers.table.memoryLimit')}>
+                                    <span className="flex items-center gap-1" title={m['admin.servers.table.memoryLimit']()}>
                                         <MemoryStick className="h-3 w-3 text-[var(--color-ink-faint)]" />
                                         {formatMib(s.limits.memory)}
                                     </span>
-                                    <span className="flex items-center gap-1" title={t('servers.table.diskLimit')}>
+                                    <span className="flex items-center gap-1" title={m['admin.servers.table.diskLimit']()}>
                                         <HardDrive className="h-3 w-3 text-[var(--color-ink-faint)]" />
                                         {formatMib(s.limits.disk)}
                                     </span>
@@ -178,12 +175,12 @@ export function ServersTable({ servers }: { servers: AdminServer[] }) {
             <ConfirmDialog
                 open={!!toDelete}
                 onClose={() => setToDelete(null)}
-                title={t('infrastructure.server.deleteTitle')}
-                body={t('infrastructure.server.deleteBody', { name: toDelete?.name ?? '' })}
-                confirmLabel={t('infrastructure.common.delete')}
-                cancelLabel={t('infrastructure.common.cancel')}
+                title={m['admin.infrastructure.server.deleteTitle']()}
+                body={m['admin.infrastructure.server.deleteBody']({ name: toDelete?.name ?? '' })}
+                confirmLabel={m['admin.infrastructure.common.delete']()}
+                cancelLabel={m['admin.infrastructure.common.cancel']()}
                 busy={del.isPending}
-                force={{ label: t('infrastructure.server.forceDelete') }}
+                force={{ label: m['admin.infrastructure.server.forceDelete']() }}
                 onConfirm={force => toDelete && del.mutate({ id: toDelete.id, force })}
             />
         </div>

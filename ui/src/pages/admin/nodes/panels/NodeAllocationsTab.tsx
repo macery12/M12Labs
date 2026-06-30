@@ -1,7 +1,7 @@
+import { m } from '@/i18n';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
 import { Network, Plus, Trash2 } from 'lucide-react';
 import { Panel } from '@/components/ui/Panel';
@@ -23,7 +23,6 @@ interface AddForm {
 }
 
 export function NodeAllocationsTab() {
-    const { t } = useTranslation('admin');
     const node = useNode();
     const qc = useQueryClient();
     const push = useFlashes(s => s.push);
@@ -58,33 +57,33 @@ export function NodeAllocationsTab() {
             return createAllocations(node.id, payload);
         },
         onSuccess: async () => {
-            push({ type: 'success', message: t('infrastructure.alloc.added') });
+            push({ type: 'success', message: m['admin.infrastructure.alloc.added']() });
             await invalidate();
             reset({ ip: '0.0.0.0', alias: '', start_port: 25565, end_port: '' });
         },
         onError: err =>
-            push({ type: 'error', message: (isAxiosError(err) && err.response?.data?.message) || t('infrastructure.common.genericError') }),
+            push({ type: 'error', message: (isAxiosError(err) && err.response?.data?.message) || m['admin.infrastructure.common.genericError']() }),
     });
 
     const del = useMutation({
         mutationFn: (id: number) => deleteAllocation(node.id, id),
         onSuccess: async () => {
-            push({ type: 'success', message: t('infrastructure.alloc.deleted') });
+            push({ type: 'success', message: m['admin.infrastructure.alloc.deleted']() });
             await invalidate();
             setToDelete(null);
         },
-        onError: () => push({ type: 'error', message: t('infrastructure.common.genericError') }),
+        onError: () => push({ type: 'error', message: m['admin.infrastructure.common.genericError']() }),
     });
 
-    const req = { required: t('infrastructure.common.required') };
+    const req = { required: m['admin.infrastructure.common.required']() };
 
     return (
         <Panel
-            title={t('nodes.allocationsTab.title')}
+            title={m['admin.nodes.allocationsTab.title']()}
             icon={Network}
             right={
                 <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-                    {t('nodes.allocationsTab.assigned', { assigned, total })}
+                    {m['admin.nodes.allocationsTab.assigned']({ assigned, total })}
                 </span>
             }
             bodyClassName="max-h-[36rem] overflow-y-auto"
@@ -94,13 +93,13 @@ export function NodeAllocationsTab() {
                     onSubmit={handleSubmit(v => add.mutate(v))}
                     className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 p-3 sm:grid-cols-5"
                 >
-                    <Input className="h-9" placeholder={t('infrastructure.alloc.ip')} invalid={!!errors.ip} {...register('ip', req)} />
-                    <Input className="h-9" placeholder={t('infrastructure.alloc.alias')} {...register('alias')} />
-                    <Input className="h-9" type="number" placeholder={t('infrastructure.alloc.startPort')} {...register('start_port', { valueAsNumber: true, ...req })} />
-                    <Input className="h-9" type="number" placeholder={t('infrastructure.alloc.endPort')} {...register('end_port')} />
+                    <Input className="h-9" placeholder={m['admin.infrastructure.alloc.ip']()} invalid={!!errors.ip} {...register('ip', req)} />
+                    <Input className="h-9" placeholder={m['admin.infrastructure.alloc.alias']()} {...register('alias')} />
+                    <Input className="h-9" type="number" placeholder={m['admin.infrastructure.alloc.startPort']()} {...register('start_port', { valueAsNumber: true, ...req })} />
+                    <Input className="h-9" type="number" placeholder={m['admin.infrastructure.alloc.endPort']()} {...register('end_port')} />
                     <Button type="submit" size="sm" disabled={add.isPending}>
                         {add.isPending ? <Spinner className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                        {t('infrastructure.alloc.add')}
+                        {m['admin.infrastructure.alloc.add']()}
                     </Button>
                 </form>
             )}
@@ -110,7 +109,7 @@ export function NodeAllocationsTab() {
                     <Spinner className="h-6 w-6" />
                 </div>
             ) : !allocations || allocations.length === 0 ? (
-                <p className="py-6 text-sm text-[var(--color-ink-faint)]">{t('nodes.allocationsTab.none')}</p>
+                <p className="py-6 text-sm text-[var(--color-ink-faint)]">{m['admin.nodes.allocationsTab.none']()}</p>
             ) : (
                 <div className="flex flex-col">
                     {allocations.map(a => (
@@ -128,7 +127,7 @@ export function NodeAllocationsTab() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="truncate font-mono text-[11px] text-[var(--color-ink-faint)]">
-                                    {a.isAssigned ? (a.serverName ?? t('nodes.allocationsTab.assignedLabel')) : t('nodes.allocationsTab.free')}
+                                    {a.isAssigned ? (a.serverName ?? m['admin.nodes.allocationsTab.assignedLabel']()) : m['admin.nodes.allocationsTab.free']()}
                                 </span>
                                 {canManage && !a.isAssigned && (
                                     <button
@@ -147,10 +146,10 @@ export function NodeAllocationsTab() {
             <ConfirmDialog
                 open={!!toDelete}
                 onClose={() => setToDelete(null)}
-                title={t('infrastructure.alloc.deleteTitle')}
-                body={t('infrastructure.alloc.deleteBody', { ip: toDelete?.ip ?? '', port: toDelete?.port ?? '' })}
-                confirmLabel={t('infrastructure.common.delete')}
-                cancelLabel={t('infrastructure.common.cancel')}
+                title={m['admin.infrastructure.alloc.deleteTitle']()}
+                body={m['admin.infrastructure.alloc.deleteBody']({ ip: toDelete?.ip ?? '', port: toDelete?.port ?? '' })}
+                confirmLabel={m['admin.infrastructure.common.delete']()}
+                cancelLabel={m['admin.infrastructure.common.cancel']()}
                 busy={del.isPending}
                 onConfirm={() => toDelete && del.mutate(toDelete.id)}
             />

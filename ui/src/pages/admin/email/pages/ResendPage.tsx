@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { FlaskConical, CalendarDays, CalendarRange } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -16,7 +16,6 @@ import { TestResultBanner } from './TestResultBanner';
 // Resend transport configuration: API key, plan tier, optional custom quotas,
 // live usage meters, and a connection check.
 export default function ResendPage() {
-    const { t } = useTranslation('admin');
     const { settings, isLoading, save, saving } = useEmailSettings();
     const push = useFlashes(s => s.push);
 
@@ -98,14 +97,14 @@ export default function ResendPage() {
         setTesting(true);
         testResendConnection()
             .then(setResult)
-            .catch(err => push({ type: 'error', message: firstError(err) ?? t('email.test.failed') }))
+            .catch(err => push({ type: 'error', message: firstError(err) ?? m['admin.email.test.failed']() }))
             .finally(() => setTesting(false));
     };
 
     const meterPercent = (sent: number, limit: number | null) =>
         limit && limit > 0 ? Math.round((sent / limit) * 100) : null;
     const meterValue = (sent: number, limit: number | null, applies: boolean) =>
-        !applies ? t('email.resend.noCap') : `${sent.toLocaleString()} / ${limit == null ? '∞' : limit.toLocaleString()}`;
+        !applies ? m['admin.email.resend.noCap']() : `${sent.toLocaleString()} / ${limit == null ? '∞' : limit.toLocaleString()}`;
 
     const dailyApplies = Boolean(activePlan.enforce_daily);
     const monthlyApplies = Boolean(activePlan.enforce_monthly);
@@ -115,31 +114,31 @@ export default function ResendPage() {
     return (
         <div className="flex flex-col gap-5">
             <SettingsCard
-                title={t('email.resend.title')}
-                description={t('email.resend.desc')}
+                title={m['admin.email.resend.title']()}
+                description={m['admin.email.resend.desc']()}
                 right={
                     <TonePill tone={active ? 'success' : 'neutral'}>
-                        {active ? t('email.smtp.active') : t('email.smtp.inactive')}
+                        {active ? m['admin.email.smtp.active']() : m['admin.email.smtp.inactive']()}
                     </TonePill>
                 }
             >
-                <LabeledField label={t('email.resend.apiKey')} hint={t('email.resend.apiKeyHint')}>
+                <LabeledField label={m['admin.email.resend.apiKey']()} hint={m['admin.email.resend.apiKeyHint']()}>
                     <Input
                         type="password"
                         value={apiKey}
                         onChange={e => setApiKey(e.target.value)}
-                        placeholder={settings.resend.api_key ? t('email.resend.keySaved') : t('email.resend.keyEnter')}
+                        placeholder={settings.resend.api_key ? m['admin.email.resend.keySaved']() : m['admin.email.resend.keyEnter']()}
                     />
                 </LabeledField>
                 <div className="mt-3">
                     <Button variant="ghost" size="sm" onClick={clearKey} disabled={!settings.resend.api_key || saving}>
-                        {t('email.resend.deleteKey')}
+                        {m['admin.email.resend.deleteKey']()}
                     </Button>
                 </div>
             </SettingsCard>
 
-            <SettingsCard title={t('email.resend.planTitle')} description={t('email.resend.planDesc')}>
-                <LabeledField label={t('email.resend.plan')}>
+            <SettingsCard title={m['admin.email.resend.planTitle']()} description={m['admin.email.resend.planDesc']()}>
+                <LabeledField label={m['admin.email.resend.plan']()}>
                     <Select
                         value={plan}
                         onChange={v => setPlan(v as ResendPlanKey)}
@@ -150,7 +149,7 @@ export default function ResendPage() {
 
                 {activePlan.allows_custom_limits && (
                     <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <LabeledField label={t('email.resend.monthlyLimit')} hint={t('email.resend.unlimitedHint')}>
+                        <LabeledField label={m['admin.email.resend.monthlyLimit']()} hint={m['admin.email.resend.unlimitedHint']()}>
                             <Input
                                 type="number"
                                 value={monthly}
@@ -158,7 +157,7 @@ export default function ResendPage() {
                                 placeholder="250000"
                             />
                         </LabeledField>
-                        <LabeledField label={t('email.resend.dailyLimit')} hint={t('email.resend.optionalHint')}>
+                        <LabeledField label={m['admin.email.resend.dailyLimit']()} hint={m['admin.email.resend.optionalHint']()}>
                             <Input
                                 type="number"
                                 value={daily}
@@ -172,36 +171,34 @@ export default function ResendPage() {
                 <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Meter
                         icon={CalendarDays}
-                        label={t('email.resend.dailyQuota')}
+                        label={m['admin.email.resend.dailyQuota']()}
                         value={meterValue(usage.daily_sent, dailyLimit, dailyApplies)}
                         percent={dailyApplies ? meterPercent(usage.daily_sent, dailyLimit) : null}
                     />
                     <Meter
                         icon={CalendarRange}
-                        label={t('email.resend.monthlyQuota')}
+                        label={m['admin.email.resend.monthlyQuota']()}
                         value={meterValue(usage.monthly_sent, monthlyLimit, monthlyApplies)}
                         percent={monthlyApplies ? meterPercent(usage.monthly_sent, monthlyLimit) : null}
                     />
                 </div>
-                <p className="mt-3 text-xs text-[var(--color-ink-faint)]">{t('email.resend.quotaNote')}</p>
+                <p className="mt-3 text-xs text-[var(--color-ink-faint)]">{m['admin.email.resend.quotaNote']()}</p>
             </SettingsCard>
 
             <SettingsCard
-                title={t('email.resend.checkTitle')}
-                description={t('email.resend.checkDesc')}
+                title={m['admin.email.resend.checkTitle']()}
+                description={m['admin.email.resend.checkDesc']()}
                 right={
                     <Button variant="secondary" size="sm" onClick={runTest} disabled={testing}>
                         {testing ? <Spinner className="h-4 w-4" /> : <FlaskConical className="h-4 w-4" />}
-                        {t('email.resend.checkButton')}
+                        {m['admin.email.resend.checkButton']()}
                     </Button>
                 }
             >
                 <p className="text-xs text-[var(--color-ink-faint)]">
-                    {t('email.smtp.configuredState', {
-                        state: settings.resend.api_key
-                            ? t('email.overview.configured')
-                            : t('email.overview.incomplete'),
-                    })}
+                    {m['admin.email.smtp.configuredState']({ state: settings.resend.api_key
+                            ? m['admin.email.overview.configured']()
+                            : m['admin.email.overview.incomplete']() })}
                 </p>
                 {result && <TestResultBanner result={result} />}
             </SettingsCard>

@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpToLine, Clock, RotateCw, X } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
@@ -15,7 +15,6 @@ const DEFERRED_QUEUE_KEY = ['admin', 'email', 'deferred'] as const;
 // Deferred-email queue as a modal (replaces V1's full-page tab). Shows the
 // queue stats, the pending list, and per-row "move to front" / "cancel".
 export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-    const { t } = useTranslation('admin');
     const qc = useQueryClient();
     const push = useFlashes(s => s.push);
     const [busyId, setBusyId] = useState<{ id: number; action: 'send' | 'cancel' } | null>(null);
@@ -32,10 +31,10 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
         mutationFn: (id: number) => sendDeferredNow(id),
         onMutate: id => setBusyId({ id, action: 'send' }),
         onSuccess: () => {
-            push({ type: 'success', message: t('email.deferred.sentNow') });
+            push({ type: 'success', message: m['admin.email.deferred.sentNow']() });
             refresh();
         },
-        onError: err => push({ type: 'error', message: firstError(err) ?? t('email.deferred.sendError') }),
+        onError: err => push({ type: 'error', message: firstError(err) ?? m['admin.email.deferred.sendError']() }),
         onSettled: () => setBusyId(null),
     });
 
@@ -43,10 +42,10 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
         mutationFn: (id: number) => cancelDeferred(id),
         onMutate: id => setBusyId({ id, action: 'cancel' }),
         onSuccess: () => {
-            push({ type: 'success', message: t('email.deferred.cancelled') });
+            push({ type: 'success', message: m['admin.email.deferred.cancelled']() });
             refresh();
         },
-        onError: err => push({ type: 'error', message: firstError(err) ?? t('email.deferred.cancelError') }),
+        onError: err => push({ type: 'error', message: firstError(err) ?? m['admin.email.deferred.cancelError']() }),
         onSettled: () => setBusyId(null),
     });
 
@@ -59,26 +58,26 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
         <Modal
             open={open}
             onClose={onClose}
-            title={t('email.deferred.title')}
-            description={t('email.deferred.subtitle')}
+            title={m['admin.email.deferred.title']()}
+            description={m['admin.email.deferred.subtitle']()}
             size="lg"
             footer={
                 <Button variant="ghost" size="sm" onClick={onClose}>
-                    {t('email.deferred.close')}
+                    {m['admin.email.deferred.close']()}
                 </Button>
             }
         >
             <div className="flex flex-col gap-4">
                 {/* Stats */}
                 <div className="flex flex-wrap items-center gap-3">
-                    <Stat label={t('email.deferred.totalQueued')} value={String(data?.stats.total_queued ?? 0)} />
+                    <Stat label={m['admin.email.deferred.totalQueued']()} value={String(data?.stats.total_queued ?? 0)} />
                     <Stat
-                        label={t('email.deferred.dueNow')}
+                        label={m['admin.email.deferred.dueNow']()}
                         value={String(data?.stats.due_now ?? 0)}
                         warn={(data?.stats.due_now ?? 0) > 0}
                     />
                     <Stat
-                        label={t('email.deferred.nextSend')}
+                        label={m['admin.email.deferred.nextSend']()}
                         value={data?.stats.next_send_time ? fmt(data.stats.next_send_time) : '—'}
                     />
                     <Button
@@ -89,7 +88,7 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
                         disabled={queueQ.isFetching}
                     >
                         <RotateCw className={cn('h-4 w-4', queueQ.isFetching && 'animate-spin')} />
-                        {t('email.deferred.refresh')}
+                        {m['admin.email.deferred.refresh']()}
                     </Button>
                 </div>
 
@@ -101,8 +100,8 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
                 ) : rows.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface)]/40 px-6 py-12 text-center">
                         <Clock className="h-7 w-7 text-[var(--color-ink-faint)]" />
-                        <p className="text-sm font-medium text-[var(--color-ink)]">{t('email.deferred.emptyTitle')}</p>
-                        <p className="text-xs text-[var(--color-ink-muted)]">{t('email.deferred.emptyBody')}</p>
+                        <p className="text-sm font-medium text-[var(--color-ink)]">{m['admin.email.deferred.emptyTitle']()}</p>
+                        <p className="text-xs text-[var(--color-ink-muted)]">{m['admin.email.deferred.emptyBody']()}</p>
                     </div>
                 ) : (
                     <ul className="flex flex-col gap-2">
@@ -126,7 +125,7 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
                                             )}
                                             {due && (
                                                 <span className="rounded-full bg-[var(--color-warning)]/12 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--color-warning)]">
-                                                    {t('email.deferred.due')}
+                                                    {m['admin.email.deferred.due']()}
                                                 </span>
                                             )}
                                         </div>
@@ -138,7 +137,7 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
                                             <span className={due ? 'text-[var(--color-warning)]' : undefined}>
                                                 {fmt(email.scheduled_at)}
                                             </span>
-                                            <span>{t('email.deferred.attempts', { count: email.attempts })}</span>
+                                            <span>{m['admin.email.deferred.attempts']({ count: email.attempts })}</span>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -153,7 +152,7 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
                                             ) : (
                                                 <ArrowUpToLine className="h-4 w-4" />
                                             )}
-                                            {t('email.deferred.moveToFront')}
+                                            {m['admin.email.deferred.moveToFront']()}
                                         </Button>
                                         <Button
                                             variant="ghost"
@@ -166,7 +165,7 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
                                             ) : (
                                                 <X className="h-4 w-4" />
                                             )}
-                                            {t('email.deferred.cancel')}
+                                            {m['admin.email.deferred.cancel']()}
                                         </Button>
                                     </div>
                                 </li>

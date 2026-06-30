@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "tsc -b && vite build",
+        "build": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --emit-ts-declarations --strategy localStorage baseLocale && tsc -b && vite build",
         "build:fast": "vite build",
         "preview": "vite preview"
     },
@@ -26,13 +26,11 @@
         "axios": "^1.18.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
-        "i18next": "^26.3.3",
         "lucide-react": "^1.21.0",
         "mitt": "^3.0.1",
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
         "react-hook-form": "^7.80.0",
-        "react-i18next": "^17.0.8",
         "react-router-dom": "^7.18.0",
         "sockette": "^2.0.6",
         "tailwind-merge": "^3.6.0",
@@ -40,6 +38,7 @@
         "zustand": "^5.0.14"
     },
     "devDependencies": {
+        "@inlang/paraglide-js": "^2.20.2",
         "@tailwindcss/vite": "^4.3.1",
         "@types/react": "^19.2.17",
         "@types/react-dom": "^19.2.3",

@@ -1,6 +1,6 @@
+import { m } from '@/i18n';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Trash2, Plus, X } from 'lucide-react';
 import { Input, Field } from '@/components/ui/Input';
@@ -33,7 +33,6 @@ interface FormShape {
 // Inline preset CRUD, rendered inside the create-server modal. Self-contained:
 // owns its own queries and invalidates ['admin','server-presets'].
 export function PresetManager() {
-    const { t } = useTranslation('admin');
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
 
@@ -48,20 +47,20 @@ export function PresetManager() {
     const del = useMutation({
         mutationFn: (id: number) => deleteServerPreset(id),
         onSuccess: async () => {
-            push({ type: 'success', message: t('infrastructure.presets.deleted') });
+            push({ type: 'success', message: m['admin.infrastructure.presets.deleted']() });
             await invalidate();
             setToDelete(null);
         },
-        onError: () => push({ type: 'error', message: t('infrastructure.common.genericError') }),
+        onError: () => push({ type: 'error', message: m['admin.infrastructure.common.genericError']() }),
     });
 
     return (
         <div className="rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-2)]/40 p-4">
             <div className="mb-3 flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-[var(--color-ink)]">{t('infrastructure.presets.title')}</h4>
+                <h4 className="text-sm font-semibold text-[var(--color-ink)]">{m['admin.infrastructure.presets.title']()}</h4>
                 {editing === null && (
                     <Button variant="outline" size="sm" onClick={() => setEditing('new')}>
-                        <Plus className="h-4 w-4" /> {t('infrastructure.presets.new')}
+                        <Plus className="h-4 w-4" /> {m['admin.infrastructure.presets.new']()}
                     </Button>
                 )}
             </div>
@@ -81,7 +80,7 @@ export function PresetManager() {
                     <Spinner className="h-5 w-5" />
                 </div>
             ) : (presetsQ.data ?? []).length === 0 ? (
-                <p className="py-4 text-center text-sm text-[var(--color-ink-muted)]">{t('infrastructure.presets.empty')}</p>
+                <p className="py-4 text-center text-sm text-[var(--color-ink-muted)]">{m['admin.infrastructure.presets.empty']()}</p>
             ) : (
                 <ul className="flex flex-col divide-y divide-[var(--color-border)]">
                     {presetsQ.data!.map(p => (
@@ -114,10 +113,10 @@ export function PresetManager() {
             <ConfirmDialog
                 open={!!toDelete}
                 onClose={() => setToDelete(null)}
-                title={t('infrastructure.presets.deleteTitle')}
-                body={t('infrastructure.presets.deleteBody', { name: toDelete?.name ?? '' })}
-                confirmLabel={t('infrastructure.common.delete')}
-                cancelLabel={t('infrastructure.common.cancel')}
+                title={m['admin.infrastructure.presets.deleteTitle']()}
+                body={m['admin.infrastructure.presets.deleteBody']({ name: toDelete?.name ?? '' })}
+                confirmLabel={m['admin.infrastructure.common.delete']()}
+                cancelLabel={m['admin.infrastructure.common.cancel']()}
                 busy={del.isPending}
                 onConfirm={() => toDelete && del.mutate(toDelete.id)}
             />
@@ -136,7 +135,6 @@ function PresetForm({
     onDone: () => void;
     onCancel: () => void;
 }) {
-    const { t } = useTranslation('admin');
     const push = useFlashes(s => s.push);
     const {
         register,
@@ -177,35 +175,35 @@ function PresetForm({
             return preset ? updateServerPreset(preset.id, payload) : createServerPreset(payload);
         },
         onSuccess: () => {
-            push({ type: 'success', message: preset ? t('infrastructure.presets.updated') : t('infrastructure.presets.created') });
+            push({ type: 'success', message: preset ? m['admin.infrastructure.presets.updated']() : m['admin.infrastructure.presets.created']() });
             onDone();
         },
-        onError: () => push({ type: 'error', message: t('infrastructure.common.genericError') }),
+        onError: () => push({ type: 'error', message: m['admin.infrastructure.common.genericError']() }),
     });
 
-    const req = { required: t('infrastructure.common.required') };
+    const req = { required: m['admin.infrastructure.common.required']() };
 
     return (
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(v => save.mutate(v))}>
-            <Field label={t('infrastructure.presets.name')} error={errors.name?.message}>
+            <Field label={m['admin.infrastructure.presets.name']()} error={errors.name?.message}>
                 <Input invalid={!!errors.name} {...register('name', req)} />
             </Field>
-            <Field label={t('infrastructure.presets.description')}>
+            <Field label={m['admin.infrastructure.presets.description']()}>
                 <Input {...register('description')} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-3">
-                <Field label={t('infrastructure.presets.cpu')}>
+                <Field label={m['admin.infrastructure.presets.cpu']()}>
                     <Input type="number" {...register('cpu', { valueAsNumber: true })} />
                 </Field>
-                <Field label={t('infrastructure.presets.memory')}>
+                <Field label={m['admin.infrastructure.presets.memory']()}>
                     <Input type="number" {...register('memory', { valueAsNumber: true })} />
                 </Field>
-                <Field label={t('infrastructure.presets.disk')}>
+                <Field label={m['admin.infrastructure.presets.disk']()}>
                     <Input type="number" {...register('disk', { valueAsNumber: true })} />
                 </Field>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={t('infrastructure.presets.nest')}>
+                <Field label={m['admin.infrastructure.presets.nest']()}>
                     <Select
                         value={nestId || undefined}
                         onChange={v => {
@@ -213,26 +211,26 @@ function PresetForm({
                             setValue('egg_id', '');
                         }}
                         options={nests}
-                        placeholder={t('infrastructure.server.selectNest')}
+                        placeholder={m['admin.infrastructure.server.selectNest']()}
                     />
                 </Field>
-                <Field label={t('infrastructure.presets.egg')}>
+                <Field label={m['admin.infrastructure.presets.egg']()}>
                     <Select
                         value={watch('egg_id') || undefined}
                         onChange={v => setValue('egg_id', v)}
                         options={(eggsQ.data ?? []).map(e => ({ value: String(e.id), label: e.name }))}
-                        placeholder={t('infrastructure.server.selectEgg')}
+                        placeholder={m['admin.infrastructure.server.selectEgg']()}
                         disabled={!nestId}
                     />
                 </Field>
             </div>
             <div className="flex items-center justify-end gap-2">
                 <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={save.isPending}>
-                    <X className="h-4 w-4" /> {t('infrastructure.common.cancel')}
+                    <X className="h-4 w-4" /> {m['admin.infrastructure.common.cancel']()}
                 </Button>
                 <Button type="submit" size="sm" disabled={save.isPending}>
                     {save.isPending && <Spinner className="h-4 w-4" />}
-                    {preset ? t('infrastructure.common.save') : t('infrastructure.common.create')}
+                    {preset ? m['admin.infrastructure.common.save']() : m['admin.infrastructure.common.create']()}
                 </Button>
             </div>
         </form>

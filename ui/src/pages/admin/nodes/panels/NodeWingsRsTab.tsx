@@ -1,6 +1,6 @@
+import { m } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import {
     Zap,
     Rocket,
@@ -51,11 +51,10 @@ function StatCell({ icon: Icon, label, value, sub }: { icon: typeof Cpu; label: 
 }
 
 function DetectState({ supercharged, onDetect, detecting }: { supercharged: boolean; onDetect: () => void; detecting: boolean }) {
-    const { t } = useTranslation('admin');
     const node = useNode();
     return (
         <Panel
-            title={t('nodes.wingsRs.integration')}
+            title={m['admin.nodes.wingsRs.integration']()}
             icon={Zap}
             right={
                 <button
@@ -63,7 +62,7 @@ function DetectState({ supercharged, onDetect, detecting }: { supercharged: bool
                     disabled={detecting}
                     className="inline-flex items-center gap-1.5 rounded-sm border border-[var(--color-border-strong)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-40"
                 >
-                    <Rocket className="h-3 w-3" /> {detecting ? t('nodes.wingsRs.detecting') : t('nodes.wingsRs.redetect')}
+                    <Rocket className="h-3 w-3" /> {detecting ? m['admin.nodes.wingsRs.detecting']() : m['admin.nodes.wingsRs.redetect']()}
                 </button>
             }
         >
@@ -75,12 +74,12 @@ function DetectState({ supercharged, onDetect, detecting }: { supercharged: bool
                 )}
                 <div>
                     <p className="text-sm text-[var(--color-ink)]">
-                        {supercharged ? t('nodes.wingsRs.runningRs') : t('nodes.wingsRs.runningStandard')}
+                        {supercharged ? m['admin.nodes.wingsRs.runningRs']() : m['admin.nodes.wingsRs.runningStandard']()}
                     </p>
                     <p className="font-mono text-[11px] text-[var(--color-ink-faint)]">
                         {supercharged
-                            ? `${node.wingsVersion ?? t('nodes.wingsRs.unknownVersion')}${node.wingsDetectedAt ? ` · ${t('nodes.wingsRs.detectedAgo', { ago: timeAgo(node.wingsDetectedAt) })}` : ''}`
-                            : t('nodes.wingsRs.lockedHint')}
+                            ? `${node.wingsVersion ?? m['admin.nodes.wingsRs.unknownVersion']()}${node.wingsDetectedAt ? ` · ${m['admin.nodes.wingsRs.detectedAgo']({ ago: timeAgo(node.wingsDetectedAt) })}` : ''}`
+                            : m['admin.nodes.wingsRs.lockedHint']()}
                     </p>
                 </div>
             </div>
@@ -89,7 +88,6 @@ function DetectState({ supercharged, onDetect, detecting }: { supercharged: bool
 }
 
 export function NodeWingsRsTab() {
-    const { t } = useTranslation(['admin', 'common']);
     const node = useNode();
     const queryClient = useQueryClient();
     const supercharged = node.wingsType === 'wings-rs';
@@ -142,9 +140,9 @@ export function NodeWingsRsTab() {
                     <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-surface-2)]">
                         <Zap className="h-5 w-5 text-[var(--color-ink-faint)]" />
                     </div>
-                    <h3 className="text-base font-medium">{t('nodes.wingsRs.lockedTitle')}</h3>
+                    <h3 className="text-base font-medium">{m['admin.nodes.wingsRs.lockedTitle']()}</h3>
                     <p className="mt-1 max-w-md text-sm text-[var(--color-ink-muted)]">
-                        {t('nodes.wingsRs.lockedBody')}
+                        {m['admin.nodes.wingsRs.lockedBody']()}
                     </p>
                 </div>
             ) : (
@@ -152,37 +150,37 @@ export function NodeWingsRsTab() {
                     <div className="grid gap-4 lg:grid-cols-3">
                         <div className="lg:col-span-2">
                             <Panel
-                                title={t('nodes.wingsRs.liveStats')}
+                                title={m['admin.nodes.wingsRs.liveStats']()}
                                 icon={Cpu}
                                 right={
                                     <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
                                         <span className={`h-1.5 w-1.5 rounded-full ${statsError ? 'bg-[var(--color-danger)]' : 'bg-[var(--color-accent)]'}`} />
-                                        {statsError ? t('nodes.overview.unreachable') : t('nodes.overview.live')}
+                                        {statsError ? m['admin.nodes.overview.unreachable']() : m['admin.nodes.overview.live']()}
                                     </span>
                                 }
                             >
                                 {!stats ? (
                                     <div className="py-6 text-sm text-[var(--color-ink-faint)]">
-                                        {statsError ? t('nodes.wingsRs.daemonUnreachable') : t('nodes.wingsRs.connecting')}
+                                        {statsError ? m['admin.nodes.wingsRs.daemonUnreachable']() : m['admin.nodes.wingsRs.connecting']()}
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-4">
                                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                            <StatCell icon={Cpu} label={t('common:metrics.cpu')} value={`${stats.cpu.used.toFixed(1)}%`} sub={t('nodes.wingsRs.threads', { count: stats.cpu.threads })} />
-                                            <StatCell icon={MemoryStick} label={t('common:metrics.memory')} value={formatBytes(stats.memory.used)} sub={t('nodes.wingsRs.ofSize', { size: formatBytes(stats.memory.total) })} />
-                                            <StatCell icon={ArrowDown} label={t('nodes.wingsRs.netIn')} value={rate(stats.network.receivedRate)} />
-                                            <StatCell icon={ArrowUp} label={t('nodes.wingsRs.netOut')} value={rate(stats.network.sentRate)} />
+                                            <StatCell icon={Cpu} label={m['common.metrics.cpu']()} value={`${stats.cpu.used.toFixed(1)}%`} sub={m['admin.nodes.wingsRs.threads']({ count: stats.cpu.threads })} />
+                                            <StatCell icon={MemoryStick} label={m['common.metrics.memory']()} value={formatBytes(stats.memory.used)} sub={m['admin.nodes.wingsRs.ofSize']({ size: formatBytes(stats.memory.total) })} />
+                                            <StatCell icon={ArrowDown} label={m['admin.nodes.wingsRs.netIn']()} value={rate(stats.network.receivedRate)} />
+                                            <StatCell icon={ArrowUp} label={m['admin.nodes.wingsRs.netOut']()} value={rate(stats.network.sentRate)} />
                                         </div>
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Meter
                                                 icon={MemoryStick}
-                                                label={t('common:metrics.memory')}
+                                                label={m['common.metrics.memory']()}
                                                 value={`${formatBytes(stats.memory.used)} / ${formatBytes(stats.memory.total)}`}
                                                 percent={stats.memory.total > 0 ? (stats.memory.used / stats.memory.total) * 100 : null}
                                             />
                                             <Meter
                                                 icon={HardDrive}
-                                                label={t('common:metrics.disk')}
+                                                label={m['common.metrics.disk']()}
                                                 value={`${formatBytes(stats.disk.used)} / ${formatBytes(stats.disk.total)}`}
                                                 percent={stats.disk.total > 0 ? (stats.disk.used / stats.disk.total) * 100 : null}
                                             />
@@ -195,19 +193,19 @@ export function NodeWingsRsTab() {
                             </Panel>
                         </div>
 
-                        <Panel title={t('nodes.wingsRs.overview')} icon={Info}>
+                        <Panel title={m['admin.nodes.wingsRs.overview']()} icon={Info}>
                             {!overview ? (
-                                <div className="py-6 text-sm text-[var(--color-ink-faint)]">{t('common:states.loading')}</div>
+                                <div className="py-6 text-sm text-[var(--color-ink-faint)]">{m['common.states.loading']()}</div>
                             ) : (
                                 <div className="flex flex-col">
-                                    <Row label={t('nodes.wingsRs.version')} value={overview.version} />
-                                    <Row label={t('nodes.wingsRs.rust')} value={overview.rustVersion ?? '—'} />
-                                    <Row label={t('nodes.wingsRs.build')} value={overview.buildDate ?? '—'} />
-                                    <Row label={t('nodes.wingsRs.kernel')} value={overview.kernel} />
-                                    <Row label={t('nodes.wingsRs.uptime')} value={overview.uptime != null ? formatUptime(overview.uptime * 1000) : '—'} />
+                                    <Row label={m['admin.nodes.wingsRs.version']()} value={overview.version} />
+                                    <Row label={m['admin.nodes.wingsRs.rust']()} value={overview.rustVersion ?? '—'} />
+                                    <Row label={m['admin.nodes.wingsRs.build']()} value={overview.buildDate ?? '—'} />
+                                    <Row label={m['admin.nodes.wingsRs.kernel']()} value={overview.kernel} />
+                                    <Row label={m['admin.nodes.wingsRs.uptime']()} value={overview.uptime != null ? formatUptime(overview.uptime * 1000) : '—'} />
                                     <Row
-                                        label={t('nodes.wingsRs.features')}
-                                        value={overview.features.length > 0 ? t('nodes.wingsRs.featuresEnabled', { count: overview.features.length }) : '—'}
+                                        label={m['admin.nodes.wingsRs.features']()}
+                                        value={overview.features.length > 0 ? m['admin.nodes.wingsRs.featuresEnabled']({ count: overview.features.length }) : '—'}
                                     />
                                 </div>
                             )}
@@ -215,7 +213,7 @@ export function NodeWingsRsTab() {
                     </div>
 
                     <Panel
-                        title={t('nodes.wingsRs.systemLogs')}
+                        title={m['admin.nodes.wingsRs.systemLogs']()}
                         icon={ScrollText}
                         right={
                             logs && logs.length > 0 ? (
@@ -235,14 +233,14 @@ export function NodeWingsRsTab() {
                         flush
                     >
                         {!logs || logs.length === 0 ? (
-                            <p className="p-4 text-sm text-[var(--color-ink-faint)]">{t('nodes.wingsRs.noLogs')}</p>
+                            <p className="p-4 text-sm text-[var(--color-ink-faint)]">{m['admin.nodes.wingsRs.noLogs']()}</p>
                         ) : logFetching && !logContent ? (
                             <div className="flex justify-center py-8">
                                 <Spinner className="h-5 w-5" />
                             </div>
                         ) : (
                             <pre className="max-h-96 overflow-auto rounded-b-md bg-[#08080c] p-4 font-mono text-xs leading-relaxed text-[var(--color-ink-muted)]">
-                                {(logContent ?? []).join('\n') || t('nodes.wingsRs.empty')}
+                                {(logContent ?? []).join('\n') || m['admin.nodes.wingsRs.empty']()}
                             </pre>
                         )}
                     </Panel>

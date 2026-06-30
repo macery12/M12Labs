@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { m } from '@/i18n';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { useBilling } from '@/state/billing';
@@ -10,16 +10,15 @@ const gb = (mib: number) => `${(mib / 1024).toFixed(mib % 1024 === 0 ? 0 : 1)} G
 // while the plan columns scroll horizontally; rows zebra-stripe and the price
 // row is emphasised.
 export function ComparisonTable({ products }: { products: StoreProduct[] }) {
-    const { t } = useTranslation('billing');
     const { money } = useBilling();
 
     const rows: { label: string; value: (p: StoreProduct) => string; emphasis?: boolean }[] = [
-        { label: t('store.compare.cpu'), value: p => `${p.limits.cpu}%` },
-        { label: t('store.compare.memory'), value: p => gb(p.limits.memory) },
-        { label: t('store.compare.disk'), value: p => gb(p.limits.disk) },
-        { label: t('store.compare.backups'), value: p => String(p.limits.backup) },
-        { label: t('store.compare.databases'), value: p => String(p.limits.database) },
-        { label: t('store.compare.price'), value: p => (p.price === 0 ? t('store.free') : money(p.price)), emphasis: true },
+        { label: m['billing.store.compare.cpu'](), value: p => `${p.limits.cpu}%` },
+        { label: m['billing.store.compare.memory'](), value: p => gb(p.limits.memory) },
+        { label: m['billing.store.compare.disk'](), value: p => gb(p.limits.disk) },
+        { label: m['billing.store.compare.backups'](), value: p => String(p.limits.backup) },
+        { label: m['billing.store.compare.databases'](), value: p => String(p.limits.database) },
+        { label: m['billing.store.compare.price'](), value: p => (p.price === 0 ? m['billing.store.free']() : money(p.price)), emphasis: true },
     ];
 
     const stickyCol =
@@ -32,7 +31,7 @@ export function ComparisonTable({ products }: { products: StoreProduct[] }) {
                 <thead>
                     <tr className="border-b border-[var(--color-border)]">
                         <th className={`${stickyCol} text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]`}>
-                            {t('store.compare.plan')}
+                            {m['billing.store.compare.plan']()}
                         </th>
                         {products.map(p => (
                             <th key={p.id} className={`${planCol} font-semibold text-[var(--color-ink)]`}>
@@ -65,7 +64,7 @@ export function ComparisonTable({ products }: { products: StoreProduct[] }) {
                             <td key={p.id} className={planCol}>
                                 <Link to={`/v2/account/checkout/configure/${p.id}`}>
                                     <Button size="sm" className="w-full">
-                                        {t('store.compare.configure')}
+                                        {m['billing.store.compare.configure']()}
                                     </Button>
                                 </Link>
                             </td>

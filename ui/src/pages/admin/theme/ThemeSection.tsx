@@ -1,6 +1,6 @@
+import { m, td } from '@/i18n';
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import {
     Palette,
     SwatchBook,
@@ -56,7 +56,6 @@ function syncWindow(theme: Theme): void {
 }
 
 export default function ThemeSection() {
-    const { t } = useTranslation('admin');
     const qc = useQueryClient();
     const initial = useMemo(() => normalizeTheme(window.ThemeConfiguration), []);
     const [saved, setSaved] = useState<Theme>(initial);
@@ -108,9 +107,9 @@ export default function ThemeSection() {
         try {
             await persist(draft);
             commitLocally(draft);
-            note(t('theme.flash.saved'));
+            note(m['admin.theme.flash.saved']());
         } catch {
-            note(t('theme.flash.saveError'));
+            note(m['admin.theme.flash.saveError']());
         } finally {
             setBusy(false);
         }
@@ -121,9 +120,9 @@ export default function ThemeSection() {
         try {
             await resetTheme();
             commitLocally(DEFAULT_THEME);
-            note(t('theme.flash.reset'));
+            note(m['admin.theme.flash.reset']());
         } catch {
-            note(t('theme.flash.resetError'));
+            note(m['admin.theme.flash.resetError']());
         } finally {
             setBusy(false);
         }
@@ -141,9 +140,9 @@ export default function ThemeSection() {
             await savePreset(name);
             setPresetName('');
             await qc.invalidateQueries({ queryKey: ['admin', 'theme', 'presets'] });
-            note(t('theme.flash.presetSaved', { name }));
+            note(m['admin.theme.flash.presetSaved']({ name }));
         } catch {
-            note(t('theme.flash.presetSaveError'));
+            note(m['admin.theme.flash.presetSaveError']());
         } finally {
             setBusy(false);
         }
@@ -154,15 +153,15 @@ export default function ThemeSection() {
             await deletePreset(preset.id);
             await qc.invalidateQueries({ queryKey: ['admin', 'theme', 'presets'] });
         } catch {
-            note(t('theme.flash.presetDeleteError'));
+            note(m['admin.theme.flash.presetDeleteError']());
         }
     };
 
     const tokenMeta = (key: ThemeColorKey): ColorMeta | undefined => THEME_TOKENS.find(tk => tk.key === key);
     // Translate token label/description by key, falling back to the registry's
     // English copy in lib/theme.ts if a locale hasn't translated it yet.
-    const tokenLabel = (key: ThemeColorKey) => t(`theme.tokens.${key}.label` as never, { defaultValue: tokenMeta(key)?.label ?? key });
-    const tokenDesc = (key: ThemeColorKey) => t(`theme.tokens.${key}.description` as never, { defaultValue: tokenMeta(key)?.description ?? '' });
+    const tokenLabel = (key: ThemeColorKey) => td(`admin.theme.tokens.${key}.label`, tokenMeta(key)?.label ?? key);
+    const tokenDesc = (key: ThemeColorKey) => td(`admin.theme.tokens.${key}.description`, tokenMeta(key)?.description ?? '');
     const activeBasePalette = BASE_PALETTES.find(p => BASE_KEYS.every(k => p.colors[k] === draft.colors[k]));
 
     return (
@@ -171,9 +170,9 @@ export default function ThemeSection() {
 
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">{t('theme.title')}</h1>
+                    <h1 className="text-2xl font-semibold tracking-tight">{m['admin.theme.title']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-                        {t('theme.subtitle')}
+                        {m['admin.theme.subtitle']()}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -185,7 +184,7 @@ export default function ThemeSection() {
                         disabled={busy}
                         className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--color-border-strong)] px-4 text-sm font-medium text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-50"
                     >
-                        <RotateCcw className="h-4 w-4" /> {t('theme.reset')}
+                        <RotateCcw className="h-4 w-4" /> {m['admin.theme.reset']()}
                     </button>
                     {dirty && (
                         <button
@@ -193,7 +192,7 @@ export default function ThemeSection() {
                             disabled={busy}
                             className="inline-flex h-10 items-center px-2 text-sm text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink-muted)]"
                         >
-                            {t('theme.revert')}
+                            {m['admin.theme.revert']()}
                         </button>
                     )}
                     <button
@@ -201,7 +200,7 @@ export default function ThemeSection() {
                         disabled={busy || !dirty}
                         className="inline-flex h-10 items-center gap-2 rounded-xl bg-[var(--brand)] px-4 text-sm font-medium text-[var(--color-brand-ink)] transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
                     >
-                        {busy ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />} {t('theme.save')}
+                        {busy ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />} {m['admin.theme.save']()}
                     </button>
                 </div>
             </div>
@@ -210,7 +209,7 @@ export default function ThemeSection() {
                 {/* Controls */}
                 <div className="flex min-w-0 flex-col gap-4">
                     {/* Brand */}
-                    <Panel title={t('theme.brand')} icon={Palette}>
+                    <Panel title={m['admin.theme.brand']()} icon={Palette}>
                         <p className="mb-3 text-xs text-[var(--color-ink-muted)]">{tokenDesc('primary')}</p>
                         <div className="flex flex-wrap gap-2">
                             {BRAND_SWATCHES.map(s => (
@@ -233,14 +232,14 @@ export default function ThemeSection() {
                             ))}
                         </div>
                         <div className="mt-3">
-                            <ColorField label={t('theme.custom')} value={draft.colors.primary} onChange={v => setColor('primary', v)} />
+                            <ColorField label={m['admin.theme.custom']()} value={draft.colors.primary} onChange={v => setColor('primary', v)} />
                         </div>
                     </Panel>
 
                     {/* Base palette */}
-                    <Panel title={t('theme.basePalette')} icon={SwatchBook}>
+                    <Panel title={m['admin.theme.basePalette']()} icon={SwatchBook}>
                         <p className="mb-3 text-xs text-[var(--color-ink-muted)]">
-                            {t('theme.basePaletteDesc')}
+                            {m['admin.theme.basePaletteDesc']()}
                         </p>
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             {BASE_PALETTES.map(p => (
@@ -276,7 +275,7 @@ export default function ThemeSection() {
                             className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
                         >
                             <Sliders className="h-3.5 w-3.5" />
-                            {t('theme.advanced')}
+                            {m['admin.theme.advanced']()}
                             <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', advanced && 'rotate-180')} />
                         </button>
 
@@ -296,7 +295,7 @@ export default function ThemeSection() {
                     </Panel>
 
                     {/* Status */}
-                    <Panel title={t('theme.status')} icon={Sparkles}>
+                    <Panel title={m['admin.theme.status']()} icon={Sparkles}>
                         <div className="flex flex-col gap-2">
                             {STATUS_KEYS.map(k => (
                                 <ColorField
@@ -311,12 +310,12 @@ export default function ThemeSection() {
                     </Panel>
 
                     {/* Feel */}
-                    <Panel title={t('theme.feel')} icon={Grid3x3}>
+                    <Panel title={m['admin.theme.feel']()} icon={Grid3x3}>
                         <div className="flex flex-col gap-4">
                             <div className="flex flex-col gap-1.5">
-                                <span className="text-sm font-medium text-[var(--color-ink-muted)]">{t('theme.cornerRadius')}</span>
+                                <span className="text-sm font-medium text-[var(--color-ink-muted)]">{m['admin.theme.cornerRadius']()}</span>
                                 <Segmented
-                                    options={RADII.map(r => ({ value: r, label: t(`theme.radius.${r}` as never) as string }))}
+                                    options={RADII.map(r => ({ value: r, label: td(`admin.theme.radius.${r}`) }))}
                                     value={draft.feel.radius}
                                     onChange={v => setFeelValue('radius', v)}
                                 />
@@ -324,15 +323,15 @@ export default function ThemeSection() {
 
                             <div className="border-t border-[var(--color-border)] pt-3">
                                 <Toggle
-                                    label={t('theme.grid')}
-                                    description={t('theme.gridDesc')}
+                                    label={m['admin.theme.grid']()}
+                                    description={m['admin.theme.gridDesc']()}
                                     checked={draft.feel.grid_enabled}
                                     onChange={v => setFeelValue('grid_enabled', v)}
                                 />
                                 {draft.feel.grid_enabled && (
                                     <div className="mt-3 flex flex-col gap-3">
                                         <Slider
-                                            label={t('theme.lineStrength')}
+                                            label={m['admin.theme.lineStrength']()}
                                             min={0}
                                             max={100}
                                             value={draft.feel.grid_opacity}
@@ -340,7 +339,7 @@ export default function ThemeSection() {
                                             onChange={v => setFeelValue('grid_opacity', v)}
                                         />
                                         <Slider
-                                            label={t('theme.cellSize')}
+                                            label={m['admin.theme.cellSize']()}
                                             min={12}
                                             max={64}
                                             value={draft.feel.grid_size}
@@ -353,15 +352,15 @@ export default function ThemeSection() {
 
                             <div className="border-t border-[var(--color-border)] pt-3">
                                 <Toggle
-                                    label={t('theme.aurora')}
-                                    description={t('theme.auroraDesc')}
+                                    label={m['admin.theme.aurora']()}
+                                    description={m['admin.theme.auroraDesc']()}
                                     checked={draft.feel.aurora_enabled}
                                     onChange={v => setFeelValue('aurora_enabled', v)}
                                 />
                                 {draft.feel.aurora_enabled && (
                                     <div className="mt-3">
                                         <Slider
-                                            label={t('theme.intensity')}
+                                            label={m['admin.theme.intensity']()}
                                             min={0}
                                             max={100}
                                             value={draft.feel.aurora_intensity}
@@ -375,9 +374,9 @@ export default function ThemeSection() {
                     </Panel>
 
                     {/* Presets */}
-                    <Panel title={t('theme.presets')} icon={SwatchBook}>
+                    <Panel title={m['admin.theme.presets']()} icon={SwatchBook}>
                         <p className="mb-3 text-xs text-[var(--color-ink-muted)]">
-                            {t('theme.presetsDesc')}
+                            {m['admin.theme.presetsDesc']()}
                         </p>
                         {presetsQ.isLoading ? (
                             <div className="flex justify-center py-6">
@@ -402,7 +401,7 @@ export default function ThemeSection() {
                                         <button
                                             onClick={() => loadPresetColors(p.colors)}
                                             className="min-w-0 flex-1 truncate text-left text-sm font-medium hover:text-[var(--brand)]"
-                                            title={t('theme.loadPreset', { name: p.name })}
+                                            title={m['admin.theme.loadPreset']({ name: p.name })}
                                         >
                                             {p.name}
                                         </button>
@@ -412,7 +411,7 @@ export default function ThemeSection() {
                                             <button
                                                 onClick={() => onDeletePreset(p)}
                                                 className="shrink-0 text-[var(--color-ink-faint)] opacity-0 transition-opacity hover:text-[var(--color-danger)] group-hover:opacity-100"
-                                                title={t('theme.deletePreset')}
+                                                title={m['admin.theme.deletePreset']()}
                                             >
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </button>
@@ -426,7 +425,7 @@ export default function ThemeSection() {
                             <input
                                 value={presetName}
                                 onChange={e => setPresetName(e.target.value)}
-                                placeholder={t('theme.newPresetName')}
+                                placeholder={m['admin.theme.newPresetName']()}
                                 className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] px-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/60"
                             />
                             <button
@@ -434,7 +433,7 @@ export default function ThemeSection() {
                                 disabled={busy || !presetName.trim()}
                                 className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border-strong)] px-3 text-sm font-medium text-[var(--color-ink)] transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50"
                             >
-                                <Plus className="h-3.5 w-3.5" /> {t('theme.saveCurrent')}
+                                <Plus className="h-3.5 w-3.5" /> {m['admin.theme.saveCurrent']()}
                             </button>
                         </div>
                     </Panel>
@@ -443,16 +442,12 @@ export default function ThemeSection() {
                 {/* Sticky live preview */}
                 <div className="lg:sticky lg:top-4 lg:self-start">
                     <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
-                        <Palette className="h-3.5 w-3.5 text-[var(--color-ink-faint)]" /> {t('theme.livePreview')}
-                        {dirty && <span className="text-[var(--color-warning)]">{t('theme.unsaved')}</span>}
+                        <Palette className="h-3.5 w-3.5 text-[var(--color-ink-faint)]" /> {m['admin.theme.livePreview']()}
+                        {dirty && <span className="text-[var(--color-warning)]">{m['admin.theme.unsaved']()}</span>}
                     </div>
                     <ThemePreview theme={draft} />
                     <p className="mt-2 text-xs text-[var(--color-ink-faint)]">
-                        {t('theme.previewMeta', {
-                            radius: RADIUS_VALUES[draft.feel.radius],
-                            grid: draft.feel.grid_enabled ? `${draft.feel.grid_opacity}%` : t('theme.off'),
-                            aurora: draft.feel.aurora_enabled ? `${draft.feel.aurora_intensity}%` : t('theme.off'),
-                        })}
+                        {m['admin.theme.previewMeta']({ radius: RADIUS_VALUES[draft.feel.radius], grid: draft.feel.grid_enabled ? `${draft.feel.grid_opacity}%` : m['admin.theme.off'](), aurora: draft.feel.aurora_enabled ? `${draft.feel.aurora_intensity}%` : m['admin.theme.off']() })}
                     </p>
                 </div>
             </div>

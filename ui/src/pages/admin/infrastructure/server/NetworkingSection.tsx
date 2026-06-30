@@ -1,6 +1,6 @@
+import { m } from '@/i18n';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { Star, X, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Select } from '@/components/ui/Select';
@@ -22,7 +22,6 @@ interface Row {
 }
 
 export function NetworkingSection({ draft, onChange, readOnly }: { draft: AllocationDraft; onChange: (d: AllocationDraft) => void; readOnly: boolean }) {
-    const { t } = useTranslation('admin');
     const s = useServerView();
     const [toAdd, setToAdd] = useState<string>();
 
@@ -78,9 +77,9 @@ export function NetworkingSection({ draft, onChange, readOnly }: { draft: Alloca
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between text-xs text-[var(--color-ink-faint)]">
-                <span className="font-semibold uppercase tracking-[0.14em]">{t('infrastructure.serverDetail.net.current')}</span>
+                <span className="font-semibold uppercase tracking-[0.14em]">{m['admin.infrastructure.serverDetail.net.current']()}</span>
                 <span>
-                    {t('infrastructure.serverDetail.net.node')}:{' '}
+                    {m['admin.infrastructure.serverDetail.net.node']()}:{' '}
                     <Link to={`/v2/admin/infrastructure/nodes/${s.nodeId}`} className="text-[var(--color-accent)] hover:underline">
                         {s.nodeName ?? `#${s.nodeId}`}
                     </Link>
@@ -89,7 +88,7 @@ export function NetworkingSection({ draft, onChange, readOnly }: { draft: Alloca
 
             {rows.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-[var(--color-border-strong)] px-4 py-6 text-center text-sm text-[var(--color-ink-muted)]">
-                    {t('infrastructure.serverDetail.net.none')}
+                    {m['admin.infrastructure.serverDetail.net.none']()}
                 </p>
             ) : (
                 <ul className="flex flex-col gap-2">
@@ -107,7 +106,7 @@ export function NetworkingSection({ draft, onChange, readOnly }: { draft: Alloca
                                     <span className="font-mono text-sm tabular-nums text-[var(--color-ink)]">{row.label}</span>
                                     {primary && (
                                         <span className="inline-flex items-center gap-1 rounded-sm bg-[var(--color-accent)]/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[var(--color-accent)]">
-                                            <Star className="h-2.5 w-2.5 fill-current" /> {t('infrastructure.serverDetail.net.primary')}
+                                            <Star className="h-2.5 w-2.5 fill-current" /> {m['admin.infrastructure.serverDetail.net.primary']()}
                                         </span>
                                     )}
                                     {row.staged && <span className="text-[10px] uppercase tracking-wider text-[var(--color-warning)]">+ new</span>}
@@ -118,7 +117,7 @@ export function NetworkingSection({ draft, onChange, readOnly }: { draft: Alloca
                                             <button
                                                 type="button"
                                                 onClick={() => setPrimary(row.id)}
-                                                title={t('infrastructure.serverDetail.net.setPrimary')}
+                                                title={m['admin.infrastructure.serverDetail.net.setPrimary']()}
                                                 className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--color-ink-faint)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-accent)]"
                                             >
                                                 <Star className="h-3.5 w-3.5" />
@@ -127,7 +126,7 @@ export function NetworkingSection({ draft, onChange, readOnly }: { draft: Alloca
                                         <button
                                             type="button"
                                             onClick={() => remove(row)}
-                                            title={t('infrastructure.serverDetail.net.remove')}
+                                            title={m['admin.infrastructure.serverDetail.net.remove']()}
                                             className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--color-ink-faint)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-danger)]"
                                         >
                                             <X className="h-3.5 w-3.5" />
@@ -147,12 +146,12 @@ export function NetworkingSection({ draft, onChange, readOnly }: { draft: Alloca
                             value={toAdd}
                             onChange={setToAdd}
                             options={addOptions}
-                            placeholder={addOptions.length === 0 ? t('infrastructure.serverDetail.net.noFree') : t('infrastructure.serverDetail.net.addPlaceholder')}
+                            placeholder={addOptions.length === 0 ? m['admin.infrastructure.serverDetail.net.noFree']() : m['admin.infrastructure.serverDetail.net.addPlaceholder']()}
                             disabled={addOptions.length === 0}
                         />
                     </div>
                     <Button type="button" variant="outline" size="sm" onClick={add} disabled={!toAdd}>
-                        <Plus className="h-4 w-4" /> {t('infrastructure.serverDetail.net.add')}
+                        <Plus className="h-4 w-4" /> {m['admin.infrastructure.serverDetail.net.add']()}
                     </Button>
                 </div>
             )}

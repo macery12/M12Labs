@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Terminal as TerminalIcon, ChevronRight } from 'lucide-react';
 import { Terminal, type ITheme } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -41,7 +41,6 @@ const theme: ITheme = {
 };
 
 export function ConsolePanel() {
-    const { t } = useTranslation('server');
     const server = useServer();
     const ref = useRef<HTMLDivElement>(null);
     const termRef = useRef<Terminal | null>(null);
@@ -139,7 +138,7 @@ export function ConsolePanel() {
 
     return (
         <Panel
-            title={t('console.title')}
+            title={m['server.console.title']()}
             icon={TerminalIcon}
             className="min-h-[26rem] w-full"
             flush
@@ -151,7 +150,7 @@ export function ConsolePanel() {
                             connected ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-warning)] animate-pulse',
                         )}
                     />
-                    {connected ? t('console.connected') : t('console.connecting')}
+                    {connected ? m['server.console.connected']() : m['server.console.connecting']()}
                 </span>
             }
         >
@@ -159,7 +158,7 @@ export function ConsolePanel() {
                 <div className="relative min-h-0 flex-1 overflow-hidden rounded-sm bg-[#08080c] p-2">
                     {!connected && (
                         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center font-mono text-xs text-[var(--color-ink-faint)]">
-                            {t('console.establishing')}
+                            {m['server.console.establishing']()}
                         </div>
                     )}
                     <div ref={ref} className="h-full w-full" />
@@ -170,7 +169,7 @@ export function ConsolePanel() {
                         type="text"
                         disabled={!canSend || !connected}
                         onKeyDown={onKeyDown}
-                        placeholder={canSend ? t('console.placeholder') : t('console.permissionRequired')}
+                        placeholder={canSend ? m['server.console.placeholder']() : m['server.console.permissionRequired']()}
                         className="h-10 w-full bg-transparent font-mono text-sm text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-faint)] disabled:cursor-not-allowed"
                         spellCheck={false}
                         autoComplete="off"

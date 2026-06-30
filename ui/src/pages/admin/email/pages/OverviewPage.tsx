@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Server, Plug } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
@@ -19,7 +19,6 @@ interface Sender {
 // transport, and the global sender identity. SMTP/Resend credentials live on
 // their own rail pages.
 export default function OverviewPage() {
-    const { t } = useTranslation('admin');
     const { settings, isLoading, save, saving } = useEmailSettings();
 
     const [transport, setTransport] = useState<EmailTransport>('smtp');
@@ -89,74 +88,74 @@ export default function OverviewPage() {
     return (
         <div className="flex flex-col gap-5">
             <SettingsCard
-                title={t('email.overview.deliveryTitle')}
-                description={t('email.overview.deliveryDesc')}
+                title={m['admin.email.overview.deliveryTitle']()}
+                description={m['admin.email.overview.deliveryDesc']()}
                 right={
                     <div className="flex items-center gap-3">
                         <TonePill tone={settings.enabled ? 'success' : 'warning'}>
-                            {settings.enabled ? t('email.overview.on') : t('email.overview.off')}
+                            {settings.enabled ? m['admin.email.overview.on']() : m['admin.email.overview.off']()}
                         </TonePill>
                         <Switch
                             checked={settings.enabled}
                             onChange={toggleEnabled}
                             disabled={togglingEnabled || saving}
-                            label={t('email.overview.deliveryTitle')}
+                            label={m['admin.email.overview.deliveryTitle']()}
                         />
                     </div>
                 }
             >
-                <p className="text-xs text-[var(--color-ink-faint)]">{t('email.overview.deliveryHint')}</p>
+                <p className="text-xs text-[var(--color-ink-faint)]">{m['admin.email.overview.deliveryHint']()}</p>
             </SettingsCard>
 
-            <SettingsCard title={t('email.overview.transportTitle')} description={t('email.overview.transportDesc')}>
+            <SettingsCard title={m['admin.email.overview.transportTitle']()} description={m['admin.email.overview.transportDesc']()}>
                 <div className="grid grid-cols-2 gap-3 sm:max-w-md">
                     <TransportTile
                         icon={Server}
-                        label={t('email.overview.smtp')}
+                        label={m['admin.email.overview.smtp']()}
                         active={transport === 'smtp'}
                         configured={smtpConfigured}
-                        configuredLabel={t('email.overview.configured')}
-                        incompleteLabel={t('email.overview.incomplete')}
+                        configuredLabel={m['admin.email.overview.configured']()}
+                        incompleteLabel={m['admin.email.overview.incomplete']()}
                         onClick={() => setTransport('smtp')}
                     />
                     <TransportTile
                         icon={Plug}
-                        label={t('email.overview.resend')}
+                        label={m['admin.email.overview.resend']()}
                         active={transport === 'resend'}
                         configured={resendConfigured}
-                        configuredLabel={t('email.overview.configured')}
-                        incompleteLabel={t('email.overview.incomplete')}
+                        configuredLabel={m['admin.email.overview.configured']()}
+                        incompleteLabel={m['admin.email.overview.incomplete']()}
                         onClick={() => setTransport('resend')}
                     />
                 </div>
                 {!activeConfigured && (
-                    <p className="mt-3 text-xs text-[var(--color-warning)]">{t('email.overview.activeIncomplete')}</p>
+                    <p className="mt-3 text-xs text-[var(--color-warning)]">{m['admin.email.overview.activeIncomplete']()}</p>
                 )}
             </SettingsCard>
 
-            <SettingsCard title={t('email.overview.senderTitle')} description={t('email.overview.senderDesc')}>
+            <SettingsCard title={m['admin.email.overview.senderTitle']()} description={m['admin.email.overview.senderDesc']()}>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <LabeledField label={t('email.overview.fromName')}>
+                    <LabeledField label={m['admin.email.overview.fromName']()}>
                         <Input
                             value={sender.fromName}
                             onChange={e => setSender(s => ({ ...s, fromName: e.target.value }))}
-                            placeholder={t('email.overview.fromNamePlaceholder')}
+                            placeholder={m['admin.email.overview.fromNamePlaceholder']()}
                         />
                     </LabeledField>
-                    <LabeledField label={t('email.overview.fromEmail')} required>
+                    <LabeledField label={m['admin.email.overview.fromEmail']()} required>
                         <Input
                             type="email"
                             value={sender.fromEmail}
                             onChange={e => setSender(s => ({ ...s, fromEmail: e.target.value }))}
-                            placeholder={t('email.overview.fromEmailPlaceholder')}
+                            placeholder={m['admin.email.overview.fromEmailPlaceholder']()}
                         />
                     </LabeledField>
-                    <LabeledField label={t('email.overview.replyTo')} hint={t('email.overview.replyToHint')}>
+                    <LabeledField label={m['admin.email.overview.replyTo']()} hint={m['admin.email.overview.replyToHint']()}>
                         <Input
                             type="email"
                             value={sender.replyTo}
                             onChange={e => setSender(s => ({ ...s, replyTo: e.target.value }))}
-                            placeholder={t('email.overview.replyToPlaceholder')}
+                            placeholder={m['admin.email.overview.replyToPlaceholder']()}
                         />
                     </LabeledField>
                 </div>

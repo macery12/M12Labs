@@ -1,6 +1,6 @@
+import { m } from '@/i18n';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     ArrowLeft,
@@ -80,7 +80,6 @@ function fromCategory(c: BillingCategory): FormState {
 // load and only then mounts the form, so the form's state initializes straight
 // from the real data (no effect-based seeding races on refresh).
 export default function CategoryDetailPage() {
-    const { t } = useTranslation('admin');
     const { categoryId } = useParams<'categoryId'>();
     const editing = categoryId != null;
 
@@ -101,9 +100,9 @@ export default function CategoryDetailPage() {
     if (editing && (isError || !category)) {
         return (
             <div className="flex flex-col gap-4">
-                <p className="text-sm text-[var(--color-danger)]">{t('billing.common.loadError')}</p>
+                <p className="text-sm text-[var(--color-danger)]">{m['admin.billing.common.loadError']()}</p>
                 <Link to="/v2/admin/billing/products" className="text-sm text-[var(--brand)]">
-                    {t('billing.products.backToCatalog')}
+                    {m['admin.billing.products.backToCatalog']()}
                 </Link>
             </div>
         );
@@ -119,7 +118,6 @@ export default function CategoryDetailPage() {
 }
 
 function CategoryForm({ category, initial }: { category: BillingCategory | null; initial: FormState }) {
-    const { t } = useTranslation('admin');
     const navigate = useNavigate();
     const qc = useQueryClient();
     const { push } = useFlashes();
@@ -162,11 +160,11 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
         onSuccess: id => {
             qc.invalidateQueries({ queryKey: ['admin', 'billing', 'categories'] });
             qc.invalidateQueries({ queryKey: ['admin', 'billing', 'category', String(id)] });
-            push({ type: 'success', message: editing ? t('billing.categories.updated') : t('billing.categories.created') });
+            push({ type: 'success', message: editing ? m['admin.billing.categories.updated']() : m['admin.billing.categories.created']() });
             if (!editing) navigate(`/v2/admin/billing/products/categories/${id}`);
             else setSeed(form);
         },
-        onError: err => push({ type: 'error', message: firstError(err) ?? t('billing.common.genericError') }),
+        onError: err => push({ type: 'error', message: firstError(err) ?? m['admin.billing.common.genericError']() }),
     });
 
     const onSubmit = (e: React.FormEvent) => {
@@ -203,44 +201,44 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                     to="/v2/admin/billing/products"
                     className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
                 >
-                    <ArrowLeft className="h-3.5 w-3.5" /> {t('billing.products.backToCatalog')}
+                    <ArrowLeft className="h-3.5 w-3.5" /> {m['admin.billing.products.backToCatalog']()}
                 </Link>
                 <h1 className="mt-1 truncate text-xl font-semibold text-[var(--color-ink)]">
-                    {editing ? form.name || category?.name : t('billing.categories.newTitle')}
+                    {editing ? form.name || category?.name : m['admin.billing.categories.newTitle']()}
                 </h1>
             </div>
 
-            <SectionCard icon={Settings2} title={t('billing.categories.section.settings')} desc={t('billing.categories.section.settingsDesc')}>
+            <SectionCard icon={Settings2} title={m['admin.billing.categories.section.settings']()} desc={m['admin.billing.categories.section.settingsDesc']()}>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <FieldRow label={t('billing.categories.name')}>
+                    <FieldRow label={m['admin.billing.categories.name']()}>
                         <Input value={form.name} onChange={e => set('name', e.target.value)} />
                     </FieldRow>
-                    <FieldRow label={t('billing.categories.icon')} desc={t('billing.categories.iconDesc')}>
+                    <FieldRow label={m['admin.billing.categories.icon']()} desc={m['admin.billing.categories.iconDesc']()}>
                         <Input value={form.icon} onChange={e => set('icon', e.target.value)} placeholder="server" />
                     </FieldRow>
                 </div>
-                <FieldRow label={t('billing.categories.description')}>
+                <FieldRow label={m['admin.billing.categories.description']()}>
                     <Input value={form.description} onChange={e => set('description', e.target.value)} />
                 </FieldRow>
 
                 <div className="flex flex-col gap-2">
-                    <p className="text-sm font-medium text-[var(--color-ink-muted)]">{t('billing.categories.options')}</p>
+                    <p className="text-sm font-medium text-[var(--color-ink-muted)]">{m['admin.billing.categories.options']()}</p>
                     <ToggleGroup>
                         <ToggleRow
-                            label={t('billing.categories.visible')}
-                            desc={t('billing.categories.visibleDesc')}
+                            label={m['admin.billing.categories.visible']()}
+                            desc={m['admin.billing.categories.visibleDesc']()}
                             checked={form.visible}
                             onChange={v => set('visible', v)}
                         />
                         <ToggleRow
-                            label={t('billing.categories.allowEggChanges')}
-                            desc={t('billing.categories.allowEggChangesDesc')}
+                            label={m['admin.billing.categories.allowEggChanges']()}
+                            desc={m['admin.billing.categories.allowEggChangesDesc']()}
                             checked={form.allowEggChanges}
                             onChange={v => set('allowEggChanges', v)}
                         />
                         <ToggleRow
-                            label={t('billing.categories.allowPlanChanges')}
-                            desc={t('billing.categories.allowPlanChangesDesc')}
+                            label={m['admin.billing.categories.allowPlanChanges']()}
+                            desc={m['admin.billing.categories.allowPlanChangesDesc']()}
                             checked={form.allowPlanChanges}
                             onChange={v => set('allowPlanChanges', v)}
                         />
@@ -250,15 +248,15 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
 
             <SectionCard
                 icon={EggIcon}
-                title={t('billing.categories.section.eggs')}
-                desc={t('billing.categories.section.eggsDesc')}
+                title={m['admin.billing.categories.section.eggs']()}
+                desc={m['admin.billing.categories.section.eggsDesc']()}
                 right={
                     <span className="rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-ink-muted)]">
-                        {t('billing.categories.eggsSelected', { count: form.allowedEggs.length })}
+                        {m['admin.billing.categories.eggsSelected']({ count: form.allowedEggs.length })}
                     </span>
                 }
             >
-                <FieldRow label={t('billing.categories.nest')} desc={t('billing.categories.nestDesc')}>
+                <FieldRow label={m['admin.billing.categories.nest']()} desc={m['admin.billing.categories.nestDesc']()}>
                     <Select
                         value={form.nestId != null ? String(form.nestId) : undefined}
                         onChange={v => {
@@ -266,18 +264,18 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                             setForm(f => ({ ...f, nestId: Number.isFinite(n) && n > 0 ? n : null, eggId: null, allowedEggs: [] }));
                         }}
                         options={nestOptions}
-                        placeholder={t('billing.categories.selectNest')}
+                        placeholder={m['admin.billing.categories.selectNest']()}
                     />
                 </FieldRow>
 
                 {form.nestId == null ? (
-                    <p className="text-sm text-[var(--color-ink-faint)]">{t('billing.categories.pickNestFirst')}</p>
+                    <p className="text-sm text-[var(--color-ink-faint)]">{m['admin.billing.categories.pickNestFirst']()}</p>
                 ) : !eggs ? (
                     <div className="flex justify-center py-4">
                         <Spinner className="h-5 w-5" />
                     </div>
                 ) : (
-                    <FieldRow label={t('billing.categories.allowedEggs')} desc={t('billing.categories.allowedEggsDesc')}>
+                    <FieldRow label={m['admin.billing.categories.allowedEggs']()} desc={m['admin.billing.categories.allowedEggsDesc']()}>
                         <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                             {eggs.map(egg => {
                                 const allowed = form.allowedEggs.includes(egg.id);
@@ -318,7 +316,7 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                                                 e.stopPropagation();
                                                 set('eggId', egg.id);
                                             }}
-                                            title={t('billing.categories.makePrimary')}
+                                            title={m['admin.billing.categories.makePrimary']()}
                                             className={cn(
                                                 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors disabled:opacity-30',
                                                 primary
@@ -327,7 +325,7 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                                             )}
                                         >
                                             <Star className={cn('h-3.5 w-3.5', primary && 'fill-[var(--brand)]')} />
-                                            {primary ? t('billing.categories.primary') : ''}
+                                            {primary ? m['admin.billing.categories.primary']() : ''}
                                         </button>
                                     </div>
                                 );
@@ -348,7 +346,7 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
 
             {!editing && (
                 <p className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface)]/40 px-5 py-4 text-sm text-[var(--color-ink-muted)]">
-                    {t('billing.categories.saveToAddProducts')}
+                    {m['admin.billing.categories.saveToAddProducts']()}
                 </p>
             )}
 
@@ -369,7 +367,6 @@ function ProductsSection({
     canEdit: boolean;
     canDelete: boolean;
 }) {
-    const { t } = useTranslation('admin');
     const navigate = useNavigate();
     const qc = useQueryClient();
     const { push } = useFlashes();
@@ -384,17 +381,17 @@ function ProductsSection({
         mutationFn: (productId: number) => deleteProduct(categoryId, productId),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['admin', 'billing', 'products', categoryId] });
-            push({ type: 'success', message: t('billing.products.deleted') });
+            push({ type: 'success', message: m['admin.billing.products.deleted']() });
             setDel(null);
         },
-        onError: err => push({ type: 'error', message: firstError(err) ?? t('billing.common.genericError') }),
+        onError: err => push({ type: 'error', message: firstError(err) ?? m['admin.billing.common.genericError']() }),
     });
 
     return (
         <SectionCard
             icon={Boxes}
-            title={t('billing.products.title')}
-            desc={t('billing.products.sectionDesc')}
+            title={m['admin.billing.products.title']()}
+            desc={m['admin.billing.products.sectionDesc']()}
             right={
                 canCreate && (
                     <Button
@@ -402,7 +399,7 @@ function ProductsSection({
                         size="sm"
                         onClick={() => navigate(`/v2/admin/billing/products/new?category=${categoryId}`)}
                     >
-                        <Plus className="h-4 w-4" /> {t('billing.products.new')}
+                        <Plus className="h-4 w-4" /> {m['admin.billing.products.new']()}
                     </Button>
                 )
             }
@@ -412,7 +409,7 @@ function ProductsSection({
                     <Spinner className="h-5 w-5" />
                 </div>
             ) : !products || products.length === 0 ? (
-                <p className="text-sm text-[var(--color-ink-faint)]">{t('billing.products.empty')}</p>
+                <p className="text-sm text-[var(--color-ink-faint)]">{m['admin.billing.products.empty']()}</p>
             ) : (
                 <ul className="flex flex-col gap-1.5">
                     {products.map(p => (
@@ -429,7 +426,7 @@ function ProductsSection({
                                 <span className="min-w-0 flex-1">
                                     <span className="block truncate text-sm font-medium text-[var(--color-ink)]">{p.name}</span>
                                     <span className="text-xs text-[var(--color-ink-faint)]">
-                                        {p.price === 0 ? t('billing.products.free') : formatCurrency(p.price)}
+                                        {p.price === 0 ? m['admin.billing.products.free']() : formatCurrency(p.price)}
                                     </span>
                                 </span>
                                 <span className="hidden items-center gap-3 font-mono text-xs tabular-nums text-[var(--color-ink-muted)] sm:flex">
@@ -451,7 +448,7 @@ function ProductsSection({
                                         type="button"
                                         variant="ghost"
                                         size="icon"
-                                        aria-label={t('billing.products.edit')}
+                                        aria-label={m['admin.billing.products.edit']()}
                                         onClick={() => navigate(`/v2/admin/billing/products/${p.id}?category=${categoryId}`)}
                                     >
                                         <Pencil className="h-4 w-4" />
@@ -462,7 +459,7 @@ function ProductsSection({
                                         type="button"
                                         variant="ghost"
                                         size="icon"
-                                        aria-label={t('billing.products.delete')}
+                                        aria-label={m['admin.billing.products.delete']()}
                                         onClick={() => setDel(p)}
                                     >
                                         <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
@@ -477,10 +474,10 @@ function ProductsSection({
             <ConfirmDialog
                 open={Boolean(del)}
                 onClose={() => setDel(null)}
-                title={t('billing.products.deleteTitle')}
-                body={t('billing.products.deleteBody', { name: del?.name ?? '' })}
-                confirmLabel={t('billing.common.delete')}
-                cancelLabel={t('billing.common.cancel')}
+                title={m['admin.billing.products.deleteTitle']()}
+                body={m['admin.billing.products.deleteBody']({ name: del?.name ?? '' })}
+                confirmLabel={m['admin.billing.common.delete']()}
+                cancelLabel={m['admin.billing.common.cancel']()}
                 busy={delMutation.isPending}
                 onConfirm={() => del && delMutation.mutate(del.id)}
             />

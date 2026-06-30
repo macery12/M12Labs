@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { Zap } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import type { WingsType } from '@/api/nodes';
 import { cn } from '@/lib/cn';
 
@@ -34,11 +34,10 @@ export function Badge({
 
 // The "Supercharged" marker — the single visual signal that a node runs Wings-RS.
 export function SuperchargedBadge({ wingsType }: { wingsType: WingsType }) {
-    const { t } = useTranslation('admin');
     if (wingsType !== 'wings-rs') return null;
     return (
         <Badge tone="accent">
-            <Zap className="h-2.5 w-2.5" /> {t('nodes.supercharged')}
+            <Zap className="h-2.5 w-2.5" /> {m['admin.nodes.supercharged']()}
         </Badge>
     );
 }

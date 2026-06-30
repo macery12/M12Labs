@@ -1,15 +1,14 @@
 import { NavLink } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { td } from '@/i18n';
 import type { NavGroup } from '@/routes/nav';
 import { cn } from '@/lib/cn';
 
 export function Sidebar({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () => void }) {
-    const { t } = useTranslation('nav');
     // Nav labels come from the route registry (dynamic English strings); look
     // each up under nav.items.* with the English name as the fallback so an
     // unregistered route still renders. Categories are a fixed set.
-    const itemLabel = (name: string) => t(`items.${name}` as never, { defaultValue: name }) as string;
-    const categoryLabel = (cat: string) => t(`category.${cat}` as never, { defaultValue: cat }) as string;
+    const itemLabel = (name: string) => td(`nav.items.${name}`, name);
+    const categoryLabel = (cat: string) => td(`nav.category.${cat}`, cat);
 
     return (
         <nav className="flex flex-col gap-6 p-4">

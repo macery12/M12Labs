@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { m } from '@/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { Copy } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
@@ -11,7 +11,6 @@ import { StatusChip } from '../parts';
 // Read-only detail view for a single email log entry: metadata, error, sanitized
 // template variables, retry history, and related (same-correlation) emails.
 export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose: () => void }) {
-    const { t } = useTranslation('admin');
     const push = useFlashes(s => s.push);
     const { data, isLoading } = useQuery({
         queryKey: ['admin', 'email', 'log', logId],
@@ -27,7 +26,7 @@ export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose
             timestamp: new Date().toISOString(),
         };
         navigator.clipboard.writeText(JSON.stringify(bundle, null, 2));
-        push({ type: 'success', message: t('email.detail.copied') });
+        push({ type: 'success', message: m['admin.email.detail.copied']() });
     };
 
     const fmt = (d: string) => new Date(d).toLocaleString();
@@ -37,15 +36,15 @@ export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose
             open
             onClose={onClose}
             size="lg"
-            title={t('email.detail.title', { id: logId })}
+            title={m['admin.email.detail.title']({ id: logId })}
             footer={
                 <>
                     <Button variant="ghost" size="sm" onClick={onClose}>
-                        {t('email.detail.close')}
+                        {m['admin.email.detail.close']()}
                     </Button>
                     <Button variant="secondary" size="sm" onClick={copyBundle} disabled={!data}>
                         <Copy className="h-4 w-4" />
-                        {t('email.detail.copyBundle')}
+                        {m['admin.email.detail.copyBundle']()}
                     </Button>
                 </>
             }
@@ -56,57 +55,57 @@ export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose
                 </div>
             ) : (
                 <div className="flex flex-col gap-6">
-                    <Section title={t('email.detail.basic')}>
+                    <Section title={m['admin.email.detail.basic']()}>
                         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-                            <Item label={t('email.detail.status')}>
+                            <Item label={m['admin.email.detail.status']()}>
                                 <StatusChip status={data.log.status} />
                             </Item>
-                            <Item label={t('email.detail.sentAt')}>{fmt(data.log.created_at)}</Item>
-                            <Item label={t('email.detail.recipient')}>{data.log.to}</Item>
-                            <Item label={t('email.detail.user')}>
+                            <Item label={m['admin.email.detail.sentAt']()}>{fmt(data.log.created_at)}</Item>
+                            <Item label={m['admin.email.detail.recipient']()}>{data.log.to}</Item>
+                            <Item label={m['admin.email.detail.user']()}>
                                 {data.log.user ? `${data.log.user.username} (${data.log.user.email})` : '—'}
                             </Item>
-                            <Item label={t('email.detail.subject')}>{data.log.subject}</Item>
-                            <Item label={t('email.detail.template')}>
+                            <Item label={m['admin.email.detail.subject']()}>{data.log.subject}</Item>
+                            <Item label={m['admin.email.detail.template']()}>
                                 <code className="rounded bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[11px]">
-                                    {data.log.template_key || t('email.activity.custom')}
+                                    {data.log.template_key || m['admin.email.activity.custom']()}
                                 </code>
                             </Item>
-                            <Item label={t('email.detail.provider')}>{data.log.provider || '—'}</Item>
-                            <Item label={t('email.detail.attempts')}>{data.log.attempt_count}</Item>
-                            <Item label={t('email.detail.messageId')} mono>
+                            <Item label={m['admin.email.detail.provider']()}>{data.log.provider || '—'}</Item>
+                            <Item label={m['admin.email.detail.attempts']()}>{data.log.attempt_count}</Item>
+                            <Item label={m['admin.email.detail.messageId']()} mono>
                                 {data.log.message_id || '—'}
                             </Item>
-                            <Item label={t('email.detail.correlationId')} mono>
+                            <Item label={m['admin.email.detail.correlationId']()} mono>
                                 {data.log.correlation_id || '—'}
                             </Item>
                             {data.log.duration_ms != null && (
-                                <Item label={t('email.detail.duration')}>{data.log.duration_ms}ms</Item>
+                                <Item label={m['admin.email.detail.duration']()}>{data.log.duration_ms}ms</Item>
                             )}
                         </dl>
                     </Section>
 
                     {data.log.error && (
-                        <Section title={t('email.detail.error')}>
+                        <Section title={m['admin.email.detail.error']()}>
                             <Code>{data.log.error}</Code>
                         </Section>
                     )}
 
                     {Object.keys(data.sanitized_variables).length > 0 && (
-                        <Section title={t('email.detail.variables')}>
+                        <Section title={m['admin.email.detail.variables']()}>
                             <Code>{JSON.stringify(data.sanitized_variables, null, 2)}</Code>
                         </Section>
                     )}
 
                     {data.retry_history.length > 0 && (
-                        <Section title={t('email.detail.retryHistory')}>
+                        <Section title={m['admin.email.detail.retryHistory']()}>
                             <ul className="flex flex-col gap-3">
                                 {data.retry_history.map((a, i) => (
                                     <li key={i} className="flex items-start gap-3">
                                         <StatusChip status={a.status} />
                                         <div className="min-w-0">
                                             <p className="text-sm font-medium text-[var(--color-ink)]">
-                                                {t('email.detail.attemptN', { n: a.attempt })}
+                                                {m['admin.email.detail.attemptN']({ n: a.attempt })}
                                             </p>
                                             <p className="text-xs text-[var(--color-ink-faint)]">{fmt(a.timestamp)}</p>
                                             {a.error && (
@@ -122,7 +121,7 @@ export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose
                     )}
 
                     {data.related_emails.length > 0 && (
-                        <Section title={t('email.detail.related')}>
+                        <Section title={m['admin.email.detail.related']()}>
                             <ul className="flex flex-col gap-2">
                                 {data.related_emails.map(e => (
                                     <li

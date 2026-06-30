@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
@@ -34,7 +34,6 @@ const EMPTY: Filters = {
 // Activity log: a filterable, paginated table of every send attempt with a
 // per-row detail modal.
 export default function ActivityPage() {
-    const { t } = useTranslation('admin');
     const [filters, setFilters] = useState<Filters>(EMPTY);
     const [recipientInput, setRecipientInput] = useState('');
     const [showFilters, setShowFilters] = useState(true);
@@ -81,16 +80,16 @@ export default function ActivityPage() {
     };
 
     const statusOptions = [
-        { value: '', label: t('email.activity.allStatuses') },
-        { value: 'queued', label: t('email.status.queued') },
-        { value: 'sending', label: t('email.status.sending') },
-        { value: 'deferred', label: t('email.status.deferred') },
-        { value: 'skipped', label: t('email.status.skipped') },
-        { value: 'sent', label: t('email.status.sent') },
-        { value: 'failed', label: t('email.status.failed') },
+        { value: '', label: m['admin.email.activity.allStatuses']() },
+        { value: 'queued', label: m['admin.email.status.queued']() },
+        { value: 'sending', label: m['admin.email.status.sending']() },
+        { value: 'deferred', label: m['admin.email.status.deferred']() },
+        { value: 'skipped', label: m['admin.email.status.skipped']() },
+        { value: 'sent', label: m['admin.email.status.sent']() },
+        { value: 'failed', label: m['admin.email.status.failed']() },
     ];
     const templateOptions = [
-        { value: '', label: t('email.activity.allTemplates') },
+        { value: '', label: m['admin.email.activity.allTemplates']() },
         ...(templatesQ.data?.template_keys ?? []).map(k => ({ value: k, label: k })),
     ];
 
@@ -100,49 +99,49 @@ export default function ActivityPage() {
         <div className="flex flex-col gap-5">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t('email.activity.title')}</h2>
-                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('email.activity.desc')}</p>
+                    <h2 className="text-lg font-semibold text-[var(--color-ink)]">{m['admin.email.activity.title']()}</h2>
+                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.email.activity.desc']()}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setShowFilters(s => !s)}>
                     <Filter className="h-4 w-4" />
-                    {showFilters ? t('email.activity.hideFilters') : t('email.activity.showFilters')}
+                    {showFilters ? m['admin.email.activity.hideFilters']() : m['admin.email.activity.showFilters']()}
                 </Button>
             </div>
 
             {showFilters && (
                 <SettingsCard
-                    title={t('email.activity.filters')}
+                    title={m['admin.email.activity.filters']()}
                     right={
                         <Button variant="ghost" size="sm" onClick={clearAll}>
-                            {t('email.activity.clearAll')}
+                            {m['admin.email.activity.clearAll']()}
                         </Button>
                     }
                 >
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <LabeledField label={t('email.activity.status')}>
+                        <LabeledField label={m['admin.email.activity.status']()}>
                             <Select value={filters.status} onChange={v => set({ status: v })} options={statusOptions} />
                         </LabeledField>
-                        <LabeledField label={t('email.activity.template')}>
+                        <LabeledField label={m['admin.email.activity.template']()}>
                             <Select
                                 value={filters.template_key}
                                 onChange={v => set({ template_key: v })}
                                 options={templateOptions}
                             />
                         </LabeledField>
-                        <LabeledField label={t('email.activity.recipient')}>
+                        <LabeledField label={m['admin.email.activity.recipient']()}>
                             <Input
                                 value={recipientInput}
                                 onChange={e => onRecipient(e.target.value)}
-                                placeholder={t('email.activity.recipientPlaceholder')}
+                                placeholder={m['admin.email.activity.recipientPlaceholder']()}
                             />
                         </LabeledField>
-                        <LabeledField label={t('email.activity.dateFrom')}>
+                        <LabeledField label={m['admin.email.activity.dateFrom']()}>
                             <Input type="date" value={filters.date_from} onChange={e => set({ date_from: e.target.value })} />
                         </LabeledField>
-                        <LabeledField label={t('email.activity.dateTo')}>
+                        <LabeledField label={m['admin.email.activity.dateTo']()}>
                             <Input type="date" value={filters.date_to} onChange={e => set({ date_to: e.target.value })} />
                         </LabeledField>
-                        <LabeledField label={t('email.activity.quickRange')}>
+                        <LabeledField label={m['admin.email.activity.quickRange']()}>
                             <div className="flex gap-2">
                                 <Button variant="secondary" size="sm" onClick={() => quickRange(1)}>24h</Button>
                                 <Button variant="secondary" size="sm" onClick={() => quickRange(7)}>7d</Button>
@@ -154,9 +153,9 @@ export default function ActivityPage() {
                         <Switch
                             checked={filters.only_failures}
                             onChange={v => set({ only_failures: v })}
-                            label={t('email.activity.onlyFailures')}
+                            label={m['admin.email.activity.onlyFailures']()}
                         />
-                        {t('email.activity.onlyFailures')}
+                        {m['admin.email.activity.onlyFailures']()}
                     </label>
                 </SettingsCard>
             )}
@@ -165,20 +164,20 @@ export default function ActivityPage() {
                 <FullPageSpinner />
             ) : !logs || logs.data.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface)]/40 px-6 py-16 text-center">
-                    <p className="text-sm font-medium text-[var(--color-ink)]">{t('email.activity.emptyTitle')}</p>
-                    <p className="text-xs text-[var(--color-ink-muted)]">{t('email.activity.emptyBody')}</p>
+                    <p className="text-sm font-medium text-[var(--color-ink)]">{m['admin.email.activity.emptyTitle']()}</p>
+                    <p className="text-xs text-[var(--color-ink-muted)]">{m['admin.email.activity.emptyBody']()}</p>
                 </div>
             ) : (
                 <div className="overflow-x-auto rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/60">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-[var(--color-border)] text-left text-[11px] uppercase tracking-wide text-[var(--color-ink-faint)]">
-                                <Th>{t('email.activity.colStatus')}</Th>
-                                <Th>{t('email.activity.colTime')}</Th>
-                                <Th>{t('email.activity.colRecipient')}</Th>
-                                <Th>{t('email.activity.colTemplate')}</Th>
-                                <Th>{t('email.activity.colProvider')}</Th>
-                                <Th>{t('email.activity.colAttempts')}</Th>
+                                <Th>{m['admin.email.activity.colStatus']()}</Th>
+                                <Th>{m['admin.email.activity.colTime']()}</Th>
+                                <Th>{m['admin.email.activity.colRecipient']()}</Th>
+                                <Th>{m['admin.email.activity.colTemplate']()}</Th>
+                                <Th>{m['admin.email.activity.colProvider']()}</Th>
+                                <Th>{m['admin.email.activity.colAttempts']()}</Th>
                                 <Th> </Th>
                             </tr>
                         </thead>
@@ -197,7 +196,7 @@ export default function ActivityPage() {
                                     </Td>
                                     <Td>
                                         <code className="rounded bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[11px] text-[var(--color-ink-muted)]">
-                                            {log.template_key || t('email.activity.custom')}
+                                            {log.template_key || m['admin.email.activity.custom']()}
                                         </code>
                                     </Td>
                                     <Td className="uppercase text-[var(--color-ink-muted)]">{log.provider || '—'}</Td>
@@ -206,7 +205,7 @@ export default function ActivityPage() {
                                     </Td>
                                     <Td>
                                         <Button variant="ghost" size="sm" onClick={() => setSelected(log.id)}>
-                                            {t('email.activity.view')}
+                                            {m['admin.email.activity.view']()}
                                         </Button>
                                     </Td>
                                 </tr>
@@ -224,13 +223,13 @@ export default function ActivityPage() {
                         onClick={() => set({ page: filters.page - 1 })}
                         disabled={filters.page <= 1}
                     >
-                        <ChevronLeft className="h-4 w-4" /> {t('email.activity.prev')}
+                        <ChevronLeft className="h-4 w-4" /> {m['admin.email.activity.prev']()}
                     </Button>
                     <span className="text-sm text-[var(--color-ink-muted)]">
                         {logsQ.isFetching ? (
                             <Spinner className="h-4 w-4" />
                         ) : (
-                            t('email.activity.pageOf', { current: logs.current_page, total: logs.last_page })
+                            m['admin.email.activity.pageOf']({ current: logs.current_page, total: logs.last_page })
                         )}
                     </span>
                     <Button
@@ -239,7 +238,7 @@ export default function ActivityPage() {
                         onClick={() => set({ page: filters.page + 1 })}
                         disabled={filters.page >= logs.last_page}
                     >
-                        {t('email.activity.next')} <ChevronRight className="h-4 w-4" />
+                        {m['admin.email.activity.next']()} <ChevronRight className="h-4 w-4" />
                     </Button>
                 </div>
             )}

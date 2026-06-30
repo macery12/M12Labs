@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { m } from '@/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Switch } from '@/components/ui/Switch';
 import { FullPageSpinner } from '@/components/ui/Spinner';
@@ -17,7 +17,6 @@ const NOTIF_KEY = ['admin', 'email', 'notifications'] as const;
 // Per-template notification toggles, grouped by category. Toggling is optimistic
 // against the react-query cache and reverts on error.
 export default function NotificationsPage() {
-    const { t } = useTranslation('admin');
     const qc = useQueryClient();
     const push = useFlashes(s => s.push);
 
@@ -43,7 +42,7 @@ export default function NotificationsPage() {
         },
         onError: (err, _vars, ctx) => {
             if (ctx?.prev) qc.setQueryData(NOTIF_KEY, ctx.prev);
-            push({ type: 'error', message: firstError(err) ?? t('email.notifications.saveError') });
+            push({ type: 'error', message: firstError(err) ?? m['admin.email.notifications.saveError']() });
         },
     });
 
@@ -53,8 +52,8 @@ export default function NotificationsPage() {
 
     if (categories.length === 0) {
         return (
-            <SettingsCard title={t('email.notifications.title')} description={t('email.notifications.desc')}>
-                <p className="text-sm text-[var(--color-ink-muted)]">{t('email.notifications.empty')}</p>
+            <SettingsCard title={m['admin.email.notifications.title']()} description={m['admin.email.notifications.desc']()}>
+                <p className="text-sm text-[var(--color-ink-muted)]">{m['admin.email.notifications.empty']()}</p>
             </SettingsCard>
         );
     }
@@ -62,8 +61,8 @@ export default function NotificationsPage() {
     return (
         <div className="flex flex-col gap-5">
             <div>
-                <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t('email.notifications.title')}</h2>
-                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('email.notifications.desc')}</p>
+                <h2 className="text-lg font-semibold text-[var(--color-ink)]">{m['admin.email.notifications.title']()}</h2>
+                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.email.notifications.desc']()}</p>
             </div>
             {categories.map(([category, items]) => (
                 <SettingsCard key={category} title={category}>
@@ -73,7 +72,7 @@ export default function NotificationsPage() {
                                 key={item.id}
                                 item={item}
                                 onToggle={enabled => mutation.mutate({ id: item.id, enabled })}
-                                exemptLabel={t('email.notifications.exempt')}
+                                exemptLabel={m['admin.email.notifications.exempt']()}
                             />
                         ))}
                     </ul>

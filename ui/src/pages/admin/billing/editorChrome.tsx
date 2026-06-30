@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { m } from '@/i18n';
 import { Save, RotateCcw, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
@@ -102,20 +102,19 @@ export function ToggleRow({
 }
 
 export function SaveBar({ dirty, saving, onDiscard }: { dirty: boolean; saving: boolean; onDiscard: () => void }) {
-    const { t } = useTranslation('admin');
     return (
         <div className="sticky bottom-4 z-10 flex items-center justify-between gap-4 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 px-5 py-3 shadow-2xl shadow-black/30 backdrop-blur">
             <span className={cn('flex items-center gap-2 text-xs', dirty ? 'text-[var(--color-warning)]' : 'text-[var(--color-ink-faint)]')}>
                 <span className={cn('h-1.5 w-1.5 rounded-full', dirty ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-ink-faint)]')} />
-                {dirty ? t('billing.common.unsaved') : t('billing.common.allSaved')}
+                {dirty ? m['admin.billing.common.unsaved']() : m['admin.billing.common.allSaved']()}
             </span>
             <div className="flex items-center gap-2">
                 <Button type="button" variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>
-                    <RotateCcw className="h-4 w-4" /> {t('billing.common.discard')}
+                    <RotateCcw className="h-4 w-4" /> {m['admin.billing.common.discard']()}
                 </Button>
                 <Button type="submit" size="sm" disabled={!dirty || saving}>
                     {saving ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                    {t('billing.common.save')}
+                    {m['admin.billing.common.save']()}
                 </Button>
             </div>
         </div>

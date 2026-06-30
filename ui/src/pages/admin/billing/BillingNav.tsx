@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { td } from '@/i18n';
 import {
     LayoutDashboard,
     Boxes,
@@ -64,7 +64,6 @@ const GROUPS: Group[] = [
 // billing content area (a left rail on lg+, a horizontal scroll strip on small
 // screens) — deliberately NOT on the main admin sidebar.
 export function BillingNav() {
-    const { t } = useTranslation('admin');
     const held = useAdminHeld();
 
     const groups = GROUPS.map(g => ({
@@ -77,7 +76,7 @@ export function BillingNav() {
             {groups.map(group => (
                 <div key={group.labelKey} className="flex shrink-0 flex-col gap-1">
                     <p className="hidden px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--color-ink-faint)] lg:block">
-                        {t(group.labelKey as never)}
+                        {td(`admin.${group.labelKey}`)}
                     </p>
                     <div className="flex gap-1 lg:flex-col">
                         {group.items.map(item => (
@@ -95,7 +94,7 @@ export function BillingNav() {
                                 }
                             >
                                 <item.icon className="h-4 w-4 shrink-0" />
-                                <span className="whitespace-nowrap">{t(item.labelKey as never)}</span>
+                                <span className="whitespace-nowrap">{td(`admin.${item.labelKey}`)}</span>
                             </NavLink>
                         ))}
                     </div>

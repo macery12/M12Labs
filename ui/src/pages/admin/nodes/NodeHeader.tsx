@@ -1,6 +1,6 @@
+import { m } from '@/i18n';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { ChevronLeft, Copy, Check, Wrench, Globe, Lock, Pencil, Trash2 } from 'lucide-react';
@@ -16,7 +16,6 @@ import { CreateNodeModal } from '@/pages/admin/infrastructure/CreateNodeModal';
 import { deleteNode } from '@/api/nodes';
 
 export function NodeHeader() {
-    const { t } = useTranslation('admin');
     const node = useNode();
     const navigate = useNavigate();
     const push = useFlashes(s => s.push);
@@ -37,14 +36,14 @@ export function NodeHeader() {
     const del = useMutation({
         mutationFn: () => deleteNode(node.id),
         onSuccess: async () => {
-            push({ type: 'success', message: t('infrastructure.node.deleted') });
+            push({ type: 'success', message: m['admin.infrastructure.node.deleted']() });
             await qc.invalidateQueries({ queryKey: ['admin', 'nodes'] });
             navigate('/v2/admin/infrastructure');
         },
         onError: err =>
             push({
                 type: 'error',
-                message: (isAxiosError(err) && err.response?.data?.message) || t('infrastructure.common.genericError'),
+                message: (isAxiosError(err) && err.response?.data?.message) || m['admin.infrastructure.common.genericError'](),
             }),
     });
 
@@ -54,7 +53,7 @@ export function NodeHeader() {
                 <Link
                     to="/v2/admin/infrastructure"
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong)] text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)]"
-                    title={t('nodes.backToNodes')}
+                    title={m['admin.nodes.backToNodes']()}
                 >
                     <ChevronLeft className="h-4 w-4" />
                 </Link>
@@ -64,12 +63,12 @@ export function NodeHeader() {
                         <SuperchargedBadge wingsType={node.wingsType} />
                         {node.maintenanceMode && (
                             <Badge tone="warning">
-                                <Wrench className="h-2.5 w-2.5" /> {t('nodes.maintenance')}
+                                <Wrench className="h-2.5 w-2.5" /> {m['admin.nodes.maintenance']()}
                             </Badge>
                         )}
                         <Badge tone="muted">
                             {node.isPublic ? <Globe className="h-2.5 w-2.5" /> : <Lock className="h-2.5 w-2.5" />}
-                            {node.isPublic ? t('nodes.public') : t('nodes.private')}
+                            {node.isPublic ? m['admin.nodes.public']() : m['admin.nodes.private']()}
                         </Badge>
                     </div>
                     <button
@@ -89,7 +88,7 @@ export function NodeHeader() {
             <div className="flex shrink-0 items-center gap-2">
                 {can(held, 'nodes.update') && (
                     <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-                        <Pencil className="h-4 w-4" /> {t('infrastructure.server.edit')}
+                        <Pencil className="h-4 w-4" /> {m['admin.infrastructure.server.edit']()}
                     </Button>
                 )}
                 {can(held, 'nodes.delete') && (
@@ -103,10 +102,10 @@ export function NodeHeader() {
             <ConfirmDialog
                 open={deleting}
                 onClose={() => setDeleting(false)}
-                title={t('infrastructure.node.deleteTitle')}
-                body={t('infrastructure.node.deleteBody', { name: node.name })}
-                confirmLabel={t('infrastructure.common.delete')}
-                cancelLabel={t('infrastructure.common.cancel')}
+                title={m['admin.infrastructure.node.deleteTitle']()}
+                body={m['admin.infrastructure.node.deleteBody']({ name: node.name })}
+                confirmLabel={m['admin.infrastructure.common.delete']()}
+                cancelLabel={m['admin.infrastructure.common.cancel']()}
                 busy={del.isPending}
                 onConfirm={() => del.mutate()}
             />

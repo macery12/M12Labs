@@ -1,5 +1,5 @@
+import { m, formatTags } from '@/i18n';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useTranslation, Trans } from 'react-i18next';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import { MapPin, Wallet, Boxes, SlidersHorizontal, Server, ArrowLeft, AlertTriangle } from 'lucide-react';
@@ -46,7 +46,6 @@ function Section({ icon: Icon, step, title, subtitle, children }: {
 }
 
 export default function ConfigureCheckout() {
-    const { t } = useTranslation('billing');
     const { id } = useParams<'id'>();
     const productId = id ? Number(id) : 0;
     const navigate = useNavigate();
@@ -78,7 +77,7 @@ export default function ConfigureCheckout() {
             <div className="space-y-4">
                 <BackLink />
                 <div className="flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-3 text-sm text-[var(--color-danger)]">
-                    <AlertTriangle className="h-4 w-4" /> {t('configure.loadError')}
+                    <AlertTriangle className="h-4 w-4" /> {m['billing.configure.loadError']()}
                 </div>
             </div>
         );
@@ -94,10 +93,10 @@ export default function ConfigureCheckout() {
         try {
             const profile = await getBillingProfile();
             if (hasCompleteBillingProfile(profile)) return true;
-            push({ type: 'error', message: t('configure.addressRequired') });
+            push({ type: 'error', message: m['billing.configure.addressRequired']() });
             return false;
         } catch {
-            push({ type: 'error', message: t('configure.addressError') });
+            push({ type: 'error', message: m['billing.configure.addressError']() });
             return false;
         }
     };
@@ -122,7 +121,7 @@ export default function ConfigureCheckout() {
                     name: checkout.serverName.trim(),
                     billing_days: checkout.cycleDays,
                 });
-                push({ type: 'success', message: t('configure.creating') });
+                push({ type: 'success', message: m['billing.configure.creating']() });
                 navigate('/v2/account/billing/success');
                 return;
             }
@@ -140,7 +139,7 @@ export default function ConfigureCheckout() {
             });
             navigate(`/v2/account/checkout/payment?product=${checkout.product!.id}`);
         } catch {
-            push({ type: 'error', message: t('configure.startError') });
+            push({ type: 'error', message: m['billing.configure.startError']() });
         } finally {
             setSubmitting(false);
         }
@@ -150,15 +149,15 @@ export default function ConfigureCheckout() {
         <div className="flex flex-col gap-6">
             <div>
                 <BackLink />
-                <h1 className="mt-3 text-2xl font-semibold tracking-tight">{t('configure.title')}</h1>
+                <h1 className="mt-3 text-2xl font-semibold tracking-tight">{m['billing.configure.title']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{checkout.product.name}</p>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-12">
                 <div className="space-y-6 lg:col-span-8">
-                    <Section icon={MapPin} step={1} title={t('configure.locationTitle')} subtitle={t('configure.locationSubtitle')}>
+                    <Section icon={MapPin} step={1} title={m['billing.configure.locationTitle']()} subtitle={m['billing.configure.locationSubtitle']()}>
                         {checkout.nodes.length === 0 ? (
-                            <Empty>{t('configure.noNodes')}</Empty>
+                            <Empty>{m['billing.configure.noNodes']()}</Empty>
                         ) : (
                             <div className="grid gap-3 sm:grid-cols-2">
                                 {checkout.nodes.map(node => (
@@ -174,9 +173,9 @@ export default function ConfigureCheckout() {
                         )}
                     </Section>
 
-                    <Section icon={Wallet} step={2} title={t('configure.billingTitle')} subtitle={t('configure.billingSubtitle')}>
+                    <Section icon={Wallet} step={2} title={m['billing.configure.billingTitle']()} subtitle={m['billing.configure.billingSubtitle']()}>
                         {checkout.cycles.length === 0 ? (
-                            <Empty>{t('configure.noCycles')}</Empty>
+                            <Empty>{m['billing.configure.noCycles']()}</Empty>
                         ) : (
                             <div className="grid gap-3 sm:grid-cols-2">
                                 {checkout.cycles.map(c => (
@@ -191,9 +190,9 @@ export default function ConfigureCheckout() {
                         )}
                     </Section>
 
-                    <Section icon={Boxes} step={3} title={t('configure.softwareTitle')} subtitle={t('configure.softwareSubtitle')}>
+                    <Section icon={Boxes} step={3} title={m['billing.configure.softwareTitle']()} subtitle={m['billing.configure.softwareSubtitle']()}>
                         {checkout.eggs.length === 0 ? (
-                            <Empty>{t('configure.noEggs')}</Empty>
+                            <Empty>{m['billing.configure.noEggs']()}</Empty>
                         ) : (
                             <div className="grid gap-3 sm:grid-cols-2">
                                 {checkout.eggs.map(egg => (
@@ -210,7 +209,7 @@ export default function ConfigureCheckout() {
                     </Section>
 
                     {checkout.variables.length > 0 && (
-                        <Section icon={SlidersHorizontal} step={4} title={t('configure.customizeTitle')} subtitle={t('configure.customizeSubtitle')}>
+                        <Section icon={SlidersHorizontal} step={4} title={m['billing.configure.customizeTitle']()} subtitle={m['billing.configure.customizeSubtitle']()}>
                             {checkout.variablesLoading ? (
                                 <Spinner className="h-5 w-5" />
                             ) : (
@@ -231,10 +230,10 @@ export default function ConfigureCheckout() {
                         </Section>
                     )}
 
-                    <Section icon={Server} step={checkout.variables.length > 0 ? 5 : 4} title={t('configure.nameTitle')} subtitle={t('configure.nameSubtitle')}>
+                    <Section icon={Server} step={checkout.variables.length > 0 ? 5 : 4} title={m['billing.configure.nameTitle']()} subtitle={m['billing.configure.nameSubtitle']()}>
                         <Input
                             value={checkout.serverName}
-                            placeholder={t('configure.namePlaceholder')}
+                            placeholder={m['billing.configure.namePlaceholder']()}
                             invalid={serverNameTouched && nameMissing}
                             maxLength={191}
                             onChange={e => {
@@ -243,33 +242,15 @@ export default function ConfigureCheckout() {
                             }}
                         />
                         {serverNameTouched && nameMissing && (
-                            <p className="mt-1 text-xs text-[var(--color-danger)]">{t('configure.nameRequired')}</p>
+                            <p className="mt-1 text-xs text-[var(--color-danger)]">{m['billing.configure.nameRequired']()}</p>
                         )}
                         <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--color-border-strong)] p-3">
                             <Switch checked={checkout.legalAgreed} onChange={checkout.setLegalAgreed} />
                             <span className="text-sm text-[var(--color-ink-muted)]">
-                                <Trans
-                                    i18nKey="configure.legal"
-                                    ns="billing"
-                                    components={{
-                                        terms: (
-                                            <a
-                                                href={billing.links.terms}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-[var(--brand)] hover:underline"
-                                            />
-                                        ),
-                                        privacy: (
-                                            <a
-                                                href={billing.links.privacy}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-[var(--brand)] hover:underline"
-                                            />
-                                        ),
-                                    }}
-                                />
+                                {formatTags(m['billing.configure.legal'](), {
+                                    terms: <a href={billing.links.terms} target="_blank" rel="noreferrer" className="text-[var(--brand)] hover:underline" />,
+                                    privacy: <a href={billing.links.privacy} target="_blank" rel="noreferrer" className="text-[var(--brand)] hover:underline" />,
+                                })}
                             </span>
                         </label>
                     </Section>
@@ -284,9 +265,9 @@ export default function ConfigureCheckout() {
                                     {submitting ? (
                                         <Spinner className="h-5 w-5" />
                                     ) : checkout.isFree ? (
-                                        t('configure.createServer')
+                                        m['billing.configure.createServer']()
                                     ) : (
-                                        t('configure.continueToPayment')
+                                        m['billing.configure.continueToPayment']()
                                     )}
                                 </Button>
                             }
@@ -299,13 +280,12 @@ export default function ConfigureCheckout() {
 }
 
 function BackLink() {
-    const { t } = useTranslation('billing');
     return (
         <Link
             to="/v2/account/billing/order"
             className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
         >
-            <ArrowLeft className="h-4 w-4" /> {t('configure.back')}
+            <ArrowLeft className="h-4 w-4" /> {m['billing.configure.back']()}
         </Link>
     );
 }

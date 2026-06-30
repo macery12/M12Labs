@@ -1,8 +1,10 @@
-# Crowdin configuration for the V2 UI (ui/src/i18n).
+# Crowdin configuration for the V2 UI (ui/messages, Paraglide JS / inlang).
 #
-# English is the source of truth; Crowdin creates one sibling folder per target
-# locale (e.g. de/, fr/, pt-BR/) containing the same namespaced JSON files.
-# Register a downloaded locale in ui/src/i18n/resources.ts before it ships.
+# English is the source of truth (ui/messages/en.json — a flat map of dotted,
+# namespace-prefixed message ids). Crowdin creates one sibling file per target
+# locale (e.g. de.json, fr.json, pt-BR.json) in the same folder. Register a
+# downloaded locale in `locales` in ui/project.inlang/settings.json before it
+# ships so Paraglide compiles it.
 #
 # Auth via env vars (do NOT commit tokens):
 #   export CROWDIN_PROJECT_ID=...        # numeric project id
@@ -17,11 +19,7 @@ base_path: '.'
 preserve_hierarchy: true
 
 files:
-  - source: /ui/src/i18n/locales/en/*.json
-    translation: /ui/src/i18n/locales/%two_letters_code%/%original_file_name%
-    # %two_letters_code% → de, fr, es … For region locales (pt-BR, zh-CN) switch
-    # the placeholder to %locale% (gives pt-BR) and adjust resources.ts to match.
-    languages_mapping:
-      two_letters_code:
-        # Override any code that should differ from Crowdin's default, e.g.:
-        # 'pt-BR': pt
+  - source: /ui/messages/en.json
+    translation: /ui/messages/%locale%.json
+    # %locale% → de, fr, pt-BR, zh-CN … must match the codes listed in
+    # ui/project.inlang/settings.json (`locales`).

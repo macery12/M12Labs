@@ -1,6 +1,6 @@
+import { m } from '@/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueries } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { Server, Plus, ChevronDown, Zap, HardDrive, Layers, Share2 } from 'lucide-react';
 import { getAdminServers } from '@/api/adminServers';
 import { getNodes, getNodeServerCount, type NodeListItem } from '@/api/nodes';
@@ -34,11 +34,10 @@ function SummaryCell({ icon: Icon, label, value, sub }: { icon: typeof Server; l
 }
 
 function ViewToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
-    const { t } = useTranslation('admin');
     const opts: { id: ViewMode; label: string; icon: typeof Share2 }[] = [
-        { id: 'map', label: t('infrastructure.view.map'), icon: Share2 },
-        { id: 'servers', label: t('infrastructure.view.servers'), icon: Layers },
-        { id: 'nodes', label: t('infrastructure.view.nodes'), icon: Server },
+        { id: 'map', label: m['admin.infrastructure.view.map'](), icon: Share2 },
+        { id: 'servers', label: m['admin.infrastructure.view.servers'](), icon: Layers },
+        { id: 'nodes', label: m['admin.infrastructure.view.nodes'](), icon: Server },
     ];
     return (
         <div className="inline-flex rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-0.5">
@@ -63,7 +62,6 @@ function ViewToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode
 // "New" split button — both nodes and servers are created from the one menu.
 // Items are gated on the matching create permission.
 function NewMenu({ onNewServer, onNewNode }: { onNewServer: () => void; onNewNode: () => void }) {
-    const { t } = useTranslation('admin');
     const held = useAdminHeld();
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -88,7 +86,7 @@ function NewMenu({ onNewServer, onNewNode }: { onNewServer: () => void; onNewNod
                 onClick={() => setOpen(o => !o)}
                 className="inline-flex h-10 items-center gap-2 rounded-xl bg-[var(--brand)] px-4 text-sm font-medium text-[var(--color-brand-ink)] hover:bg-[var(--brand-hover)]"
             >
-                <Plus className="h-4 w-4" /> {t('infrastructure.new.label')}
+                <Plus className="h-4 w-4" /> {m['admin.infrastructure.new.label']()}
                 <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} />
             </button>
             {open && (
@@ -101,7 +99,7 @@ function NewMenu({ onNewServer, onNewNode }: { onNewServer: () => void; onNewNod
                             }}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]"
                         >
-                            <Layers className="h-4 w-4 text-[var(--color-ink-muted)]" /> {t('infrastructure.new.server')}
+                            <Layers className="h-4 w-4 text-[var(--color-ink-muted)]" /> {m['admin.infrastructure.new.server']()}
                         </button>
                     )}
                     {canNode && (
@@ -112,7 +110,7 @@ function NewMenu({ onNewServer, onNewNode }: { onNewServer: () => void; onNewNod
                             }}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]"
                         >
-                            <Server className="h-4 w-4 text-[var(--color-ink-muted)]" /> {t('infrastructure.new.node')}
+                            <Server className="h-4 w-4 text-[var(--color-ink-muted)]" /> {m['admin.infrastructure.new.node']()}
                         </button>
                     )}
                 </div>
@@ -122,7 +120,6 @@ function NewMenu({ onNewServer, onNewNode }: { onNewServer: () => void; onNewNod
 }
 
 function FleetSummary({ nodes, totalServers, activeServers }: { nodes: NodeListItem[]; totalServers: number | null; activeServers: number }) {
-    const { t } = useTranslation('admin');
     const supercharged = nodes.filter(n => n.wingsType === 'wings-rs').length;
     const maintenance = nodes.filter(n => n.maintenanceMode).length;
     const totalMemory = nodes.reduce((a, n) => a + n.memory, 0);
@@ -132,11 +129,11 @@ function FleetSummary({ nodes, totalServers, activeServers }: { nodes: NodeListI
 
     return (
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--color-border)] overflow-hidden rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70 sm:grid-cols-3 sm:divide-y-0 lg:grid-cols-5">
-            <SummaryCell icon={Server} label={t('infrastructure.summary.nodes')} value={String(nodes.length)} sub={maintenance > 0 ? t('infrastructure.summary.inMaintenance', { count: maintenance }) : t('infrastructure.summary.allOnline')} />
-            <SummaryCell icon={Zap} label={t('infrastructure.summary.supercharged')} value={String(supercharged)} sub={t('infrastructure.summary.standard', { count: nodes.length - supercharged })} />
-            <SummaryCell icon={Layers} label={t('infrastructure.summary.servers')} value={totalServers == null ? '—' : String(totalServers)} sub={t('infrastructure.summary.active', { count: activeServers })} />
-            <SummaryCell icon={HardDrive} label={t('infrastructure.summary.memory')} value={formatMib(usedMemory)} sub={t('infrastructure.summary.ofAllocated', { size: formatMib(totalMemory) })} />
-            <SummaryCell icon={HardDrive} label={t('infrastructure.summary.disk')} value={formatMib(usedDisk)} sub={t('infrastructure.summary.ofAllocated', { size: formatMib(totalDisk) })} />
+            <SummaryCell icon={Server} label={m['admin.infrastructure.summary.nodes']()} value={String(nodes.length)} sub={maintenance > 0 ? m['admin.infrastructure.summary.inMaintenance']({ count: maintenance }) : m['admin.infrastructure.summary.allOnline']()} />
+            <SummaryCell icon={Zap} label={m['admin.infrastructure.summary.supercharged']()} value={String(supercharged)} sub={m['admin.infrastructure.summary.standard']({ count: nodes.length - supercharged })} />
+            <SummaryCell icon={Layers} label={m['admin.infrastructure.summary.servers']()} value={totalServers == null ? '—' : String(totalServers)} sub={m['admin.infrastructure.summary.active']({ count: activeServers })} />
+            <SummaryCell icon={HardDrive} label={m['admin.infrastructure.summary.memory']()} value={formatMib(usedMemory)} sub={m['admin.infrastructure.summary.ofAllocated']({ size: formatMib(totalMemory) })} />
+            <SummaryCell icon={HardDrive} label={m['admin.infrastructure.summary.disk']()} value={formatMib(usedDisk)} sub={m['admin.infrastructure.summary.ofAllocated']({ size: formatMib(totalDisk) })} />
         </div>
     );
 }
@@ -154,7 +151,6 @@ function EmptyState({ icon: Icon, title, body }: { icon: typeof Server; title: s
 }
 
 export default function InfrastructureOverviewPage() {
-    const { t } = useTranslation('admin');
     const [mode, setMode] = usePersistedState<ViewMode>('v2:admin:infra:view', 'map');
     const [newServer, setNewServer] = useState(false);
     const [newNode, setNewNode] = useState(false);
@@ -197,8 +193,8 @@ export default function InfrastructureOverviewPage() {
 
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">{t('infrastructure.title')}</h1>
-                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('infrastructure.subtitle')}</p>
+                    <h1 className="text-2xl font-semibold tracking-tight">{m['admin.infrastructure.title']()}</h1>
+                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.infrastructure.subtitle']()}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <ViewToggle mode={mode} onChange={setMode} />
@@ -217,7 +213,7 @@ export default function InfrastructureOverviewPage() {
 
             {isError && (
                 <div className="rounded-md border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-5 py-4 text-sm text-[var(--color-danger)]">
-                    {t('infrastructure.loadError')}
+                    {m['admin.infrastructure.loadError']()}
                 </div>
             )}
 
@@ -228,18 +224,18 @@ export default function InfrastructureOverviewPage() {
 
                     {mode === 'map' ? (
                         nodes.length === 0 ? (
-                            <EmptyState icon={Server} title={t('nodes.empty.title')} body={t('nodes.empty.body')} />
+                            <EmptyState icon={Server} title={m['admin.nodes.empty.title']()} body={m['admin.nodes.empty.body']()} />
                         ) : (
                             <NetworkMap nodes={nodes} servers={servers} updatedAt={serversQ.dataUpdatedAt} />
                         )
                     ) : mode === 'servers' ? (
                         servers.length === 0 ? (
-                            <EmptyState icon={Layers} title={t('servers.empty.title')} body={t('servers.empty.body')} />
+                            <EmptyState icon={Layers} title={m['admin.servers.empty.title']()} body={m['admin.servers.empty.body']()} />
                         ) : (
                             <ServersTable servers={servers} />
                         )
                     ) : nodes.length === 0 ? (
-                        <EmptyState icon={Server} title={t('nodes.empty.title')} body={t('nodes.empty.body')} />
+                        <EmptyState icon={Server} title={m['admin.nodes.empty.title']()} body={m['admin.nodes.empty.body']()} />
                     ) : (
                         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             {nodes.map(n => (

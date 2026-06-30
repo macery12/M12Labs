@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles/tailwind.css';
-import '@/i18n'; // initialise i18next (locale resolution) before first render
+import '@/i18n'; // install locale resolution (Paraglide) before first render
 import { bootstrap } from '@/app/bootstrap';
 import { Providers } from '@/app/providers';
 import { App } from '@/app/App';

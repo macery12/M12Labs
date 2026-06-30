@@ -1,5 +1,5 @@
+import { m, td } from '@/i18n';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { Layers } from 'lucide-react';
 import { Panel } from '@/components/ui/Panel';
 import { useNode } from '../NodeContext';
@@ -16,7 +16,6 @@ const stateTone: Record<string, 'accent' | 'warning' | 'danger' | 'muted'> = {
 };
 
 export function NodeServersTab() {
-    const { t } = useTranslation(['admin', 'common']);
     const node = useNode();
     const { data: servers, isLoading } = useQuery({
         queryKey: ['admin', 'node-servers', node.id],
@@ -25,11 +24,11 @@ export function NodeServersTab() {
 
     return (
         <Panel
-            title={t('nodes.serversTab.title')}
+            title={m['admin.nodes.serversTab.title']()}
             icon={Layers}
             right={
                 <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-                    {t('nodes.serversTab.total', { count: servers?.length ?? 0 })}
+                    {m['admin.nodes.serversTab.total']({ count: servers?.length ?? 0 })}
                 </span>
             }
             bodyClassName="max-h-[32rem] overflow-y-auto"
@@ -39,7 +38,7 @@ export function NodeServersTab() {
                     <Spinner className="h-6 w-6" />
                 </div>
             ) : !servers || servers.length === 0 ? (
-                <p className="py-6 text-sm text-[var(--color-ink-faint)]">{t('nodes.serversTab.none')}</p>
+                <p className="py-6 text-sm text-[var(--color-ink-faint)]">{m['admin.nodes.serversTab.none']()}</p>
             ) : (
                 <div className="flex flex-col">
                     {servers.map(s => (
@@ -50,8 +49,8 @@ export function NodeServersTab() {
                             <div className="flex min-w-0 items-center gap-2.5">
                                 <Badge tone={s.suspended ? 'danger' : (stateTone[s.status ?? 'offline'] ?? 'muted')}>
                                     {s.suspended
-                                        ? t('common:states.suspended')
-                                        : t(`common:states.${s.status ?? 'offline'}` as never, { defaultValue: s.status ?? 'offline' })}
+                                        ? m['common.states.suspended']()
+                                        : td(`common.states.${s.status ?? 'offline'}`, s.status ?? 'offline')}
                                 </Badge>
                                 <span className="truncate text-sm text-[var(--color-ink)]">{s.name}</span>
                             </div>

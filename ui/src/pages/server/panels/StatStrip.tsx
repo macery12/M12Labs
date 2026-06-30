@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { m } from '@/i18n';
 import { useServerSocket } from '@/state/serverSocket';
 import { formatBytes, mibToBytes, formatUptime } from '@/lib/format';
 import { useServer } from '@/components/server/ServerContext';
@@ -42,7 +42,6 @@ function Cell({
 }
 
 export function StatStrip() {
-    const { t } = useTranslation(['server', 'common']);
     const server = useServer();
     const stats = useServerSocket(s => s.stats);
     const status = useServerSocket(s => s.status);
@@ -55,27 +54,27 @@ export function StatStrip() {
     return (
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--color-border)] overflow-hidden rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70 sm:grid-cols-3 sm:divide-y-0 lg:grid-cols-6">
             <Cell
-                label={t('common:metrics.uptime')}
+                label={m['common.metrics.uptime']()}
                 value={stats && !offline && stats.uptimeMs > 0 ? formatUptime(stats.uptimeMs) : '—'}
-                sub={offline ? t('stats.offline') : t('stats.live')}
+                sub={offline ? m['server.stats.offline']() : m['server.stats.live']()}
             />
             <Cell
-                label={t('common:metrics.cpu')}
+                label={m['common.metrics.cpu']()}
                 value={stats && !offline ? `${stats.cpuPercent.toFixed(1)}%` : '—'}
                 percent={stats && !offline ? (cpuLimit > 0 ? (stats.cpuPercent / cpuLimit) * 100 : stats.cpuPercent) : null}
             />
             <Cell
-                label={t('common:metrics.memory')}
+                label={m['common.metrics.memory']()}
                 value={stats && !offline ? formatBytes(stats.memoryBytes) : '—'}
                 percent={stats && !offline && memTotal > 0 ? (stats.memoryBytes / memTotal) * 100 : null}
             />
             <Cell
-                label={t('common:metrics.disk')}
+                label={m['common.metrics.disk']()}
                 value={stats ? formatBytes(stats.diskBytes) : '—'}
                 percent={stats && diskTotal > 0 ? (stats.diskBytes / diskTotal) * 100 : null}
             />
-            <Cell label={t('stats.netIn')} value={stats && !offline ? formatBytes(stats.rxBytes) : '—'} sub={t('stats.received')} />
-            <Cell label={t('stats.netOut')} value={stats && !offline ? formatBytes(stats.txBytes) : '—'} sub={t('stats.transmitted')} />
+            <Cell label={m['server.stats.netIn']()} value={stats && !offline ? formatBytes(stats.rxBytes) : '—'} sub={m['server.stats.received']()} />
+            <Cell label={m['server.stats.netOut']()} value={stats && !offline ? formatBytes(stats.txBytes) : '—'} sub={m['server.stats.transmitted']()} />
         </div>
     );
 }

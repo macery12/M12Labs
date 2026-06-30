@@ -1,6 +1,6 @@
+import { m, td } from '@/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { Modal } from '@/components/ui/Modal';
@@ -30,30 +30,29 @@ function firstError(err: unknown, fallback: string): string {
 }
 
 export function CreateServerModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-    const { t } = useTranslation('admin');
     const [mode, setMode] = useState<Mode>('preset');
 
     return (
         <Modal
             open={open}
             onClose={onClose}
-            title={t('infrastructure.server.createTitle')}
-            description={t('infrastructure.server.createSubtitle')}
+            title={m['admin.infrastructure.server.createTitle']()}
+            description={m['admin.infrastructure.server.createSubtitle']()}
             size="lg"
         >
             <div className="mb-5 inline-flex rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-0.5">
-                {(['preset', 'manual'] as Mode[]).map(m => (
+                {(['preset', 'manual'] as Mode[]).map(opt => (
                     <button
-                        key={m}
-                        onClick={() => setMode(m)}
+                        key={opt}
+                        onClick={() => setMode(opt)}
                         className={cn(
                             'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                            mode === m
+                            mode === opt
                                 ? 'bg-[var(--color-surface-2)] text-[var(--color-ink)]'
                                 : 'text-[var(--color-ink-faint)] hover:text-[var(--color-ink-muted)]',
                         )}
                     >
-                        {t(`infrastructure.server.mode.${m}` as never)}
+                        {td(`admin.infrastructure.server.mode.${opt}`)}
                     </button>
                 ))}
             </div>
@@ -66,7 +65,6 @@ export function CreateServerModal({ open, onClose }: { open: boolean; onClose: (
 // ---- From-preset --------------------------------------------------------------
 
 function PresetMode({ onClose }: { onClose: () => void }) {
-    const { t } = useTranslation('admin');
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
     const [presetId, setPresetId] = useState<string>();
@@ -79,32 +77,32 @@ function PresetMode({ onClose }: { onClose: () => void }) {
     const create = useMutation({
         mutationFn: () => createServerFromPreset({ preset_id: Number(presetId), node_id: Number(nodeId) }),
         onSuccess: async () => {
-            push({ type: 'success', message: t('infrastructure.server.created') });
+            push({ type: 'success', message: m['admin.infrastructure.server.created']() });
             await qc.invalidateQueries({ queryKey: ['admin', 'servers'] });
             onClose();
         },
-        onError: err => push({ type: 'error', message: firstError(err, t('infrastructure.common.genericError')) }),
+        onError: err => push({ type: 'error', message: firstError(err, m['admin.infrastructure.common.genericError']()) }),
     });
 
     return (
         <div className="flex flex-col gap-4">
-            <Field label={t('infrastructure.server.field.preset')}>
+            <Field label={m['admin.infrastructure.server.field.preset']()}>
                 <Select
                     value={presetId}
                     onChange={setPresetId}
                     options={(presetsQ.data ?? []).map(p => ({ value: String(p.id), label: p.name }))}
-                    placeholder={t('infrastructure.server.selectPreset')}
+                    placeholder={m['admin.infrastructure.server.selectPreset']()}
                 />
             </Field>
-            <Field label={t('infrastructure.server.field.node')}>
+            <Field label={m['admin.infrastructure.server.field.node']()}>
                 <Select
                     value={nodeId}
                     onChange={setNodeId}
                     options={(nodesQ.data ?? []).map(n => ({ value: String(n.id), label: n.name }))}
-                    placeholder={t('infrastructure.server.selectNode')}
+                    placeholder={m['admin.infrastructure.server.selectNode']()}
                 />
                 {nodesQ.data && nodesQ.data.length === 0 && (
-                    <span className="text-xs text-[var(--color-warning)]">{t('infrastructure.server.noDeployable')}</span>
+                    <span className="text-xs text-[var(--color-warning)]">{m['admin.infrastructure.server.noDeployable']()}</span>
                 )}
             </Field>
 
@@ -113,17 +111,17 @@ function PresetMode({ onClose }: { onClose: () => void }) {
                 onClick={() => setShowManager(v => !v)}
                 className="self-start text-xs font-medium text-[var(--color-accent)] hover:underline"
             >
-                {t('infrastructure.presets.manage')}
+                {m['admin.infrastructure.presets.manage']()}
             </button>
             {showManager && <PresetManager />}
 
             <div className="flex items-center justify-end gap-2 pt-2">
                 <Button variant="ghost" size="sm" onClick={onClose} disabled={create.isPending}>
-                    {t('infrastructure.common.cancel')}
+                    {m['admin.infrastructure.common.cancel']()}
                 </Button>
                 <Button size="sm" disabled={!presetId || !nodeId || create.isPending} onClick={() => create.mutate()}>
                     {create.isPending && <Spinner className="h-4 w-4" />}
-                    {t('infrastructure.common.create')}
+                    {m['admin.infrastructure.common.create']()}
                 </Button>
             </div>
         </div>
@@ -148,7 +146,6 @@ interface ManualForm {
 }
 
 function ManualMode({ onClose }: { onClose: () => void }) {
-    const { t } = useTranslation('admin');
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
 
@@ -237,38 +234,38 @@ function ManualMode({ onClose }: { onClose: () => void }) {
             return createServer(payload);
         },
         onSuccess: async () => {
-            push({ type: 'success', message: t('infrastructure.server.created') });
+            push({ type: 'success', message: m['admin.infrastructure.server.created']() });
             await qc.invalidateQueries({ queryKey: ['admin', 'servers'] });
             onClose();
         },
-        onError: err => push({ type: 'error', message: firstError(err, t('infrastructure.common.genericError')) }),
+        onError: err => push({ type: 'error', message: firstError(err, m['admin.infrastructure.common.genericError']()) }),
     });
 
     const canSubmit = !!ownerId && !!nodeId && !!allocationId && !!eggId && !!image;
-    const req = { required: t('infrastructure.common.required') };
+    const req = { required: m['admin.infrastructure.common.required']() };
     const num = { valueAsNumber: true };
 
     return (
         <form className="flex flex-col gap-6" onSubmit={handleSubmit(v => create.mutate(v))}>
-            <Group title={t('infrastructure.server.group.details')}>
-                <Field label={t('infrastructure.server.field.name')} error={errors.name?.message}>
+            <Group title={m['admin.infrastructure.server.group.details']()}>
+                <Field label={m['admin.infrastructure.server.field.name']()} error={errors.name?.message}>
                     <Input invalid={!!errors.name} {...register('name', req)} />
                 </Field>
-                <Field label={t('infrastructure.server.field.owner')}>
+                <Field label={m['admin.infrastructure.server.field.owner']()}>
                     <Select
                         value={ownerId}
                         onChange={setOwnerId}
                         options={(usersQ.data ?? []).map(u => ({ value: String(u.id), label: `${u.username} · ${u.email}` }))}
-                        placeholder={t('infrastructure.server.selectOwner')}
+                        placeholder={m['admin.infrastructure.server.selectOwner']()}
                     />
                 </Field>
-                <Field label={t('infrastructure.server.field.description')}>
+                <Field label={m['admin.infrastructure.server.field.description']()}>
                     <Input {...register('description')} />
                 </Field>
             </Group>
 
-            <Group title={t('infrastructure.server.group.placement')}>
-                <Field label={t('infrastructure.server.field.node')}>
+            <Group title={m['admin.infrastructure.server.group.placement']()}>
+                <Field label={m['admin.infrastructure.server.field.node']()}>
                     <Select
                         value={nodeId}
                         onChange={v => {
@@ -276,25 +273,25 @@ function ManualMode({ onClose }: { onClose: () => void }) {
                             setAllocationId(undefined);
                         }}
                         options={(nodesQ.data ?? []).map(n => ({ value: String(n.id), label: n.name }))}
-                        placeholder={t('infrastructure.server.selectNode')}
+                        placeholder={m['admin.infrastructure.server.selectNode']()}
                     />
                 </Field>
-                <Field label={t('infrastructure.server.field.allocation')}>
+                <Field label={m['admin.infrastructure.server.field.allocation']()}>
                     <Select
                         value={allocationId}
                         onChange={setAllocationId}
                         options={freeAllocations.map(a => ({ value: String(a.id), label: `${a.ip}:${a.port}` }))}
-                        placeholder={t('infrastructure.server.selectAllocation')}
+                        placeholder={m['admin.infrastructure.server.selectAllocation']()}
                         disabled={!nodeId}
                     />
                     {nodeId && freeAllocations.length === 0 && !allocQ.isLoading && (
-                        <span className="text-xs text-[var(--color-warning)]">{t('infrastructure.server.noAllocations')}</span>
+                        <span className="text-xs text-[var(--color-warning)]">{m['admin.infrastructure.server.noAllocations']()}</span>
                     )}
                 </Field>
             </Group>
 
-            <Group title={t('infrastructure.server.group.egg')}>
-                <Field label={t('infrastructure.server.field.nest')}>
+            <Group title={m['admin.infrastructure.server.group.egg']()}>
+                <Field label={m['admin.infrastructure.server.field.nest']()}>
                     <Select
                         value={nestId}
                         onChange={v => {
@@ -302,28 +299,28 @@ function ManualMode({ onClose }: { onClose: () => void }) {
                             setEggId(undefined);
                         }}
                         options={(nestsQ.data ?? []).map(n => ({ value: String(n.id), label: n.name }))}
-                        placeholder={t('infrastructure.server.selectNest')}
+                        placeholder={m['admin.infrastructure.server.selectNest']()}
                     />
                 </Field>
-                <Field label={t('infrastructure.server.field.egg')}>
+                <Field label={m['admin.infrastructure.server.field.egg']()}>
                     <Select
                         value={eggId}
                         onChange={setEggId}
                         options={(eggsQ.data ?? []).map(e => ({ value: String(e.id), label: e.name }))}
-                        placeholder={t('infrastructure.server.selectEgg')}
+                        placeholder={m['admin.infrastructure.server.selectEgg']()}
                         disabled={!nestId}
                     />
                 </Field>
-                <Field label={t('infrastructure.server.field.image')}>
+                <Field label={m['admin.infrastructure.server.field.image']()}>
                     <Input value={image} onChange={e => setImage(e.target.value)} />
                 </Field>
-                <Field label={t('infrastructure.server.field.startup')}>
+                <Field label={m['admin.infrastructure.server.field.startup']()}>
                     <Input value={startup} onChange={e => setStartup(e.target.value)} />
                 </Field>
             </Group>
 
             {eggQ.data && eggQ.data.variables.length > 0 && (
-                <Group title={t('infrastructure.server.group.environment')}>
+                <Group title={m['admin.infrastructure.server.group.environment']()}>
                     {eggQ.data.variables.map(v => (
                         <Field key={v.envVariable} label={v.name}>
                             <Input
@@ -335,50 +332,50 @@ function ManualMode({ onClose }: { onClose: () => void }) {
                 </Group>
             )}
 
-            <Group title={t('infrastructure.server.group.limits')}>
-                <Field label={t('infrastructure.server.field.memory')}>
+            <Group title={m['admin.infrastructure.server.group.limits']()}>
+                <Field label={m['admin.infrastructure.server.field.memory']()}>
                     <Input type="number" {...register('memory', num)} />
                 </Field>
-                <Field label={t('infrastructure.server.field.swap')}>
+                <Field label={m['admin.infrastructure.server.field.swap']()}>
                     <Input type="number" {...register('swap', num)} />
                 </Field>
-                <Field label={t('infrastructure.server.field.disk')}>
+                <Field label={m['admin.infrastructure.server.field.disk']()}>
                     <Input type="number" {...register('disk', num)} />
                 </Field>
-                <Field label={t('infrastructure.server.field.cpu')}>
+                <Field label={m['admin.infrastructure.server.field.cpu']()}>
                     <Input type="number" {...register('cpu', num)} />
                 </Field>
-                <Field label={t('infrastructure.server.field.io')}>
+                <Field label={m['admin.infrastructure.server.field.io']()}>
                     <Input type="number" {...register('io', num)} />
                 </Field>
                 <label className="flex items-center gap-3 self-end py-2 text-sm text-[var(--color-ink)]">
                     <Switch checked={watch('oom_killer')} onChange={v => setValue('oom_killer', v)} />
-                    {t('infrastructure.server.field.oomKiller')}
+                    {m['admin.infrastructure.server.field.oomKiller']()}
                 </label>
             </Group>
 
-            <Group title={t('infrastructure.server.group.featureLimits')}>
-                <Field label={t('infrastructure.server.field.allocations')}>
+            <Group title={m['admin.infrastructure.server.group.featureLimits']()}>
+                <Field label={m['admin.infrastructure.server.field.allocations']()}>
                     <Input type="number" {...register('allocations', num)} />
                 </Field>
-                <Field label={t('infrastructure.server.field.backups')}>
+                <Field label={m['admin.infrastructure.server.field.backups']()}>
                     <Input type="number" {...register('backups', num)} />
                 </Field>
-                <Field label={t('infrastructure.server.field.databases')}>
+                <Field label={m['admin.infrastructure.server.field.databases']()}>
                     <Input type="number" {...register('databases', num)} />
                 </Field>
-                <Field label={t('infrastructure.server.field.subusers')}>
+                <Field label={m['admin.infrastructure.server.field.subusers']()}>
                     <Input type="number" {...register('subusers', num)} />
                 </Field>
             </Group>
 
             <div className="flex items-center justify-end gap-2">
                 <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={create.isPending}>
-                    {t('infrastructure.common.cancel')}
+                    {m['admin.infrastructure.common.cancel']()}
                 </Button>
                 <Button type="submit" size="sm" disabled={!canSubmit || create.isPending}>
                     {create.isPending && <Spinner className="h-4 w-4" />}
-                    {t('infrastructure.common.create')}
+                    {m['admin.infrastructure.common.create']()}
                 </Button>
             </div>
         </form>

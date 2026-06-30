@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, AlertTriangle, ArrowRight, LayoutGrid, Table2 } from 'lucide-react';
@@ -27,7 +27,6 @@ const gb = (mib: number) => `${(mib / 1024).toFixed(mib % 1024 === 0 ? 0 : 1)} G
 // full-width plans (featured spotlight, savings callout, cards/compare toggle),
 // then a payment/trust bar.
 export default function StorePage() {
-    const { t } = useTranslation('billing');
     const { billing } = useBilling();
     const [categoryId, setCategoryId] = useState<number | null>(null);
     const [view, setView] = useState<View>('cards');
@@ -66,8 +65,8 @@ export default function StorePage() {
 
             <section id="plans" className="flex flex-col gap-6">
                 <div>
-                    <h2 className="text-2xl font-semibold tracking-tight">{t('store.title')}</h2>
-                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('store.subtitle')}</p>
+                    <h2 className="text-2xl font-semibold tracking-tight">{m['billing.store.title']()}</h2>
+                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['billing.store.subtitle']()}</p>
                 </div>
 
                 {categoriesQ.isLoading ? (
@@ -75,7 +74,7 @@ export default function StorePage() {
                         <Spinner className="h-7 w-7" />
                     </div>
                 ) : categories.length === 0 ? (
-                    <EmptyState message={t('store.noProducts')} />
+                    <EmptyState message={m['billing.store.noProducts']()} />
                 ) : (
                     <>
                         {/* Category pills + view toggle */}
@@ -105,8 +104,8 @@ export default function StorePage() {
 
                             {products.length > 1 && (
                                 <div className="inline-flex rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface)]/60 p-1">
-                                    <ViewButton icon={LayoutGrid} label={t('store.view.cards')} active={view === 'cards'} onClick={() => setView('cards')} />
-                                    <ViewButton icon={Table2} label={t('store.view.compare')} active={view === 'compare'} onClick={() => setView('compare')} />
+                                    <ViewButton icon={LayoutGrid} label={m['billing.store.view.cards']()} active={view === 'cards'} onClick={() => setView('cards')} />
+                                    <ViewButton icon={Table2} label={m['billing.store.view.compare']()} active={view === 'compare'} onClick={() => setView('compare')} />
                                 </div>
                             )}
                         </div>
@@ -114,7 +113,7 @@ export default function StorePage() {
                         {noProcessors && (
                             <div className="flex items-center gap-2 rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-4 py-3 text-sm text-[var(--color-warning)]">
                                 <AlertTriangle className="h-4 w-4" />
-                                {t('store.paymentsNotSetup')}
+                                {m['billing.store.paymentsNotSetup']()}
                             </div>
                         )}
 
@@ -123,7 +122,7 @@ export default function StorePage() {
                                 <Spinner className="h-7 w-7" />
                             </div>
                         ) : products.length === 0 ? (
-                            <EmptyState message={t('store.noProductsInCategory')} />
+                            <EmptyState message={m['billing.store.noProductsInCategory']()} />
                         ) : (
                             <div className="flex flex-col gap-5">
                                 {maxDiscount > 0 && <SavingsCallout percent={maxDiscount} />}
@@ -177,16 +176,15 @@ function ViewButton({
 }
 
 function ProductCard({ product, blocked }: { product: StoreProduct; blocked: boolean }) {
-    const { t } = useTranslation('billing');
     const { money } = useBilling();
 
     const specs: [string, string][] = [
-        [t('store.card.ram'), gb(product.limits.memory)],
-        [t('store.card.cpu'), `${product.limits.cpu}%`],
-        [t('store.card.storage'), gb(product.limits.disk)],
-        ...(product.limits.backup ? [[t('store.card.backups'), String(product.limits.backup)] as [string, string]] : []),
-        ...(product.limits.database ? [[t('store.card.databases'), String(product.limits.database)] as [string, string]] : []),
-        [t('store.card.ports'), String(product.limits.allocation)],
+        [m['billing.store.card.ram'](), gb(product.limits.memory)],
+        [m['billing.store.card.cpu'](), `${product.limits.cpu}%`],
+        [m['billing.store.card.storage'](), gb(product.limits.disk)],
+        ...(product.limits.backup ? [[m['billing.store.card.backups'](), String(product.limits.backup)] as [string, string]] : []),
+        ...(product.limits.database ? [[m['billing.store.card.databases'](), String(product.limits.database)] as [string, string]] : []),
+        [m['billing.store.card.ports'](), String(product.limits.allocation)],
     ];
 
     return (
@@ -194,10 +192,10 @@ function ProductCard({ product, blocked }: { product: StoreProduct; blocked: boo
             {/* Price-led header */}
             <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold text-[var(--color-ink)]">
-                    {product.price === 0 ? t('store.free') : money(product.price)}
+                    {product.price === 0 ? m['billing.store.free']() : money(product.price)}
                 </span>
                 {product.price > 0 && (
-                    <span className="text-sm text-[var(--color-ink-faint)]">{t('store.perMonth')}</span>
+                    <span className="text-sm text-[var(--color-ink-faint)]">{m['billing.store.perMonth']()}</span>
                 )}
             </div>
             <p className="mt-1 font-semibold text-[var(--color-ink)]">{product.name}</p>
@@ -219,12 +217,12 @@ function ProductCard({ product, blocked }: { product: StoreProduct; blocked: boo
             <div className="mt-5 flex-1" />
             {blocked ? (
                 <Button disabled className="w-full">
-                    {t('store.configure')}
+                    {m['billing.store.configure']()}
                 </Button>
             ) : (
                 <Link to={`/v2/account/checkout/configure/${product.id}`}>
                     <Button className="w-full">
-                        {t('store.configure')} <ArrowRight className="h-4 w-4" />
+                        {m['billing.store.configure']()} <ArrowRight className="h-4 w-4" />
                     </Button>
                 </Link>
             )}

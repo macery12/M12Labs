@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { FlaskConical } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -22,7 +22,6 @@ interface SmtpForm {
 // SMTP transport configuration: connection details, password management, and a
 // connection check. Split out of the old combined settings page.
 export default function SmtpPage() {
-    const { t } = useTranslation('admin');
     const { settings, isLoading, save, saving } = useEmailSettings();
     const push = useFlashes(s => s.push);
 
@@ -104,12 +103,12 @@ export default function SmtpPage() {
         setTesting(true);
         testSmtpConnection()
             .then(setResult)
-            .catch(err => push({ type: 'error', message: firstError(err) ?? t('email.test.failed') }))
+            .catch(err => push({ type: 'error', message: firstError(err) ?? m['admin.email.test.failed']() }))
             .finally(() => setTesting(false));
     };
 
     const encryptionOptions = [
-        { value: 'none', label: t('email.smtp.encNone') },
+        { value: 'none', label: m['admin.email.smtp.encNone']() },
         { value: 'tls', label: 'TLS' },
         { value: 'ssl', label: 'SSL' },
     ];
@@ -117,23 +116,23 @@ export default function SmtpPage() {
     return (
         <div className="flex flex-col gap-5">
             <SettingsCard
-                title={t('email.smtp.title')}
-                description={t('email.smtp.desc')}
+                title={m['admin.email.smtp.title']()}
+                description={m['admin.email.smtp.desc']()}
                 right={
                     <TonePill tone={active ? 'success' : 'neutral'}>
-                        {active ? t('email.smtp.active') : t('email.smtp.inactive')}
+                        {active ? m['admin.email.smtp.active']() : m['admin.email.smtp.inactive']()}
                     </TonePill>
                 }
             >
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <LabeledField label={t('email.smtp.host')}>
+                    <LabeledField label={m['admin.email.smtp.host']()}>
                         <Input
                             value={form.host}
                             onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
                             placeholder="smtp.yourdomain.com"
                         />
                     </LabeledField>
-                    <LabeledField label={t('email.smtp.port')}>
+                    <LabeledField label={m['admin.email.smtp.port']()}>
                         <Input
                             type="number"
                             value={form.port}
@@ -141,14 +140,14 @@ export default function SmtpPage() {
                             placeholder="587"
                         />
                     </LabeledField>
-                    <LabeledField label={t('email.smtp.username')}>
+                    <LabeledField label={m['admin.email.smtp.username']()}>
                         <Input
                             value={form.username}
                             onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                             placeholder="user@yourdomain.com"
                         />
                     </LabeledField>
-                    <LabeledField label={t('email.smtp.encryption')}>
+                    <LabeledField label={m['admin.email.smtp.encryption']()}>
                         <Select
                             value={form.encryption || 'none'}
                             onChange={v => setForm(f => ({ ...f, encryption: v === 'none' ? '' : v }))}
@@ -156,8 +155,8 @@ export default function SmtpPage() {
                         />
                     </LabeledField>
                     <LabeledField
-                        label={t('email.smtp.password')}
-                        hint={t('email.smtp.passwordHint')}
+                        label={m['admin.email.smtp.password']()}
+                        hint={m['admin.email.smtp.passwordHint']()}
                     >
                         <Input
                             type="password"
@@ -165,8 +164,8 @@ export default function SmtpPage() {
                             onChange={e => setPassword(e.target.value)}
                             placeholder={
                                 settings.smtp.password_set
-                                    ? t('email.smtp.passwordSaved')
-                                    : t('email.smtp.passwordEnter')
+                                    ? m['admin.email.smtp.passwordSaved']()
+                                    : m['admin.email.smtp.passwordEnter']()
                             }
                         />
                     </LabeledField>
@@ -178,28 +177,26 @@ export default function SmtpPage() {
                         onClick={clearPassword}
                         disabled={!settings.smtp.password_set || saving}
                     >
-                        {t('email.smtp.clearPassword')}
+                        {m['admin.email.smtp.clearPassword']()}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={resetSmtp} disabled={resetting || saving}>
-                        {t('email.smtp.reset')}
+                        {m['admin.email.smtp.reset']()}
                     </Button>
                 </div>
             </SettingsCard>
 
             <SettingsCard
-                title={t('email.smtp.checkTitle')}
-                description={t('email.smtp.checkDesc')}
+                title={m['admin.email.smtp.checkTitle']()}
+                description={m['admin.email.smtp.checkDesc']()}
                 right={
                     <Button variant="secondary" size="sm" onClick={runTest} disabled={testing}>
                         {testing ? <Spinner className="h-4 w-4" /> : <FlaskConical className="h-4 w-4" />}
-                        {t('email.smtp.checkButton')}
+                        {m['admin.email.smtp.checkButton']()}
                     </Button>
                 }
             >
                 <p className="text-xs text-[var(--color-ink-faint)]">
-                    {t('email.smtp.configuredState', {
-                        state: configured ? t('email.overview.configured') : t('email.overview.incomplete'),
-                    })}
+                    {m['admin.email.smtp.configuredState']({ state: configured ? m['admin.email.overview.configured']() : m['admin.email.overview.incomplete']() })}
                 </p>
                 {result && <TestResultBanner result={result} />}
             </SettingsCard>

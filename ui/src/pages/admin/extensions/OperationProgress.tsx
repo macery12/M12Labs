@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { m, td } from '@/i18n';
 import { Check, Loader2 } from 'lucide-react';
 import type { OperationProgress as Progress } from '@/api/extensions';
 
@@ -23,7 +23,6 @@ function actionKey(action: string): 'progress.install' | 'progress.uninstall' | 
 // page polls /extensions/progress and feeds the payload here; buttons elsewhere
 // are locked for the duration.
 export function OperationProgressBanner({ progress }: { progress: Progress }) {
-    const { t } = useTranslation('extensions');
     const stages = stagesFor(progress.action);
     const current = Math.max(0, stages.indexOf(progress.stage));
     const pct = Math.round((current / (stages.length - 1)) * 100);
@@ -36,12 +35,12 @@ export function OperationProgressBanner({ progress }: { progress: Progress }) {
             <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin text-[var(--brand)]" />
                 <span className="text-sm font-medium text-[var(--color-ink)]">
-                    {t(actionKey(progress.action))}{' '}
+                    {td(`extensions.${actionKey(progress.action)}`)}{' '}
                     <span className="font-mono text-[var(--color-ink-muted)]">{progress.extension_id}</span>
                 </span>
                 {progress.batch_total != null && (
                     <span className="ml-auto font-mono text-xs text-[var(--color-ink-faint)]">
-                        {t('progress.batch', { current: progress.batch_current ?? 1, total: progress.batch_total })}
+                        {m['extensions.progress.batch']({ current: progress.batch_current ?? 1, total: progress.batch_total })}
                     </span>
                 )}
             </div>
@@ -76,7 +75,7 @@ export function OperationProgressBanner({ progress }: { progress: Progress }) {
                         >
                             {done && <Check className="h-3 w-3" />}
                             {active && <Loader2 className="h-3 w-3 animate-spin" />}
-                            {t(`progress.stages.${stage}` as 'progress.stages.completed')}
+                            {td(`extensions.progress.stages.${stage}`)}
                         </span>
                     );
                 })}

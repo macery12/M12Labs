@@ -1,5 +1,5 @@
+import { m, td } from '@/i18n';
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/Button';
 import { getStatusPresentation, toneChip, type EmailTone } from './status';
@@ -43,7 +43,6 @@ export function SettingsCard({
 // Status chip rendered from an email status string. Icon + translated label,
 // toned via the theme tokens.
 export function StatusChip({ status, className }: { status?: string | null; className?: string }) {
-    const { t } = useTranslation('admin');
     const { labelKey, tone, icon: Icon } = getStatusPresentation(status);
     return (
         <span
@@ -54,7 +53,7 @@ export function StatusChip({ status, className }: { status?: string | null; clas
             )}
         >
             <Icon className="h-3 w-3" />
-            {t(labelKey as never)}
+            {td(`admin.${labelKey}`)}
         </span>
     );
 }
@@ -86,7 +85,6 @@ export function SaveBar({
     onDiscard: () => void;
     onSave: () => void;
 }) {
-    const { t } = useTranslation('admin');
     return (
         <div className="sticky bottom-4 z-10 flex items-center justify-between gap-4 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 px-5 py-3 shadow-2xl shadow-black/30 backdrop-blur">
             <span
@@ -101,14 +99,14 @@ export function SaveBar({
                         dirty ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-ink-faint)]',
                     )}
                 />
-                {dirty ? t('email.saveBar.dirty') : t('email.saveBar.clean')}
+                {dirty ? m['admin.email.saveBar.dirty']() : m['admin.email.saveBar.clean']()}
             </span>
             <div className="flex items-center gap-2">
                 <Button type="button" variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>
-                    {t('email.saveBar.discard')}
+                    {m['admin.email.saveBar.discard']()}
                 </Button>
                 <Button type="button" size="sm" onClick={onSave} disabled={!dirty || saving}>
-                    {t('email.saveBar.save')}
+                    {m['admin.email.saveBar.save']()}
                 </Button>
             </div>
         </div>

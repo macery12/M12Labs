@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { GitBranch, Plus, Pencil, Trash2, BadgeCheck, ExternalLink, X } from 'lucide-react';
 import {
@@ -25,7 +25,6 @@ function statusVar(status?: string): string {
 }
 
 export function RepositoriesPanel({ repositories }: { repositories: Repository[] }) {
-    const { t } = useTranslation(['extensions', 'common']);
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
     const [editing, setEditing] = useState<Repository | null>(null);
@@ -39,22 +38,22 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
     const toggle = useMutation({
         mutationFn: (repo: Repository) => updateRepository(repo.id, { name: repo.name, enabled: !repo.enabled }),
         onSuccess: invalidate,
-        onError: () => push({ type: 'error', message: t('toast.error') }),
+        onError: () => push({ type: 'error', message: m['extensions.toast.error']() }),
     });
 
     const remove = useMutation({
         mutationFn: (id: number) => deleteRepository(id),
         onSuccess: () => {
-            push({ type: 'success', message: t('toast.repoDeleted') });
+            push({ type: 'success', message: m['extensions.toast.repoDeleted']() });
             invalidate();
         },
-        onError: () => push({ type: 'error', message: t('toast.error') }),
+        onError: () => push({ type: 'error', message: m['extensions.toast.error']() }),
     });
 
     return (
         <>
             <Panel
-                title={t('repos.title')}
+                title={m['extensions.repos.title']()}
                 icon={GitBranch}
                 right={
                     <button
@@ -62,12 +61,12 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
                         onClick={() => setAdding(true)}
                         className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[var(--color-border-strong)] px-2.5 text-[11px] font-medium text-[var(--color-ink)] transition-colors hover:bg-[var(--color-surface-2)]"
                     >
-                        <Plus className="h-3.5 w-3.5" /> {t('repos.add')}
+                        <Plus className="h-3.5 w-3.5" /> {m['extensions.repos.add']()}
                     </button>
                 }
             >
                 {repositories.length === 0 ? (
-                    <p className="py-4 text-center text-xs text-[var(--color-ink-faint)]">{t('repos.empty')}</p>
+                    <p className="py-4 text-center text-xs text-[var(--color-ink-faint)]">{m['extensions.repos.empty']()}</p>
                 ) : (
                     <ul className="divide-y divide-[var(--color-border)]">
                         {repositories.map(repo => {
@@ -86,7 +85,7 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
                                             </span>
                                             {repo.official && (
                                                 <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--brand)]">
-                                                    <BadgeCheck className="h-3 w-3" /> {t('repos.official')}
+                                                    <BadgeCheck className="h-3 w-3" /> {m['extensions.repos.official']()}
                                                 </span>
                                             )}
                                         </div>
@@ -98,14 +97,14 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
                                         )}
                                     </div>
                                     <span className="hidden shrink-0 text-[11px] text-[var(--color-ink-muted)] sm:inline">
-                                        {t('repos.packages', { count: repo.packagesCount })}
+                                        {m['extensions.repos.packages']({ count: repo.packagesCount })}
                                     </span>
                                     <div className="flex shrink-0 items-center gap-1.5">
                                         <Switch
                                             checked={repo.enabled}
                                             disabled={toggle.isPending}
                                             onChange={() => toggle.mutate(repo)}
-                                            label={repo.enabled ? t('repos.disable') : t('repos.enable')}
+                                            label={repo.enabled ? m['extensions.repos.disable']() : m['extensions.repos.enable']()}
                                         />
                                         {repo.homepageUrl && (
                                             <a
@@ -122,7 +121,7 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
                                                 <button
                                                     type="button"
                                                     onClick={() => setEditing(repo)}
-                                                    aria-label={t('common:actions.edit')}
+                                                    aria-label={m['common.actions.edit']()}
                                                     className="rounded-md p-1.5 text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
                                                 >
                                                     <Pencil className="h-3.5 w-3.5" />
@@ -131,10 +130,10 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
                                                     type="button"
                                                     disabled={remove.isPending}
                                                     onClick={() => {
-                                                        if (window.confirm(t('repos.deleteConfirm', { name: repo.name })))
+                                                        if (window.confirm(m['extensions.repos.deleteConfirm']({ name: repo.name })))
                                                             remove.mutate(repo.id);
                                                     }}
-                                                    aria-label={t('repos.delete')}
+                                                    aria-label={m['extensions.repos.delete']()}
                                                     className="rounded-md p-1.5 text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] disabled:opacity-50"
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
@@ -157,7 +156,7 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
                         setEditing(null);
                     }}
                     onSaved={() => {
-                        push({ type: 'success', message: t('toast.repoSaved') });
+                        push({ type: 'success', message: m['extensions.toast.repoSaved']() });
                         invalidate();
                         setAdding(false);
                         setEditing(null);
@@ -177,7 +176,6 @@ function RepoFormModal({
     onClose: () => void;
     onSaved: () => void;
 }) {
-    const { t } = useTranslation(['extensions', 'common']);
     const push = useFlashes(s => s.push);
     const [name, setName] = useState(repo?.name ?? '');
     const [manifestUrl, setManifestUrl] = useState(repo?.manifestUrl ?? '');
@@ -201,7 +199,7 @@ function RepoFormModal({
                     ?.error ??
                 (err as { response?: { data?: { errors?: Array<{ detail?: string }> } } })?.response?.data?.errors?.[0]
                     ?.detail ??
-                t('toast.error');
+                m['extensions.toast.error']();
             push({ type: 'error', message: msg });
         },
     });
@@ -219,12 +217,12 @@ function RepoFormModal({
             >
                 <header className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
                     <h3 className="text-sm font-semibold text-[var(--color-ink)]">
-                        {repo ? t('repos.form.editTitle') : t('repos.form.addTitle')}
+                        {repo ? m['extensions.repos.form.editTitle']() : m['extensions.repos.form.addTitle']()}
                     </h3>
                     <button
                         type="button"
                         onClick={onClose}
-                        aria-label={t('common:actions.close')}
+                        aria-label={m['common.actions.close']()}
                         className="rounded-lg p-1.5 text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
                     >
                         <X className="h-4 w-4" />
@@ -240,32 +238,32 @@ function RepoFormModal({
                 >
                     <label className="block">
                         <span className="mb-1 block text-xs font-medium text-[var(--color-ink-muted)]">
-                            {t('repos.form.name')}
+                            {m['extensions.repos.form.name']()}
                         </span>
-                        <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('repos.form.namePlaceholder')} />
+                        <Input value={name} onChange={e => setName(e.target.value)} placeholder={m['extensions.repos.form.namePlaceholder']()} />
                     </label>
                     <label className="block">
                         <span className="mb-1 block text-xs font-medium text-[var(--color-ink-muted)]">
-                            {t('repos.form.manifestUrl')}
+                            {m['extensions.repos.form.manifestUrl']()}
                         </span>
                         <Input
                             value={manifestUrl}
                             onChange={e => setManifestUrl(e.target.value)}
-                            placeholder={t('repos.form.manifestPlaceholder')}
+                            placeholder={m['extensions.repos.form.manifestPlaceholder']()}
                         />
                     </label>
                     <label className="block">
                         <span className="mb-1 block text-xs font-medium text-[var(--color-ink-muted)]">
-                            {t('repos.form.homepageUrl')}
+                            {m['extensions.repos.form.homepageUrl']()}
                         </span>
                         <Input
                             value={homepageUrl}
                             onChange={e => setHomepageUrl(e.target.value)}
-                            placeholder={t('repos.form.homepagePlaceholder')}
+                            placeholder={m['extensions.repos.form.homepagePlaceholder']()}
                         />
                     </label>
                     <div className="flex items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-3 py-2.5">
-                        <span className="text-xs text-[var(--color-ink-muted)]">{t('repos.form.enabled')}</span>
+                        <span className="text-xs text-[var(--color-ink-muted)]">{m['extensions.repos.form.enabled']()}</span>
                         <Switch checked={enabled} onChange={setEnabled} />
                     </div>
 
@@ -275,7 +273,7 @@ function RepoFormModal({
                             onClick={onClose}
                             className="inline-flex h-10 items-center rounded-xl px-4 text-sm font-medium text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
                         >
-                            {t('repos.form.cancel')}
+                            {m['extensions.repos.form.cancel']()}
                         </button>
                         <button
                             type="submit"
@@ -286,7 +284,7 @@ function RepoFormModal({
                             )}
                         >
                             {save.isPending && <Spinner className="h-4 w-4" />}
-                            {save.isPending ? t('repos.form.submitting') : t('repos.form.submit')}
+                            {save.isPending ? m['extensions.repos.form.submitting']() : m['extensions.repos.form.submit']()}
                         </button>
                     </div>
                 </form>

@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { ShieldCheck, ShieldAlert, MailCheck, MailWarning, ArrowUpRight } from 'lucide-react';
 import { useSession } from '@/state/session';
 import { cn } from '@/lib/cn';
@@ -33,30 +33,29 @@ function Row({
 }
 
 export function AccountHealth() {
-    const { t } = useTranslation('dashboard');
     const user = useSession(s => s.user);
     if (!user) return null;
 
     return (
         <section className="flex flex-col gap-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-ink-muted)]">
-                <ShieldCheck className="h-4 w-4" /> {t('accountHealth')}
+                <ShieldCheck className="h-4 w-4" /> {m['dashboard.accountHealth']()}
             </h2>
             <div className="rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70 p-2">
                 <Row
                     ok={user.use_totp}
                     okIcon={ShieldCheck}
                     badIcon={ShieldAlert}
-                    okLabel={t('twoFactorEnabled')}
-                    badLabel={t('enableTwoFactor')}
+                    okLabel={m['dashboard.twoFactorEnabled']()}
+                    badLabel={m['dashboard.enableTwoFactor']()}
                     to="/v2/account/security"
                 />
                 <Row
                     ok={user.email_verified !== false}
                     okIcon={MailCheck}
                     badIcon={MailWarning}
-                    okLabel={t('emailVerified')}
-                    badLabel={t('verifyEmail')}
+                    okLabel={m['dashboard.emailVerified']()}
+                    badLabel={m['dashboard.verifyEmail']()}
                     to="/v2/account"
                 />
             </div>

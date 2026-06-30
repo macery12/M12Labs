@@ -1,6 +1,6 @@
+import { m, td } from '@/i18n';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { Cpu, MemoryStick, HardDrive, Play, Square, RotateCcw, Clock, AlertTriangle } from 'lucide-react';
 import { Meter } from '@/components/ui/Meter';
 import { formatBytes, formatMib, mibToBytes, formatUptime } from '@/lib/format';
@@ -53,12 +53,11 @@ export function LiveServerCard({
     resources?: ServerResources;
     pending: boolean;
 }) {
-    const { t } = useTranslation(['dashboard', 'common']);
     const qc = useQueryClient();
     const suspended = server.status === 'suspended' || resources?.isSuspended;
     const state = suspended ? 'offline' : (resources?.state ?? 'offline');
     const dot = stateDot[state] ?? stateDot.offline!;
-    const stateLabel = t(`common:states.${state === 'starting' || state === 'stopping' || state === 'running' ? state : 'offline'}`);
+    const stateLabel = td(`common.states.${state === 'starting' || state === 'stopping' || state === 'running' ? state : 'offline'}`);
 
     const power = useMutation({
         mutationFn: (signal: PowerSignal) => sendPower(server.id, signal),
@@ -92,14 +91,14 @@ export function LiveServerCard({
                 </div>
                 <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-surface-2)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)]">
                     <span className={cn('h-2 w-2 rounded-full', suspended ? 'bg-[var(--color-danger)]' : dot)} />
-                    {suspended ? t('common:states.suspended') : stateLabel}
+                    {suspended ? m['common.states.suspended']() : stateLabel}
                 </span>
             </div>
 
             <div className="flex flex-col gap-2.5">
                 <Meter
                     icon={Cpu}
-                    label={t('common:metrics.cpu')}
+                    label={m['common.metrics.cpu']()}
                     value={resources ? `${resources.cpuPercent.toFixed(0)}%` : '—'}
                     percent={
                         resources ? (cpuLimit > 0 ? (resources.cpuPercent / cpuLimit) * 100 : resources.cpuPercent) : null
@@ -107,13 +106,13 @@ export function LiveServerCard({
                 />
                 <Meter
                     icon={MemoryStick}
-                    label={t('common:metrics.memory')}
+                    label={m['common.metrics.memory']()}
                     value={resources ? `${formatBytes(resources.memoryBytes)} / ${formatMib(server.limits.memory)}` : '—'}
                     percent={resources && memTotal > 0 ? (resources.memoryBytes / memTotal) * 100 : null}
                 />
                 <Meter
                     icon={HardDrive}
-                    label={t('common:metrics.disk')}
+                    label={m['common.metrics.disk']()}
                     value={resources ? `${formatBytes(resources.diskBytes)} / ${formatMib(server.limits.disk)}` : '—'}
                     percent={resources && diskTotal > 0 ? (resources.diskBytes / diskTotal) * 100 : null}
                 />
@@ -121,33 +120,33 @@ export function LiveServerCard({
 
             {suspended && (
                 <div className="flex items-center gap-1.5 text-xs text-[var(--color-danger)]">
-                    <AlertTriangle className="h-3.5 w-3.5" /> {t('serverSuspended')}
+                    <AlertTriangle className="h-3.5 w-3.5" /> {m['dashboard.serverSuspended']()}
                 </div>
             )}
 
             <div className="mt-auto flex items-center justify-between border-t border-[var(--color-border)] pt-3">
                 <span className="flex items-center gap-1.5 text-xs text-[var(--color-ink-muted)]">
                     <Clock className="h-3.5 w-3.5" />
-                    {resources && isRunning ? formatUptime(resources.uptimeMs) : pending ? '…' : t('offlineShort')}
+                    {resources && isRunning ? formatUptime(resources.uptimeMs) : pending ? '…' : m['dashboard.offlineShort']()}
                 </span>
                 <div className="flex items-center gap-1.5">
                     <PowerButton
                         icon={Play}
-                        title={t('common:power.start')}
+                        title={m['common.power.start']()}
                         tone="text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10"
                         disabled={!!suspended || !isOffline || power.isPending}
                         onClick={act('start')}
                     />
                     <PowerButton
                         icon={RotateCcw}
-                        title={t('common:power.restart')}
+                        title={m['common.power.restart']()}
                         tone="text-[var(--color-warning)] hover:bg-[var(--color-warning)]/10"
                         disabled={!!suspended || !isRunning || power.isPending}
                         onClick={act('restart')}
                     />
                     <PowerButton
                         icon={Square}
-                        title={t('common:power.stop')}
+                        title={m['common.power.stop']()}
                         tone="text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
                         disabled={!!suspended || !isRunning || power.isPending}
                         onClick={act('stop')}

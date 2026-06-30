@@ -1,6 +1,6 @@
+import { m, td } from '@/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { Info, TerminalSquare, Gauge, Network, ListChecks, Save, RotateCcw } from 'lucide-react';
@@ -95,7 +95,6 @@ function firstError(err: unknown, fallback: string): string {
 }
 
 export function ServerEditor() {
-    const { t } = useTranslation('admin');
     const s = useServerView();
     const qc = useQueryClient();
     const push = useFlashes(st => st.push);
@@ -155,7 +154,7 @@ export function ServerEditor() {
             setValue('startup', egg.startup, { shouldDirty: true });
             setEnvDirty(true);
         } catch {
-            push({ type: 'error', message: t('infrastructure.common.loadError') });
+            push({ type: 'error', message: m['admin.infrastructure.common.loadError']() });
         }
     };
 
@@ -197,11 +196,11 @@ export function ServerEditor() {
                 add_allocations: alloc.addIds,
                 remove_allocations: alloc.removeIds,
             });
-            push({ type: 'success', message: t('infrastructure.serverDetail.saved') });
+            push({ type: 'success', message: m['admin.infrastructure.serverDetail.saved']() });
             await qc.invalidateQueries({ queryKey: ['admin', 'server-view', String(s.id)] });
             await qc.invalidateQueries({ queryKey: ['admin', 'servers'] });
         } catch (err) {
-            push({ type: 'error', message: firstError(err, t('infrastructure.common.genericError')) });
+            push({ type: 'error', message: firstError(err, m['admin.infrastructure.common.genericError']()) });
         } finally {
             setSaving(false);
         }
@@ -245,75 +244,75 @@ export function ServerEditor() {
 
             <form className="min-w-0 flex-1 space-y-6 pb-24" onSubmit={save}>
                 {/* Information */}
-                <SectionCard id="information" icon={Info} title={t('infrastructure.serverDetail.nav.information')} desc={t('infrastructure.serverDetail.section.informationDesc')}>
+                <SectionCard id="information" icon={Info} title={m['admin.infrastructure.serverDetail.nav.information']()} desc={m['admin.infrastructure.serverDetail.section.informationDesc']()}>
                     <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                        <FieldRow label={t('infrastructure.serverDetail.field.name')} error={errors.name?.message}>
-                            <Input invalid={!!errors.name} disabled={readOnly} {...register('name', { required: t('infrastructure.common.required') })} />
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.name']()} error={errors.name?.message}>
+                            <Input invalid={!!errors.name} disabled={readOnly} {...register('name', { required: m['admin.infrastructure.common.required']() })} />
                         </FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.externalId')} desc={t('infrastructure.serverDetail.field.externalIdDesc')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.externalId']()} desc={m['admin.infrastructure.serverDetail.field.externalIdDesc']()}>
                             <Input disabled={readOnly} {...register('externalId')} />
                         </FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.owner')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.owner']()}>
                             <Select
                                 value={watch('ownerId')}
                                 onChange={v => setValue('ownerId', v, { shouldDirty: true })}
                                 options={ownerOptions}
-                                placeholder={t('infrastructure.server.selectOwner')}
+                                placeholder={m['admin.infrastructure.server.selectOwner']()}
                                 disabled={readOnly}
                             />
                         </FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.description')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.description']()}>
                             <Input disabled={readOnly} {...register('description')} />
                         </FieldRow>
                     </div>
                 </SectionCard>
 
                 {/* Startup */}
-                <SectionCard id="startup" icon={TerminalSquare} title={t('infrastructure.serverDetail.nav.startup')} desc={t('infrastructure.serverDetail.section.startupDesc')}>
+                <SectionCard id="startup" icon={TerminalSquare} title={m['admin.infrastructure.serverDetail.nav.startup']()} desc={m['admin.infrastructure.serverDetail.section.startupDesc']()}>
                     <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                        <FieldRow label={t('infrastructure.serverDetail.field.nest')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.nest']()}>
                             <Select
                                 value={nestId || undefined}
                                 onChange={v => { setValue('nestId', v, { shouldDirty: true }); }}
                                 options={(nestsQ.data ?? []).map(n => ({ value: String(n.id), label: n.name }))}
-                                placeholder={t('infrastructure.server.selectNest')}
+                                placeholder={m['admin.infrastructure.server.selectNest']()}
                                 disabled={readOnly}
                             />
                         </FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.egg')} desc={t('infrastructure.serverDetail.field.eggDesc')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.egg']()} desc={m['admin.infrastructure.serverDetail.field.eggDesc']()}>
                             <Select
                                 value={eggId || undefined}
                                 onChange={adoptEgg}
                                 options={(eggsQ.data ?? []).map(e => ({ value: String(e.id), label: e.name }))}
-                                placeholder={t('infrastructure.server.selectEgg')}
+                                placeholder={m['admin.infrastructure.server.selectEgg']()}
                                 disabled={readOnly || !nestId}
                             />
                         </FieldRow>
                     </div>
 
-                    <FieldRow label={t('infrastructure.serverDetail.field.startup')} desc={t('infrastructure.serverDetail.field.startupDesc', { vars: '{{SERVER_MEMORY}}, {{SERVER_IP}}, {{SERVER_PORT}}' })}>
+                    <FieldRow label={m['admin.infrastructure.serverDetail.field.startup']()} desc={m['admin.infrastructure.serverDetail.field.startupDesc']({ vars: '{{SERVER_MEMORY}}, {{SERVER_IP}}, {{SERVER_PORT}}' })}>
                         <Input className="font-mono text-xs" disabled={readOnly} placeholder={eggDefault} {...register('startup')} />
                     </FieldRow>
 
                     <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                        <FieldRow label={t('infrastructure.serverDetail.field.image')} desc={t('infrastructure.serverDetail.field.imageDesc')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.image']()} desc={m['admin.infrastructure.serverDetail.field.imageDesc']()}>
                             <Select
                                 value={watch('image')}
                                 onChange={v => setValue('image', v, { shouldDirty: true })}
                                 options={imageSelectOptions}
-                                placeholder={t('infrastructure.server.selectImage')}
+                                placeholder={m['admin.infrastructure.server.selectImage']()}
                                 disabled={readOnly}
                             />
                         </FieldRow>
                         <label className="flex items-end gap-3 pb-2 text-sm text-[var(--color-ink)]">
                             <Switch checked={watch('skipScripts')} onChange={v => setValue('skipScripts', v, { shouldDirty: true })} disabled={readOnly} />
-                            {t('infrastructure.serverDetail.field.skipScripts')}
+                            {m['admin.infrastructure.serverDetail.field.skipScripts']()}
                         </label>
                     </div>
 
                     {varDefs.length > 0 && (
                         <div className="mt-2">
-                            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">{t('infrastructure.serverDetail.variables')}</p>
+                            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">{m['admin.infrastructure.serverDetail.variables']()}</p>
                             <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
                                 {varDefs.map(v => (
                                     <FieldRow key={v.envVariable} label={v.name} desc={v.description ?? undefined} mono={v.envVariable}>
@@ -332,49 +331,49 @@ export function ServerEditor() {
                 </SectionCard>
 
                 {/* Resources */}
-                <SectionCard id="resources" icon={Gauge} title={t('infrastructure.serverDetail.nav.resources')} desc={t('infrastructure.serverDetail.section.resourcesDesc')}>
+                <SectionCard id="resources" icon={Gauge} title={m['admin.infrastructure.serverDetail.nav.resources']()} desc={m['admin.infrastructure.serverDetail.section.resourcesDesc']()}>
                     <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                        <FieldRow label={t('infrastructure.serverDetail.field.cpu')} desc={t('infrastructure.serverDetail.field.cpuDesc')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.cpu']()} desc={m['admin.infrastructure.serverDetail.field.cpuDesc']()}>
                             <Input type="number" {...register('cpu', num)} />
                         </FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.threads')} desc={t('infrastructure.serverDetail.field.threadsDesc')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.threads']()} desc={m['admin.infrastructure.serverDetail.field.threadsDesc']()}>
                             <Input disabled={readOnly} placeholder="0-1,3" {...register('threads')} />
                         </FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.memory')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.memory']()}>
                             <Input type="number" {...register('memory', num)} />
                         </FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.swap')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.swap']()}>
                             <Input type="number" {...register('swap', num)} />
                         </FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.disk')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.disk']()}>
                             <Input type="number" {...register('disk', num)} />
                         </FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.io')} desc={t('infrastructure.serverDetail.field.ioDesc')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.io']()} desc={m['admin.infrastructure.serverDetail.field.ioDesc']()}>
                             <Input type="number" {...register('io', num)} />
                         </FieldRow>
                     </div>
                     <label className="mt-2 flex items-start gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 p-3 text-sm text-[var(--color-ink)]">
                         <Switch checked={watch('oom_killer')} onChange={v => setValue('oom_killer', v, { shouldDirty: true })} disabled={readOnly} />
                         <span>
-                            {t('infrastructure.serverDetail.field.oomKiller')}
-                            <span className="mt-0.5 block text-xs text-[var(--color-ink-faint)]">{t('infrastructure.serverDetail.field.oomKillerDesc')}</span>
+                            {m['admin.infrastructure.serverDetail.field.oomKiller']()}
+                            <span className="mt-0.5 block text-xs text-[var(--color-ink-faint)]">{m['admin.infrastructure.serverDetail.field.oomKillerDesc']()}</span>
                         </span>
                     </label>
                 </SectionCard>
 
                 {/* Networking */}
-                <SectionCard id="networking" icon={Network} title={t('infrastructure.serverDetail.nav.networking')} desc={t('infrastructure.serverDetail.section.networkingDesc')}>
+                <SectionCard id="networking" icon={Network} title={m['admin.infrastructure.serverDetail.nav.networking']()} desc={m['admin.infrastructure.serverDetail.section.networkingDesc']()}>
                     <NetworkingSection draft={alloc} onChange={setAlloc} readOnly={readOnly} />
                 </SectionCard>
 
                 {/* Feature limits */}
-                <SectionCard id="limits" icon={ListChecks} title={t('infrastructure.serverDetail.nav.limits')} desc={t('infrastructure.serverDetail.section.limitsDesc')}>
+                <SectionCard id="limits" icon={ListChecks} title={m['admin.infrastructure.serverDetail.nav.limits']()} desc={m['admin.infrastructure.serverDetail.section.limitsDesc']()}>
                     <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-                        <FieldRow label={t('infrastructure.serverDetail.field.allocations')}><Input type="number" {...register('allocations', num)} /></FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.backups')}><Input type="number" {...register('backups', num)} /></FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.databases')}><Input type="number" {...register('databases', num)} /></FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.subusers')}><Input type="number" {...register('subusers', num)} /></FieldRow>
-                        <FieldRow label={t('infrastructure.serverDetail.field.subdomains')} desc={t('infrastructure.serverDetail.field.subdomainsDesc')}>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.allocations']()}><Input type="number" {...register('allocations', num)} /></FieldRow>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.backups']()}><Input type="number" {...register('backups', num)} /></FieldRow>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.databases']()}><Input type="number" {...register('databases', num)} /></FieldRow>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.subusers']()}><Input type="number" {...register('subusers', num)} /></FieldRow>
+                        <FieldRow label={m['admin.infrastructure.serverDetail.field.subdomains']()} desc={m['admin.infrastructure.serverDetail.field.subdomainsDesc']()}>
                             <Input type="number" {...register('subdomains', num)} />
                         </FieldRow>
                     </div>
@@ -389,7 +388,6 @@ export function ServerEditor() {
 // ---- Layout pieces ------------------------------------------------------------
 
 function SectionNav() {
-    const { t } = useTranslation('admin');
     const [active, setActive] = useState('information');
 
     useEffect(() => {
@@ -420,7 +418,7 @@ function SectionNav() {
                     )}
                 >
                     <sec.icon className={cn('h-4 w-4', active === sec.id ? 'text-[var(--color-accent)]' : 'text-[var(--color-ink-faint)]')} />
-                    {t(sec.labelKey as never)}
+                    {td(`admin.${sec.labelKey}`)}
                 </button>
             ))}
         </nav>
@@ -459,20 +457,19 @@ function FieldRow({ label, desc, mono, error, children }: { label: string; desc?
 }
 
 function SaveBar({ dirty, saving, onDiscard }: { dirty: boolean; saving: boolean; onDiscard: () => void }) {
-    const { t } = useTranslation('admin');
     return (
         <div className="sticky bottom-4 z-10 flex items-center justify-between gap-4 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 px-5 py-3 shadow-2xl shadow-black/30 backdrop-blur">
             <span className={cn('flex items-center gap-2 text-xs', dirty ? 'text-[var(--color-warning)]' : 'text-[var(--color-ink-faint)]')}>
                 <span className={cn('h-1.5 w-1.5 rounded-full', dirty ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-ink-faint)]')} />
-                {dirty ? t('infrastructure.serverDetail.saveBar.dirty') : t('infrastructure.serverDetail.saveBar.clean')}
+                {dirty ? m['admin.infrastructure.serverDetail.saveBar.dirty']() : m['admin.infrastructure.serverDetail.saveBar.clean']()}
             </span>
             <div className="flex items-center gap-2">
                 <Button type="button" variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>
-                    <RotateCcw className="h-4 w-4" /> {t('infrastructure.serverDetail.saveBar.discard')}
+                    <RotateCcw className="h-4 w-4" /> {m['admin.infrastructure.serverDetail.saveBar.discard']()}
                 </Button>
                 <Button type="submit" size="sm" disabled={!dirty || saving}>
                     {saving ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                    {t('infrastructure.serverDetail.saveBar.save')}
+                    {m['admin.infrastructure.serverDetail.saveBar.save']()}
                 </Button>
             </div>
         </div>

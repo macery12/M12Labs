@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useState, type FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
@@ -21,7 +21,6 @@ export interface StripeFormProps {
 // the order details onto the intent, then confirm the payment with a redirect
 // to the processing page.
 export default function StripeForm(props: StripeFormProps) {
-    const { t } = useTranslation('billing');
     const stripe = useStripe();
     const elements = useElements();
     const push = useFlashes(s => s.push);
@@ -49,11 +48,11 @@ export default function StripeForm(props: StripeFormProps) {
                 },
             });
             if (error) {
-                push({ type: 'error', message: error.message ?? t('payment.confirmError') });
+                push({ type: 'error', message: error.message ?? m['billing.payment.confirmError']() });
                 setLoading(false);
             }
         } catch {
-            push({ type: 'error', message: t('payment.startCardError') });
+            push({ type: 'error', message: m['billing.payment.startCardError']() });
             setLoading(false);
         }
     };
@@ -62,7 +61,7 @@ export default function StripeForm(props: StripeFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
             <PaymentElement />
             <Button type="submit" size="lg" className="w-full" disabled={loading || !props.serverName.trim()}>
-                {loading ? <Spinner className="h-5 w-5" /> : t('payment.payNow')}
+                {loading ? <Spinner className="h-5 w-5" /> : m['billing.payment.payNow']()}
             </Button>
         </form>
     );

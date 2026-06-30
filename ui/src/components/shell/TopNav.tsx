@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { Link, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Menu, ChevronDown, LogOut, User as UserIcon, Shield } from 'lucide-react';
 import { useSession } from '@/state/session';
@@ -22,7 +22,6 @@ function logout() {
 }
 
 export function TopNav({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
-    const { t } = useTranslation('nav');
     const user = useSession(s => s.user);
     const site = useFlags(s => s.site);
     const location = useLocation();
@@ -36,7 +35,7 @@ export function TopNav({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
                     <button
                         onClick={onToggleSidebar}
                         className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)] lg:hidden"
-                        aria-label={t('topnav.toggleNav')}
+                        aria-label={m['nav.topnav.toggleNav']()}
                     >
                         <Menu className="h-5 w-5" />
                     </button>
@@ -57,7 +56,7 @@ export function TopNav({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
                         )}
                     >
                         <Shield className="h-4 w-4" />
-                        {inAdmin ? t('topnav.exitAdmin') : t('topnav.admin')}
+                        {inAdmin ? m['nav.topnav.exitAdmin']() : m['nav.topnav.admin']()}
                     </Link>
                 )}
 
@@ -68,7 +67,7 @@ export function TopNav({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
                             alt=""
                             className="h-8 w-8 rounded-full bg-[var(--color-surface-2)] object-cover"
                         />
-                        <span className="hidden font-medium sm:block">{user?.username ?? t('topnav.accountFallback')}</span>
+                        <span className="hidden font-medium sm:block">{user?.username ?? m['nav.topnav.accountFallback']()}</span>
                         <ChevronDown className="h-4 w-4 text-[var(--color-ink-faint)]" />
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Portal>
@@ -82,7 +81,7 @@ export function TopNav({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
                                     to="/v2/account"
                                     className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--color-ink-muted)] outline-none hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
                                 >
-                                    <UserIcon className="h-4 w-4" /> {t('topnav.account')}
+                                    <UserIcon className="h-4 w-4" /> {m['nav.topnav.account']()}
                                 </Link>
                             </DropdownMenu.Item>
                             <DropdownMenu.Separator className="my-1 h-px bg-[var(--color-border)]" />
@@ -90,7 +89,7 @@ export function TopNav({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
                                 onSelect={logout}
                                 className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--color-danger)] outline-none hover:bg-[var(--color-danger)]/10"
                             >
-                                <LogOut className="h-4 w-4" /> {t('topnav.signOut')}
+                                <LogOut className="h-4 w-4" /> {m['nav.topnav.signOut']()}
                             </DropdownMenu.Item>
                         </DropdownMenu.Content>
                     </DropdownMenu.Portal>

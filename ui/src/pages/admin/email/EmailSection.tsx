@@ -1,6 +1,6 @@
+import { m } from '@/i18n';
 import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -22,7 +22,6 @@ export const DEFERRED_QUEUE_KEY = ['admin', 'email', 'deferred'] as const;
 // activity log. The deferred queue is a header button + modal rather than a
 // full page (kept deliberately lightweight).
 export default function EmailSection() {
-    const { t } = useTranslation('admin');
     const [deferredOpen, setDeferredOpen] = useState(false);
 
     // Lightweight count for the header badge; the modal owns the full list.
@@ -38,13 +37,13 @@ export default function EmailSection() {
             <header className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
-                        {t('email.title')}
+                        {m['admin.email.title']()}
                     </h1>
-                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('email.subtitle')}</p>
+                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.email.subtitle']()}</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setDeferredOpen(true)}>
                     <Clock className="h-4 w-4" />
-                    {t('email.deferred.button')}
+                    {m['admin.email.deferred.button']()}
                     {queued > 0 && (
                         <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-warning)]/15 px-1.5 text-[11px] font-semibold text-[var(--color-warning)]">
                             {queued}

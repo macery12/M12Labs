@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { m, td } from '@/i18n';
 import type { MonthPoint, StatusSlice, RenewalWindow } from '@/api/billing';
 import { formatCurrency } from '@/lib/format';
 
@@ -23,7 +23,6 @@ export function statusColor(status: string): string {
 // Monthly revenue — responsive CSS bar chart (no chart dependency). Bars are
 // brand-toned with a hover tooltip; the tallest month sets the scale.
 export function RevenueBars({ points }: { points: MonthPoint[] }) {
-    const { t } = useTranslation('admin');
     const max = Math.max(...points.map(p => p.revenue), 1);
     const hasRevenue = points.some(p => p.revenue > 0);
 
@@ -50,7 +49,7 @@ export function RevenueBars({ points }: { points: MonthPoint[] }) {
                 })}
             </div>
             {!hasRevenue && (
-                <p className="text-center text-xs text-[var(--color-ink-faint)]">{t('billing.overview.noRevenue')}</p>
+                <p className="text-center text-xs text-[var(--color-ink-faint)]">{m['admin.billing.overview.noRevenue']()}</p>
             )}
         </div>
     );
@@ -58,7 +57,6 @@ export function RevenueBars({ points }: { points: MonthPoint[] }) {
 
 // Order-status composition — an SVG donut with a centre total and a legend.
 export function StatusDonut({ slices }: { slices: StatusSlice[] }) {
-    const { t } = useTranslation('admin');
     const total = slices.reduce((s, x) => s + x.count, 0);
     const r = 52;
     const C = 2 * Math.PI * r;
@@ -92,18 +90,18 @@ export function StatusDonut({ slices }: { slices: StatusSlice[] }) {
                     {total}
                 </text>
                 <text x="60" y="72" textAnchor="middle" className="fill-[var(--color-ink-faint)] text-[9px] uppercase tracking-widest">
-                    {t('billing.overview.ordersLabel')}
+                    {m['admin.billing.overview.ordersLabel']()}
                 </text>
             </svg>
             <ul className="flex min-w-0 flex-1 flex-col gap-1.5">
                 {slices.length === 0 && (
-                    <li className="text-xs text-[var(--color-ink-faint)]">{t('billing.overview.noOrders')}</li>
+                    <li className="text-xs text-[var(--color-ink-faint)]">{m['admin.billing.overview.noOrders']()}</li>
                 )}
                 {slices.map(s => (
                     <li key={s.status} className="flex items-center gap-2 text-sm">
                         <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: statusColor(s.status) }} />
                         <span className="flex-1 truncate capitalize text-[var(--color-ink-muted)]">
-                            {t(`billing.overview.status.${s.status}` as never, { defaultValue: s.status })}
+                            {td(`admin.billing.overview.status.${s.status}`, s.status)}
                         </span>
                         <span className="font-mono tabular-nums text-[var(--color-ink)]">{s.count}</span>
                     </li>

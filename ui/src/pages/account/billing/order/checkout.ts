@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import {
     getStoreProduct,
@@ -59,7 +59,6 @@ export interface CheckoutController {
 }
 
 export function useCheckoutController(productId: number): CheckoutController {
-    const { t } = useTranslation('billing');
     const productQ = useQuery({ queryKey: ['store', 'product', productId], queryFn: () => getStoreProduct(productId), enabled: productId > 0 });
     const cyclesQ = useQuery({ queryKey: ['store', 'cycles', productId], queryFn: () => getProductBillingCycles(productId), enabled: productId > 0 });
     const nodesQ = useQuery({ queryKey: ['store', 'nodes', productId], queryFn: () => getViableNodes(productId), enabled: productId > 0 });
@@ -142,14 +141,14 @@ export function useCheckoutController(productId: number): CheckoutController {
 
     const applyCoupon = async (raw: string): Promise<{ ok: boolean; message: string }> => {
         const code = raw.trim();
-        if (!code) return { ok: false, message: t('coupon.empty') };
+        if (!code) return { ok: false, message: m['billing.coupon.empty']() };
         setCouponBusy(true);
         try {
             const result = await validateCoupon(code, basePrice, 'new');
             setCouponData(result);
-            return { ok: true, message: t('coupon.applied', { code: result.coupon.code }) };
+            return { ok: true, message: m['billing.coupon.applied']({ code: result.coupon.code }) };
         } catch {
-            return { ok: false, message: t('coupon.invalid') };
+            return { ok: false, message: m['billing.coupon.invalid']() };
         } finally {
             setCouponBusy(false);
         }

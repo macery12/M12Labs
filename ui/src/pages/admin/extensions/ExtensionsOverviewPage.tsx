@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Puzzle, RefreshCw, Package, Power, ArrowUpCircle, GitBranch, Search } from 'lucide-react';
 import {
@@ -39,7 +39,6 @@ function SummaryCell({ icon: Icon, label, value, sub }: { icon: typeof Puzzle; l
 }
 
 export default function ExtensionsOverviewPage() {
-    const { t } = useTranslation(['extensions', 'common']);
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
 
@@ -85,13 +84,13 @@ export default function ExtensionsOverviewPage() {
 
     const reportError = (err: unknown) => {
         const status = (err as { response?: { status?: number } })?.response?.status;
-        push({ type: 'error', message: status === 409 ? t('toast.running') : t('toast.error') });
+        push({ type: 'error', message: status === 409 ? m['extensions.toast.running']() : m['extensions.toast.error']() });
     };
 
     const toggle = useMutation({
         mutationFn: (ext: Extension) => toggleExtension(ext.id),
         onSuccess: (e, ext) => {
-            push({ type: 'success', message: t(ext.enabled ? 'toast.disabled' : 'toast.enabled', { name: e.name }) });
+            push({ type: 'success', message: (ext.enabled ? m['extensions.toast.disabled'] : m['extensions.toast.enabled'])({ name: e.name }) });
             qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
         },
         onError: reportError,
@@ -100,7 +99,7 @@ export default function ExtensionsOverviewPage() {
     const install = useMutation({
         mutationFn: (ext: Extension) => installExtension(ext.id, ext.source.repositoryId!, ext.latestVersion),
         onSuccess: e => {
-            push({ type: 'success', message: t('toast.installed', { name: e.name }) });
+            push({ type: 'success', message: m['extensions.toast.installed']({ name: e.name }) });
             qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
         },
         onError: reportError,
@@ -111,7 +110,7 @@ export default function ExtensionsOverviewPage() {
         onSuccess: data => {
             qc.setQueryData(['admin', 'extensions'], data);
             qc.invalidateQueries({ queryKey: ['admin', 'extension-repositories'] });
-            push({ type: 'success', message: t('toast.refreshed') });
+            push({ type: 'success', message: m['extensions.toast.refreshed']() });
         },
         onError: reportError,
     });
@@ -141,10 +140,10 @@ export default function ExtensionsOverviewPage() {
     }, [extensions, filter, search]);
 
     const segments: Array<{ id: Filter; label: string }> = [
-        { id: 'all', label: t('filters.all') },
-        { id: 'installed', label: t('filters.installed') },
-        { id: 'available', label: t('filters.available') },
-        { id: 'updates', label: t('filters.updates') },
+        { id: 'all', label: m['extensions.filters.all']() },
+        { id: 'installed', label: m['extensions.filters.installed']() },
+        { id: 'available', label: m['extensions.filters.available']() },
+        { id: 'updates', label: m['extensions.filters.updates']() },
     ];
 
     const togglingId = toggle.isPending ? toggle.variables?.id : undefined;
@@ -156,8 +155,8 @@ export default function ExtensionsOverviewPage() {
 
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('subtitle')}</p>
+                    <h1 className="text-2xl font-semibold tracking-tight">{m['extensions.title']()}</h1>
+                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['extensions.subtitle']()}</p>
                 </div>
                 <button
                     type="button"
@@ -166,7 +165,7 @@ export default function ExtensionsOverviewPage() {
                     className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-[var(--color-border-strong)] px-4 text-sm font-medium text-[var(--color-ink)] transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50"
                 >
                     <RefreshCw className={cn('h-4 w-4', refresh.isPending && 'animate-spin')} />
-                    {refresh.isPending ? t('refreshing') : t('refresh')}
+                    {refresh.isPending ? m['extensions.refreshing']() : m['extensions.refresh']()}
                 </button>
             </div>
 
@@ -180,7 +179,7 @@ export default function ExtensionsOverviewPage() {
 
             {extensionsQuery.isError && (
                 <div className="rounded-md border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-5 py-4 text-sm text-[var(--color-danger)]">
-                    {t('loadError')}
+                    {m['extensions.loadError']()}
                 </div>
             )}
 
@@ -189,27 +188,27 @@ export default function ExtensionsOverviewPage() {
                     <div className="grid grid-cols-2 divide-x divide-y divide-[var(--color-border)] overflow-hidden rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70 sm:divide-y-0 lg:grid-cols-4">
                         <SummaryCell
                             icon={Package}
-                            label={t('summary.installed')}
+                            label={m['extensions.summary.installed']()}
                             value={String(counts.installed)}
-                            sub={t('summary.ofInstalled', { count: extensions.length })}
+                            sub={m['extensions.summary.ofInstalled']({ count: extensions.length })}
                         />
                         <SummaryCell
                             icon={Power}
-                            label={t('summary.enabled')}
+                            label={m['extensions.summary.enabled']()}
                             value={String(counts.enabled)}
-                            sub={t('summary.available', { count: extensions.filter(e => e.installable).length })}
+                            sub={m['extensions.summary.available']({ count: extensions.filter(e => e.installable).length })}
                         />
                         <SummaryCell
                             icon={ArrowUpCircle}
-                            label={t('summary.updates')}
+                            label={m['extensions.summary.updates']()}
                             value={String(counts.updates)}
-                            sub={counts.updates > 0 ? t('summary.needsAttention', { count: counts.updates }) : t('summary.upToDate')}
+                            sub={counts.updates > 0 ? m['extensions.summary.needsAttention']({ count: counts.updates }) : m['extensions.summary.upToDate']()}
                         />
                         <SummaryCell
                             icon={GitBranch}
-                            label={t('summary.repositories')}
+                            label={m['extensions.summary.repositories']()}
                             value={String(repos.length)}
-                            sub={repoIssues > 0 ? t('summary.withIssues', { count: repoIssues }) : t('summary.connected', { count: repos.filter(r => r.enabled).length })}
+                            sub={repoIssues > 0 ? m['extensions.summary.withIssues']({ count: repoIssues }) : m['extensions.summary.connected']({ count: repos.filter(r => r.enabled).length })}
                         />
                     </div>
 
@@ -237,7 +236,7 @@ export default function ExtensionsOverviewPage() {
                             <Input
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                placeholder={t('filters.searchPlaceholder')}
+                                placeholder={m['extensions.filters.searchPlaceholder']()}
                                 className="h-10 pl-9"
                             />
                         </div>
@@ -278,10 +277,9 @@ export default function ExtensionsOverviewPage() {
 }
 
 function EmptyState({ search, hasAny }: { search: string; hasAny: boolean }) {
-    const { t } = useTranslation('extensions');
     const q = search.trim();
-    const title = q ? t('empty.searchTitle') : hasAny ? t('empty.filterTitle') : t('empty.title');
-    const body = q ? t('empty.searchBody', { query: q }) : hasAny ? t('empty.filterBody') : t('empty.body');
+    const title = q ? m['extensions.empty.searchTitle']() : hasAny ? m['extensions.empty.filterTitle']() : m['extensions.empty.title']();
+    const body = q ? m['extensions.empty.searchBody']({ query: q }) : hasAny ? m['extensions.empty.filterBody']() : m['extensions.empty.body']();
     return (
         <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface)]/40 px-6 py-16 text-center">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-surface-2)]">

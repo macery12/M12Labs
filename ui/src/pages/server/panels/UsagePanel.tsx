@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Activity as ActivityIcon } from 'lucide-react';
 import { Panel } from './Panel';
 import { useServer } from '@/components/server/ServerContext';
@@ -54,7 +54,6 @@ function Bar({ label, value, percent }: { label: string; value: string; percent:
 }
 
 export function UsagePanel() {
-    const { t } = useTranslation(['server', 'common']);
     const server = useServer();
     const stats = useServerSocket(s => s.stats);
     const status = useServerSocket(s => s.status);
@@ -76,28 +75,28 @@ export function UsagePanel() {
 
     return (
         <Panel
-            title={t('usage.title')}
+            title={m['server.usage.title']()}
             icon={ActivityIcon}
             right={
                 <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-                    {t('usage.cpuTrend')}
+                    {m['server.usage.cpuTrend']()}
                 </span>
             }
         >
             <div className="flex flex-col gap-3">
                 <Sparkline data={offline ? [] : cpuHistory} max={cpuLimit > 0 ? cpuLimit : 100} />
                 <Bar
-                    label={t('common:metrics.cpu')}
+                    label={m['common.metrics.cpu']()}
                     value={stats && !offline ? `${stats.cpuPercent.toFixed(1)}%` : '—'}
                     percent={stats && !offline ? (cpuLimit > 0 ? (stats.cpuPercent / cpuLimit) * 100 : stats.cpuPercent) : null}
                 />
                 <Bar
-                    label={t('common:metrics.memory')}
+                    label={m['common.metrics.memory']()}
                     value={stats && !offline ? `${formatBytes(stats.memoryBytes)} / ${formatMib(server.limits.memory)}` : '—'}
                     percent={stats && !offline && memTotal > 0 ? (stats.memoryBytes / memTotal) * 100 : null}
                 />
                 <Bar
-                    label={t('common:metrics.disk')}
+                    label={m['common.metrics.disk']()}
                     value={stats ? `${formatBytes(stats.diskBytes)} / ${formatMib(server.limits.disk)}` : '—'}
                     percent={stats && diskTotal > 0 ? (stats.diskBytes / diskTotal) * 100 : null}
                 />

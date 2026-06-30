@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import {
     TrendingUp,
     CalendarClock,
@@ -48,7 +48,6 @@ function Kpi({
 }
 
 export default function BillingOverviewPage() {
-    const { t } = useTranslation('admin');
     const { data, isLoading, isError } = useQuery({
         queryKey: ['admin', 'billing', 'analytics'],
         queryFn: getBillingAnalytics,
@@ -63,7 +62,7 @@ export default function BillingOverviewPage() {
     }
 
     if (isError || !data) {
-        return <p className="text-sm text-[var(--color-danger)]">{t('billing.common.loadError')}</p>;
+        return <p className="text-sm text-[var(--color-danger)]">{m['admin.billing.common.loadError']()}</p>;
     }
 
     const r = data.upcomingRenewals;
@@ -71,64 +70,64 @@ export default function BillingOverviewPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{t('billing.overview.title')}</h1>
-                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('billing.overview.subtitle')}</p>
+                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['admin.billing.overview.title']()}</h1>
+                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.billing.overview.subtitle']()}</p>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <Kpi
                     icon={TrendingUp}
                     tone="var(--color-accent)"
-                    label={t('billing.overview.forecast7')}
+                    label={m['admin.billing.overview.forecast7']()}
                     value={formatCurrency(data.forecast.next7Days)}
-                    sub={t('billing.overview.forecast30', { amount: formatCurrency(data.forecast.next30Days) })}
+                    sub={m['admin.billing.overview.forecast30']({ amount: formatCurrency(data.forecast.next30Days) })}
                 />
                 <Kpi
                     icon={CalendarClock}
                     tone="var(--color-warning)"
-                    label={t('billing.overview.renewals14')}
+                    label={m['admin.billing.overview.renewals14']()}
                     value={String(r.total14Days.count)}
                     sub={formatCurrency(r.total14Days.expectedRevenue)}
                 />
                 <Kpi
                     icon={Boxes}
                     tone="var(--brand)"
-                    label={t('billing.overview.catalog')}
+                    label={m['admin.billing.overview.catalog']()}
                     value={String(data.productCount)}
-                    sub={t('billing.overview.categoriesCount', { count: data.categoryCount })}
+                    sub={m['admin.billing.overview.categoriesCount']({ count: data.categoryCount })}
                 />
                 <Kpi
                     icon={PauseCircle}
                     tone="var(--color-danger)"
-                    label={t('billing.overview.suspended')}
+                    label={m['admin.billing.overview.suspended']()}
                     value={String(data.suspendedServers.length)}
-                    sub={t('billing.overview.ordersYear', { count: data.orderCount })}
+                    sub={m['admin.billing.overview.ordersYear']({ count: data.orderCount })}
                 />
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <Panel title={t('billing.overview.revenueTrend')} icon={BarChart3} className="lg:col-span-2" bodyClassName="p-4">
+                <Panel title={m['admin.billing.overview.revenueTrend']()} icon={BarChart3} className="lg:col-span-2" bodyClassName="p-4">
                     <RevenueBars points={data.monthlyRevenue} />
                 </Panel>
-                <Panel title={t('billing.overview.orderStatus')} icon={PieChart} bodyClassName="p-4">
+                <Panel title={m['admin.billing.overview.orderStatus']()} icon={PieChart} bodyClassName="p-4">
                     <StatusDonut slices={data.statusBreakdown} />
                 </Panel>
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Panel title={t('billing.overview.upcomingRenewals')} icon={CalendarClock} bodyClassName="p-4">
+                <Panel title={m['admin.billing.overview.upcomingRenewals']()} icon={CalendarClock} bodyClassName="p-4">
                     <RenewalBars
                         rows={[
-                            { label: t('billing.overview.overdue'), window: r.overdue, color: 'var(--color-danger)' },
-                            { label: t('billing.overview.due7'), window: r.in7Days, color: 'var(--color-warning)' },
-                            { label: t('billing.overview.due8to14'), window: r.in8to14Days, color: 'var(--color-accent)' },
+                            { label: m['admin.billing.overview.overdue'](), window: r.overdue, color: 'var(--color-danger)' },
+                            { label: m['admin.billing.overview.due7'](), window: r.in7Days, color: 'var(--color-warning)' },
+                            { label: m['admin.billing.overview.due8to14'](), window: r.in8to14Days, color: 'var(--color-accent)' },
                         ]}
                     />
                 </Panel>
 
-                <Panel title={t('billing.overview.recentEvents')} icon={Receipt} bodyClassName="p-4">
+                <Panel title={m['admin.billing.overview.recentEvents']()} icon={Receipt} bodyClassName="p-4">
                     {data.recentEvents.length === 0 ? (
-                        <p className="py-2 text-sm text-[var(--color-ink-faint)]">{t('billing.overview.noEvents')}</p>
+                        <p className="py-2 text-sm text-[var(--color-ink-faint)]">{m['admin.billing.overview.noEvents']()}</p>
                     ) : (
                         <ul className="flex flex-col">
                             {data.recentEvents.map(e => (
@@ -143,7 +142,7 @@ export default function BillingOverviewPage() {
                                         />
                                         <span className="min-w-0">
                                             <span className="block truncate text-sm text-[var(--color-ink)]">
-                                                {e.serverName ?? t('billing.overview.eventTypeOrder', { type: e.type })}
+                                                {e.serverName ?? m['admin.billing.overview.eventTypeOrder']({ type: e.type })}
                                             </span>
                                             <span className="text-xs text-[var(--color-ink-faint)]">
                                                 {e.status} · {timeAgo(e.date)}
@@ -161,7 +160,7 @@ export default function BillingOverviewPage() {
             </div>
 
             {data.suspendedServers.length > 0 && (
-                <Panel title={t('billing.overview.suspendedServers')} icon={PauseCircle} bodyClassName="p-4">
+                <Panel title={m['admin.billing.overview.suspendedServers']()} icon={PauseCircle} bodyClassName="p-4">
                     <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
                         {data.suspendedServers.map(s => (
                             <li

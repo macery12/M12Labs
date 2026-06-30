@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { Modal } from '@/components/ui/Modal';
@@ -50,7 +50,6 @@ export function CreateNodeModal({
     onClose: () => void;
     node?: NodeDetail;
 }) {
-    const { t } = useTranslation('admin');
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
     const editing = !!node;
@@ -88,51 +87,51 @@ export function CreateNodeModal({
     const mutation = useMutation({
         mutationFn: (values: FormShape) => (editing ? updateNode(node!.id, values) : createNode(values)),
         onSuccess: async () => {
-            push({ type: 'success', message: editing ? t('infrastructure.node.updated') : t('infrastructure.node.created') });
+            push({ type: 'success', message: editing ? m['admin.infrastructure.node.updated']() : m['admin.infrastructure.node.created']() });
             await qc.invalidateQueries({ queryKey: ['admin', 'nodes'] });
             if (editing) await qc.invalidateQueries({ queryKey: ['admin', 'node', node!.id] });
             reset();
             onClose();
         },
-        onError: err => push({ type: 'error', message: firstError(err) ?? t('infrastructure.common.genericError') }),
+        onError: err => push({ type: 'error', message: firstError(err) ?? m['admin.infrastructure.common.genericError']() }),
     });
 
-    const req = { required: t('infrastructure.common.required') };
-    const num = { required: t('infrastructure.common.required'), valueAsNumber: true };
+    const req = { required: m['admin.infrastructure.common.required']() };
+    const num = { required: m['admin.infrastructure.common.required'](), valueAsNumber: true };
     const scheme = watch('scheme');
 
     return (
         <Modal
             open={open}
             onClose={onClose}
-            title={editing ? t('infrastructure.node.editTitle') : t('infrastructure.node.createTitle')}
-            description={editing ? undefined : t('infrastructure.node.createSubtitle')}
+            title={editing ? m['admin.infrastructure.node.editTitle']() : m['admin.infrastructure.node.createTitle']()}
+            description={editing ? undefined : m['admin.infrastructure.node.createSubtitle']()}
             size="lg"
             footer={
                 <>
                     <Button variant="ghost" size="sm" onClick={onClose} disabled={mutation.isPending}>
-                        {t('infrastructure.common.cancel')}
+                        {m['admin.infrastructure.common.cancel']()}
                     </Button>
                     <Button size="sm" onClick={handleSubmit(v => mutation.mutate(v))} disabled={mutation.isPending}>
                         {mutation.isPending && <Spinner className="h-4 w-4" />}
-                        {editing ? t('infrastructure.common.save') : t('infrastructure.common.create')}
+                        {editing ? m['admin.infrastructure.common.save']() : m['admin.infrastructure.common.create']()}
                     </Button>
                 </>
             }
         >
             <form className="flex flex-col gap-6" onSubmit={handleSubmit(v => mutation.mutate(v))}>
-                <Section title={t('infrastructure.node.section.identity')}>
-                    <Field label={t('infrastructure.node.field.name')} error={errors.name?.message}>
+                <Section title={m['admin.infrastructure.node.section.identity']()}>
+                    <Field label={m['admin.infrastructure.node.field.name']()} error={errors.name?.message}>
                         <Input invalid={!!errors.name} {...register('name', req)} />
                     </Field>
-                    <Field label={t('infrastructure.node.field.description')}>
+                    <Field label={m['admin.infrastructure.node.field.description']()}>
                         <Input {...register('description')} />
                     </Field>
-                    <Field label={t('infrastructure.node.field.fqdn')} error={errors.fqdn?.message}>
+                    <Field label={m['admin.infrastructure.node.field.fqdn']()} error={errors.fqdn?.message}>
                         <Input invalid={!!errors.fqdn} placeholder="node.example.com" {...register('fqdn', req)} />
-                        <span className="text-xs text-[var(--color-ink-faint)]">{t('infrastructure.node.field.fqdnHint')}</span>
+                        <span className="text-xs text-[var(--color-ink-faint)]">{m['admin.infrastructure.node.field.fqdnHint']()}</span>
                     </Field>
-                    <Field label={t('infrastructure.node.field.scheme')}>
+                    <Field label={m['admin.infrastructure.node.field.scheme']()}>
                         <Select
                             value={scheme}
                             onChange={v => setValue('scheme', v as 'http' | 'https')}
@@ -142,46 +141,46 @@ export function CreateNodeModal({
                             ]}
                         />
                     </Field>
-                    <Toggle label={t('infrastructure.node.field.behindProxy')} checked={watch('behind_proxy')} onChange={v => setValue('behind_proxy', v)} />
-                    <Toggle label={t('infrastructure.node.field.public')} checked={watch('public')} onChange={v => setValue('public', v)} />
+                    <Toggle label={m['admin.infrastructure.node.field.behindProxy']()} checked={watch('behind_proxy')} onChange={v => setValue('behind_proxy', v)} />
+                    <Toggle label={m['admin.infrastructure.node.field.public']()} checked={watch('public')} onChange={v => setValue('public', v)} />
                 </Section>
 
-                <Section title={t('infrastructure.node.section.capacity')}>
-                    <Field label={t('infrastructure.node.field.memory')} error={errors.memory?.message}>
+                <Section title={m['admin.infrastructure.node.section.capacity']()}>
+                    <Field label={m['admin.infrastructure.node.field.memory']()} error={errors.memory?.message}>
                         <Input type="number" invalid={!!errors.memory} {...register('memory', num)} />
                     </Field>
-                    <Field label={t('infrastructure.node.field.memoryOver')}>
+                    <Field label={m['admin.infrastructure.node.field.memoryOver']()}>
                         <Input type="number" {...register('memory_overallocate', num)} />
-                        <span className="text-xs text-[var(--color-ink-faint)]">{t('infrastructure.node.field.overHint')}</span>
+                        <span className="text-xs text-[var(--color-ink-faint)]">{m['admin.infrastructure.node.field.overHint']()}</span>
                     </Field>
-                    <Field label={t('infrastructure.node.field.disk')} error={errors.disk?.message}>
+                    <Field label={m['admin.infrastructure.node.field.disk']()} error={errors.disk?.message}>
                         <Input type="number" invalid={!!errors.disk} {...register('disk', num)} />
                     </Field>
-                    <Field label={t('infrastructure.node.field.diskOver')}>
+                    <Field label={m['admin.infrastructure.node.field.diskOver']()}>
                         <Input type="number" {...register('disk_overallocate', num)} />
                     </Field>
                 </Section>
 
-                <Section title={t('infrastructure.node.section.ports')}>
-                    <Field label={t('infrastructure.node.field.listenHttp')}>
+                <Section title={m['admin.infrastructure.node.section.ports']()}>
+                    <Field label={m['admin.infrastructure.node.field.listenHttp']()}>
                         <Input type="number" {...register('listen_port_http', num)} />
                     </Field>
-                    <Field label={t('infrastructure.node.field.publicHttp')}>
+                    <Field label={m['admin.infrastructure.node.field.publicHttp']()}>
                         <Input type="number" {...register('public_port_http', num)} />
                     </Field>
-                    <Field label={t('infrastructure.node.field.listenSftp')}>
+                    <Field label={m['admin.infrastructure.node.field.listenSftp']()}>
                         <Input type="number" {...register('listen_port_sftp', num)} />
                     </Field>
-                    <Field label={t('infrastructure.node.field.publicSftp')}>
+                    <Field label={m['admin.infrastructure.node.field.publicSftp']()}>
                         <Input type="number" {...register('public_port_sftp', num)} />
                     </Field>
                 </Section>
 
-                <Section title={t('infrastructure.node.section.advanced')}>
-                    <Field label={t('infrastructure.node.field.daemonBase')}>
+                <Section title={m['admin.infrastructure.node.section.advanced']()}>
+                    <Field label={m['admin.infrastructure.node.field.daemonBase']()}>
                         <Input {...register('daemon_base')} />
                     </Field>
-                    <Field label={t('infrastructure.node.field.uploadSize')}>
+                    <Field label={m['admin.infrastructure.node.field.uploadSize']()}>
                         <Input type="number" {...register('upload_size', { valueAsNumber: true })} />
                     </Field>
                 </Section>

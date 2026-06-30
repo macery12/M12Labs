@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { Megaphone, Info, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { getAlerts, type Alert } from '@/api/alerts';
 import { cn } from '@/lib/cn';
@@ -12,14 +12,13 @@ const tone: Record<Alert['type'], { icon: typeof Info; cls: string }> = {
 };
 
 export function Announcements() {
-    const { t } = useTranslation('dashboard');
     const { data: alerts } = useQuery({ queryKey: ['alerts'], queryFn: getAlerts });
     if (!alerts || alerts.length === 0) return null;
 
     return (
         <section className="flex flex-col gap-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-ink-muted)]">
-                <Megaphone className="h-4 w-4" /> {t('announcements')}
+                <Megaphone className="h-4 w-4" /> {m['dashboard.announcements']()}
             </h2>
             {alerts.map(alert => {
                 const tn = tone[alert.type];

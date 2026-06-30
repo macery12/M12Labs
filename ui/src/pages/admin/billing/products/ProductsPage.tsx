@@ -1,6 +1,6 @@
+import { m } from '@/i18n';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, EyeOff, ChevronRight, Egg as EggIcon } from 'lucide-react';
 import { getCategories, deleteCategory, type BillingCategory } from '@/api/billingCategories';
@@ -14,7 +14,6 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export default function ProductsPage() {
-    const { t } = useTranslation('admin');
     const navigate = useNavigate();
     const qc = useQueryClient();
     const { push } = useFlashes();
@@ -46,10 +45,10 @@ export default function ProductsPage() {
         mutationFn: (id: number) => deleteCategory(id),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['admin', 'billing', 'categories'] });
-            push({ type: 'success', message: t('billing.categories.deleted') });
+            push({ type: 'success', message: m['admin.billing.categories.deleted']() });
             setDelCat(null);
         },
-        onError: err => push({ type: 'error', message: firstError(err) ?? t('billing.common.genericError') }),
+        onError: err => push({ type: 'error', message: firstError(err) ?? m['admin.billing.common.genericError']() }),
     });
 
     const canCreateCat = can(held, 'billing.category-create');
@@ -64,26 +63,26 @@ export default function ProductsPage() {
         );
     }
     if (isError || !categories) {
-        return <p className="text-sm text-[var(--color-danger)]">{t('billing.common.loadError')}</p>;
+        return <p className="text-sm text-[var(--color-danger)]">{m['admin.billing.common.loadError']()}</p>;
     }
 
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{t('billing.products.title')}</h1>
-                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('billing.products.subtitle')}</p>
+                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['admin.billing.products.title']()}</h1>
+                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.billing.products.subtitle']()}</p>
                 </div>
                 {canCreateCat && (
                     <Button size="sm" onClick={() => navigate('/v2/admin/billing/products/categories/new')}>
-                        <Plus className="h-4 w-4" /> {t('billing.categories.new')}
+                        <Plus className="h-4 w-4" /> {m['admin.billing.categories.new']()}
                     </Button>
                 )}
             </div>
 
             {categories.length === 0 ? (
                 <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface)]/40 px-6 py-12 text-center">
-                    <p className="text-sm text-[var(--color-ink-muted)]">{t('billing.categories.empty')}</p>
+                    <p className="text-sm text-[var(--color-ink-muted)]">{m['admin.billing.categories.empty']()}</p>
                 </div>
             ) : (
                 <ul className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]">
@@ -101,7 +100,7 @@ export default function ProductsPage() {
                                     <span className="flex items-center gap-2">
                                         <span className="truncate font-medium text-[var(--color-ink)]">{cat.name}</span>
                                         {!cat.visible && (
-                                            <EyeOff className="h-3.5 w-3.5 shrink-0 text-[var(--color-ink-faint)]" aria-label={t('billing.categories.hidden')} />
+                                            <EyeOff className="h-3.5 w-3.5 shrink-0 text-[var(--color-ink-faint)]" aria-label={m['admin.billing.categories.hidden']()} />
                                         )}
                                     </span>
                                     {cat.description && (
@@ -121,7 +120,7 @@ export default function ProductsPage() {
                                                     : 'bg-[var(--color-surface-2)] text-[var(--color-ink-muted)]')
                                             }
                                         >
-                                            {eggName.get(id) ?? t('billing.categories.eggId', { id })}
+                                            {eggName.get(id) ?? m['admin.billing.categories.eggId']({ id })}
                                         </span>
                                     ))}
                                     {cat.allowedEggs.length > 4 && (
@@ -139,7 +138,7 @@ export default function ProductsPage() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        aria-label={t('billing.categories.edit')}
+                                        aria-label={m['admin.billing.categories.edit']()}
                                         onClick={() => navigate(`/v2/admin/billing/products/categories/${cat.id}`)}
                                     >
                                         <Pencil className="h-4 w-4" />
@@ -149,7 +148,7 @@ export default function ProductsPage() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        aria-label={t('billing.categories.delete')}
+                                        aria-label={m['admin.billing.categories.delete']()}
                                         onClick={() => setDelCat(cat)}
                                     >
                                         <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
@@ -164,10 +163,10 @@ export default function ProductsPage() {
             <ConfirmDialog
                 open={Boolean(delCat)}
                 onClose={() => setDelCat(null)}
-                title={t('billing.categories.deleteTitle')}
-                body={t('billing.categories.deleteBody', { name: delCat?.name ?? '' })}
-                confirmLabel={t('billing.common.delete')}
-                cancelLabel={t('billing.common.cancel')}
+                title={m['admin.billing.categories.deleteTitle']()}
+                body={m['admin.billing.categories.deleteBody']({ name: delCat?.name ?? '' })}
+                confirmLabel={m['admin.billing.common.delete']()}
+                cancelLabel={m['admin.billing.common.cancel']()}
                 busy={deleteCatMutation.isPending}
                 onConfirm={() => delCat && deleteCatMutation.mutate(delCat.id)}
             />

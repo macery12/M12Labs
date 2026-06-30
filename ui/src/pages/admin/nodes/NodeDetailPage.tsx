@@ -1,7 +1,7 @@
+import { m, td } from '@/i18n';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { Activity, Network, Layers, FileCog, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { getNode } from '@/api/nodes';
@@ -26,7 +26,6 @@ const TABS: { id: TabId; labelKey: string; icon: LucideIcon; supercharged?: bool
 ];
 
 export default function NodeDetailPage() {
-    const { t } = useTranslation('admin');
     const { id } = useParams();
     const [tab, setTab] = useState<TabId>('overview');
 
@@ -47,7 +46,7 @@ export default function NodeDetailPage() {
     if (isError || !node) {
         return (
             <div className="rounded-md border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-5 py-4 text-sm text-[var(--color-danger)]">
-                {t('nodes.detailLoadError')}
+                {m['admin.nodes.detailLoadError']()}
             </div>
         );
     }
@@ -73,7 +72,7 @@ export default function NodeDetailPage() {
                                 )}
                             >
                                 <tabDef.icon className="h-3.5 w-3.5" />
-                                {t(tabDef.labelKey as never)}
+                                {td(`admin.${tabDef.labelKey}`)}
                             </button>
                         );
                     })}

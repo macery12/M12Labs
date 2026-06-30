@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
@@ -19,7 +19,6 @@ export interface PayPalButtonProps {
 // through the backend redirect endpoint to PayPal's approval page. PayPal
 // returns the user to /v2/account/billing/processing?processor=paypal.
 export default function PayPalButton(props: PayPalButtonProps) {
-    const { t } = useTranslation('billing');
     const push = useFlashes(s => s.push);
     const [loading, setLoading] = useState(false);
 
@@ -41,7 +40,7 @@ export default function PayPalButton(props: PayPalButtonProps) {
             });
             window.location.href = `/api/client/billing/paypal/orders/${order.id}/redirect`;
         } catch {
-            push({ type: 'error', message: t('payment.startPaypalError') });
+            push({ type: 'error', message: m['billing.payment.startPaypalError']() });
             setLoading(false);
         }
     };
@@ -53,7 +52,7 @@ export default function PayPalButton(props: PayPalButtonProps) {
             disabled={loading || !props.serverName.trim()}
             onClick={handleClick}
         >
-            {loading ? <Spinner className="h-5 w-5" /> : t('payment.payWithPaypal')}
+            {loading ? <Spinner className="h-5 w-5" /> : m['billing.payment.payWithPaypal']()}
         </Button>
     );
 }

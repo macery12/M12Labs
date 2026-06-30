@@ -1,7 +1,7 @@
+import { m } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Info, Gauge, SlidersHorizontal, CalendarClock, Plus, Trash2 } from 'lucide-react';
 import { getCategory } from '@/api/billingCategories';
@@ -60,7 +60,6 @@ const NEW_DEFAULTS: FormShape = {
 };
 
 export default function ProductEditorPage() {
-    const { t } = useTranslation('admin');
     const navigate = useNavigate();
     const qc = useQueryClient();
     const { push } = useFlashes();
@@ -136,7 +135,7 @@ export default function ProductEditorPage() {
 
     const onSubmit = handleSubmit(async values => {
         if (categoryId == null || !category) {
-            push({ type: 'error', message: t('billing.products.noCategory') });
+            push({ type: 'error', message: m['admin.billing.products.noCategory']() });
             return;
         }
         const payload: ProductValues = {
@@ -166,7 +165,7 @@ export default function ProductEditorPage() {
                 await updateProduct(categoryId, product.id, category.uuid, payload);
                 await syncBillingCycles(categoryId, product.id, cyclePayload);
                 qc.invalidateQueries({ queryKey: ['admin', 'billing'] });
-                push({ type: 'success', message: t('billing.products.updated') });
+                push({ type: 'success', message: m['admin.billing.products.updated']() });
                 setCyclesDirty(false);
                 reset(values);
             } else {
@@ -175,11 +174,11 @@ export default function ProductEditorPage() {
                     await syncBillingCycles(categoryId, created.id, cyclePayload);
                 }
                 qc.invalidateQueries({ queryKey: ['admin', 'billing'] });
-                push({ type: 'success', message: t('billing.products.created') });
+                push({ type: 'success', message: m['admin.billing.products.created']() });
                 navigate(`/v2/admin/billing/products/${created.id}?category=${categoryId}`);
             }
         } catch (err) {
-            push({ type: 'error', message: firstError(err) ?? t('billing.common.genericError') });
+            push({ type: 'error', message: firstError(err) ?? m['admin.billing.common.genericError']() });
         } finally {
             setSaving(false);
         }
@@ -190,9 +189,9 @@ export default function ProductEditorPage() {
     if (categoryId == null) {
         return (
             <div className="flex flex-col gap-4">
-                <p className="text-sm text-[var(--color-danger)]">{t('billing.products.noCategory')}</p>
+                <p className="text-sm text-[var(--color-danger)]">{m['admin.billing.products.noCategory']()}</p>
                 <Link to="/v2/admin/billing/products" className="text-sm text-[var(--brand)]">
-                    {t('billing.products.backToCatalog')}
+                    {m['admin.billing.products.backToCatalog']()}
                 </Link>
             </div>
         );
@@ -215,81 +214,81 @@ export default function ProductEditorPage() {
                         className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
                     >
                         <ArrowLeft className="h-3.5 w-3.5" />{' '}
-                        {category ? t('billing.products.backToCategory', { name: category.name }) : t('billing.products.backToCatalog')}
+                        {category ? m['admin.billing.products.backToCategory']({ name: category.name }) : m['admin.billing.products.backToCatalog']()}
                     </Link>
                     <h1 className="mt-1 truncate text-xl font-semibold text-[var(--color-ink)]">
-                        {editing ? product?.name : t('billing.products.newTitle')}
+                        {editing ? product?.name : m['admin.billing.products.newTitle']()}
                     </h1>
                     {category && (
                         <p className="text-sm text-[var(--color-ink-muted)]">
-                            {t('billing.products.inCategory', { name: category.name })}
+                            {m['admin.billing.products.inCategory']({ name: category.name })}
                         </p>
                     )}
                 </div>
             </div>
 
-            <SectionCard id="details" icon={Info} title={t('billing.products.section.details')} desc={t('billing.products.section.detailsDesc')}>
-                <FieldRow label={t('billing.products.name')} error={errors.name && t('billing.common.required')}>
+            <SectionCard id="details" icon={Info} title={m['admin.billing.products.section.details']()} desc={m['admin.billing.products.section.detailsDesc']()}>
+                <FieldRow label={m['admin.billing.products.name']()} error={errors.name && m['admin.billing.common.required']()}>
                     <Input {...register('name', { required: true })} invalid={Boolean(errors.name)} />
                 </FieldRow>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <FieldRow label={t('billing.products.price')} desc={t('billing.products.priceDesc')}>
+                    <FieldRow label={m['admin.billing.products.price']()} desc={m['admin.billing.products.priceDesc']()}>
                         <Input type="number" step="0.01" min="0" {...register('price', { valueAsNumber: true, min: 0 })} />
                     </FieldRow>
-                    <FieldRow label={t('billing.products.basePrice')} desc={t('billing.products.basePriceDesc')}>
+                    <FieldRow label={m['admin.billing.products.basePrice']()} desc={m['admin.billing.products.basePriceDesc']()}>
                         <Input type="number" step="0.01" min="0" {...register('base_price', { valueAsNumber: true })} />
                     </FieldRow>
                 </div>
-                <FieldRow label={t('billing.products.icon')} desc={t('billing.products.iconDesc')}>
+                <FieldRow label={m['admin.billing.products.icon']()} desc={m['admin.billing.products.iconDesc']()}>
                     <Input {...register('icon')} placeholder="server" />
                 </FieldRow>
-                <FieldRow label={t('billing.products.description')} desc={t('billing.products.descriptionDesc')}>
+                <FieldRow label={m['admin.billing.products.description']()} desc={m['admin.billing.products.descriptionDesc']()}>
                     <Input {...register('description')} />
                 </FieldRow>
                 <ToggleGroup>
                     <ToggleRow
-                        label={t('billing.products.visible')}
-                        desc={t('billing.products.visibleDesc')}
+                        label={m['admin.billing.products.visible']()}
+                        desc={m['admin.billing.products.visibleDesc']()}
                         checked={visible}
                         onChange={v => setValue('visible', v, { shouldDirty: true })}
                     />
                 </ToggleGroup>
             </SectionCard>
 
-            <SectionCard id="resources" icon={Gauge} title={t('billing.products.section.resources')} desc={t('billing.products.section.resourcesDesc')}>
+            <SectionCard id="resources" icon={Gauge} title={m['admin.billing.products.section.resources']()} desc={m['admin.billing.products.section.resourcesDesc']()}>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                    <FieldRow label={t('billing.products.limit.cpu')} mono="%" desc={t('billing.products.limitDesc.cpu')}>
+                    <FieldRow label={m['admin.billing.products.limit.cpu']()} mono="%" desc={m['admin.billing.products.limitDesc.cpu']()}>
                         <Input type="number" min="0" {...register('cpu', { valueAsNumber: true, min: 0 })} />
                     </FieldRow>
-                    <FieldRow label={t('billing.products.limit.memory')} mono="MiB" desc={t('billing.products.limitDesc.memory')}>
+                    <FieldRow label={m['admin.billing.products.limit.memory']()} mono="MiB" desc={m['admin.billing.products.limitDesc.memory']()}>
                         <Input type="number" min="0" {...register('memory', { valueAsNumber: true, min: 0 })} />
                     </FieldRow>
-                    <FieldRow label={t('billing.products.limit.disk')} mono="MiB" desc={t('billing.products.limitDesc.disk')}>
+                    <FieldRow label={m['admin.billing.products.limit.disk']()} mono="MiB" desc={m['admin.billing.products.limitDesc.disk']()}>
                         <Input type="number" min="0" {...register('disk', { valueAsNumber: true, min: 0 })} />
                     </FieldRow>
                 </div>
             </SectionCard>
 
-            <SectionCard id="features" icon={SlidersHorizontal} title={t('billing.products.section.featureLimits')} desc={t('billing.products.section.featureLimitsDesc')}>
+            <SectionCard id="features" icon={SlidersHorizontal} title={m['admin.billing.products.section.featureLimits']()} desc={m['admin.billing.products.section.featureLimitsDesc']()}>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <FieldRow label={t('billing.products.limit.backup')} desc={t('billing.products.limitDesc.backup')}>
+                    <FieldRow label={m['admin.billing.products.limit.backup']()} desc={m['admin.billing.products.limitDesc.backup']()}>
                         <Input type="number" min="0" {...register('backup', { valueAsNumber: true, min: 0 })} />
                     </FieldRow>
-                    <FieldRow label={t('billing.products.limit.database')} desc={t('billing.products.limitDesc.database')}>
+                    <FieldRow label={m['admin.billing.products.limit.database']()} desc={m['admin.billing.products.limitDesc.database']()}>
                         <Input type="number" min="0" {...register('database', { valueAsNumber: true, min: 0 })} />
                     </FieldRow>
-                    <FieldRow label={t('billing.products.limit.allocation')} desc={t('billing.products.limitDesc.allocation')}>
+                    <FieldRow label={m['admin.billing.products.limit.allocation']()} desc={m['admin.billing.products.limitDesc.allocation']()}>
                         <Input type="number" min="0" {...register('allocation', { valueAsNumber: true, min: 0 })} />
                     </FieldRow>
-                    <FieldRow label={t('billing.products.limit.subdomain')} desc={t('billing.products.limitDesc.subdomain')}>
+                    <FieldRow label={m['admin.billing.products.limit.subdomain']()} desc={m['admin.billing.products.limitDesc.subdomain']()}>
                         <Input type="number" min="0" {...register('subdomain', { valueAsNumber: true, min: 0 })} />
                     </FieldRow>
                 </div>
             </SectionCard>
 
-            <SectionCard id="cycles" icon={CalendarClock} title={t('billing.products.section.cycles')} desc={t('billing.products.section.cyclesDesc')}>
+            <SectionCard id="cycles" icon={CalendarClock} title={m['admin.billing.products.section.cycles']()} desc={m['admin.billing.products.section.cyclesDesc']()}>
                 {cycles.length === 0 && (
-                    <p className="text-sm text-[var(--color-ink-faint)]">{t('billing.cycles.empty')}</p>
+                    <p className="text-sm text-[var(--color-ink-faint)]">{m['admin.billing.cycles.empty']()}</p>
                 )}
                 <div className="flex flex-col gap-2">
                     {cycles.map((c, i) => (
@@ -303,22 +302,22 @@ export default function ProductEditorPage() {
                                     mutateCycles(cycles.map((x, xi) => (xi === i ? { ...x, days: Number(e.target.value) } : x)))
                                 }
                                 className="w-28"
-                                aria-label={t('billing.cycles.days')}
+                                aria-label={m['admin.billing.cycles.days']()}
                             />
-                            <span className="text-sm text-[var(--color-ink-muted)]">{t('billing.cycles.days')}</span>
+                            <span className="text-sm text-[var(--color-ink-muted)]">{m['admin.billing.cycles.days']()}</span>
                             <label className="ml-2 flex items-center gap-2 text-sm text-[var(--color-ink)]">
                                 <Switch
                                     checked={c.isEnabled}
                                     onChange={v => mutateCycles(cycles.map((x, xi) => (xi === i ? { ...x, isEnabled: v } : x)))}
                                 />
-                                {t('billing.cycles.enabled')}
+                                {m['admin.billing.cycles.enabled']()}
                             </label>
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
                                 className="ml-auto"
-                                aria-label={t('billing.cycles.remove')}
+                                aria-label={m['admin.billing.cycles.remove']()}
                                 onClick={() => mutateCycles(cycles.filter((_, xi) => xi !== i))}
                             >
                                 <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
@@ -333,7 +332,7 @@ export default function ProductEditorPage() {
                     className="self-start"
                     onClick={() => mutateCycles([...cycles, { days: 30, isEnabled: true }])}
                 >
-                    <Plus className="h-4 w-4" /> {t('billing.cycles.add')}
+                    <Plus className="h-4 w-4" /> {m['admin.billing.cycles.add']()}
                 </Button>
             </SectionCard>
 

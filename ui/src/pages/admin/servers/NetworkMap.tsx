@@ -1,6 +1,6 @@
+import { m, td } from '@/i18n';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import {
     Database,
     Server as ServerIcon,
@@ -109,7 +109,6 @@ export function NetworkMap({
     servers: AdminServer[];
     updatedAt: number;
 }) {
-    const { t } = useTranslation('admin');
     const navigate = useNavigate();
     const panelName = useFlags(s => s.site?.name) ?? 'Panel';
 
@@ -377,17 +376,14 @@ export function NetworkMap({
                                 <span className="truncate text-sm font-semibold text-[var(--color-ink)]">{hover.server.name}</span>
                             </div>
                             <p className="mt-0.5 font-mono text-[11px] text-[var(--color-ink-faint)]">
-                                {t('servers.map.serverMeta', {
-                                    state: t(`servers.state.${hover.server.state}` as never, { defaultValue: SERVER_STATE[hover.server.state].label }),
-                                    node: hover.server.nodeName ?? `node #${hover.server.nodeId}`,
-                                })}
+                                {m['admin.servers.map.serverMeta']({ state: td(`admin.servers.state.${hover.server.state}`, SERVER_STATE[hover.server.state].label), node: hover.server.nodeName ?? `node #${hover.server.nodeId}` })}
                             </p>
                             <div className="mt-2 grid grid-cols-3 gap-1 border-t border-[var(--color-border)] pt-2 font-mono text-[11px] tabular-nums text-[var(--color-ink-muted)]">
                                 <span className="flex items-center gap-1"><Cpu className="h-3 w-3 text-[var(--color-ink-faint)]" />{hover.server.limits.cpu > 0 ? `${hover.server.limits.cpu}%` : '∞'}</span>
                                 <span className="flex items-center gap-1"><MemoryStick className="h-3 w-3 text-[var(--color-ink-faint)]" />{formatMib(hover.server.limits.memory)}</span>
                                 <span className="flex items-center gap-1"><HardDrive className="h-3 w-3 text-[var(--color-ink-faint)]" />{formatMib(hover.server.limits.disk)}</span>
                             </div>
-                            <p className="mt-2 text-[10px] text-[var(--color-ink-faint)]">{t('servers.map.clickOpenOwner', { owner: hover.server.ownerName ?? `#${hover.server.ownerId}` })}</p>
+                            <p className="mt-2 text-[10px] text-[var(--color-ink-faint)]">{m['admin.servers.map.clickOpenOwner']({ owner: hover.server.ownerName ?? `#${hover.server.ownerId}` })}</p>
                         </>
                     ) : (
                         <>
@@ -397,10 +393,10 @@ export function NetworkMap({
                             </div>
                             <p className="mt-0.5 font-mono text-[11px] text-[var(--color-ink-faint)]">{hover.node.fqdn}</p>
                             <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] pt-2 font-mono text-[11px] tabular-nums text-[var(--color-ink-muted)]">
-                                <span>{t('servers.map.serverCount', { count: hover.serverCount })}</span>
-                                <span>{t('servers.map.memShort', { size: formatMib(hover.node.allocatedMemory) })}</span>
+                                <span>{m['admin.servers.map.serverCount']({ count: hover.serverCount })}</span>
+                                <span>{m['admin.servers.map.memShort']({ size: formatMib(hover.node.allocatedMemory) })}</span>
                             </div>
-                            <p className="mt-2 text-[10px] text-[var(--color-ink-faint)]">{t('servers.map.clickFocusNode')}</p>
+                            <p className="mt-2 text-[10px] text-[var(--color-ink-faint)]">{m['admin.servers.map.clickFocusNode']()}</p>
                         </>
                     )}
                 </div>
@@ -409,30 +405,30 @@ export function NetworkMap({
             {/* Legend + controls + stats */}
             <div className="pointer-events-none absolute left-4 top-4 hidden w-52 flex-col gap-3 sm:flex">
                 <div className="rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)]/85 p-3 backdrop-blur">
-                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">{t('servers.map.legend')}</p>
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">{m['admin.servers.map.legend']()}</p>
                     <div className="flex flex-col gap-1.5 text-xs text-[var(--color-ink-muted)]">
-                        <LegendRow swatch={<RingSwatch color="var(--color-accent)" />} label={t('servers.map.activeNode')} />
-                        <LegendRow swatch={<RingSwatch color="var(--color-warning)" />} label={t('servers.map.maintenanceNode')} />
-                        <LegendRow swatch={<DotSwatch color="var(--color-accent)" />} label={t('servers.map.server')} />
-                        <LegendRow swatch={<DotSwatch color="var(--color-danger)" />} label={t('servers.map.suspendedServer')} />
+                        <LegendRow swatch={<RingSwatch color="var(--color-accent)" />} label={m['admin.servers.map.activeNode']()} />
+                        <LegendRow swatch={<RingSwatch color="var(--color-warning)" />} label={m['admin.servers.map.maintenanceNode']()} />
+                        <LegendRow swatch={<DotSwatch color="var(--color-accent)" />} label={m['admin.servers.map.server']()} />
+                        <LegendRow swatch={<DotSwatch color="var(--color-danger)" />} label={m['admin.servers.map.suspendedServer']()} />
                     </div>
                 </div>
                 <div className="rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)]/85 p-3 backdrop-blur">
-                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">{t('servers.map.controls')}</p>
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">{m['admin.servers.map.controls']()}</p>
                     <div className="flex flex-col gap-1.5 text-[11px] text-[var(--color-ink-muted)]">
-                        <ControlRow icon={Hand} label={t('servers.map.dragToPan')} />
-                        <ControlRow icon={Mouse} label={t('servers.map.scrollToZoom')} />
-                        <ControlRow icon={MousePointerClick} label={t('servers.map.clickFocus')} />
-                        <ControlRow icon={ZoomIn} label={t('servers.map.doubleClickOpen')} />
+                        <ControlRow icon={Hand} label={m['admin.servers.map.dragToPan']()} />
+                        <ControlRow icon={Mouse} label={m['admin.servers.map.scrollToZoom']()} />
+                        <ControlRow icon={MousePointerClick} label={m['admin.servers.map.clickFocus']()} />
+                        <ControlRow icon={ZoomIn} label={m['admin.servers.map.doubleClickOpen']()} />
                     </div>
                 </div>
                 <div className="rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)]/85 p-3 backdrop-blur">
-                    <StatRow icon={ServerIcon} label={t('servers.map.nodes')} value={String(stats.nodes)} sub={stats.maint > 0 ? t('servers.map.inMaintenance', { count: stats.maint }) : t('servers.map.allOnline')} />
-                    <StatRow icon={Database} label={t('servers.map.servers')} value={String(stats.servers)} sub={t('servers.map.activeSuspended', { active: stats.active, suspended: stats.suspended })} />
-                    <StatRow icon={Activity} label={t('servers.map.connections')} value={String(stats.connections)} />
-                    <StatRow icon={MemoryStick} label={t('servers.map.memory')} value={formatMib(stats.memory)} sub={t('servers.map.allocated')} last />
+                    <StatRow icon={ServerIcon} label={m['admin.servers.map.nodes']()} value={String(stats.nodes)} sub={stats.maint > 0 ? m['admin.servers.map.inMaintenance']({ count: stats.maint }) : m['admin.servers.map.allOnline']()} />
+                    <StatRow icon={Database} label={m['admin.servers.map.servers']()} value={String(stats.servers)} sub={m['admin.servers.map.activeSuspended']({ active: stats.active, suspended: stats.suspended })} />
+                    <StatRow icon={Activity} label={m['admin.servers.map.connections']()} value={String(stats.connections)} />
+                    <StatRow icon={MemoryStick} label={m['admin.servers.map.memory']()} value={formatMib(stats.memory)} sub={m['admin.servers.map.allocated']()} last />
                     <p className="mt-2 flex items-center gap-1.5 border-t border-[var(--color-border)] pt-2 font-mono text-[10px] text-[var(--color-ink-faint)]">
-                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" /> {t('servers.map.updated', { ago: timeAgo(updatedAt) })}
+                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" /> {m['admin.servers.map.updated']({ ago: timeAgo(updatedAt) })}
                     </p>
                 </div>
             </div>
@@ -444,7 +440,7 @@ export function NetworkMap({
                     <input
                         value={query}
                         onChange={e => setQuery(e.target.value)}
-                        placeholder={t('servers.map.search')}
+                        placeholder={m['admin.servers.map.search']()}
                         className="h-9 w-48 bg-transparent text-sm text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] focus:outline-none"
                     />
                 </div>

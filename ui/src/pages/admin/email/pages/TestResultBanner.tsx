@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { m, td } from '@/i18n';
 import { cn } from '@/lib/cn';
 import type { EmailResponse } from '@/api/email';
 import { getStatusPresentation, type EmailTone } from '../status';
@@ -6,14 +6,13 @@ import { getStatusPresentation, type EmailTone } from '../status';
 // Result banner for a connection check / delivery test. Tone-driven via theme
 // tokens; resolves the human message from the API response.
 export function TestResultBanner({ result }: { result: EmailResponse }) {
-    const { t } = useTranslation('admin');
     const status = result.status ?? (result.success ? 'sent' : 'failed');
     const { tone, labelKey } = getStatusPresentation(status);
     const transport = (result.transport ?? result.provider ?? '').toUpperCase();
     const message =
         typeof result.error === 'string'
             ? result.error
-            : result.error?.message ?? (result.success ? t('email.test.ok') : t('email.test.failed'));
+            : result.error?.message ?? (result.success ? m['admin.email.test.ok']() : m['admin.email.test.failed']());
     const code = typeof result.error === 'object' ? result.error?.code : undefined;
     const when = result.tested_at ?? result.sent_at;
 
@@ -21,7 +20,7 @@ export function TestResultBanner({ result }: { result: EmailResponse }) {
         <div className={cn('mt-3 rounded-xl border p-3 text-sm', wash[tone])}>
             <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold">
-                    {t(labelKey as never)}
+                    {td(`admin.${labelKey}`)}
                     {transport && ` — ${transport}`}
                 </span>
                 {when && (
@@ -29,7 +28,7 @@ export function TestResultBanner({ result }: { result: EmailResponse }) {
                 )}
             </div>
             <p className="mt-1 text-[var(--color-ink)]">{message}</p>
-            {code && <p className="mt-0.5 text-xs text-[var(--color-ink-faint)]">{t('email.test.code', { code })}</p>}
+            {code && <p className="mt-0.5 text-xs text-[var(--color-ink-faint)]">{m['admin.email.test.code']({ code })}</p>}
         </div>
     );
 }

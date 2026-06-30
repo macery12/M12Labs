@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Send } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -14,7 +14,6 @@ import { TestResultBanner } from './TestResultBanner';
 // Testing: send a real delivery test through the active transport so admins can
 // verify end-to-end delivery and inbox placement.
 export default function TestingPage() {
-    const { t } = useTranslation('admin');
     const { settings, isLoading } = useEmailSettings();
     const push = useFlashes(s => s.push);
 
@@ -26,32 +25,30 @@ export default function TestingPage() {
 
     const send = () => {
         if (!recipient.trim()) {
-            push({ type: 'error', message: t('email.testing.recipientRequired') });
+            push({ type: 'error', message: m['admin.email.testing.recipientRequired']() });
             return;
         }
         setSending(true);
         sendTestEmail(recipient.trim())
             .then(setResult)
-            .catch(err => push({ type: 'error', message: firstError(err) ?? t('email.test.failed') }))
+            .catch(err => push({ type: 'error', message: firstError(err) ?? m['admin.email.test.failed']() }))
             .finally(() => setSending(false));
     };
 
     const tips = [
-        t('email.testing.tip1'),
-        t('email.testing.tip2'),
-        t('email.testing.tip3'),
-        t('email.testing.tip4'),
+        m['admin.email.testing.tip1'](),
+        m['admin.email.testing.tip2'](),
+        m['admin.email.testing.tip3'](),
+        m['admin.email.testing.tip4'](),
     ];
 
     return (
         <div className="flex flex-col gap-5">
             <SettingsCard
-                title={t('email.testing.title')}
-                description={t('email.testing.desc', {
-                    transport: settings.transport === 'smtp' ? t('email.overview.smtp') : t('email.overview.resend'),
-                })}
+                title={m['admin.email.testing.title']()}
+                description={m['admin.email.testing.desc']({ transport: settings.transport === 'smtp' ? m['admin.email.overview.smtp']() : m['admin.email.overview.resend']() })}
             >
-                <LabeledField label={t('email.testing.recipient')}>
+                <LabeledField label={m['admin.email.testing.recipient']()}>
                     <div className="flex flex-col gap-3 sm:flex-row">
                         <Input
                             type="email"
@@ -62,14 +59,14 @@ export default function TestingPage() {
                         />
                         <Button onClick={send} disabled={sending || !recipient.trim()} className="sm:w-auto">
                             {sending ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-                            {t('email.testing.send')}
+                            {m['admin.email.testing.send']()}
                         </Button>
                     </div>
                 </LabeledField>
                 {result && <TestResultBanner result={result} />}
             </SettingsCard>
 
-            <SettingsCard title={t('email.testing.tipsTitle')}>
+            <SettingsCard title={m['admin.email.testing.tipsTitle']()}>
                 <ul className="list-disc space-y-1.5 pl-5 text-sm text-[var(--color-ink-muted)]">
                     {tips.map(tip => (
                         <li key={tip}>{tip}</li>

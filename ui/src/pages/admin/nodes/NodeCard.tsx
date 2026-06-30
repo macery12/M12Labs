@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { Server, Wrench, Globe, Lock } from 'lucide-react';
 import type { NodeListItem } from '@/api/nodes';
 import { formatMib } from '@/lib/format';
@@ -39,7 +39,6 @@ function CapacityBar({ label, used, total, overallocate }: { label: string; used
 }
 
 export function NodeCard({ node, serverCount }: { node: NodeListItem; serverCount: number | null }) {
-    const { t } = useTranslation(['admin', 'common']);
     return (
         <Link
             to={`/v2/admin/infrastructure/nodes/${node.id}`}
@@ -53,7 +52,7 @@ export function NodeCard({ node, serverCount }: { node: NodeListItem; serverCoun
                         </h3>
                         {node.maintenanceMode && (
                             <Badge tone="warning">
-                                <Wrench className="h-2.5 w-2.5" /> {t('nodes.card.maint')}
+                                <Wrench className="h-2.5 w-2.5" /> {m['admin.nodes.card.maint']()}
                             </Badge>
                         )}
                     </div>
@@ -63,18 +62,18 @@ export function NodeCard({ node, serverCount }: { node: NodeListItem; serverCoun
             </div>
 
             <div className="flex flex-col gap-2">
-                <CapacityBar label={t('common:metrics.memory')} used={node.allocatedMemory} total={node.memory} overallocate={node.memoryOverallocate} />
-                <CapacityBar label={t('common:metrics.disk')} used={node.allocatedDisk} total={node.disk} overallocate={node.diskOverallocate} />
+                <CapacityBar label={m['common.metrics.memory']()} used={node.allocatedMemory} total={node.memory} overallocate={node.memoryOverallocate} />
+                <CapacityBar label={m['common.metrics.disk']()} used={node.allocatedDisk} total={node.disk} overallocate={node.diskOverallocate} />
             </div>
 
             <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-2.5 text-[11px]">
                 <span className="flex items-center gap-1.5 font-mono tabular-nums text-[var(--color-ink-muted)]">
                     <Server className="h-3 w-3" />
-                    {serverCount == null ? '—' : t('nodes.card.serverCount', { count: serverCount })}
+                    {serverCount == null ? '—' : m['admin.nodes.card.serverCount']({ count: serverCount })}
                 </span>
                 <span className="flex items-center gap-1.5 text-[var(--color-ink-faint)]">
                     {node.isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                    {node.isPublic ? t('nodes.public') : t('nodes.private')}
+                    {node.isPublic ? m['admin.nodes.public']() : m['admin.nodes.private']()}
                 </span>
             </div>
         </Link>

@@ -1,12 +1,11 @@
+import { m } from '@/i18n';
 import { Link, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Hammer } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 // The single "not built yet" page rendered for every route whose registry
 // entry has no `element`. Shows title, breadcrumb and back-nav.
 export default function Placeholder({ title }: { title?: string }) {
-    const { t } = useTranslation();
     const location = useLocation();
     const segments = location.pathname.split('/').filter(Boolean);
     const heading = title ?? segments[segments.length - 1] ?? 'Page';
@@ -18,20 +17,20 @@ export default function Placeholder({ title }: { title?: string }) {
             </div>
 
             <nav className="mb-2 text-xs uppercase tracking-widest text-[var(--color-ink-faint)]">
-                {segments.length ? segments.join(' / ') : t('placeholder.home')}
+                {segments.length ? segments.join(' / ') : m['common.placeholder.home']()}
             </nav>
 
             <h1 className="text-2xl font-semibold capitalize text-[var(--color-ink)]">{heading}</h1>
             <p className="mt-2 max-w-md text-sm text-[var(--color-ink-muted)]">
-                {t('placeholder.notBuilt')}
+                {m['common.placeholder.notBuilt']()}
             </p>
 
             <Button variant="outline" className="mt-8" onClick={() => window.history.back()}>
-                <ArrowLeft className="h-4 w-4" /> {t('actions.back')}
+                <ArrowLeft className="h-4 w-4" /> {m['common.actions.back']()}
             </Button>
 
             <Link to="/v2" className="mt-3 text-sm text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]">
-                {t('nav.returnToDashboard')}
+                {m['common.nav.returnToDashboard']()}
             </Link>
         </div>
     );

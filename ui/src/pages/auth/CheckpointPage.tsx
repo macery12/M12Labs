@@ -1,6 +1,6 @@
+import { m } from '@/i18n';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { checkpoint } from '@/api/auth';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +9,6 @@ import { Input, Field } from '@/components/ui/Input';
 // 2FA checkpoint. Phase 1 stub: takes the confirmation token from the query
 // string (set by LoginPage) and submits a TOTP/recovery code.
 export default function CheckpointPage() {
-    const { t } = useTranslation('auth');
     const [params] = useSearchParams();
     const confirmationToken = params.get('token') ?? '';
     const [error, setError] = useState<string | null>(null);
@@ -29,22 +28,22 @@ export default function CheckpointPage() {
             });
             window.location.href = res.intended || '/v2';
         } catch {
-            setError(t('checkpoint.codeError'));
+            setError(m['auth.checkpoint.codeError']());
         }
     });
 
     return (
         <form onSubmit={onSubmit} className="flex w-full flex-col gap-5">
             <div>
-                <h1 className="text-2xl font-semibold tracking-tight">{t('checkpoint.title')}</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">{m['auth.checkpoint.title']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-                    {t('checkpoint.subtitle')}
+                    {m['auth.checkpoint.subtitle']()}
                 </p>
             </div>
 
             {!confirmationToken && (
                 <div className="rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-4 py-3 text-sm text-[var(--color-warning)]">
-                    {t('checkpoint.missingToken')}
+                    {m['auth.checkpoint.missingToken']()}
                 </div>
             )}
             {error && (
@@ -53,15 +52,15 @@ export default function CheckpointPage() {
                 </div>
             )}
 
-            <Field label={t('checkpoint.codeLabel')} htmlFor="code">
+            <Field label={m['auth.checkpoint.codeLabel']()} htmlFor="code">
                 <Input id="code" inputMode="numeric" autoComplete="one-time-code" {...register('code')} />
             </Field>
-            <Field label={t('checkpoint.recoveryLabel')} htmlFor="recovery">
+            <Field label={m['auth.checkpoint.recoveryLabel']()} htmlFor="recovery">
                 <Input id="recovery" {...register('recovery')} />
             </Field>
 
             <Button type="submit" size="lg" disabled={isSubmitting || !confirmationToken}>
-                {isSubmitting ? t('checkpoint.submitting') : t('checkpoint.submit')}
+                {isSubmitting ? m['auth.checkpoint.submitting']() : m['auth.checkpoint.submit']()}
             </Button>
         </form>
     );

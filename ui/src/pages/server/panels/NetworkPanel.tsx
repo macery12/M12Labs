@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Network, Star, Copy, Check } from 'lucide-react';
 import { Panel } from './Panel';
 import { useServer } from '@/components/server/ServerContext';
@@ -34,7 +34,6 @@ function CopyRow({ value, primary, starred }: { value: string; primary?: boolean
 }
 
 export function NetworkPanel() {
-    const { t } = useTranslation('server');
     const server = useServer();
     const sftp = server.sftp.ip ? `sftp://${server.sftp.ip}:${server.sftp.port}` : null;
     const allocations = server.allocations
@@ -42,14 +41,14 @@ export function NetworkPanel() {
         .sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
 
     return (
-        <Panel title={t('network.title')} icon={Network}>
+        <Panel title={m['server.network.title']()} icon={Network}>
             <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1.5">
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-faint)]">
-                        {t('network.allocations')}
+                        {m['server.network.allocations']()}
                     </span>
                     {allocations.length === 0 && (
-                        <p className="text-xs text-[var(--color-ink-faint)]">{t('network.noAllocations')}</p>
+                        <p className="text-xs text-[var(--color-ink-faint)]">{m['server.network.noAllocations']()}</p>
                     )}
                     {allocations.map(a => (
                         <CopyRow key={a.id} value={`${a.alias || a.ip}:${a.port}`} primary={a.isDefault} starred={a.isDefault} />
@@ -58,7 +57,7 @@ export function NetworkPanel() {
                 {sftp && (
                     <div className="flex flex-col gap-1.5">
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-faint)]">
-                            {t('network.sftp')}
+                            {m['server.network.sftp']()}
                         </span>
                         <CopyRow value={sftp} />
                     </div>

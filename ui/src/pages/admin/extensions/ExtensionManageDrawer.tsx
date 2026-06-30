@@ -1,5 +1,5 @@
+import { m, td } from '@/i18n';
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, ExternalLink, Download, ArrowUpCircle, Trash2, AlertTriangle, Settings2, ShieldCheck } from 'lucide-react';
 import {
@@ -38,7 +38,6 @@ export function ExtensionManageDrawer({
     locked: boolean;
     onClose: () => void;
 }) {
-    const { t } = useTranslation(['extensions', 'common']);
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
 
@@ -57,12 +56,12 @@ export function ExtensionManageDrawer({
     }, [ext]);
 
     const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
-    const fail = () => push({ type: 'error', message: t('toast.error') });
+    const fail = () => push({ type: 'error', message: m['extensions.toast.error']() });
 
     const save = useMutation({
         mutationFn: () => updateExtension(ext!.id, { enabled, allowedNests, allowedEggs, settings }),
         onSuccess: e => {
-            push({ type: 'success', message: t('toast.saved', { name: e.name }) });
+            push({ type: 'success', message: m['extensions.toast.saved']({ name: e.name }) });
             invalidate();
         },
         onError: fail,
@@ -71,7 +70,7 @@ export function ExtensionManageDrawer({
     const install = useMutation({
         mutationFn: () => installExtension(ext!.id, ext!.source.repositoryId!, ext!.latestVersion),
         onSuccess: e => {
-            push({ type: 'success', message: t('toast.installed', { name: e.name }) });
+            push({ type: 'success', message: m['extensions.toast.installed']({ name: e.name }) });
             invalidate();
             onClose();
         },
@@ -81,7 +80,7 @@ export function ExtensionManageDrawer({
     const updatePkg = useMutation({
         mutationFn: () => updateExtensionPackage(ext!.id, ext!.source.repositoryId!, ext!.latestVersion),
         onSuccess: e => {
-            push({ type: 'success', message: t('toast.updated', { name: e.name }) });
+            push({ type: 'success', message: m['extensions.toast.updated']({ name: e.name }) });
             invalidate();
             onClose();
         },
@@ -91,7 +90,7 @@ export function ExtensionManageDrawer({
     const remove = useMutation({
         mutationFn: () => uninstallExtension(ext!.id),
         onSuccess: e => {
-            push({ type: 'success', message: t('toast.uninstalled', { name: e.name }) });
+            push({ type: 'success', message: m['extensions.toast.uninstalled']({ name: e.name }) });
             invalidate();
             onClose();
         },
@@ -164,16 +163,16 @@ export function ExtensionManageDrawer({
                         <p className="mt-0.5 flex items-center gap-1 text-xs text-[var(--color-ink-muted)]">
                             {e.source.official && <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand)]" />}
                             <span className="truncate">
-                                {e.source.type === 'core' ? t('drawer.sourceCore') : e.source.label}
+                                {e.source.type === 'core' ? m['extensions.drawer.sourceCore']() : e.source.label}
                             </span>
                             <span className="text-[var(--color-ink-faint)]">·</span>
-                            <span style={{ color: accent }}>{t(toneLabelKey(tone))}</span>
+                            <span style={{ color: accent }}>{td(`extensions.${toneLabelKey(tone)}`)}</span>
                         </p>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        aria-label={t('drawer.close')}
+                        aria-label={m['extensions.drawer.close']()}
                         className="rounded-lg p-1.5 text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
                     >
                         <X className="h-4 w-4" />
@@ -200,11 +199,11 @@ export function ExtensionManageDrawer({
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--color-ink-faint)]">
                         <span>
-                            {t('drawer.compatible')}:{' '}
+                            {m['extensions.drawer.compatible']()}:{' '}
                             <span className="font-mono text-[var(--color-ink-muted)]">
                                 {e.compatiblePanelVersions.length > 0
                                     ? e.compatiblePanelVersions.join(', ')
-                                    : t('drawer.anyVersion')}
+                                    : m['extensions.drawer.anyVersion']()}
                             </span>
                         </span>
                         {e.source.homepageUrl && (
@@ -215,7 +214,7 @@ export function ExtensionManageDrawer({
                                 className="inline-flex items-center gap-1 text-[var(--brand)] hover:underline"
                             >
                                 <ExternalLink className="h-3 w-3" />
-                                {t('drawer.homepage')}
+                                {m['extensions.drawer.homepage']()}
                             </a>
                         )}
                     </div>
@@ -223,17 +222,17 @@ export function ExtensionManageDrawer({
                     {e.installable ? null : (
                         <>
                             {/* enable */}
-                            <Section icon={Settings2} title={t('drawer.enableTitle')}>
+                            <Section icon={Settings2} title={m['extensions.drawer.enableTitle']()}>
                                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-3 py-2.5">
-                                    <span className="text-xs text-[var(--color-ink-muted)]">{t('drawer.enableHint')}</span>
+                                    <span className="text-xs text-[var(--color-ink-muted)]">{m['extensions.drawer.enableHint']()}</span>
                                     <Switch checked={enabled} onChange={setEnabled} disabled={busy} />
                                 </div>
                             </Section>
 
                             {/* settings schema */}
-                            <Section title={t('drawer.settings')}>
+                            <Section title={m['extensions.drawer.settings']()}>
                                 {e.settingsSchema.length === 0 ? (
-                                    <p className="text-xs text-[var(--color-ink-faint)]">{t('drawer.noSettings')}</p>
+                                    <p className="text-xs text-[var(--color-ink-faint)]">{m['extensions.drawer.noSettings']()}</p>
                                 ) : (
                                     <div className="space-y-3">
                                         {e.settingsSchema.map(field => (
@@ -250,16 +249,16 @@ export function ExtensionManageDrawer({
                             </Section>
 
                             {/* access control */}
-                            <Section title={t('drawer.access')}>
-                                <p className="-mt-1 mb-2 text-[11px] text-[var(--color-ink-faint)]">{t('drawer.accessHint')}</p>
+                            <Section title={m['extensions.drawer.access']()}>
+                                <p className="-mt-1 mb-2 text-[11px] text-[var(--color-ink-faint)]">{m['extensions.drawer.accessHint']()}</p>
                                 <div className="space-y-3">
                                     <div>
                                         <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">
-                                            {t('drawer.nests')}
+                                            {m['extensions.drawer.nests']()}
                                         </p>
                                         <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 p-2">
                                             {nests.length === 0 && (
-                                                <p className="px-1 text-xs text-[var(--color-ink-faint)]">{t('drawer.allNests')}</p>
+                                                <p className="px-1 text-xs text-[var(--color-ink-faint)]">{m['extensions.drawer.allNests']()}</p>
                                             )}
                                             {nests.map(n => (
                                                 <CheckRow
@@ -274,11 +273,11 @@ export function ExtensionManageDrawer({
                                     </div>
                                     <div>
                                         <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">
-                                            {t('drawer.eggs')}
+                                            {m['extensions.drawer.eggs']()}
                                         </p>
                                         <div className="max-h-44 space-y-2 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 p-2">
                                             {eggs.length === 0 && (
-                                                <p className="px-1 text-xs text-[var(--color-ink-faint)]">{t('drawer.noEggs')}</p>
+                                                <p className="px-1 text-xs text-[var(--color-ink-faint)]">{m['extensions.drawer.noEggs']()}</p>
                                             )}
                                             {nests.map(n => {
                                                 const ne = eggsByNest.get(n.id) ?? [];
@@ -307,22 +306,22 @@ export function ExtensionManageDrawer({
 
                             {/* danger zone */}
                             {e.canUninstall && (
-                                <Section title={t('drawer.dangerZone')}>
+                                <Section title={m['extensions.drawer.dangerZone']()}>
                                     <div
                                         className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
                                         style={{ borderColor: tint('var(--color-danger)', 30) }}
                                     >
-                                        <span className="text-xs text-[var(--color-ink-muted)]">{t('drawer.dangerHint')}</span>
+                                        <span className="text-xs text-[var(--color-ink-muted)]">{m['extensions.drawer.dangerHint']()}</span>
                                         <button
                                             type="button"
                                             disabled={busy || locked}
                                             onClick={() => {
-                                                if (window.confirm(t('drawer.uninstallConfirm', { name: e.name }))) remove.mutate();
+                                                if (window.confirm(m['extensions.drawer.uninstallConfirm']({ name: e.name }))) remove.mutate();
                                             }}
                                             className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-danger)]/40 px-3 text-xs font-medium text-[var(--color-danger)] transition-colors hover:bg-[var(--color-danger)]/10 disabled:opacity-50"
                                         >
                                             {remove.isPending ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
-                                            {remove.isPending ? t('drawer.uninstalling') : t('drawer.uninstall')}
+                                            {remove.isPending ? m['extensions.drawer.uninstalling']() : m['extensions.drawer.uninstall']()}
                                         </button>
                                     </div>
                                 </Section>
@@ -341,7 +340,7 @@ export function ExtensionManageDrawer({
                             className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] text-sm font-medium text-[var(--color-brand-ink)] transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
                         >
                             {install.isPending ? <Spinner className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-                            {install.isPending ? t('drawer.installing') : t('drawer.installCta')}
+                            {install.isPending ? m['extensions.drawer.installing']() : m['extensions.drawer.installCta']()}
                         </button>
                     ) : (
                         <>
@@ -358,7 +357,7 @@ export function ExtensionManageDrawer({
                                     }}
                                 >
                                     {updatePkg.isPending ? <Spinner className="h-4 w-4" /> : <ArrowUpCircle className="h-4 w-4" />}
-                                    {t('drawer.updateCta', { version: e.latestVersion })}
+                                    {m['extensions.drawer.updateCta']({ version: e.latestVersion })}
                                 </button>
                             )}
                             <button
@@ -368,7 +367,7 @@ export function ExtensionManageDrawer({
                                 className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] text-sm font-medium text-[var(--color-brand-ink)] transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
                             >
                                 {save.isPending && <Spinner className="h-4 w-4" />}
-                                {save.isPending ? t('drawer.saving') : t('drawer.save')}
+                                {save.isPending ? m['extensions.drawer.saving']() : m['extensions.drawer.save']()}
                             </button>
                         </>
                     )}

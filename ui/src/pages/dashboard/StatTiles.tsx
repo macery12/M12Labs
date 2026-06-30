@@ -1,5 +1,5 @@
+import { m } from '@/i18n';
 import { Server, Activity, MemoryStick, HardDrive } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { formatMib } from '@/lib/format';
 import type { ServerListItem } from '@/api/servers';
 
@@ -31,21 +31,20 @@ function Tile({
 }
 
 export function StatTiles({ servers, running }: { servers: ServerListItem[]; running: number | null }) {
-    const { t } = useTranslation('dashboard');
     const totalMem = servers.reduce((sum, s) => sum + s.limits.memory, 0);
     const totalDisk = servers.reduce((sum, s) => sum + s.limits.disk, 0);
 
     return (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Tile icon={Server} label={t('stats.servers')} value={String(servers.length)} />
+            <Tile icon={Server} label={m['dashboard.stats.servers']()} value={String(servers.length)} />
             <Tile
                 icon={Activity}
-                label={t('stats.running')}
+                label={m['dashboard.stats.running']()}
                 value={running === null ? '—' : String(running)}
                 sub={running === null ? '' : `/ ${servers.length}`}
             />
-            <Tile icon={MemoryStick} label={t('stats.memory')} value={totalMem === 0 ? '∞' : formatMib(totalMem)} sub={t('stats.allocated')} />
-            <Tile icon={HardDrive} label={t('stats.storage')} value={totalDisk === 0 ? '∞' : formatMib(totalDisk)} sub={t('stats.allocated')} />
+            <Tile icon={MemoryStick} label={m['dashboard.stats.memory']()} value={totalMem === 0 ? '∞' : formatMib(totalMem)} sub={m['dashboard.stats.allocated']()} />
+            <Tile icon={HardDrive} label={m['dashboard.stats.storage']()} value={totalDisk === 0 ? '∞' : formatMib(totalDisk)} sub={m['dashboard.stats.allocated']()} />
         </div>
     );
 }

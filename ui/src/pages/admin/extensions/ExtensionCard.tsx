@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { m, td } from '@/i18n';
 import { BadgeCheck, ArrowUpCircle, Settings2, Download } from 'lucide-react';
 import type { Extension } from '@/api/extensions';
 import { Switch } from '@/components/ui/Switch';
@@ -27,7 +27,6 @@ export function ExtensionCard({
     installing: boolean;
     locked: boolean;
 }) {
-    const { t } = useTranslation(['extensions', 'common']);
     const Icon = resolveExtensionIcon(ext.icon);
     const tone = extensionTone(ext);
     const accent = toneVar(tone);
@@ -72,7 +71,7 @@ export function ExtensionCard({
                         </span>
                     </div>
                     <p className="mt-0.5 truncate text-xs text-[var(--color-ink-muted)]">
-                        {t('card.by', { author: ext.author })}
+                        {m['extensions.card.by']({ author: ext.author })}
                     </p>
                 </div>
 
@@ -82,7 +81,7 @@ export function ExtensionCard({
                 >
                     {tone === 'update' && <ArrowUpCircle className="h-3 w-3" />}
                     {tone === 'core' && <BadgeCheck className="h-3 w-3" />}
-                    {t(toneLabelKey(tone))}
+                    {td(`extensions.${toneLabelKey(tone)}`)}
                 </span>
             </div>
 
@@ -105,7 +104,7 @@ export function ExtensionCard({
                             className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-medium text-[var(--color-brand-ink)] transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
                         >
                             {installing ? <Spinner className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
-                            {t('card.install')}
+                            {m['extensions.card.install']()}
                         </button>
                     ) : (
                         <>
@@ -113,7 +112,7 @@ export function ExtensionCard({
                                 checked={ext.enabled}
                                 disabled={toggling || locked}
                                 onChange={onToggle}
-                                label={ext.enabled ? t('card.disabled') : t('card.enabled')}
+                                label={ext.enabled ? m['extensions.card.disabled']() : m['extensions.card.enabled']()}
                             />
                             <button
                                 type="button"
@@ -121,7 +120,7 @@ export function ExtensionCard({
                                 className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border-strong)] px-3 text-xs font-medium text-[var(--color-ink)] transition-colors hover:bg-[var(--color-surface-2)]"
                             >
                                 <Settings2 className="h-3.5 w-3.5" />
-                                {t('card.manage')}
+                                {m['extensions.card.manage']()}
                             </button>
                         </>
                     )}

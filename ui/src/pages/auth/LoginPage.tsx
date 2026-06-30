@@ -1,7 +1,7 @@
+import { m } from '@/i18n';
 import { useCallback, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { login } from '@/api/auth';
 import { useFlags } from '@/state/flags';
@@ -12,7 +12,6 @@ import { Turnstile } from '@/components/auth/Turnstile';
 type FormValues = { user: string; password: string };
 
 export default function LoginPage() {
-    const { t } = useTranslation('auth');
     const navigate = useNavigate();
     const captcha = useFlags(s => s.site?.captcha);
     const [token, setToken] = useState<string | undefined>(undefined);
@@ -22,10 +21,10 @@ export default function LoginPage() {
     const schema = useMemo(
         () =>
             z.object({
-                user: z.string().min(1, t('login.userRequired')),
-                password: z.string().min(1, t('login.passwordRequired')),
+                user: z.string().min(1, m['auth.login.userRequired']()),
+                password: z.string().min(1, m['auth.login.passwordRequired']()),
             }),
-        [t],
+        [],
     );
 
     const {
@@ -40,7 +39,7 @@ export default function LoginPage() {
         setSubmitError(null);
         const parsed = schema.safeParse(values);
         if (!parsed.success) {
-            setSubmitError(parsed.error.issues[0]?.message ?? t('login.invalidInput'));
+            setSubmitError(parsed.error.issues[0]?.message ?? m['auth.login.invalidInput']());
             return;
         }
         try {
@@ -55,7 +54,7 @@ export default function LoginPage() {
                 (typeof err === 'object' && err && 'response' in err
                     ? // @ts-expect-error narrow axios error shape at runtime
                       err.response?.data?.errors?.[0]?.detail
-                    : null) ?? t('login.invalidCredentials');
+                    : null) ?? m['auth.login.invalidCredentials']();
             setSubmitError(message);
         }
     });
@@ -63,8 +62,8 @@ export default function LoginPage() {
     return (
         <form onSubmit={onSubmit} className="flex w-full flex-col gap-5">
             <div>
-                <h1 className="text-2xl font-semibold tracking-tight">{t('login.title')}</h1>
-                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('login.subtitle')}</p>
+                <h1 className="text-2xl font-semibold tracking-tight">{m['auth.login.title']()}</h1>
+                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['auth.login.subtitle']()}</p>
             </div>
 
             {submitError && (
@@ -73,11 +72,11 @@ export default function LoginPage() {
                 </div>
             )}
 
-            <Field label={t('login.userLabel')} htmlFor="user" error={errors.user?.message}>
+            <Field label={m['auth.login.userLabel']()} htmlFor="user" error={errors.user?.message}>
                 <Input id="user" autoComplete="username" invalid={!!errors.user} {...register('user')} />
             </Field>
 
-            <Field label={t('login.passwordLabel')} htmlFor="password" error={errors.password?.message}>
+            <Field label={m['auth.login.passwordLabel']()} htmlFor="password" error={errors.password?.message}>
                 <Input
                     id="password"
                     type="password"
@@ -90,11 +89,11 @@ export default function LoginPage() {
             {captcha?.enabled && captcha.siteKey && <Turnstile siteKey={captcha.siteKey} onVerify={onVerify} />}
 
             <Button type="submit" size="lg" disabled={isSubmitting || Boolean(captcha?.enabled && captcha.siteKey && !token)}>
-                {isSubmitting ? t('login.submitting') : t('login.submit')}
+                {isSubmitting ? m['auth.login.submitting']() : m['auth.login.submit']()}
             </Button>
 
             <a href="/v2/auth/password" className="text-center text-sm text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]">
-                {t('login.forgot')}
+                {m['auth.login.forgot']()}
             </a>
         </form>
     );
