@@ -1,0 +1,23 @@
+{
+    "signIn": "Sign in",
+    "badge": "A new control panel — rebuilt from scratch",
+    "heroPre": "Run your game servers like it’s",
+    "heroEmphasis": "effortless",
+    "subtitle": "{{name}} gives you a fast, focused panel for deploying, managing and scaling game servers — without the clutter.",
+    "getStarted": "Get started",
+    "features": {
+        "speed": {
+            "title": "Built for speed",
+            "body": "A runtime tuned for instant consoles, live stats and zero-lag file edits."
+        },
+        "secure": {
+            "title": "Secure by default",
+            "body": "CSRF-guarded, schema-validated, no tokens in the browser. Hardened end to end."
+        },
+        "mods": {
+            "title": "Mods & marketplace",
+            "body": "Install mods, plugins and modpacks straight from the panel in a couple of clicks."
+        }
+    },
+    "rights": "© {{year}} {{name}}. All rights reserved."
+}

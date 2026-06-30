@@ -1,0 +1,27 @@
+# Crowdin configuration for the V2 UI (ui/src/i18n).
+#
+# English is the source of truth; Crowdin creates one sibling folder per target
+# locale (e.g. de/, fr/, pt-BR/) containing the same namespaced JSON files.
+# Register a downloaded locale in ui/src/i18n/resources.ts before it ships.
+#
+# Auth via env vars (do NOT commit tokens):
+#   export CROWDIN_PROJECT_ID=...        # numeric project id
+#   export CROWDIN_PERSONAL_TOKEN=...    # personal access token
+#
+# Usage: `crowdin upload sources` then `crowdin download` (see CLI install at
+# https://crowdin.github.io/crowdin-cli/).
+
+project_id_env: CROWDIN_PROJECT_ID
+api_token_env: CROWDIN_PERSONAL_TOKEN
+base_path: '.'
+preserve_hierarchy: true
+
+files:
+  - source: /ui/src/i18n/locales/en/*.json
+    translation: /ui/src/i18n/locales/%two_letters_code%/%original_file_name%
+    # %two_letters_code% → de, fr, es … For region locales (pt-BR, zh-CN) switch
+    # the placeholder to %locale% (gives pt-BR) and adjust resources.ts to match.
+    languages_mapping:
+      two_letters_code:
+        # Override any code that should differ from Crowdin's default, e.g.:
+        # 'pt-BR': pt

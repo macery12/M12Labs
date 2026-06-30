@@ -1,0 +1,115 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
+import { ChevronLeft, Copy, Check, Wrench, Globe, Lock, Pencil, Trash2 } from 'lucide-react';
+import { useNode } from './NodeContext';
+import { Badge, SuperchargedBadge } from './NodeBadges';
+import { cn } from '@/lib/cn';
+import { can } from '@/lib/can';
+import { useAdminHeld } from '@/layouts/heldPermissions';
+import { useFlashes } from '@/state/flashes';
+import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { CreateNodeModal } from '@/pages/admin/infrastructure/CreateNodeModal';
+import { deleteNode } from '@/api/nodes';
+
+export function NodeHeader() {
+    const { t } = useTranslation('admin');
+    const node = useNode();
+    const navigate = useNavigate();
+    const push = useFlashes(s => s.push);
+    const qc = useQueryClient();
+    const held = useAdminHeld();
+    const [copied, setCopied] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const address = `${node.scheme}://${node.fqdn}:${node.ports.httpPublic}`;
+
+    const copy = () => {
+        navigator.clipboard?.writeText(address).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        });
+    };
+
+    const del = useMutation({
+        mutationFn: () => deleteNode(node.id),
+        onSuccess: async () => {
+            push({ type: 'success', message: t('infrastructure.node.deleted') });
+            await qc.invalidateQueries({ queryKey: ['admin', 'nodes'] });
+            navigate('/v2/admin/infrastructure');
+        },
+        onError: err =>
+            push({
+                type: 'error',
+                message: (isAxiosError(err) && err.response?.data?.message) || t('infrastructure.common.genericError'),
+            }),
+    });
+
+    return (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+                <Link
+                    to="/v2/admin/infrastructure"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong)] text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)]"
+                    title={t('nodes.backToNodes')}
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                </Link>
+                <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h1 className="truncate text-xl font-semibold tracking-tight text-[var(--color-ink)]">{node.name}</h1>
+                        <SuperchargedBadge wingsType={node.wingsType} />
+                        {node.maintenanceMode && (
+                            <Badge tone="warning">
+                                <Wrench className="h-2.5 w-2.5" /> {t('nodes.maintenance')}
+                            </Badge>
+                        )}
+                        <Badge tone="muted">
+                            {node.isPublic ? <Globe className="h-2.5 w-2.5" /> : <Lock className="h-2.5 w-2.5" />}
+                            {node.isPublic ? t('nodes.public') : t('nodes.private')}
+                        </Badge>
+                    </div>
+                    <button
+                        onClick={copy}
+                        className="group mt-0.5 flex items-center gap-1.5 font-mono text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+                    >
+                        {address}
+                        {copied ? (
+                            <Check className="h-3 w-3 text-[var(--color-accent)]" />
+                        ) : (
+                            <Copy className={cn('h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100')} />
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+                {can(held, 'nodes.update') && (
+                    <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                        <Pencil className="h-4 w-4" /> {t('infrastructure.server.edit')}
+                    </Button>
+                )}
+                {can(held, 'nodes.delete') && (
+                    <Button variant="ghost" size="sm" onClick={() => setDeleting(true)}>
+                        <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
+                    </Button>
+                )}
+            </div>
+
+            {editing && <CreateNodeModal open node={node} onClose={() => setEditing(false)} />}
+            <ConfirmDialog
+                open={deleting}
+                onClose={() => setDeleting(false)}
+                title={t('infrastructure.node.deleteTitle')}
+                body={t('infrastructure.node.deleteBody', { name: node.name })}
+                confirmLabel={t('infrastructure.common.delete')}
+                cancelLabel={t('infrastructure.common.cancel')}
+                busy={del.isPending}
+                onConfirm={() => del.mutate()}
+            />
+        </div>
+    );
+}

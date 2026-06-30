@@ -1,0 +1,196 @@
+{
+    "store": {
+        "title": "Order a server",
+        "subtitle": "Choose a plan, then configure it to your liking.",
+        "categories": "Categories",
+        "noProducts": "There are currently no products available.",
+        "noProductsInCategory": "No products in this category yet.",
+        "paymentsNotSetup": "Payments are not fully set up — paid plans can't be ordered yet.",
+        "free": "Free",
+        "perMonth": "/ mo",
+        "from": "from {{price}}/mo",
+        "configure": "Configure",
+        "hero": {
+            "badge": "Game server hosting",
+            "title": "Deploy your server in seconds",
+            "subtitle": "High-performance hosting with instant setup, DDoS protection and 24/7 support. Pick a plan below and you're online in under a minute.",
+            "ctaPrimary": "Browse plans",
+            "ctaSecondary": "Why host with us"
+        },
+        "promo": {
+            "text": "New here? Your server deploys instantly the moment checkout completes."
+        },
+        "features": {
+            "heading": "Why host with us",
+            "ddosTitle": "DDoS protection",
+            "ddosBody": "Always-on mitigation keeps your server online, even under attack.",
+            "nvmeTitle": "NVMe SSD storage",
+            "nvmeBody": "Blazing-fast disks for quick world loads, plugins and backups.",
+            "instantTitle": "Instant setup",
+            "instantBody": "Your server is provisioned and ready in under a minute.",
+            "supportTitle": "24/7 support",
+            "supportBody": "Real people, ready to help whenever you need them."
+        },
+        "trust": {
+            "accepted": "We accept",
+            "cards": "Cards",
+            "secureTitle": "Secure checkout",
+            "secureBody": "Payments are encrypted and handled by trusted providers.",
+            "instantTitle": "Instant delivery",
+            "instantBody": "Servers are deployed automatically right after payment."
+        },
+        "faq": {
+            "heading": "Frequently asked questions",
+            "q1": "How fast is my server set up?",
+            "a1": "Instantly — most servers are deployed and online within a minute of checkout.",
+            "q2": "Can I upgrade or downgrade later?",
+            "a2": "Yes. You can change your plan at any time from your server's billing page.",
+            "q3": "What payment methods do you accept?",
+            "a3": "All the methods shown at checkout, including major cards and PayPal where enabled.",
+            "q4": "Do you offer refunds?",
+            "a4": "Reach out to support within the guarantee window and we'll take care of it."
+        },
+        "featured": {
+            "badge": "Most popular",
+            "heading": "Featured plan",
+            "cta": "Configure this plan"
+        },
+        "card": {
+            "ram": "RAM",
+            "cpu": "CPU",
+            "storage": "Storage",
+            "backups": "Backups",
+            "databases": "Databases",
+            "ports": "Ports",
+            "subdomains": "Subdomains"
+        },
+        "view": {
+            "cards": "Cards",
+            "compare": "Compare"
+        },
+        "compare": {
+            "plan": "Plan",
+            "cpu": "CPU",
+            "memory": "Memory",
+            "disk": "Storage",
+            "backups": "Backups",
+            "databases": "Databases",
+            "price": "Price",
+            "configure": "Configure"
+        },
+        "savings": {
+            "text": "Save up to {{percent}}% with longer billing cycles."
+        }
+    },
+    "configure": {
+        "back": "Back to store",
+        "title": "Configure your server",
+        "loadError": "This product could not be loaded.",
+        "step": "Step {{n}}",
+        "locationTitle": "Location",
+        "locationSubtitle": "Pick the region closest to your players for the lowest latency.",
+        "noNodes": "No nodes are available for this product. Please contact support.",
+        "billingTitle": "Billing cycle",
+        "billingSubtitle": "Choose how often you're billed — longer terms save more.",
+        "noCycles": "No billing cycles are configured for this product.",
+        "softwareTitle": "Software",
+        "softwareSubtitle": "Choose the platform your server runs.",
+        "noEggs": "No software options are available for this product right now.",
+        "customizeTitle": "Customize",
+        "customizeSubtitle": "Fine-tune options for your selected software.",
+        "nameTitle": "Name your server",
+        "nameSubtitle": "You can rename it any time later.",
+        "namePlaceholder": "My awesome server",
+        "nameRequired": "A server name is required.",
+        "legal": "I agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
+        "createServer": "Create server",
+        "continueToPayment": "Continue to payment",
+        "addressRequired": "A complete billing address is required before purchase. Add it in Account, then continue.",
+        "addressError": "Could not verify your billing address. Please try again.",
+        "creating": "Your server is being created.",
+        "startError": "Something went wrong starting your order. Please try again.",
+        "createServerError": "We could not create your server. Please try again."
+    },
+    "summary": {
+        "yourBuild": "Your build",
+        "location": "Location",
+        "software": "Software",
+        "serverName": "Server name",
+        "billingCycle": "Billing cycle",
+        "notSet": "Not set",
+        "subtotal": "Subtotal",
+        "coupon": "Coupon {{code}}",
+        "totalDue": "Total due",
+        "free": "Free"
+    },
+    "cycle": {
+        "save": "Save {{percent}}%",
+        "perMonthBilled": "{{price}}/mo · billed every {{days}} days",
+        "perTerm": "/ term"
+    },
+    "coupon": {
+        "placeholder": "Coupon code",
+        "apply": "Apply",
+        "empty": "Enter a coupon code.",
+        "invalid": "That coupon is not valid for this order.",
+        "applied": "Coupon {{code}} applied."
+    },
+    "specs": {
+        "cpu": "{{value}}% CPU",
+        "ram": "{{value}} RAM",
+        "ssd": "{{value}} SSD",
+        "backups": "{{count}} backups",
+        "databases": "{{count}} databases",
+        "ports": "{{count}} ports",
+        "subdomains": "{{count}} subdomains"
+    },
+    "payment": {
+        "back": "Back to store",
+        "title": "Payment",
+        "subtitle": "Review your order and choose how to pay.",
+        "missingDraft": "Your checkout details are missing. Please configure your server again.",
+        "loadError": "This product could not be loaded.",
+        "orderSummary": "Order summary",
+        "plan": "Plan",
+        "serverName": "Server name",
+        "location": "Location",
+        "software": "Software",
+        "billingCycle": "Billing cycle",
+        "method": "Payment method",
+        "freeNotice": "This order is free — no payment needed.",
+        "freeNoticeCoupon": "This order is free with your coupon — no payment needed.",
+        "createServer": "Create server",
+        "noMethods": "No payment methods are available. Please contact support.",
+        "payNow": "Pay now",
+        "payWithPaypal": "Pay with PayPal",
+        "cardError": "Could not initialise card payment.",
+        "confirmError": "Your payment could not be confirmed.",
+        "startCardError": "We could not start your payment. Please try again.",
+        "startPaypalError": "We could not start your PayPal checkout. Please try again.",
+        "couponRemoved": "Your coupon is no longer valid and has been removed.",
+        "total": "Total",
+        "subtotal": "Subtotal",
+        "dueToday": "Due today",
+        "billedEvery": "Billed in {{currency}} every {{days}} days.",
+        "free": "Free"
+    },
+    "processing": {
+        "title": "Processing your order",
+        "body": "We're deploying your server now. This only takes a moment — please don't close this page.",
+        "session": "Session {{id}}",
+        "verifyDelay": "Payment verification is taking longer than expected. Check your orders or contact support.",
+        "paypalVerifyError": "Unable to verify your PayPal payment. Please contact support.",
+        "fulfillError": "Your order could not be fulfilled. Please contact support."
+    },
+    "success": {
+        "title": "Order complete",
+        "body": "Your server is being deployed and will appear on your dashboard shortly.",
+        "dashboard": "Go to dashboard",
+        "orders": "View orders"
+    },
+    "cancel": {
+        "title": "Payment not completed",
+        "body": "Your order was cancelled or could not be processed. You haven't been charged.",
+        "back": "Back to store"
+    }
+}

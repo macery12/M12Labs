@@ -37,6 +37,11 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->routes(function () {
             Route::middleware('web')->group(function () {
+                // Standalone v2 UI shell. Web-only (no auth) so guests can reach
+                // the landing/login; the SPA guards authenticated areas itself.
+                // Registered first so base.php's /{react} catch-all can't grab /v2.
+                Route::prefix('/v2')->group(base_path('routes/v2.php'));
+
                 Route::middleware(['auth.session', RequireTwoFactorAuthentication::class])
                     ->group(base_path('routes/base.php'));
 

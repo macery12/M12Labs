@@ -44,6 +44,9 @@ resources/lang/locales.js
 
 /public/build
 /public/hot
+/public/build-v2
+/public/hot-v2
+/ui/dist
 result
 docker-compose.yaml
 .pnpm-store

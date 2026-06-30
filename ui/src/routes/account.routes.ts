@@ -1,0 +1,28 @@
+import { lazy } from 'react';
+import { User, KeyRound, ShieldCheck, LifeBuoy, ShoppingCart, ReceiptText } from 'lucide-react';
+import { route, type RouteDef } from './registry';
+
+const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
+const StorePage = lazy(() => import('@/pages/account/billing/store/StorePage'));
+const ConfigureCheckout = lazy(() => import('@/pages/account/billing/order/ConfigureCheckout'));
+const PaymentPage = lazy(() => import('@/pages/account/billing/payment/PaymentPage'));
+const ProcessingPage = lazy(() => import('@/pages/account/billing/payment/ProcessingPage'));
+const SuccessPage = lazy(() => import('@/pages/account/billing/payment/SuccessPage'));
+const CancelPage = lazy(() => import('@/pages/account/billing/payment/CancelPage'));
+
+// Account / Dashboard area (/v2/*). Seeded from V1_UI_Map §3.2.
+// Root ('') is the server-list dashboard — the authenticated landing target.
+export const accountRoutes: RouteDef[] = [
+    route('', { name: 'Dashboard', icon: User, element: DashboardPage, end: true }),
+    route('credentials', { name: 'Credentials', icon: KeyRound }),
+    route('security', { name: 'Security', icon: ShieldCheck }),
+    route('tickets', { name: 'Tickets', icon: LifeBuoy, condition: f => f.tickets.enabled }),
+    route('tickets/:id', { condition: f => f.tickets.enabled }),
+    route('billing/order', { name: 'Store', icon: ShoppingCart, element: StorePage, condition: f => f.billing.enabled }),
+    route('billing/orders', { name: 'Orders', icon: ReceiptText, condition: f => f.billing.enabled }),
+    route('checkout/configure/:id', { element: ConfigureCheckout, condition: f => f.billing.enabled }),
+    route('checkout/payment', { element: PaymentPage, condition: f => f.billing.enabled }),
+    route('billing/processing', { element: ProcessingPage, condition: f => f.billing.enabled }),
+    route('billing/success', { element: SuccessPage, condition: f => f.billing.enabled }),
+    route('billing/cancel', { element: CancelPage, condition: f => f.billing.enabled }),
+];

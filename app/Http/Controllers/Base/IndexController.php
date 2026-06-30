@@ -25,4 +25,13 @@ class IndexController extends Controller
     {
         return view('templates/base.core');
     }
+
+    /**
+     * Serves the standalone v2 UI shell. A single wildcard route mounts this so
+     * client-side routing under /v2 is fully owned by the SPA.
+     */
+    public function v2(): View
+    {
+        return view('templates/v2.core');
+    }
 }
