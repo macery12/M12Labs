@@ -3228,6 +3228,7 @@
   "extensions.progress.stages.optimizing": "Оптимизация",
   "extensions.progress.stages.registering": "Регистрация",
   "extensions.progress.stages.removing": "Удаление файлов",
+  "extensions.progress.stages.draining": "Очистка очереди",
   "extensions.progress.stages.validating": "Проверка",
   "extensions.progress.title": "Операция в процессе выполнения",
   "extensions.progress.uninstall": "Удаление",

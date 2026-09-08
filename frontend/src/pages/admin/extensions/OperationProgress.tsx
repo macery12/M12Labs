@@ -4,8 +4,8 @@ import type { OperationProgress as Progress } from '@/api/extensions';
 
 // Stage orders mirror ExtensionInstallProgressService (app/Services/Extensions).
 const INSTALL = ['downloading', 'extracting', 'validating', 'copying', 'migrating', 'optimizing', 'building', 'registering', 'completed'];
-const UNINSTALL = ['validating', 'migrating', 'removing', 'optimizing', 'building', 'registering', 'completed'];
-const UPDATE = ['downloading', 'extracting', 'validating', 'removing', 'copying', 'migrating', 'optimizing', 'building', 'registering', 'completed'];
+const UNINSTALL = ['draining', 'validating', 'migrating', 'removing', 'optimizing', 'building', 'registering', 'completed'];
+const UPDATE = ['downloading', 'extracting', 'validating', 'draining', 'removing', 'copying', 'migrating', 'optimizing', 'building', 'registering', 'completed'];
 
 function stagesFor(action: string): string[] {
     if (action.includes('uninstall')) return UNINSTALL;

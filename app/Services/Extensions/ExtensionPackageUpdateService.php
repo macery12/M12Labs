@@ -26,6 +26,7 @@ class ExtensionPackageUpdateService
         private ExtensionMigrationService $migrationService,
         private ExtensionRuntimePlanService $planService,
         private ExtensionPermissionRegistry $permissionRegistry,
+        private ExtensionJobDrainService $drainService,
     ) {
     }
 
@@ -298,6 +299,13 @@ class ExtensionPackageUpdateService
      */
     public function cleanupPreparedUpdate(array $prepared): void
     {
+        // Reached from update() and from the batch service alike, on success
+        // and on rollback. The extension must stop refusing dispatches either
+        // way — after a rollback it is still installed and expected to work.
+        if (isset($prepared['extensionId'])) {
+            $this->drainService->endDrain($prepared['extensionId']);
+        }
+
         if (!empty($prepared['tempRoot'])) {
             File::deleteDirectory($prepared['tempRoot']);
         }
@@ -370,6 +378,16 @@ class ExtensionPackageUpdateService
             $this->assertCapabilitiesApproved($existingPackage, $parsedManifest, $approvedCapabilityHash);
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
 
+            // An update replaces the very class files a queued job names, so
+            // the queue is emptied first for the same reason an uninstall does
+            // it: a payload deserialized against the new code is a job running
+            // with arguments the old version built.
+            $this->progressService->report('update', $resolvedExtensionId, 'draining');
+            $this->drainService->beginDrain($resolvedExtensionId);
+            $this->drainService->cancelQueued($resolvedExtensionId);
+            $this->drainService->waitForDrain($resolvedExtensionId, (int) config('extensions.queues.drain_timeout_seconds', 60));
+            $this->drainService->assertSafeToRemove($resolvedExtensionId);
+
             $this->fileService->assertFilesUnmodified($existingPackage->files->all(), 'updated');
             $this->fileService->createRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
 
@@ -433,6 +451,13 @@ class ExtensionPackageUpdateService
         } catch (\Throwable $exception) {
             if ($existingPackage) {
                 $this->fileService->restoreRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
+            }
+
+            // Nothing was prepared, so cleanupPreparedUpdate() will never run
+            // for this attempt; the drain has to be lifted here or the still
+            // installed extension keeps refusing jobs until the flag expires.
+            if ($resolvedExtensionId !== null) {
+                $this->drainService->endDrain($resolvedExtensionId);
             }
 
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);

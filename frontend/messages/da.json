@@ -3285,6 +3285,7 @@
   "extensions.progress.stages.optimizing": "Optimering",
   "extensions.progress.stages.registering": "Registrering",
   "extensions.progress.stages.removing": "Sletning af filer",
+  "extensions.progress.stages.draining": "Tømmer jobkø",
   "extensions.progress.stages.validating": "Validering",
   "extensions.progress.title": "Operationen er i gang",
   "extensions.progress.uninstall": "Afinstallation",

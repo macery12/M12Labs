@@ -3377,6 +3377,7 @@
   "extensions.progress.stages.optimizing": "Optimizing",
   "extensions.progress.stages.registering": "Registering",
   "extensions.progress.stages.removing": "Removing files",
+  "extensions.progress.stages.draining": "Draining jobs",
   "extensions.progress.stages.validating": "Validating",
   "extensions.progress.title": "Operation in progress",
   "extensions.progress.uninstall": "Uninstalling",

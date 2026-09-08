@@ -32,6 +32,7 @@ class ExtensionInstallProgressService
      * Valid stage identifiers emitted during an uninstall.
      */
     public const UNINSTALL_STAGES = [
+        'draining',
         'validating',
         'migrating',
         'removing',
@@ -48,6 +49,7 @@ class ExtensionInstallProgressService
         'downloading',
         'extracting',
         'validating',
+        'draining',
         'removing',
         'copying',
         'migrating',

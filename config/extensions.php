@@ -66,4 +66,13 @@ return [
         // Reclaim space in the isolated pnpm store after a successful build.
         'prune_store' => (bool) env('EXTENSIONS_BUILD_PRUNE_STORE', true),
     ],
+
+    'queues' => [
+        // How long an update or uninstall waits for an extension's in-flight
+        // jobs before giving up. Queued work is discarded immediately; this
+        // budget covers jobs already executing, which cannot be interrupted.
+        // On timeout the operation refuses rather than deleting class files out
+        // from under a running worker.
+        'drain_timeout_seconds' => (int) env('EXTENSIONS_DRAIN_TIMEOUT', 60),
+    ],
 ];

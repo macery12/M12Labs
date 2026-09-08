@@ -131,6 +131,33 @@ class QueueTopologyTest extends TestCase
         }
     }
 
+    /**
+     * The one deliberate exception to the rule above.
+     *
+     * Extension job classes are not knowable in config/queue.php and must not
+     * become routable by editing core config, so ExtensionJob pins the queue
+     * itself. Asserted here rather than left implicit: a future refactor that
+     * "fixes" it to match every other job would silently move every
+     * extension's work back onto the standard lane, ahead of nothing and
+     * behind everything a person is waiting on.
+     */
+    public function testExtensionJobsPinTheirOwnQueueByDesign(): void
+    {
+        $source = (string) file_get_contents(base_path('app/Extensions/Jobs/ExtensionJob.php'));
+
+        $this->assertMatchesRegularExpression(
+            "/onQueue\(.*queueFor\('extensions'\)\)/",
+            $source,
+            'ExtensionJob must pin the extensions lane itself; Queue::route() cannot name package job classes.'
+        );
+
+        $this->assertArrayHasKey(
+            'extensions',
+            $this->topology()->lanes(),
+            'ExtensionJob pins a lane that config/queue.php no longer declares, so its jobs would land on a queue no supervisor drains.'
+        );
+    }
+
     public function testEveryJobTimeoutStaysBelowItsConnectionRetryAfter(): void
     {
         foreach ($this->jobClasses() as $job) {

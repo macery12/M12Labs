@@ -20,6 +20,7 @@ class ExtensionPackageUninstallService
         private ExtensionPackageFileService $fileService,
         private ExtensionMigrationService $migrationService,
         private ExtensionPermissionRegistry $permissionRegistry,
+        private ExtensionJobDrainService $drainService,
     ) {
     }
 
@@ -70,6 +71,10 @@ class ExtensionPackageUninstallService
 
                 throw new DisplayException('Failed to uninstall the selected extension package.', $exception);
             } finally {
+                // Whether the uninstall completed or rolled back, the extension
+                // must stop refusing dispatches: on a rollback it is still
+                // installed and expected to work.
+                $this->drainService->endDrain($extensionId);
                 $this->progressService->clear();
                 $this->ownershipService->repairStandardPaths($extensionId);
                 if ($prepared !== null) {
@@ -95,6 +100,17 @@ class ExtensionPackageUninstallService
         if (!$package) {
             throw new DisplayException('That extension is not installed through the repository system.');
         }
+
+        // Drain before anything else touches the filesystem. Removing a
+        // package's class files while a worker holds one of its jobs leaves a
+        // payload that can never be deserialized, so the job can neither
+        // succeed nor be retried, and its failed-job row names a class that no
+        // longer exists.
+        $this->progressService->report('uninstall', $extensionId, 'draining');
+        $this->drainService->beginDrain($extensionId);
+        $this->drainService->cancelQueued($extensionId);
+        $this->drainService->waitForDrain($extensionId, (int) config('extensions.queues.drain_timeout_seconds', 60));
+        $this->drainService->assertSafeToRemove($extensionId);
 
         $files = $package->files->sortByDesc(fn (ExtensionPackageFile $file) => substr_count($file->path, '/'))->values();
         $rollbackRoot = storage_path('app/extensions/tmp-uninstall/' . Str::uuid()->toString());
@@ -138,6 +154,10 @@ class ExtensionPackageUninstallService
         } catch (\Throwable $exception) {
             $this->fileService->restoreRollbackSnapshot($files->all(), $rollbackRoot);
             File::deleteDirectory($rollbackRoot);
+            // Nothing was prepared, so cleanupPreparedUninstall() will never run
+            // for this attempt and the still installed extension would keep
+            // refusing jobs until the drain flag expired.
+            $this->drainService->endDrain($extensionId);
             $this->ownershipService->repairStandardPaths($extensionId);
 
             if ($exception instanceof DisplayException) {
@@ -171,6 +191,11 @@ class ExtensionPackageUninstallService
             // one is stripped in the same transaction — a role must never carry
             // an identifier that no longer resolves to anything.
             $this->permissionRegistry->purge($extensionId);
+
+            // The drain emptied the queue; anything left is a row whose worker
+            // died mid-job. Marking it quarantined records that work was
+            // abandoned rather than completed.
+            $this->drainService->quarantine($extensionId);
 
             $package->delete();
 
@@ -270,6 +295,13 @@ class ExtensionPackageUninstallService
      */
     public function cleanupPreparedUninstall(array $prepared): void
     {
+        // Every path out of a prepared uninstall runs through here, including
+        // the batch service, which drives prepare/finalize/rollback itself. The
+        // drain must be lifted from all of them, not just from uninstall().
+        if (isset($prepared['extensionId'])) {
+            $this->drainService->endDrain($prepared['extensionId']);
+        }
+
         if (!empty($prepared['rollbackRoot'])) {
             File::deleteDirectory($prepared['rollbackRoot']);
         }

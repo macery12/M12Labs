@@ -140,6 +140,17 @@ return [
         'mods' => env('QUEUE_MODS', 'mods'),
         'agent' => env('QUEUE_AGENT', 'agent'),
         'standard' => env('QUEUE_STANDARD', 'standard'),
+
+        // Declared last on purpose. supervisor-interactive runs with
+        // `balance => false`, so its queue order is strict priority: extension
+        // work is only picked up once every core lane is empty. A package can
+        // therefore saturate its own lane without delaying an invoice.
+        //
+        // Horizon picks the lane up automatically (QueueTopology derives the
+        // supervisor queue lists from this map) but a *running* Horizon holds
+        // the old list, so it must be restarted on deploy or extension jobs
+        // queue up with no consumer.
+        'extensions' => env('QUEUE_EXTENSIONS', 'extensions'),
     ],
 
     /*
@@ -184,8 +195,12 @@ return [
     | this map — see Illuminate\Support\Traits\ReadsClassAttributes. The
     | QueueTopologyTest asserts no job does that.
     |
+    | Extension jobs are the one deliberate exception: ExtensionJob pins its
+    | own queue in the constructor, because a package's job classes are not
+    | known here and must not be routable by editing this file.
+    |
     | Anything unrouted falls through to the default connection's queue
-    | (`standard`), which is what extension-provided jobs get.
+    | (`standard`).
     |
     */
 
@@ -248,7 +263,11 @@ return [
         ],
         'standard' => [
             'title' => 'Everything else',
-            'summary' => 'Unrouted work, including jobs dispatched by extensions.',
+            'summary' => 'Unrouted work that does not belong to a dedicated lane.',
+        ],
+        'extensions' => [
+            'title' => 'Extension jobs',
+            'summary' => 'Background work dispatched by installed extensions. Drained after every core lane.',
         ],
     ],
 
