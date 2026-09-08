@@ -404,18 +404,21 @@ Route::middleware([AdminSubject::class])->group(function () {
         // is inherited from the application-api stack wrapping this file; the
         // extensions.admin middleware adds a request-time defense-in-depth gate.
         //
-        // Only enabled extensions are require()'d: a disabled extension's route
-        // file — and therefore any top-level code in it — is never loaded, so
-        // disabling an extension makes its code fully inert, not just 404'd.
+        // Loading is driven by the declared capability rather than a
+        // filesystem glob, so a package that ships routes/admin.php without
+        // declaring capabilities.routes.admin is never require()'d. Only
+        // enabled extensions load: a disabled extension's route file — and
+        // therefore any top-level code in it — is never included, so disabling
+        // an extension makes its code fully inert, not just 404'd.
         //
         // Every route the file registers is audited immediately afterwards
         // (ExtensionRouteGuardService): a route that strips its inherited
         // middleware or loses the extensions.admin gate is dropped to a 404.
-        $enabledExtensionIds = Everest\Services\Extensions\ExtensionRuntimeGate::enabledExtensionIds();
+        $extensionPlan = app(Everest\Services\Extensions\ExtensionRuntimePlanService::class);
         $extensionRouteGuard = app(Everest\Services\Extensions\ExtensionRouteGuardService::class);
-        foreach ((glob(app_path('Extensions/Packages/*/routes/admin.php')) ?: []) as $extensionAdminRoutes) {
-            $extensionRouteId = basename(dirname(dirname($extensionAdminRoutes)));
-            if (!in_array($extensionRouteId, $enabledExtensionIds, true)) {
+        foreach ($extensionPlan->withCapability('routes.admin') as $extensionRouteId => $extensionEntry) {
+            $extensionAdminRoutes = app_path(sprintf('Extensions/Packages/%s/routes/admin.php', $extensionRouteId));
+            if (!is_file($extensionAdminRoutes)) {
                 continue;
             }
 

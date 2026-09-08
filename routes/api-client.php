@@ -403,32 +403,37 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             // List enabled extensions for this server
             Route::get('/', [Client\Extensions\ExtensionsController::class, 'index']);
 
-            // Extension-specific routes (must come before the wildcard route)
-            foreach ((glob(__DIR__ . '/extensions/client/*.php') ?: []) as $extensionRoutes) {
-                require $extensionRoutes;
-            }
-
-            // Package-contributed server routes. Only enabled extensions are
-            // require()'d, so a disabled extension's route file (and any
-            // top-level code in it) never loads — enabled state is enforced at
-            // load time, not just by request-time middleware.
+            // Package-contributed server routes.
             //
-            // Every route the file registers is audited immediately afterwards
-            // (ExtensionRouteGuardService): a route that strips inherited
-            // middleware via withoutMiddleware() is dropped to a 404.
-            $enabledExtensionIds = Everest\Services\Extensions\ExtensionRuntimeGate::enabledExtensionIds();
+            // Loading is driven by the declared capability, not by a filesystem
+            // glob: a package that ships routes/client.php without declaring
+            // capabilities.routes.client is rejected at install, and one that
+            // slipped through would still never be require()'d here. Only
+            // enabled extensions are loaded, so a disabled extension's route
+            // file — and any top-level code in it — never executes.
+            //
+            // The prefix and the access gate are BOTH loader-owned, derived
+            // from the package directory. A package therefore cannot choose its
+            // own URL namespace, claim another extension's, or remove its gate;
+            // ExtensionRouteGuardService audits every route the file registers
+            // and drops violations to a 404, and that verdict is baked into
+            // route:cache.
+            $extensionPlan = app(Everest\Services\Extensions\ExtensionRuntimePlanService::class);
             $extensionRouteGuard = app(Everest\Services\Extensions\ExtensionRouteGuardService::class);
-            foreach ((glob(app_path('Extensions/Packages/*/routes/client.php')) ?: []) as $extensionRoutes) {
-                $extensionRouteId = basename(dirname(dirname($extensionRoutes)));
-                if (!in_array($extensionRouteId, $enabledExtensionIds, true)) {
+            foreach ($extensionPlan->withCapability('routes.client') as $extensionRouteId => $extensionEntry) {
+                $extensionRoutes = app_path(sprintf('Extensions/Packages/%s/routes/client.php', $extensionRouteId));
+                if (!is_file($extensionRoutes)) {
                     continue;
                 }
 
                 $extensionRouteGuard->registerAndAudit(
                     $extensionRouteId,
-                    ['extensions.access:' . $extensionRouteId],
+                    ['extensions.access:' . $extensionRouteId, 'throttle:api.ext-client'],
                     function () use ($extensionRoutes, $extensionRouteId) {
-                        Route::middleware('extensions.access:' . $extensionRouteId)->group(function () use ($extensionRoutes) {
+                        Route::group([
+                            'prefix' => 'ext/' . $extensionRouteId,
+                            'middleware' => ['extensions.access:' . $extensionRouteId, 'throttle:api.ext-client'],
+                        ], function () use ($extensionRoutes) {
                             require $extensionRoutes;
                         });
                     }

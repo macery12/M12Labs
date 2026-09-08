@@ -33,22 +33,22 @@ class Kernel extends ConsoleKernel
     {
         $this->load(__DIR__ . '/Commands');
 
-        // Extension-contributed artisan commands. The glob is deliberately
+        // Extension-contributed artisan commands. Loading is deliberately
         // scoped to Console/Commands directories: a wholesale load() over
         // Extensions/Packages would autoload-include route/schedule files and
         // execute their top-level Route:: calls at command registration time.
         //
-        // Only enabled extensions are loaded, so a disabled extension's command
-        // classes are never registered — they do not appear in artisan and
-        // cannot be invoked at all until the extension is re-enabled.
-        $enabledExtensionIds = \Everest\Services\Extensions\ExtensionRuntimeGate::enabledExtensionIds();
-        foreach ((glob(app_path('Extensions/Packages/*/Console/Commands')) ?: []) as $extensionCommandDir) {
-            $extensionId = basename(dirname(dirname($extensionCommandDir)));
-            if (!in_array($extensionId, $enabledExtensionIds, true)) {
-                continue;
-            }
+        // Driven by the declared capability, so a package that ships command
+        // classes without declaring capabilities.commands never registers them.
+        // Only enabled extensions load, so a disabled extension's commands do
+        // not appear in artisan and cannot be invoked until it is re-enabled.
+        $extensionPlan = app(\Everest\Services\Extensions\ExtensionRuntimePlanService::class);
+        foreach (array_keys($extensionPlan->withCapability('commands')) as $extensionId) {
+            $extensionCommandDir = app_path(sprintf('Extensions/Packages/%s/Console/Commands', $extensionId));
 
-            $this->load($extensionCommandDir);
+            if (is_dir($extensionCommandDir)) {
+                $this->load($extensionCommandDir);
+            }
         }
     }
 

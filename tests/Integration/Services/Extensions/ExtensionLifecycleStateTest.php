@@ -7,6 +7,7 @@ use Everest\Models\ExtensionPackage;
 use Everest\Tests\Integration\IntegrationTestCase;
 use Everest\Services\Extensions\ExtensionRuntimeGate;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 
 /**
  * The lifecycle state is the authority on whether a package may load code.
@@ -38,6 +39,11 @@ class ExtensionLifecycleStateTest extends IntegrationTestCase
 
     private function package(string $id, string $state, int $manifestVersion, bool $enabled): ExtensionPackage
     {
+        // A realistic row: the runtime plan rehydrates the stored capability
+        // projection and checks it against capability_hash, so a fixture
+        // without one is (correctly) treated as inconsistent and never loads.
+        $capabilities = new ExtensionCapabilitySet(clientRoutes: true);
+
         $package = ExtensionPackage::create([
             'extension_id' => $id,
             'package_id' => $id,
@@ -46,6 +52,8 @@ class ExtensionLifecycleStateTest extends IntegrationTestCase
             'installed_version' => '1.0.0',
             'manifest' => ['manifestVersion' => $manifestVersion, 'extension' => ['id' => $id]],
             'manifest_version' => $manifestVersion,
+            'capabilities' => $capabilities->jsonSerialize(),
+            'capability_hash' => $capabilities->hash(),
             'state' => $state,
             'state_reason' => $state === 'unsupported' ? 'Built for manifest version 2.' : null,
         ]);
@@ -94,5 +102,32 @@ class ExtensionLifecycleStateTest extends IntegrationTestCase
         $this->package('ext_off', 'installed_disabled', 3, false);
 
         $this->assertNotContains('ext_off', ExtensionRuntimeGate::enabledExtensionIds());
+    }
+
+    /**
+     * The capability projection is denormalized from the manifest so the
+     * runtime plan stays a single cheap query. capability_hash is what keeps
+     * that duplication honest: a projection edited in the database no longer
+     * matches, and the package goes inert rather than running with privileges
+     * nobody approved.
+     */
+    public function testATamperedCapabilityProjectionMakesThePackageInert(): void
+    {
+        $package = $this->package('ext_tampered', 'enabled', 3, true);
+
+        $package->update([
+            'capabilities' => (new ExtensionCapabilitySet(clientRoutes: true, adminRoutes: true))->jsonSerialize(),
+        ]);
+        ExtensionRuntimeGate::flush();
+
+        $this->assertNotContains('ext_tampered', ExtensionRuntimeGate::enabledExtensionIds());
+    }
+
+    /** A v3 panel does not load a package built for an older manifest. */
+    public function testAPackageBelowManifestV3DoesNotLoadEvenWhenMarkedEnabled(): void
+    {
+        $this->package('ext_old', 'enabled', 2, true);
+
+        $this->assertNotContains('ext_old', ExtensionRuntimeGate::enabledExtensionIds());
     }
 }

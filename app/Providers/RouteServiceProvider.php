@@ -168,6 +168,27 @@ class RouteServiceProvider extends ServiceProvider
             )->by('ext-admin:' . $extensionId . ':' . $key);
         });
 
+        // Per-extension client budget, mirroring api.ext-admin. Keyed per user,
+        // per server AND per extension: a chatty extension page cannot exhaust
+        // the global client limit (which still applies on top), and one
+        // extension hitting its limit never 429s another on the same server.
+        RateLimiter::for('api.ext-client', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            $extensionId = preg_match('~extensions/ext/([^/]+)~', $request->path(), $matches) === 1
+                ? $matches[1]
+                : 'unknown';
+
+            $server = preg_match('~servers/([^/]+)~', $request->path(), $serverMatches) === 1
+                ? $serverMatches[1]
+                : 'unknown';
+
+            return Limit::perMinutes(
+                config('http.rate_limit.ext_client_period'),
+                config('http.rate_limit.ext_client')
+            )->by('ext-client:' . $extensionId . ':' . $server . ':' . $key);
+        });
+
         RateLimiter::for('file.diff', function (Request $request) {
             $key = optional($request->user())->uuid ?: $request->ip();
 

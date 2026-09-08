@@ -23,6 +23,11 @@ return [
         // extension, stacked inside the global application limit above.
         'ext_admin_period' => 1,
         'ext_admin' => env('APP_API_EXT_ADMIN_RATELIMIT', 60),
+        // Per-extension client budget. Higher than the admin one: a server
+        // extension page is user-facing and may poll, where an admin page is
+        // opened deliberately.
+        'ext_client_period' => 1,
+        'ext_client' => env('APP_API_EXT_CLIENT_RATELIMIT', 120),
 
         // File diffing is CPU work in the Panel process, so it has a tighter
         // per-user budget in addition to the global client API limiter.
