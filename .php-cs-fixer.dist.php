@@ -10,6 +10,13 @@ $finder = (new Finder())
         'node_modules',
         'storage',
         'bootstrap/cache',
+        // Installed extension packages. These are gitignored, but the finder
+        // walks the filesystem, so without this they are reformatted in place
+        // by a routine lint run. Every installed file's sha256 is recorded in
+        // `extension_package_files` and re-checked by ExtensionHealthService,
+        // so reformatting them reports the package as modified after install —
+        // and package source is the publisher's to format, not ours.
+        'app/Extensions/Packages',
     ])
     ->notName(['_ide_helper*']);
 

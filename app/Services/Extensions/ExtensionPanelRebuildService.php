@@ -33,6 +33,29 @@ class ExtensionPanelRebuildService
      */
     private const BUILD_LOCK = 'm12labs:extensions:build';
 
+    /**
+     * Compiled artifacts that must be discarded once a package's files change.
+     *
+     * Deliberately *not* `optimize:clear`, which also runs `cache:clear`. On a
+     * Redis cache store that is a `flushdb()`, and this rebuild always runs
+     * inside ExtensionOperationLockService::withinLock() — so clearing the
+     * cache here deletes the lifecycle lock, its context row, this service's
+     * own BUILD_LOCK, and the ExtensionQueueRegistry drain flag, all during the
+     * longest step of an install or uninstall. A second lifecycle operation
+     * could then start alongside this one, and a package being uninstalled
+     * would start accepting queued work again mid-uninstall.
+     *
+     * The cache holds no compiled artifact, so nothing here needs it cleared.
+     *
+     * @var array<int, array<int, string>>
+     */
+    private const CLEAR_COMMANDS = [
+        ['php', 'artisan', 'config:clear'],
+        ['php', 'artisan', 'route:clear'],
+        ['php', 'artisan', 'view:clear'],
+        ['php', 'artisan', 'event:clear'],
+    ];
+
     public function __construct(
         private ExtensionFilesystemOwnershipService $ownershipService,
     ) {
@@ -41,10 +64,9 @@ class ExtensionPanelRebuildService
     /**
      * Run the fixed rebuild hooks required after filesystem changes.
      *
-     * An optional callback receives the zero-based command index just before
-     * each command runs, allowing callers to report progress stages at the
-     * correct moment (e.g. 'optimizing' before optimize:clear, 'building'
-     * before the frontend build).
+     * An optional callback receives the zero-based stage index just before each
+     * stage runs, allowing callers to report progress at the correct moment:
+     * stage 0 clears the compiled artifacts, stage 1 builds the frontend.
      *
      * @return array<int, array{command: string, output: string, durationMs: int}>
      */
@@ -68,17 +90,19 @@ class ExtensionPanelRebuildService
      */
     private function runRebuild(string $reason, ?callable $onCommandStart): array
     {
-        $buildCommand = $this->getFrontendBuildCommand();
-        $commands = [
-            ['php', 'artisan', 'optimize:clear'],
-            $buildCommand,
+        // Two stages, not two commands: stage 0 clears several compiled
+        // artifacts. Callers map the stage index to a progress label, so the
+        // grouping keeps that contract while the clear step grew.
+        $stages = [
+            self::CLEAR_COMMANDS,
+            [$this->getFrontendBuildCommand()],
         ];
 
         $output = [];
         $environment = $this->getProcessEnvironment($reason);
         $snapshot = null;
 
-        foreach ($commands as $index => $command) {
+        foreach ($stages as $index => $commands) {
             if ($onCommandStart !== null) {
                 $onCommandStart($index);
             }
@@ -91,23 +115,25 @@ class ExtensionPanelRebuildService
                 $snapshot = $this->snapshotAssets();
             }
 
-            $startedAt = microtime(true);
-            $process = new Process($command, base_path(), $environment);
-            $process->setTimeout($index === 1 ? (float) config('extensions.build.timeout_seconds', 900) : 300.0);
-            $process->run();
-            $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+            foreach ($commands as $command) {
+                $startedAt = microtime(true);
+                $process = new Process($command, base_path(), $environment);
+                $process->setTimeout($index === 1 ? (float) config('extensions.build.timeout_seconds', 900) : 300.0);
+                $process->run();
+                $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
 
-            $combinedOutput = trim($process->getOutput() . "\n" . $process->getErrorOutput());
-            $output[] = [
-                'command' => implode(' ', $command),
-                'output' => $combinedOutput,
-                'durationMs' => $durationMs,
-            ];
+                $combinedOutput = trim($process->getOutput() . "\n" . $process->getErrorOutput());
+                $output[] = [
+                    'command' => implode(' ', $command),
+                    'output' => $combinedOutput,
+                    'durationMs' => $durationMs,
+                ];
 
-            if (!$process->isSuccessful()) {
-                $this->restoreAssets($snapshot);
+                if (!$process->isSuccessful()) {
+                    $this->restoreAssets($snapshot);
 
-                throw new DisplayException(sprintf('M12Labs rebuild failed while running "%s".', implode(' ', $command)), new \RuntimeException($combinedOutput));
+                    throw new DisplayException(sprintf('M12Labs rebuild failed while running "%s".', implode(' ', $command)), new \RuntimeException($combinedOutput));
+                }
             }
         }
 
