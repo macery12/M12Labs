@@ -31,6 +31,7 @@ class ExtensionPackageUpdateService
         private ExtensionJobDrainService $drainService,
         private ExtensionPageManifestService $pageManifestService,
         private ExtensionSignatureService $signatureService,
+        private ExtensionFrontendImportScanner $importScanner,
     ) {
     }
 
@@ -659,6 +660,11 @@ class ExtensionPackageUpdateService
                 'backupChecksum' => $backupChecksum,
             ];
         }
+
+        // Checked on update as well as install: a package that shipped a clean
+        // release once can reach into panel internals in the next one, and an
+        // update is the path that would carry it in.
+        $this->importScanner->assertOnlySdkImports($plans);
 
         return $plans;
     }

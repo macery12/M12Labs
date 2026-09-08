@@ -2,7 +2,6 @@
 
 namespace Everest\Tests\Integration\Extensions\CustomDomains;
 
-use Illuminate\Support\Facades\DB;
 use Everest\Models\ExtensionConfig;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
@@ -39,14 +38,35 @@ class CustomDomainProvisioningTest extends IntegrationTestCase
 
     public function beginDatabaseTransaction(): void
     {
-        $this->createPackageTables();
+        // Nothing to build when the package is absent; setUp() then skips.
+        if (self::packageInstalled()) {
+            $this->createPackageTables();
+        }
+
         $this->beginTransactionFromTrait();
+    }
+
+    /**
+     * These exercise the installed package's own classes, which live under
+     * app/Extensions/Packages/ — a runtime artifact the installer writes, not
+     * tracked source. With custom_domains uninstalled there is nothing to test,
+     * and failing would report an absent optional package as a broken panel.
+     *
+     * The package is where these belong long-term; they live here because the
+     * extensions repository has no PHP test harness.
+     */
+    private static function packageInstalled(): bool
+    {
+        return is_file(base_path('app/Extensions/Packages/custom_domains/Services/PackageSettings.php'));
     }
 
     public function setUp(): void
     {
         parent::setUp();
 
+        if (!self::packageInstalled()) {
+            $this->markTestSkipped('The custom_domains package is not installed on this panel.');
+        }
 
         // The package reads its Cloudflare settings from extension_configs, so
         // point it at a base URL the fake owns and reset the request cache.
@@ -69,7 +89,11 @@ class CustomDomainProvisioningTest extends IntegrationTestCase
 
     protected function tearDown(): void
     {
-        PackageSettings::flush();
+        // tearDown() still runs after a skip, and the class is gone with the
+        // package — so this must be guarded too.
+        if (self::packageInstalled()) {
+            PackageSettings::flush();
+        }
 
         parent::tearDown();
     }

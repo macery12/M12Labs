@@ -27,6 +27,7 @@ class ExtensionPackageInstallService
         private ExtensionPermissionRegistry $permissionRegistry,
         private ExtensionPageManifestService $pageManifestService,
         private ExtensionSignatureService $signatureService,
+        private ExtensionFrontendImportScanner $importScanner,
     ) {
     }
 
@@ -576,6 +577,11 @@ class ExtensionPackageInstallService
                 'backupChecksum' => $backupChecksum,
             ];
         }
+
+        // Every shipped frontend file is on disk and checksum-verified by now, so
+        // this is the first point at which what will actually be installed can be
+        // read. Before applying any of it.
+        $this->importScanner->assertOnlySdkImports($plans);
 
         return $plans;
     }
