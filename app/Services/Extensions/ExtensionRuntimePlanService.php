@@ -249,6 +249,18 @@ class ExtensionRuntimePlanService
         return in_array($state, ['verified', 'unsigned_acknowledged'], true);
     }
 
+    /**
+     * Rebuild a capability set from a stored projection.
+     *
+     * Public because the update service diffs a new release against the
+     * currently-installed set: the stored projection is the only record of what
+     * an administrator previously approved.
+     */
+    public function hydrateCapabilities($capabilities): ?ExtensionCapabilitySet
+    {
+        return $this->hydrate($capabilities);
+    }
+
     private function hydrate($capabilities): ?ExtensionCapabilitySet
     {
         if (!is_array($capabilities)) {

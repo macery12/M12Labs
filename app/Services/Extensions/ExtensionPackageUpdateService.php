@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
 use Everest\Services\Extensions\Manifest\ExtensionManifest;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilityDiff;
+use Everest\Exceptions\Service\Extension\CapabilityApprovalRequiredException;
 
 class ExtensionPackageUpdateService
 {
@@ -22,18 +24,19 @@ class ExtensionPackageUpdateService
         private ExtensionPackageArtifactService $artifactService,
         private ExtensionPackageFileService $fileService,
         private ExtensionMigrationService $migrationService,
+        private ExtensionRuntimePlanService $planService,
     ) {
     }
 
     /**
      * Update an extension from a configured repository.
      */
-    public function update(string $extensionId, int $repositoryId, ?string $version = null): ExtensionPackage
+    public function update(string $extensionId, int $repositoryId, ?string $version = null, ?string $approvedCapabilityHash = null): ExtensionPackage
     {
-        return $this->operationLockService->withinLock('update', $extensionId, function () use ($extensionId, $repositoryId, $version) {
+        return $this->operationLockService->withinLock('update', $extensionId, function () use ($extensionId, $repositoryId, $version, $approvedCapabilityHash) {
             $prepared = null;
             try {
-                $prepared = $this->prepareUpdate($extensionId, $repositoryId, $version);
+                $prepared = $this->prepareUpdate($extensionId, $repositoryId, $version, $approvedCapabilityHash);
 
                 $this->rebuildService->rebuild(
                     sprintf('Update extension %s', $prepared['extensionId']),
@@ -75,15 +78,16 @@ class ExtensionPackageUpdateService
     /**
      * Update an extension from a local .M12LabsExtension archive.
      */
-    public function updateFromArchive(string $archivePath, ?string $sourceLabel = null): ExtensionPackage
+    public function updateFromArchive(string $archivePath, ?string $sourceLabel = null, ?string $approvedCapabilityHash = null): ExtensionPackage
     {
         $resolvedPath = $this->artifactService->resolveArchivePath($archivePath);
         $this->assertSupportedArchiveArtifact($resolvedPath);
 
-        return $this->operationLockService->withinLock('update', basename($resolvedPath), function () use ($resolvedPath, $sourceLabel) {
+        return $this->operationLockService->withinLock('update', basename($resolvedPath), function () use ($resolvedPath, $sourceLabel, $approvedCapabilityHash) {
             $prepared = null;
             try {
                 $prepared = $this->performUpdateFileOps(
+                    approvedCapabilityHash: $approvedCapabilityHash,
                     archiveLocation: $resolvedPath,
                     extensionId: null,
                     expectedVersion: null,
@@ -143,12 +147,13 @@ class ExtensionPackageUpdateService
      *
      * @return array<string, mixed> opaque prepared state; pass to finalizeUpdate() and rollbackUpdate()
      */
-    public function prepareUpdate(string $extensionId, int $repositoryId, ?string $version = null): array
+    public function prepareUpdate(string $extensionId, int $repositoryId, ?string $version = null, ?string $approvedCapabilityHash = null): array
     {
         $package = $this->catalogService->findRepositoryPackage($extensionId, $repositoryId, $version);
         $release = $package['latestRelease'];
 
         return $this->performUpdateFileOps(
+            approvedCapabilityHash: $approvedCapabilityHash,
             archiveLocation: $release['archiveUrl'],
             extensionId: $extensionId,
             expectedVersion: $release['version'],
@@ -301,6 +306,7 @@ class ExtensionPackageUpdateService
      * @return array<string, mixed>
      */
     private function performUpdateFileOps(
+        ?string $approvedCapabilityHash,
         string $archiveLocation,
         ?string $extensionId,
         ?string $expectedVersion,
@@ -350,6 +356,7 @@ class ExtensionPackageUpdateService
 
             $this->artifactService->assertCompatiblePanelVersions($compatiblePanelVersions);
             $this->artifactService->assertCompatiblePanelVersions($parsedManifest->compatiblePanelVersions);
+            $this->assertCapabilitiesApproved($existingPackage, $parsedManifest, $approvedCapabilityHash);
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
 
             $this->fileService->assertFilesUnmodified($existingPackage->files->all(), 'updated');
@@ -427,6 +434,34 @@ class ExtensionPackageUpdateService
 
             throw new DisplayException('Failed to prepare the extension package for update.', $exception);
         }
+    }
+
+    /**
+     * An update must never silently widen what a package can do.
+     *
+     * The diff is taken against the capabilities currently installed, so a
+     * release that only narrows or keeps them proceeds untouched; one that adds
+     * a permission, hook, queue, secret, command, table, migration or schedule
+     * needs the administrator to consent to that specific set. The stored
+     * projection is the record of what was previously approved.
+     */
+    private function assertCapabilitiesApproved(ExtensionPackage $existingPackage, ExtensionManifest $manifest, ?string $approvedCapabilityHash): void
+    {
+        $installed = is_array($existingPackage->capabilities)
+            ? $this->planService->hydrateCapabilities($existingPackage->capabilities)
+            : null;
+
+        $diff = ExtensionCapabilityDiff::between($installed, $manifest->capabilities);
+
+        if (!$diff->isEscalation()) {
+            return;
+        }
+
+        if ($approvedCapabilityHash !== null && hash_equals($diff->hash, $approvedCapabilityHash)) {
+            return;
+        }
+
+        throw new CapabilityApprovalRequiredException($manifest->id, $diff);
     }
 
     /**

@@ -9,6 +9,8 @@ import {
     type EggOption,
     updateExtension,
     installExtension,
+    CapabilityApprovalRequired,
+    type CapabilityDiff,
     updateExtensionPackage,
     uninstallExtension,
 } from '@/api/extensions';
@@ -18,6 +20,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
 import { cn } from '@/lib/cn';
 import { resolveExtensionIcon, extensionTone, toneVar, toneLabelKey } from './extMeta';
+import { CapabilityApprovalModal } from './CapabilityApprovalModal';
 import { DatabaseChangesModal } from './DatabaseChangesModal';
 import type { DatabasePlanOperation } from '@/api/extensions';
 
@@ -74,24 +77,46 @@ export function ExtensionManageDrawer({
         onError: fail,
     });
 
+    // An install or update whose privileges have not been approved comes back
+    // as a refusal carrying the diff, computed from the verified manifest.
+    // Records which operation raised it, so consenting retries that one rather
+    // than guessing from mutation state.
+    const [pendingApproval, setPendingApproval] = useState<{ operation: 'install' | 'update'; diff: CapabilityDiff } | null>(
+        null,
+    );
+
+    const approvalAware =
+        (operation: 'install' | 'update', onOther: (error: unknown) => void) =>
+        (error: unknown) => {
+            if (error instanceof CapabilityApprovalRequired) {
+                setPendingApproval({ operation, diff: error.diff });
+                return;
+            }
+            onOther(error);
+        };
+
     const install = useMutation({
-        mutationFn: () => installExtension(ext!.id, ext!.source.repositoryId!, ext!.latestVersion),
+        mutationFn: (approvedCapabilityHash?: string) =>
+            installExtension(ext!.id, ext!.source.repositoryId!, ext!.latestVersion, approvedCapabilityHash),
         onSuccess: e => {
+            setPendingApproval(null);
             push({ type: 'success', message: m['extensions.toast.installed']({ name: e.name }) });
             invalidate();
             onClose();
         },
-        onError: fail,
+        onError: approvalAware('install', fail),
     });
 
     const updatePkg = useMutation({
-        mutationFn: () => updateExtensionPackage(ext!.id, ext!.source.repositoryId!, ext!.latestVersion),
+        mutationFn: (approvedCapabilityHash?: string) =>
+            updateExtensionPackage(ext!.id, ext!.source.repositoryId!, ext!.latestVersion, approvedCapabilityHash),
         onSuccess: e => {
+            setPendingApproval(null);
             push({ type: 'success', message: m['extensions.toast.updated']({ name: e.name }) });
             invalidate();
             onClose();
         },
-        onError: fail,
+        onError: approvalAware('update', fail),
     });
 
     const remove = useMutation({
@@ -450,9 +475,26 @@ export function ExtensionManageDrawer({
                         ]}
                         onClose={() => setDbModal(null)}
                         onConfirm={drops => {
-                            if (dbModal === 'install') install.mutate();
-                            else if (dbModal === 'update') updatePkg.mutate();
+                            if (dbModal === 'install') install.mutate(undefined);
+                            else if (dbModal === 'update') updatePkg.mutate(undefined);
                             else remove.mutate({ dropData: drops.length > 0, confirm: drops[0]?.confirm });
+                        }}
+                    />
+                )}
+
+                {/* Consent step for privileges the release asks for. Approving
+                    retries the same operation with the hash, which changes
+                    whenever the capabilities do. */}
+                {pendingApproval && (
+                    <CapabilityApprovalModal
+                        open
+                        extensionName={e.name}
+                        diff={pendingApproval.diff}
+                        busy={install.isPending || updatePkg.isPending}
+                        onClose={() => setPendingApproval(null)}
+                        onApprove={hash => {
+                            if (pendingApproval.operation === 'install') install.mutate(hash);
+                            else updatePkg.mutate(hash);
                         }}
                     />
                 )}

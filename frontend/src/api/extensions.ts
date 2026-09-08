@@ -183,16 +183,83 @@ export async function toggleExtension(id: string): Promise<Extension> {
     return data.attributes as Extension;
 }
 
+// The privileges a release asks for, relative to what is installed. Returned
+// by a 409 when an install or update would grant something not yet approved.
+export interface CapabilityDiff {
+    added: string[];
+    removed: string[];
+    // The subset of `added` that actually widens reach — routes, permissions,
+    // hooks, queues, secrets, commands, tables, migrations, schedules. Adding a
+    // page or a setting is reported but grants nothing new.
+    escalations: string[];
+    isEscalation: boolean;
+    // Consent token. Sent back with the retried request; it changes whenever
+    // the capabilities do, so an approval cannot transfer to a different set.
+    hash: string;
+}
+
+export class CapabilityApprovalRequired extends Error {
+    constructor(
+        public readonly extensionId: string,
+        public readonly diff: CapabilityDiff,
+    ) {
+        super('This package requests capabilities that have not been approved.');
+        this.name = 'CapabilityApprovalRequired';
+    }
+}
+
+// The panel computes the diff from the VERIFIED manifest, so it can only answer
+// after downloading and checking the archive — which is why approval is a 409
+// on the real request rather than a separate preflight endpoint.
+function rethrowCapabilityApproval(error: unknown): never {
+    const response = (error as { response?: { status?: number; data?: Record<string, unknown> } }).response;
+
+    if (response?.status === 409 && response.data?.capability_diff) {
+        throw new CapabilityApprovalRequired(
+            String(response.data.extension_id ?? ''),
+            response.data.capability_diff as CapabilityDiff,
+        );
+    }
+
+    throw error;
+}
+
 // POST /extensions/{id}/install — install a repository-backed package.
-export async function installExtension(id: string, repositoryId: number, version?: string): Promise<Extension> {
-    const { data } = await http.post(`${BASE}/${id}/install`, { repository_id: repositoryId, version });
-    return data.attributes as Extension;
+export async function installExtension(
+    id: string,
+    repositoryId: number,
+    version?: string,
+    approvedCapabilityHash?: string,
+): Promise<Extension> {
+    try {
+        const { data } = await http.post(`${BASE}/${id}/install`, {
+            repository_id: repositoryId,
+            version,
+            approved_capability_hash: approvedCapabilityHash,
+        });
+        return data.attributes as Extension;
+    } catch (error) {
+        rethrowCapabilityApproval(error);
+    }
 }
 
 // POST /extensions/{id}/update-package — update an installed package to a newer version.
-export async function updateExtensionPackage(id: string, repositoryId: number, version?: string): Promise<Extension> {
-    const { data } = await http.post(`${BASE}/${id}/update-package`, { repository_id: repositoryId, version });
-    return data.attributes as Extension;
+export async function updateExtensionPackage(
+    id: string,
+    repositoryId: number,
+    version?: string,
+    approvedCapabilityHash?: string,
+): Promise<Extension> {
+    try {
+        const { data } = await http.post(`${BASE}/${id}/update-package`, {
+            repository_id: repositoryId,
+            version,
+            approved_capability_hash: approvedCapabilityHash,
+        });
+        return data.attributes as Extension;
+    } catch (error) {
+        rethrowCapabilityApproval(error);
+    }
 }
 
 export interface UninstallResult {

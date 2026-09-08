@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
 use Everest\Services\Extensions\Manifest\ExtensionManifest;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilityDiff;
+use Everest\Exceptions\Service\Extension\CapabilityApprovalRequiredException;
 
 class ExtensionPackageInstallService
 {
@@ -25,12 +27,12 @@ class ExtensionPackageInstallService
     ) {
     }
 
-    public function install(string $extensionId, int $repositoryId, ?string $version = null): ExtensionPackage
+    public function install(string $extensionId, int $repositoryId, ?string $version = null, ?string $approvedCapabilityHash = null): ExtensionPackage
     {
-        return $this->operationLockService->withinLock('install', $extensionId, function () use ($extensionId, $repositoryId, $version) {
+        return $this->operationLockService->withinLock('install', $extensionId, function () use ($extensionId, $repositoryId, $version, $approvedCapabilityHash) {
             $prepared = null;
             try {
-                $prepared = $this->prepareInstall($extensionId, $repositoryId, $version);
+                $prepared = $this->prepareInstall($extensionId, $repositoryId, $version, $approvedCapabilityHash);
 
                 $this->rebuildService->rebuild(
                     sprintf('Install extension %s', $prepared['extensionId']),
@@ -68,15 +70,16 @@ class ExtensionPackageInstallService
         });
     }
 
-    public function installFromArchive(string $archivePath, ?string $sourceLabel = null): ExtensionPackage
+    public function installFromArchive(string $archivePath, ?string $sourceLabel = null, ?string $approvedCapabilityHash = null): ExtensionPackage
     {
         $resolvedArchivePath = $this->artifactService->resolveArchivePath($archivePath);
         $this->assertSupportedArchiveArtifact($resolvedArchivePath);
 
-        return $this->operationLockService->withinLock('install', basename($resolvedArchivePath), function () use ($resolvedArchivePath, $sourceLabel) {
+        return $this->operationLockService->withinLock('install', basename($resolvedArchivePath), function () use ($resolvedArchivePath, $sourceLabel, $approvedCapabilityHash) {
             $prepared = null;
             try {
                 $prepared = $this->performInstallFileOps(
+                    approvedCapabilityHash: $approvedCapabilityHash,
                     archiveLocation: $resolvedArchivePath,
                     expectedExtensionId: null,
                     expectedVersion: null,
@@ -135,12 +138,13 @@ class ExtensionPackageInstallService
      *
      * @return array<string, mixed> opaque prepared state; pass to finalizeInstall() and rollbackInstall()
      */
-    public function prepareInstall(string $extensionId, int $repositoryId, ?string $version = null): array
+    public function prepareInstall(string $extensionId, int $repositoryId, ?string $version = null, ?string $approvedCapabilityHash = null): array
     {
         $package = $this->catalogService->findRepositoryPackage($extensionId, $repositoryId, $version);
         $release = $package['latestRelease'];
 
         return $this->performInstallFileOps(
+            approvedCapabilityHash: $approvedCapabilityHash,
             archiveLocation: $release['archiveUrl'],
             expectedExtensionId: $extensionId,
             expectedVersion: $release['version'],
@@ -226,6 +230,7 @@ class ExtensionPackageInstallService
      * @return array<string, mixed>
      */
     private function performInstallFileOps(
+        ?string $approvedCapabilityHash,
         string $archiveLocation,
         ?string $expectedExtensionId,
         ?string $expectedVersion,
@@ -265,6 +270,7 @@ class ExtensionPackageInstallService
             $backupRoot = storage_path('app/extensions/backups/' . $extensionId . '/' . Str::uuid()->toString());
 
             $this->assertExtensionNotInstalled($extensionId);
+            $this->assertCapabilitiesApproved($extensionId, $parsedManifest, $approvedCapabilityHash);
             // Compatibility is enforced only for repository fetches. A manual
             // package upload (sourceRepositoryId === null) is an explicit operator
             // action and is trusted to run whatever it ships, so we never block it
@@ -441,6 +447,29 @@ class ExtensionPackageInstallService
         if (!Str::endsWith(Str::lower($archivePath), ['.m12labsextension', '.zip'])) {
             throw new DisplayException('Manual installs expect a .M12LabsExtension package file. Legacy .zip artifacts are still supported for compatibility.');
         }
+    }
+
+    /**
+     * An install grants every privilege the package declares, so it always
+     * requires explicit consent.
+     *
+     * The diff is computed from the verified manifest rather than from registry
+     * metadata — which is why the archive is downloaded and checked first, and
+     * why this runs before a single file is copied.
+     */
+    private function assertCapabilitiesApproved(string $extensionId, ExtensionManifest $manifest, ?string $approvedCapabilityHash): void
+    {
+        $diff = ExtensionCapabilityDiff::between(null, $manifest->capabilities);
+
+        if (!$diff->isEscalation()) {
+            return;
+        }
+
+        if ($approvedCapabilityHash !== null && hash_equals($diff->hash, $approvedCapabilityHash)) {
+            return;
+        }
+
+        throw new CapabilityApprovalRequiredException($extensionId, $diff);
     }
 
     /**

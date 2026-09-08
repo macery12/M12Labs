@@ -13,12 +13,15 @@ import {
     refreshCatalog,
     toggleExtension,
     installExtension,
+    CapabilityApprovalRequired,
+    type CapabilityDiff,
     batchInstallExtensions,
     batchUninstallExtensions,
     batchUpdateExtensions,
 } from '@/api/extensions';
 import { BatchActionBar } from './BatchActionBar';
 import { DatabaseChangesModal, type DbModalExtension } from './DatabaseChangesModal';
+import { CapabilityApprovalModal } from './CapabilityApprovalModal';
 import { Spinner } from '@/components/ui/Spinner';
 import { Input } from '@/components/ui/Input';
 import { useFlashes } from '@/state/flashes';
@@ -143,13 +146,27 @@ export default function ExtensionsOverviewPage() {
         onError: reportError,
     });
 
+    // Privileges a release asks for, surfaced when the backend refuses an
+    // unapproved install. The panel computes the diff from the verified
+    // manifest, so it can only answer once the archive has been fetched and
+    // checked — hence a 409 on the real request rather than a preflight.
+    const [pendingApproval, setPendingApproval] = useState<{ ext: Extension; diff: CapabilityDiff } | null>(null);
+
     const install = useMutation({
-        mutationFn: (ext: Extension) => installExtension(ext.id, ext.source.repositoryId!, ext.latestVersion),
+        mutationFn: ({ ext, approvedCapabilityHash }: { ext: Extension; approvedCapabilityHash?: string }) =>
+            installExtension(ext.id, ext.source.repositoryId!, ext.latestVersion, approvedCapabilityHash),
         onSuccess: e => {
+            setPendingApproval(null);
             push({ type: 'success', message: m['extensions.toast.installed']({ name: e.name }) });
             qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
         },
-        onError: reportError,
+        onError: (error, variables) => {
+            if (error instanceof CapabilityApprovalRequired) {
+                setPendingApproval({ ext: variables.ext, diff: error.diff });
+                return;
+            }
+            reportError(error);
+        },
     });
 
     const refresh = useMutation({
@@ -287,7 +304,7 @@ export default function ExtensionsOverviewPage() {
     ];
 
     const togglingId = toggle.isPending ? toggle.variables?.id : undefined;
-    const installingId = install.isPending ? install.variables?.id : undefined;
+    const installingId = install.isPending ? install.variables?.ext.id : undefined;
 
     // Drop selections for extensions that fell out of the catalog (e.g. after an
     // uninstall) so the batch bar never acts on stale ids.
@@ -526,6 +543,20 @@ export default function ExtensionsOverviewPage() {
                 }}
             />
 
+            {/* Raised when the backend refuses an install whose privileges have
+                not been approved. Approving re-submits the same request with
+                the consent hash, which changes whenever the capabilities do. */}
+            {pendingApproval && (
+                <CapabilityApprovalModal
+                    open
+                    extensionName={pendingApproval.ext.name}
+                    diff={pendingApproval.diff}
+                    busy={install.isPending}
+                    onClose={() => setPendingApproval(null)}
+                    onApprove={hash => install.mutate({ ext: pendingApproval.ext, approvedCapabilityHash: hash })}
+                />
+            )}
+
             {batchModal && (
                 <DatabaseChangesModal
                     open
@@ -559,7 +590,7 @@ export default function ExtensionsOverviewPage() {
                     ]}
                     onClose={() => setRowInstall(null)}
                     onConfirm={() => {
-                        install.mutate(rowInstall);
+                        install.mutate({ ext: rowInstall });
                         setRowInstall(null);
                     }}
                 />

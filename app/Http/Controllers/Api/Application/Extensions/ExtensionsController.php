@@ -232,10 +232,13 @@ class ExtensionsController extends ApplicationApiController
     {
         $this->abortIfOperationRunning();
 
+        // A missing or stale approval hash raises CapabilityApprovalRequired,
+        // which renders the diff as a 409 for the client to consent to.
         $package = $this->installService->install(
             $extensionId,
             (int) $request->input('repository_id'),
-            $request->input('version')
+            $request->input('version'),
+            $request->input('approved_capability_hash')
         );
 
         Activity::event('admin:extensions:install')
@@ -324,7 +327,8 @@ class ExtensionsController extends ApplicationApiController
         $package = $this->updateService->update(
             $extensionId,
             (int) $request->input('repository_id'),
-            $request->input('version')
+            $request->input('version'),
+            $request->input('approved_capability_hash')
         );
 
         Activity::event('admin:extensions:update-package')
@@ -332,6 +336,11 @@ class ExtensionsController extends ApplicationApiController
             ->property('version', $package->installed_version)
             ->property('repository', $package->source_repository_name)
             ->log();
+
+        // An update can change which routes a package registers, and the route
+        // table may be cached. This was missing here while every other
+        // lifecycle action flushed it.
+        $this->flushExtensionRouteCache();
 
         return new JsonResponse([
             'object' => 'extension',
