@@ -35,11 +35,13 @@ export {
 
 export { ExtensionErrorBoundary, ExtensionSuspense, withExtensionIsolation } from './ExtensionErrorBoundary';
 
+export { notify, extensionErrorMessage, type NotifyTone } from './notify';
+
 // Approved UI primitives. Packages must use these (and the theme CSS variables)
 // rather than importing panel components directly or shipping global CSS, so a
 // package stays consistent across themes and cannot restyle the panel.
 export { Button } from '@/components/ui/Button';
-export { Input } from '@/components/ui/Input';
+export { Input, Field } from '@/components/ui/Input';
 export { Textarea } from '@/components/ui/Textarea';
 export { Select } from '@/components/ui/Select';
 export { Switch } from '@/components/ui/Switch';
@@ -48,3 +50,10 @@ export { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 export { Panel } from '@/components/ui/Panel';
 export { Spinner } from '@/components/ui/Spinner';
 export { CopyField } from '@/components/ui/CopyField';
+export { HelpButton, HelpSteps } from '@/components/ui/HelpButton';
+
+// Tailwind class composition. Extension pages are inside the panel's Vite build
+// and its Tailwind source globs cover them, so they style with the same
+// utilities and theme variables core does. Handing them the panel's own merge
+// helper stops each package bundling its own clsx/tailwind-merge copy.
+export { cn } from '@/lib/cn';

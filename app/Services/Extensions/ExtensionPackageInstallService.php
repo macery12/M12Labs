@@ -394,6 +394,12 @@ class ExtensionPackageInstallService
             'manifest_version' => ExtensionManifest::VERSION,
             'capabilities' => $parsedManifest->capabilities->jsonSerialize(),
             'capability_hash' => $parsedManifest->capabilities->hash(),
+            // What the operator actually approved, recorded rather than merely
+            // checked. Install asserted it a moment ago and then dropped it,
+            // which left every fresh install with no approval on record — so the
+            // package's first update re-asked for privileges it had already been
+            // granted, and the panel could not answer what was consented to.
+            'approved_capability_hash' => $parsedManifest->capabilities->hash(),
             'manifest_hash' => $parsedManifest->hash(),
             'publisher' => $parsedManifest->publisher,
             'signature_state' => $signature['state'],
