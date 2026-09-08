@@ -31,7 +31,8 @@ class ExtensionPermission extends Model
         'identifier' => 'required|string|max:191',
         'label_key' => 'required|string|max:191',
         'description_key' => 'nullable|string|max:191',
-        'dangerous' => 'required|boolean',
+        // Column default; the model validates before the insert applies it.
+        'dangerous' => 'sometimes|boolean',
         'approved_at' => 'nullable|date',
         'approved_by' => 'nullable|integer',
         'suspended_at' => 'nullable|date',

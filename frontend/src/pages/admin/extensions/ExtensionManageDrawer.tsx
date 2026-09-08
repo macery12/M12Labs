@@ -22,6 +22,7 @@ import { cn } from '@/lib/cn';
 import { resolveExtensionIcon, extensionTone, toneVar, toneLabelKey } from './extMeta';
 import { CapabilityApprovalModal } from './CapabilityApprovalModal';
 import { ExtensionSecretsPanel } from './ExtensionSecretsPanel';
+import { ExtensionHealthPanel, ExtensionHealthIcon } from './ExtensionHealthPanel';
 import { DatabaseChangesModal } from './DatabaseChangesModal';
 import type { DatabasePlanOperation } from '@/api/extensions';
 
@@ -322,6 +323,11 @@ export function ExtensionManageDrawer({
                                         ))}
                                     </div>
                                 )}
+                            </Section>
+
+                            {/* diagnostics — computed on read, see ExtensionHealthPanel */}
+                            <Section icon={ExtensionHealthIcon} title={m['extensions.health.title']()}>
+                                <ExtensionHealthPanel extensionId={e.id} />
                             </Section>
 
                             {/* credentials — write-only; see ExtensionSecretsPanel */}

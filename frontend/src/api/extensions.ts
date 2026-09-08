@@ -315,6 +315,66 @@ export interface DatabasePlan {
     roleAssignments?: number;
 }
 
+// Computed runtime state for one extension. Nothing here is stored: it is
+// derived on read from the package row, the capability tables, the migration
+// log and the built asset manifest.
+export interface ExtensionHealth {
+    id: string;
+    installed: boolean;
+    version?: string;
+    state?: string;
+    stateReason?: string | null;
+    manifestVersion?: number;
+    // An extension can be enabled and still not load — loading also needs an
+    // executable state, an intact capability projection and an acceptable
+    // signature. This is the field that says which.
+    loadable?: boolean;
+    signature?: {
+        state: string;
+        keyId: string | null;
+        verifiedAt: string | null;
+        enforced: boolean;
+    };
+    capabilities?: Record<string, unknown>;
+    integrity?: {
+        trackedFiles: number;
+        missingFiles: string[];
+        modifiedFiles: string[];
+        capabilityProjectionMatches: boolean;
+    };
+    database?: { tablePrefix: string; tables: string[]; ranMigrations: string[] };
+    permissions?: { declared: number; pendingApproval: number; suspended: number; identifiers: string[] };
+    queues?: {
+        byStatus: Record<string, number>;
+        lastFailure: { jobClass: string; queue: string; at: string | null; error: string | null } | null;
+    };
+    hooks?: Array<{
+        event: string;
+        handler: string;
+        invocations: number;
+        failures: number;
+        consecutiveFailures: number;
+        averageMs: number;
+        breakerOpen: boolean;
+        quarantined: boolean;
+        lastError: string | null;
+    }>;
+    secrets?: Array<{ key: string; configured: boolean; version: number; updatedAt: string | null }>;
+    assets?: { built: boolean; entries: number };
+}
+
+// GET /extensions/{id}/health
+export async function getExtensionHealth(id: string): Promise<ExtensionHealth> {
+    const { data } = await http.get(`${BASE}/${id}/health`);
+    return data.attributes as ExtensionHealth;
+}
+
+// GET /extensions/{id}/health/export — the same report, redacted for sharing.
+export async function getExtensionHealthExport(id: string): Promise<unknown> {
+    const { data } = await http.get(`${BASE}/${id}/health/export`);
+    return data;
+}
+
 // Metadata for one declared credential. The value is never returned — the API
 // only says whether something is stored and when it last changed.
 export interface ExtensionSecret {

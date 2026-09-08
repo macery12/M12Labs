@@ -448,6 +448,13 @@ Route::middleware([AdminSubject::class])->group(function () {
         // configured and when it changed, never what it holds. Writes are
         // blind, and an empty body means "unchanged" so an unrelated save
         // cannot wipe a working credential.
+        // Health is computed on read from the package row, the capability
+        // tables, the migration log and the built asset manifest — there is no
+        // health table to drift. The export is the same report, redacted so an
+        // operator can paste it into a support thread.
+        Route::get('/{extensionId}/health', [Application\Extensions\ExtensionsController::class, 'health']);
+        Route::get('/{extensionId}/health/export', [Application\Extensions\ExtensionsController::class, 'exportHealth']);
+
         Route::get('/{extensionId}/secrets', [Application\Extensions\ExtensionSecretsController::class, 'index']);
         Route::put('/{extensionId}/secrets/{key}', [Application\Extensions\ExtensionSecretsController::class, 'update']);
         Route::delete('/{extensionId}/secrets/{key}', [Application\Extensions\ExtensionSecretsController::class, 'destroy']);

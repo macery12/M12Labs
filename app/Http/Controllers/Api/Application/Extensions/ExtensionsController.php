@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Everest\Models\ExtensionConfig;
 use Everest\Models\ExtensionPackage;
 use Everest\Models\ExtensionRepository;
+use Everest\Services\Extensions\ExtensionHealthService;
 use Everest\Services\Extensions\ExtensionCatalogService;
 use Everest\Services\Extensions\ExtensionSettingsValidator;
 use Everest\Services\Extensions\ExtensionPermissionRegistry;
@@ -50,6 +51,7 @@ class ExtensionsController extends ApplicationApiController
         private ExtensionDatabasePlanService $databasePlanService,
         private ExtensionPermissionRegistry $permissionRegistry,
         private ExtensionSettingsValidator $settingsValidator,
+        private ExtensionHealthService $healthService,
     ) {
         parent::__construct();
     }
@@ -325,6 +327,31 @@ class ExtensionsController extends ApplicationApiController
     }
 
     /**
+     * The computed runtime state of one extension.
+     *
+     * Answers the question the admin page could not: an extension can read as
+     * enabled and still not load, because loading also requires an executable
+     * lifecycle state, an intact capability projection and an acceptable
+     * signature. This says which of those is failing.
+     */
+    public function health(GetExtensionsRequest $request, string $extensionId): JsonResponse
+    {
+        return new JsonResponse([
+            'object' => 'extension_health',
+            'attributes' => $this->healthService->forExtension($extensionId),
+        ]);
+    }
+
+    /**
+     * The same report, as a redacted export an operator can share. Carries key
+     * names and whether they are configured, never a credential value.
+     */
+    public function exportHealth(GetExtensionsRequest $request, string $extensionId): JsonResponse
+    {
+        return new JsonResponse($this->healthService->export($extensionId));
+    }
+
+    /**
      * Invalidate a cached route table after a change to which extensions load.
      *
      * Extension routes are registered at boot from the enabled set
@@ -344,6 +371,7 @@ class ExtensionsController extends ApplicationApiController
         // invalidated.
         ExtensionRuntimePlanService::flush();
         ExtensionPermissionRegistry::flush();
+        $this->healthService->flush();
     }
 
     /**
