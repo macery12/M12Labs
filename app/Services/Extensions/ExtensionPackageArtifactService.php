@@ -19,6 +19,7 @@ class ExtensionPackageArtifactService
         private PanelVersionCompatibilityService $panelVersionCompatibility,
         private ExtensionManifestParser $manifestParser,
         private ExtensionCapabilityFileValidator $capabilityFileValidator,
+        private ExtensionArchiveExtractor $archiveExtractor,
     ) {
     }
 
@@ -174,9 +175,48 @@ class ExtensionPackageArtifactService
     public function downloadArchive(string $location, string $destination): void
     {
         if (Str::startsWith($location, ['http://', 'https://'])) {
-            $response = Http::timeout(120)->withOptions(['sink' => $destination])->get($location);
+            // HTTPS only: an archive fetched over plaintext can be swapped in
+            // transit, and the checksum that would catch it comes from the same
+            // registry response.
+            if (!Str::startsWith($location, 'https://')) {
+                throw new DisplayException('Extension archives may only be downloaded over HTTPS.');
+            }
+
+            $limits = (array) config('extensions.archive', []);
+            $maxBytes = (int) ($limits['max_download_bytes'] ?? 64 * 1024 * 1024);
+
+            $response = Http::timeout((int) ($limits['download_timeout_seconds'] ?? 120))
+                ->connectTimeout((int) ($limits['download_connect_timeout_seconds'] ?? 10))
+                ->withOptions([
+                    'sink' => $destination,
+                    // Bounded, HTTPS-only redirects that do not leak the referer.
+                    'allow_redirects' => [
+                        'max' => (int) ($limits['max_redirects'] ?? 3),
+                        'strict' => true,
+                        'protocols' => ['https'],
+                        'referer' => false,
+                    ],
+                    // Refuse an oversized body before reading it, when the
+                    // server is honest enough to declare a length.
+                    'on_headers' => function ($response) use ($maxBytes): void {
+                        $length = (int) ($response->getHeaderLine('Content-Length') ?: 0);
+                        if ($length > $maxBytes) {
+                            throw new \RuntimeException(sprintf('The extension archive declares %d bytes, more than the permitted %d.', $length, $maxBytes));
+                        }
+                    },
+                ])
+                ->get($location);
+
             if (!$response->successful()) {
                 throw new DisplayException(sprintf('Unable to download extension archive from "%s".', $location));
+            }
+
+            // A server that under-declared or omitted Content-Length is caught
+            // here, once the bytes are actually on disk.
+            if (is_file($destination) && filesize($destination) > $maxBytes) {
+                @unlink($destination);
+
+                throw new DisplayException(sprintf('The downloaded extension archive is larger than the permitted %d bytes.', $maxBytes));
             }
 
             return;
@@ -197,20 +237,18 @@ class ExtensionPackageArtifactService
         }
     }
 
+    /**
+     * Extract an archive that is still untrusted.
+     *
+     * Checksums and signatures are verified against files on disk, so they
+     * cannot protect the extraction itself. {@see ExtensionArchiveExtractor}
+     * inspects and streams every entry rather than handing the archive to
+     * ZipArchive::extractTo(), which would follow traversal paths, write
+     * symlinks and restore archive-chosen modes.
+     */
     public function extractArchive(string $archivePath, string $extractPath): void
     {
-        $zip = new \ZipArchive();
-        if ($zip->open($archivePath) !== true) {
-            throw new DisplayException('The downloaded extension archive could not be opened.');
-        }
-
-        if (!$zip->extractTo($extractPath)) {
-            $zip->close();
-
-            throw new DisplayException('The downloaded extension archive could not be extracted.');
-        }
-
-        $zip->close();
+        $this->archiveExtractor->extract($archivePath, $extractPath);
     }
 
     /**

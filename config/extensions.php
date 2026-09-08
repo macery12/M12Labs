@@ -18,6 +18,27 @@ return [
      * build runs on the panel host, so it is bounded here rather than left to
      * whatever the host happens to allow.
      */
+    /*
+     * A package archive is attacker-controlled input until its checksums and
+     * signature verify, and that happens after extraction — so extraction is
+     * bounded here rather than trusting the archive's own headers.
+     */
+    'archive' => [
+        'max_entries' => (int) env('EXTENSIONS_ARCHIVE_MAX_ENTRIES', 2000),
+        'max_file_bytes' => (int) env('EXTENSIONS_ARCHIVE_MAX_FILE_BYTES', 8 * 1024 * 1024),
+        'max_total_bytes' => (int) env('EXTENSIONS_ARCHIVE_MAX_TOTAL_BYTES', 96 * 1024 * 1024),
+        // Rejects ZIP bombs: a whole archive that is mostly expansion rather
+        // than content. Checked across the archive, since one highly
+        // compressible file on its own is unremarkable.
+        'max_expansion_ratio' => (int) env('EXTENSIONS_ARCHIVE_MAX_EXPANSION_RATIO', 120),
+        'max_path_depth' => (int) env('EXTENSIONS_ARCHIVE_MAX_PATH_DEPTH', 12),
+        // Ceiling on a download before any of it is trusted.
+        'max_download_bytes' => (int) env('EXTENSIONS_ARCHIVE_MAX_DOWNLOAD_BYTES', 64 * 1024 * 1024),
+        'download_timeout_seconds' => (int) env('EXTENSIONS_ARCHIVE_DOWNLOAD_TIMEOUT', 120),
+        'download_connect_timeout_seconds' => (int) env('EXTENSIONS_ARCHIVE_CONNECT_TIMEOUT', 10),
+        'max_redirects' => (int) env('EXTENSIONS_ARCHIVE_MAX_REDIRECTS', 3),
+    ],
+
     'build' => [
         // Wall-clock ceiling for the frontend build. A build that exceeds this
         // is killed and the previous assets are restored.
