@@ -3198,6 +3198,8 @@
   "dashboard.welcome": "Velkommen",
   "dashboard.welcomeNamed": "Velkommen, {name}",
   "dashboard.yourServers": "Jeres servere",
+  "extensions.boundary.body": "Resten af panelet er upåvirket. Deaktivering eller geninstallation af udvidelsen løser normalt dette.",
+  "extensions.boundary.title": "Udvidelsen \"{id}\" kunne ikke indlæses.",
   "extensions.card.by": "af {author}",
   "extensions.card.disabled": "De handicappede",
   "extensions.card.enabled": "Aktiveret",

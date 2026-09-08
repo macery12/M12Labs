@@ -3164,6 +3164,8 @@
   "dashboard.welcome": "Добро пожаловать",
   "dashboard.welcomeNamed": "Добро пожаловать, {name}",
   "dashboard.yourServers": "Ваши серверы",
+  "extensions.boundary.body": "Остальная часть панели не затронута. Обычно это решается отключением или переустановкой расширения.",
+  "extensions.boundary.title": "Не удалось загрузить расширение \"{id}\".",
   "extensions.card.by": "Автор: {author}",
   "extensions.card.disabled": "С ограниченными возможностями",
   "extensions.card.enabled": "Включено",

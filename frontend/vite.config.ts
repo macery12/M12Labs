@@ -69,6 +69,10 @@ export default defineConfig(({ command }) => ({
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
         },
+        // Extension packages are compiled into this bundle. A package that
+        // pulled in its own copy of React would produce two runtimes in one
+        // tree — hooks throw, context silently misses. These stay single-copy.
+        dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
     },
 
     build: {

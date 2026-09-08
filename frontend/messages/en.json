@@ -3290,6 +3290,8 @@
   "dashboard.welcome": "Welcome",
   "dashboard.welcomeNamed": "Welcome, {name}",
   "dashboard.yourServers": "Your servers",
+  "extensions.boundary.body": "The rest of the panel is unaffected. Disabling or reinstalling the extension usually resolves this.",
+  "extensions.boundary.title": "The \"{id}\" extension failed to load.",
   "extensions.card.by": "by {author}",
   "extensions.card.disabled": "Disabled",
   "extensions.card.enabled": "Enabled",

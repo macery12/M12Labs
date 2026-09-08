@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
+import { withExtensionIsolation } from '@/extensions-sdk/ExtensionErrorBoundary';
 
 // Extension package registry. Ported from V1's components/server/extensions/registry.ts:
 // packages under src/extensions/packages/<name>/ self-register by shipping a
@@ -28,6 +29,13 @@ export const extensionRoutes: ExtensionRouteDefinition[] = Object.entries(packag
         const loader = packageComponents[path.replace(/meta\.json$/, 'index.tsx')];
         if (!loader || !meta?.id) return null;
 
-        return { id: meta.id, route: meta.route || meta.id, component: lazy(loader) };
+        // Every extension page gets its own error boundary and suspense: extension
+        // code shares this React tree, so an unisolated throw would unmount the
+        // whole server route including the navigation away from it.
+        return {
+            id: meta.id,
+            route: meta.route || meta.id,
+            component: lazy(async () => ({ default: withExtensionIsolation((await loader()).default, meta.id) })),
+        };
     })
     .filter((route): route is ExtensionRouteDefinition => route !== null);
