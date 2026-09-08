@@ -34,7 +34,13 @@ return new class () extends Migration {
             $table->timestamps();
 
             $table->index(['extension_id', 'event']);
-            $table->unique(['correlation_id', 'extension_id', 'handler']);
+            // Named explicitly: the generated name would be 68 characters and
+            // MySQL caps identifiers at 64. One tombstone per handler per
+            // dispatch, so a redelivery cannot duplicate the payload.
+            $table->unique(
+                ['correlation_id', 'extension_id', 'handler'],
+                'ext_hook_tombstones_delivery_unique'
+            );
         });
 
         Schema::create('extension_hook_health', function (Blueprint $table): void {

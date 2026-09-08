@@ -29,7 +29,11 @@ return new class () extends Migration {
             $table->char('fingerprint', 64)->index();
             // Which repository presented this key, for the audit trail; trust
             // comes from the root signature, never from the source.
-            $table->unsignedInteger('repository_id')->nullable();
+            //
+            // bigInteger to match extension_repositories.id. MySQL refuses a
+            // foreign key whose column type differs from the one it references;
+            // sqlite does not, so the test suite cannot catch a mismatch here.
+            $table->unsignedBigInteger('repository_id')->nullable();
             $table->string('label')->nullable();
             $table->timestamp('valid_from')->nullable();
             $table->timestamp('valid_until')->nullable();
