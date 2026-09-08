@@ -844,8 +844,8 @@ CREATE TABLE `email_quotas` (
   `month_sent_count` int(11) NOT NULL DEFAULT 0,
   `monthly_overage` int(11) NOT NULL DEFAULT 0,
   `overage_count` int(11) NOT NULL DEFAULT 0,
-  `month_reset_at` date NOT NULL DEFAULT '2026-08-22',
-  `day_reset_at` date NOT NULL DEFAULT '2026-08-22',
+  `month_reset_at` date NOT NULL DEFAULT '2026-09-08',
+  `day_reset_at` date NOT NULL DEFAULT '2026-09-08',
   `period_month` varchar(7) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -897,6 +897,81 @@ CREATE TABLE `extension_file_snapshots` (
   CONSTRAINT `extension_file_snapshots_server_id_foreign` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_hook_health`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_hook_health` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `extension_id` varchar(191) NOT NULL,
+  `event` varchar(64) NOT NULL,
+  `handler` varchar(191) NOT NULL,
+  `invocations` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `failures` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `consecutive_failures` int(10) unsigned NOT NULL DEFAULT 0,
+  `total_duration_ms` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `last_invoked_at` timestamp NULL DEFAULT NULL,
+  `last_failed_at` timestamp NULL DEFAULT NULL,
+  `last_error` text DEFAULT NULL,
+  `breaker_open_until` timestamp NULL DEFAULT NULL,
+  `breaker_trips` int(10) unsigned NOT NULL DEFAULT 0,
+  `quarantined_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_hook_health_extension_id_event_handler_unique` (`extension_id`,`event`,`handler`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_hook_tombstones`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_hook_tombstones` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `correlation_id` char(36) NOT NULL,
+  `extension_id` varchar(191) NOT NULL,
+  `event` varchar(64) NOT NULL,
+  `handler` varchar(191) NOT NULL,
+  `envelope` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`envelope`)),
+  `consumed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ext_hook_tombstones_delivery_unique` (`correlation_id`,`extension_id`,`handler`),
+  KEY `extension_hook_tombstones_extension_id_event_index` (`extension_id`,`event`),
+  KEY `extension_hook_tombstones_correlation_id_index` (`correlation_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_operations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_operations` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `correlation_id` char(36) NOT NULL,
+  `extension_id` varchar(191) NOT NULL,
+  `operation` varchar(24) NOT NULL,
+  `from_version` varchar(191) DEFAULT NULL,
+  `to_version` varchar(191) DEFAULT NULL,
+  `stage` varchar(32) DEFAULT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'running',
+  `initiator_user_id` int(10) unsigned DEFAULT NULL,
+  `initiator_label` varchar(191) DEFAULT NULL,
+  `started_at` timestamp NULL DEFAULT NULL,
+  `finished_at` timestamp NULL DEFAULT NULL,
+  `duration_ms` int(10) unsigned DEFAULT NULL,
+  `affected_paths` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`affected_paths`)),
+  `affected_tables` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`affected_tables`)),
+  `migration_batch` varchar(191) DEFAULT NULL,
+  `capability_diff` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`capability_diff`)),
+  `error_code` varchar(64) DEFAULT NULL,
+  `error_summary` text DEFAULT NULL,
+  `recovery_instructions` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_operations_correlation_id_unique` (`correlation_id`),
+  KEY `extension_operations_extension_id_created_at_index` (`extension_id`,`created_at`),
+  KEY `extension_operations_extension_id_index` (`extension_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `extension_package_files`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -929,12 +1004,25 @@ CREATE TABLE `extension_packages` (
   `icon` varchar(191) NOT NULL DEFAULT 'puzzle',
   `route` varchar(191) DEFAULT NULL,
   `installed_version` varchar(191) NOT NULL,
+  `previous_version` varchar(191) DEFAULT NULL,
   `source_repository_id` bigint(20) unsigned DEFAULT NULL,
   `source_repository_name` varchar(191) DEFAULT NULL,
   `source_registry_url` text DEFAULT NULL,
   `source_archive_url` text DEFAULT NULL,
   `package_checksum` varchar(64) DEFAULT NULL,
   `manifest` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`manifest`)),
+  `manifest_version` tinyint(3) unsigned NOT NULL DEFAULT 1,
+  `capabilities` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`capabilities`)),
+  `capability_hash` char(64) DEFAULT NULL,
+  `approved_capability_hash` char(64) DEFAULT NULL,
+  `manifest_hash` char(64) DEFAULT NULL,
+  `publisher` varchar(191) DEFAULT NULL,
+  `signature_state` varchar(24) NOT NULL DEFAULT 'unsigned',
+  `signature_key_id` varchar(191) DEFAULT NULL,
+  `signature_verified_at` timestamp NULL DEFAULT NULL,
+  `last_operation_id` char(36) DEFAULT NULL,
+  `state` varchar(24) NOT NULL DEFAULT 'installed_disabled',
+  `state_reason` text DEFAULT NULL,
   `installed_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -942,7 +1030,55 @@ CREATE TABLE `extension_packages` (
   UNIQUE KEY `extension_packages_extension_id_unique` (`extension_id`),
   KEY `extension_packages_source_repository_id_foreign` (`source_repository_id`),
   KEY `extension_packages_package_id_index` (`package_id`),
+  KEY `extension_packages_state_index` (`state`),
   CONSTRAINT `extension_packages_source_repository_id_foreign` FOREIGN KEY (`source_repository_id`) REFERENCES `extension_repositories` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_permissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_permissions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `extension_id` varchar(191) NOT NULL,
+  `action` varchar(64) NOT NULL,
+  `identifier` varchar(191) NOT NULL,
+  `label_key` varchar(191) NOT NULL,
+  `description_key` varchar(191) DEFAULT NULL,
+  `dangerous` tinyint(1) NOT NULL DEFAULT 0,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `approved_by` int(10) unsigned DEFAULT NULL,
+  `suspended_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_permissions_extension_id_action_unique` (`extension_id`,`action`),
+  UNIQUE KEY `extension_permissions_identifier_unique` (`identifier`),
+  KEY `extension_permissions_approved_by_foreign` (`approved_by`),
+  CONSTRAINT `extension_permissions_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_queue_jobs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_queue_jobs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `job_uuid` char(36) DEFAULT NULL,
+  `extension_id` varchar(191) NOT NULL,
+  `queue_name` varchar(64) NOT NULL,
+  `job_class` varchar(191) NOT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'queued',
+  `attempts` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `correlation_id` char(36) DEFAULT NULL,
+  `dispatched_at` timestamp NULL DEFAULT NULL,
+  `started_at` timestamp NULL DEFAULT NULL,
+  `finished_at` timestamp NULL DEFAULT NULL,
+  `last_error` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_queue_jobs_job_uuid_unique` (`job_uuid`),
+  KEY `extension_queue_jobs_extension_id_status_index` (`extension_id`,`status`),
+  KEY `extension_queue_jobs_extension_id_queue_name_status_index` (`extension_id`,`queue_name`,`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `extension_repositories`;
@@ -961,6 +1097,68 @@ CREATE TABLE `extension_repositories` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `extension_repositories_slug_unique` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_secrets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_secrets` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `extension_id` varchar(191) NOT NULL,
+  `key` varchar(64) NOT NULL,
+  `value` text NOT NULL,
+  `key_version` int(10) unsigned NOT NULL DEFAULT 1,
+  `context_hash` char(64) NOT NULL,
+  `rotated_at` timestamp NULL DEFAULT NULL,
+  `updated_by` int(10) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_secrets_extension_id_key_unique` (`extension_id`,`key`),
+  KEY `extension_secrets_updated_by_foreign` (`updated_by`),
+  CONSTRAINT `extension_secrets_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_signature_audit`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_signature_audit` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `extension_id` varchar(191) NOT NULL,
+  `version` varchar(191) NOT NULL,
+  `verdict` varchar(24) NOT NULL,
+  `key_id` varchar(191) DEFAULT NULL,
+  `archive_sha256` char(64) DEFAULT NULL,
+  `canonical_manifest_sha256` char(64) DEFAULT NULL,
+  `reason` varchar(191) DEFAULT NULL,
+  `initiator` varchar(191) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `extension_signature_audit_extension_id_verdict_index` (`extension_id`,`verdict`),
+  KEY `extension_signature_audit_extension_id_index` (`extension_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_trusted_keys`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_trusted_keys` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `key_id` varchar(191) NOT NULL,
+  `public_key` varchar(191) NOT NULL,
+  `fingerprint` char(64) NOT NULL,
+  `repository_id` bigint(20) unsigned DEFAULT NULL,
+  `label` varchar(191) DEFAULT NULL,
+  `valid_from` timestamp NULL DEFAULT NULL,
+  `valid_until` timestamp NULL DEFAULT NULL,
+  `revoked_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_trusted_keys_key_id_unique` (`key_id`),
+  KEY `extension_trusted_keys_repository_id_foreign` (`repository_id`),
+  KEY `extension_trusted_keys_fingerprint_index` (`fingerprint`),
+  CONSTRAINT `extension_trusted_keys_repository_id_foreign` FOREIGN KEY (`repository_id`) REFERENCES `extension_repositories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `failed_jobs`;
@@ -1127,7 +1325,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(191) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mount_node`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1693,7 +1891,7 @@ CREATE TABLE `settings` (
   `value` text NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `settings_key_unique` (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `subusers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1948,3 +2146,4 @@ CREATE TABLE `webhook_events` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
