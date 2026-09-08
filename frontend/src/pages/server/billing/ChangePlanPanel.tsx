@@ -249,10 +249,6 @@ export function ChangePlanPanel({ currency }: { currency: string }) {
                                                 databases: plan.limits.database,
                                                 backups: plan.limits.backup,
                                             })}
-                                            {' · '}
-                                            {plan.limits.subdomain == null
-                                                ? m['server.billing.unlimitedSubdomains']()
-                                                : m['server.billing.subdomains']({ count: plan.limits.subdomain })}
                                         </p>
                                     </div>
                                     <Button

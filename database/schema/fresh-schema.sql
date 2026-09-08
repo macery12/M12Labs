@@ -1325,7 +1325,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(191) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mount_node`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1466,7 +1466,6 @@ CREATE TABLE `orders` (
   `node_id` int(11) DEFAULT NULL,
   `server_id` int(11) DEFAULT NULL,
   `variables` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`variables`)),
-  `domain_payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`domain_payload`)),
   `plan_change_snapshot` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`plan_change_snapshot`)),
   `coupon_id` bigint(20) unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1611,7 +1610,6 @@ CREATE TABLE `products` (
   `backup_limit` int(10) unsigned NOT NULL,
   `database_limit` int(10) unsigned NOT NULL,
   `allocation_limit` int(10) unsigned NOT NULL,
-  `subdomain_limit` int(10) unsigned DEFAULT 1,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `stripe_id` varchar(191) DEFAULT NULL,
@@ -1827,7 +1825,6 @@ CREATE TABLE `servers` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `installed_at` timestamp NULL DEFAULT NULL,
   `subuser_limit` int(11) DEFAULT -1,
-  `subdomain_limit` int(10) unsigned DEFAULT 1,
   `renewal_date` datetime DEFAULT NULL,
   `deletion_scheduled_at` timestamp NULL DEFAULT NULL,
   `deletion_scheduled_by` bigint(20) unsigned DEFAULT NULL,

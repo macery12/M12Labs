@@ -297,7 +297,6 @@ class ServerRenewalServiceTest extends TestCase
             $table->unsignedInteger('allocation_limit')->nullable();
             $table->unsignedInteger('backup_limit')->default(0);
             $table->integer('subuser_limit')->default(0);
-            $table->unsignedInteger('subdomain_limit')->nullable();
             $table->timestamps();
         });
         Schema::create('orders', function (Blueprint $table): void {

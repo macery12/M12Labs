@@ -139,7 +139,7 @@ export interface ServerView {
     nestId: number | null;
     allocationId: number | null;
     limits: { memory: number; swap: number; disk: number; io: number; cpu: number; threads: string | null; oom_killer: boolean };
-    featureLimits: { allocations: number; backups: number; databases: number; subusers: number; subdomains: number };
+    featureLimits: { allocations: number; backups: number; databases: number; subusers: number };
     container: { image: string; startup: string; environment: Record<string, string> };
     dockerImages: DockerImageOption[];
     variables: ServerVariableView[];
@@ -214,7 +214,6 @@ export async function getServerView(id: number | string): Promise<ServerView> {
             backups: a.feature_limits?.backups ?? 0,
             databases: a.feature_limits?.databases ?? 0,
             subusers: a.feature_limits?.subusers ?? 0,
-            subdomains: a.feature_limits?.subdomains ?? 0,
         },
         container: {
             image: a.container?.image ?? '',
@@ -271,7 +270,7 @@ export interface UpdateServerValues {
     external_id?: string | null;
     owner_id?: number;
     limits?: { memory: number; swap: number; disk: number; io: number; cpu: number; threads: string | null; oom_killer: boolean };
-    feature_limits?: { allocations: number; backups: number; databases: number; subusers: number; subdomains: number };
+    feature_limits?: { allocations: number; backups: number; databases: number; subusers: number };
     renewal_date?: string | null;
     billing_product_id?: number | null;
     billing_days?: number | null;

@@ -27,7 +27,6 @@ class StoreBillingProductRequest extends ApplicationApiRequest
             'backup_limit'     => 'required|integer|min:0',
             'database_limit'   => 'required|integer|min:0',
             'allocation_limit' => 'required|integer|min:0',
-            'subdomain_limit'  => 'nullable|integer|min:0',
         ];
     }
 }

@@ -115,7 +115,6 @@ export function OverviewTab({ onManageBilling }: { onManageBilling: () => void }
                         <MetricRow label={m['admin.infrastructure.serverDetail.field.backups']()} value={s.featureLimits.backups} />
                         <MetricRow label={m['admin.infrastructure.serverDetail.field.databases']()} value={s.featureLimits.databases} />
                         <MetricRow label={m['admin.infrastructure.serverDetail.field.subusers']()} value={s.featureLimits.subusers} />
-                        <MetricRow label={m['admin.infrastructure.serverDetail.field.subdomains']()} value={s.featureLimits.subdomains} />
                     </div>
                 </section>
 

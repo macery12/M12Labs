@@ -83,7 +83,6 @@ class PayPalCheckoutControllerTest extends TestCase
             $table->unsignedBigInteger('checkout_amount_minor')->nullable();
             $table->string('checkout_fingerprint', 64)->nullable();
             $table->timestamp('checkout_locked_at')->nullable();
-            $table->json('domain_payload')->nullable();
             $table->integer('threat_index')->default(-1);
             $table->timestamps();
         });
@@ -135,7 +134,6 @@ class PayPalCheckoutControllerTest extends TestCase
                 'billing_days' => 10,
                 'name' => 'Locked server',
                 'variables' => [],
-                'domain_payload' => [],
                 'multiplier_used' => 1,
                 'node_multiplier_used' => 1,
             ],

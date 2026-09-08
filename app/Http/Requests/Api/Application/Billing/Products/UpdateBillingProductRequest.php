@@ -27,7 +27,6 @@ class UpdateBillingProductRequest extends ApplicationApiRequest
             'backup_limit'     => 'sometimes|integer|min:0',
             'database_limit'   => 'sometimes|integer|min:0',
             'allocation_limit' => 'sometimes|integer|min:0',
-            'subdomain_limit'  => 'nullable|integer|min:0',
         ];
     }
 }

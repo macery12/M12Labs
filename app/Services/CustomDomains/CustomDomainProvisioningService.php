@@ -5,7 +5,6 @@ namespace Everest\Services\CustomDomains;
 use Everest\Models\Server;
 use Everest\Models\Allocation;
 use Everest\Models\CustomDomain;
-use Everest\Models\Billing\Order;
 use Illuminate\Support\Facades\DB;
 use Everest\Models\CustomDomainDnsLog;
 use Everest\Models\ServerCustomDomain;
@@ -100,8 +99,6 @@ class CustomDomainProvisioningService
                     throw new DisplayException('The generated full domain exceeds the maximum allowed length.');
                 }
 
-                $this->assertServerSubdomainLimitNotReached($server, $fullDomain, $port, $protocol);
-
                 $this->assertSubdomainAvailable($domain, $fullDomain);
 
                 $existing = ServerCustomDomain::query()
@@ -133,15 +130,6 @@ class CustomDomainProvisioningService
                 );
             }
         });
-    }
-
-    public function syncFromOrder(Server $server, ?Order $order): void
-    {
-        if (!$order || !is_array($order->domain_payload)) {
-            return;
-        }
-
-        $this->createFromPayload($server, $order->domain_payload);
     }
 
     public function provision(ServerCustomDomain $mapping): void
@@ -397,44 +385,6 @@ class CustomDomainProvisioningService
             throw $exception;
         } catch (\Throwable $exception) {
             throw new DisplayException('Unable to verify subdomain availability right now.');
-        }
-    }
-
-    private function resolveEffectiveSubdomainLimit(Server $server): ?int
-    {
-        if (!is_null($server->subdomain_limit)) {
-            return max(0, (int) $server->subdomain_limit);
-        }
-
-        $server->loadMissing('product');
-        if (!is_null($server->product?->subdomain_limit)) {
-            return max(0, (int) $server->product->subdomain_limit);
-        }
-
-        return null;
-    }
-
-    private function assertServerSubdomainLimitNotReached(Server $server, string $fullDomain, int $port, string $protocol): void
-    {
-        $limit = $this->resolveEffectiveSubdomainLimit($server);
-        if (is_null($limit)) {
-            return;
-        }
-
-        $existingForTarget = ServerCustomDomain::query()
-            ->where('server_id', $server->id)
-            ->where('full_domain', $fullDomain)
-            ->where('port', $port)
-            ->where('protocol', $protocol)
-            ->exists();
-
-        if ($existingForTarget) {
-            return;
-        }
-
-        $currentCount = $server->customDomains()->count();
-        if ($currentCount >= $limit) {
-            throw new DisplayException("Subdomain limit reached for this server ({$currentCount}/{$limit}).");
         }
     }
 

@@ -16,7 +16,6 @@ use Everest\Services\Billing\OrderProcessorService;
 use Everest\Services\Billing\CheckoutActivityService;
 use Everest\Services\Billing\ServerFulfillmentService;
 use Everest\Services\Billing\CheckoutReservationService;
-use Everest\Services\CustomDomains\CustomDomainProvisioningService;
 
 class ServerFulfillmentServiceTest extends TestCase
 {
@@ -75,7 +74,6 @@ class ServerFulfillmentServiceTest extends TestCase
         $service = new ServerFulfillmentService(
             \Mockery::mock(CreateServerService::class),
             \Mockery::mock(OrderProcessorService::class),
-            \Mockery::mock(CustomDomainProvisioningService::class),
             \Mockery::mock(CreateOrderService::class),
             \Mockery::mock(CheckoutReservationService::class),
             \Mockery::mock(PlanChangeService::class),

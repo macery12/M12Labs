@@ -12,7 +12,6 @@ export interface StorefrontProductLimits {
     backup: number;
     database: number;
     allocation: number;
-    subdomain: number | null;
 }
 
 export interface StorefrontProduct {

@@ -29,7 +29,6 @@ function toPlan(row: any): StoreProduct {
             backup: Number(l.backup ?? 0),
             database: Number(l.database ?? 0),
             allocation: Number(l.allocation ?? 0),
-            subdomain: l.subdomain ?? null,
         },
     };
 }

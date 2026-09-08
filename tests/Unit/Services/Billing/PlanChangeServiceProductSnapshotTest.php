@@ -42,7 +42,6 @@ class PlanChangeServiceProductSnapshotTest extends TestCase
             $table->unsignedInteger('backup_limit');
             $table->unsignedInteger('database_limit');
             $table->unsignedInteger('allocation_limit');
-            $table->unsignedInteger('subdomain_limit')->nullable();
             $table->timestamps();
         });
         Schema::create('allocations', function (Blueprint $table): void {
@@ -61,7 +60,6 @@ class PlanChangeServiceProductSnapshotTest extends TestCase
             $table->unsignedInteger('backup_limit');
             $table->unsignedInteger('database_limit');
             $table->unsignedInteger('allocation_limit');
-            $table->unsignedInteger('subdomain_limit')->nullable();
             $table->integer('billing_days')->nullable();
             $table->timestamps();
         });
@@ -83,7 +81,6 @@ class PlanChangeServiceProductSnapshotTest extends TestCase
             'backup_limit' => 75,
             'database_limit' => 75,
             'allocation_limit' => 75,
-            'subdomain_limit' => 75,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -133,7 +130,6 @@ class PlanChangeServiceProductSnapshotTest extends TestCase
             'backup_limit' => $limit,
             'database_limit' => $limit,
             'allocation_limit' => $limit,
-            'subdomain_limit' => $limit,
             'created_at' => now(),
             'updated_at' => now(),
         ];

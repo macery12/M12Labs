@@ -41,7 +41,6 @@ class UpdateServerRequest extends ApplicationApiRequest
             'feature_limits.backups' => $rules['backup_limit'],
             'feature_limits.databases' => $rules['database_limit'],
             'feature_limits.subusers' => $rules['subuser_limit'],
-            'feature_limits.subdomains' => $rules['subdomain_limit'],
 
             'renewal_date' => $rules['renewal_date'],
             'billing_product_id' => $rules['billing_product_id'],
@@ -79,7 +78,6 @@ class UpdateServerRequest extends ApplicationApiRequest
         ];
 
         if (Arr::has($data, 'feature_limits.subdomains')) {
-            $response['subdomain_limit'] = array_get($data, 'feature_limits.subdomains');
         }
 
         // Same present-only treatment for build limits: BuildModificationService merges

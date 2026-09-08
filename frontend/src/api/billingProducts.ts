@@ -10,7 +10,6 @@ export interface ProductLimits {
     backup: number;
     database: number;
     allocation: number;
-    subdomain: number;
 }
 
 export interface BillingProduct {
@@ -68,7 +67,6 @@ export function toProduct(row: any): BillingProduct {
             backup: Number(l.backup ?? 0),
             database: Number(l.database ?? 0),
             allocation: Number(l.allocation ?? 0),
-            subdomain: Number(l.subdomain ?? 0),
         },
     };
 }
@@ -89,7 +87,6 @@ function toPayload(categoryUuid: string, v: ProductValues): Record<string, unkno
         backup_limit: v.limits.backup,
         database_limit: v.limits.database,
         allocation_limit: v.limits.allocation,
-        subdomain_limit: v.limits.subdomain,
     };
 }
 

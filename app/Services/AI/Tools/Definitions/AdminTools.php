@@ -435,7 +435,6 @@ class AdminTools
                     'backup_limit' => self::integer('How many backups the server may keep.'),
                     'database_limit' => self::integer('How many databases the server may create.'),
                     'allocation_limit' => self::integer('How many ports the server may allocate.'),
-                    'subdomain_limit' => self::integer('How many subdomains the server may claim.'),
                 ], [
                     'category', 'category_uuid', 'name', 'price', 'cpu_limit', 'memory_limit',
                     'disk_limit', 'backup_limit', 'database_limit', 'allocation_limit',
@@ -456,7 +455,7 @@ class AdminTools
                 bodyFields: [
                     'category_uuid', 'name', 'description', 'icon', 'price', 'visible',
                     'cpu_limit', 'memory_limit', 'disk_limit', 'backup_limit',
-                    'database_limit', 'allocation_limit', 'subdomain_limit',
+                    'database_limit', 'allocation_limit',
                 ],
             ),
 
@@ -489,10 +488,6 @@ class AdminTools
                     'backup_limit' => self::integer('Backup allowance.'),
                     'database_limit' => self::integer('Database allowance.'),
                     'allocation_limit' => self::integer('Port allowance.'),
-                    'subdomain_limit' => [
-                        'type' => ['integer', 'null'],
-                        'description' => 'Subdomain allowance, or null to inherit the category default.',
-                    ],
                 ], ['category', 'product']),
                 method: 'PATCH',
                 uriTemplate: self::BASE . '/billing/categories/{category}/products/{product}',
@@ -507,7 +502,7 @@ class AdminTools
                 bodyFields: [
                     'name', 'description', 'icon', 'price', 'visible',
                     'cpu_limit', 'memory_limit', 'disk_limit', 'backup_limit',
-                    'database_limit', 'allocation_limit', 'subdomain_limit',
+                    'database_limit', 'allocation_limit',
                 ],
             ),
         ];

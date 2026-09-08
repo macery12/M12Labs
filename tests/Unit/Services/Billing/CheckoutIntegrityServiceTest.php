@@ -127,7 +127,6 @@ class CheckoutIntegrityServiceTest extends TestCase
             'billing_days' => 30,
             'name' => 'Immutable server',
             'variables' => [['key' => 'MODE', 'value' => 'safe']],
-            'domain_payload' => [],
             'subtotal' => 19.99,
             'discount' => 0,
             'total' => 19.99,

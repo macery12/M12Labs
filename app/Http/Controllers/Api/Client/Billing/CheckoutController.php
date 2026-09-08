@@ -112,7 +112,6 @@ class CheckoutController extends ClientApiController
 
         // Process the order
         $variables = $request->input('variables', []);
-        $domainPayload = $request->input('domain_payload', []);
         $result = $this->fulfillmentService->fulfillFreeOrder(
             $request,
             $user,
@@ -123,8 +122,7 @@ class CheckoutController extends ClientApiController
             $variables,
             null, // No payment intent ID for free orders
             $serverName,
-            $billingDays,
-            is_array($domainPayload) ? $domainPayload : []
+            $billingDays
         );
 
         return $this->fractal->item($result['server'])
@@ -269,7 +267,6 @@ class CheckoutController extends ClientApiController
                         'source_product_id' => $attributes['source_product_id'] ?? null,
                         'plan_change_snapshot' => $attributes['plan_change_snapshot'] ?? null,
                         'variables' => $attributes['variables'],
-                        'domain_payload' => $attributes['domain_payload'],
                         'multiplier_used' => $attributes['multiplier_used'],
                         'node_multiplier_used' => $attributes['node_multiplier_used'],
                         'checkout_nonce' => $request->input('checkout_nonce'),

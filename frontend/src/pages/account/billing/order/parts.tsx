@@ -1,6 +1,6 @@
 import { m } from '@/i18n/messages';
 import { useState, type ReactNode } from 'react';
-import { Check, Cpu, HardDrive, MemoryStick, Database, Network, Archive, Globe, Tag, X } from 'lucide-react';
+import { Check, Cpu, HardDrive, MemoryStick, Database, Network, Archive, Tag, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -172,7 +172,6 @@ export function SpecChips({ limits }: { limits: ProductLimits }) {
         ...(limits.backup ? [{ icon: Archive, label: m['billing.specs.backups']({ count: limits.backup }) }] : []),
         ...(limits.database ? [{ icon: Database, label: m['billing.specs.databases']({ count: limits.database }) }] : []),
         { icon: Network, label: m['billing.specs.ports']({ count: limits.allocation }) },
-        ...(limits.subdomain != null ? [{ icon: Globe, label: m['billing.specs.subdomains']({ count: limits.subdomain }) }] : []),
     ];
     return (
         <div className="flex flex-wrap gap-2">

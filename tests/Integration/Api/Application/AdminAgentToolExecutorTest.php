@@ -170,7 +170,6 @@ class AdminAgentToolExecutorTest extends IntegrationTestCase
             'backup_limit' => 4,
             'database_limit' => 5,
             'allocation_limit' => 6,
-            'subdomain_limit' => 7,
         ])->save();
         $this->createdProductIds[] = $product->id;
 
@@ -290,7 +289,6 @@ class AdminAgentToolExecutorTest extends IntegrationTestCase
             'icon' => null,
             'price' => 0,
             'backup_limit' => 0,
-            'subdomain_limit' => null,
         ]);
 
         $this->assertTrue($result->ok, $result->summary());
@@ -299,7 +297,6 @@ class AdminAgentToolExecutorTest extends IntegrationTestCase
         $this->assertNull($product->icon);
         $this->assertSame(0.0, $product->price);
         $this->assertSame(0, $product->backup_limit);
-        $this->assertNull($product->subdomain_limit);
         $this->assertSame(4096, $product->memory_limit);
     }
 
@@ -322,7 +319,6 @@ class AdminAgentToolExecutorTest extends IntegrationTestCase
             'backup_limit' => 1,
             'database_limit' => 1,
             'allocation_limit' => 1,
-            'subdomain_limit' => 0,
         ]);
 
         $this->assertTrue($result->ok, $result->summary());

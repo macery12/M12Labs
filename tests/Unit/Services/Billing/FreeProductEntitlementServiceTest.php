@@ -43,7 +43,6 @@ class FreeProductEntitlementServiceTest extends TestCase
             $table->unsignedInteger('backup_limit')->default(0);
             $table->unsignedInteger('database_limit')->default(0);
             $table->unsignedInteger('allocation_limit')->default(0);
-            $table->unsignedInteger('subdomain_limit')->nullable();
             $table->timestamps();
         });
         Schema::create('servers', function (Blueprint $table): void {

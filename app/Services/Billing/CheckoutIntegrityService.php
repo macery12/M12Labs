@@ -209,7 +209,18 @@ class CheckoutIntegrityService
             'billing_days' => (int) $order->billing_days,
             'name' => (string) $order->name,
             'variables' => $this->canonicalize($order->variables ?? []),
-            'domain_payload' => $this->canonicalize($order->domain_payload ?? []),
+            // Compatibility constant, not a column. orders.domain_payload was
+            // dropped with the Custom Domains extraction, but this hash is
+            // copied into the payment provider's own metadata at intent
+            // creation (see stripeMetadata()/paypalCustomData()) and that copy
+            // cannot be migrated. Removing the entry would change the hash for
+            // every order locked before the deploy, so an order already paid at
+            // the provider would fail capture and need manual reconciliation.
+            // Every order that never bought a domain hashed [] here anyway.
+            // Safe to delete once no pre-extraction order is still open — and
+            // deleting it then needs the same drain. See
+            // docs/leftover_extensions.md.
+            'domain_payload' => [],
             'subtotal' => number_format((float) $order->subtotal, 2, '.', ''),
             'discount' => number_format((float) $order->discount, 2, '.', ''),
             'total' => number_format((float) $order->total, 2, '.', ''),

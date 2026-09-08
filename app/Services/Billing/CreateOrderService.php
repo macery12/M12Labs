@@ -101,7 +101,6 @@ class CreateOrderService
             $order->plan_change_snapshot = $additionalData['plan_change_snapshot'];
         }
         $order->variables = $additionalData['variables'] ?? null;
-        $order->domain_payload = $additionalData['domain_payload'] ?? null;
         $order->type = $type;
         $paymentProcessor = $additionalData['payment_processor'] ?? null;
         if ($paymentProcessor === null) {
