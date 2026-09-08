@@ -250,13 +250,32 @@ export function ExtensionManageDrawer({
                         </div>
                     )}
 
+                    {e.canEnable === false && (
+                        <div
+                            className="flex gap-2 rounded-lg border px-3 py-2.5 text-xs leading-relaxed"
+                            style={{
+                                background: tint('var(--color-danger)', 10),
+                                borderColor: tint('var(--color-danger)', 30),
+                                color: 'var(--color-danger)',
+                            }}
+                        >
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <span>{e.stateReason || m['extensions.unsupported.blocked']()}</span>
+                        </div>
+                    )}
+
                     {e.installable ? null : (
                         <>
                             {/* enable */}
                             <Section icon={Settings2} title={m['extensions.drawer.enableTitle']()}>
                                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-3 py-2.5">
                                     <span className="text-xs text-[var(--color-ink-muted)]">{m['extensions.drawer.enableHint']()}</span>
-                                    <Switch checked={enabled} onChange={setEnabled} disabled={busy} />
+                                    <Switch
+                                        checked={enabled}
+                                        onChange={setEnabled}
+                                        disabled={busy || e.canEnable === false}
+                                        title={e.canEnable === false ? m['extensions.unsupported.blocked']() : undefined}
+                                    />
                                 </div>
                             </Section>
 

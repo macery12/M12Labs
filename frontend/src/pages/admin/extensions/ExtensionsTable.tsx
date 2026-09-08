@@ -27,6 +27,8 @@ function statusLabel(tone: ExtensionTone): string {
             return td('extensions.status.available');
         case 'incompatible':
             return td('extensions.status.incompatible');
+        case 'unsupported':
+            return td('extensions.status.unsupported');
         case 'core':
             return td('extensions.status.core');
         case 'enabled':
@@ -271,9 +273,10 @@ export function ExtensionsTable({
                                             <>
                                                 <Switch
                                                     checked={ext.enabled}
-                                                    disabled={toggling || locked}
+                                                    disabled={toggling || locked || ext.canEnable === false}
                                                     onChange={() => onToggle(ext)}
                                                     label={ext.enabled ? m['extensions.card.disabled']() : m['extensions.card.enabled']()}
+                                                    title={ext.canEnable === false ? m['extensions.unsupported.blocked']() : undefined}
                                                 />
                                                 <button
                                                     type="button"

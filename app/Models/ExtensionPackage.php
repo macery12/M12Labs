@@ -22,6 +22,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property string|null $source_archive_url
  * @property string|null $package_checksum
  * @property array $manifest
+ * @property int $manifest_version
+ * @property string $state
+ * @property string|null $state_reason
  * @property \Carbon\Carbon|null $installed_at
  * @property ExtensionRepository|null $repository
  * @property \Illuminate\Database\Eloquent\Collection|ExtensionPackageFile[] $files
@@ -47,11 +50,15 @@ class ExtensionPackage extends Model
         'source_archive_url',
         'package_checksum',
         'manifest',
+        'manifest_version',
+        'state',
+        'state_reason',
         'installed_at',
     ];
 
     protected $casts = [
         'manifest' => 'array',
+        'manifest_version' => 'integer',
         'installed_at' => 'datetime',
     ];
 

@@ -9,6 +9,7 @@ use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\ExtensionConfig;
+use Everest\Models\ExtensionPackage;
 use Everest\Models\ExtensionRepository;
 use Everest\Services\Extensions\ExtensionCatalogService;
 use Everest\Services\Extensions\ExtensionDatabasePlanService;
@@ -140,7 +141,16 @@ class ExtensionsController extends ApplicationApiController
             $payload['enabled'] = (bool) $existing->enabled;
         }
 
+        if (($payload['enabled'] ?? false) && $blocked = $this->blockedByLifecycleState($extensionId)) {
+            return $blocked;
+        }
+
         $config = ExtensionConfig::updateOrCreateConfig($extensionId, $payload);
+
+        ExtensionPackage::query()
+            ->where('extension_id', $extensionId)
+            ->whereIn('state', ['enabled', 'installed_disabled'])
+            ->update(['state' => $config->enabled ? 'enabled' : 'installed_disabled']);
 
         Activity::event('admin:extensions:update')
             ->property('extension_id', $extensionId)
@@ -156,6 +166,27 @@ class ExtensionsController extends ApplicationApiController
     }
 
     /**
+     * Refuse to enable a package whose lifecycle state forbids execution — one
+     * built for an unsupported manifest version, or left failed by a rolled back
+     * operation. ExtensionRuntimeGate would decline to load it regardless; this
+     * returns the reason rather than leaving the operator with an extension that
+     * reads as enabled but does nothing.
+     */
+    private function blockedByLifecycleState(string $extensionId): ?JsonResponse
+    {
+        $package = ExtensionPackage::query()->where('extension_id', $extensionId)->first();
+
+        if (!$package || in_array($package->state, ['enabled', 'installed_disabled'], true)) {
+            return null;
+        }
+
+        return new JsonResponse([
+            'error' => $package->state_reason ?: 'This extension cannot be enabled in its current state.',
+            'state' => $package->state,
+        ], 422);
+    }
+
+    /**
      * Toggle an extension's enabled state.
      */
     public function toggle(UpdateExtensionRequest $request, string $extensionId): JsonResponse
@@ -168,9 +199,18 @@ class ExtensionsController extends ApplicationApiController
         $dbConfig = ExtensionConfig::getByExtensionId($extensionId);
         $newEnabled = $dbConfig ? !$dbConfig->enabled : true;
 
+        if ($newEnabled && $blocked = $this->blockedByLifecycleState($extensionId)) {
+            return $blocked;
+        }
+
         $config = ExtensionConfig::updateOrCreateConfig($extensionId, [
             'enabled' => $newEnabled,
         ]);
+
+        ExtensionPackage::query()
+            ->where('extension_id', $extensionId)
+            ->whereIn('state', ['enabled', 'installed_disabled'])
+            ->update(['state' => $config->enabled ? 'enabled' : 'installed_disabled']);
 
         Activity::event('admin:extensions:toggle')
             ->property('extension_id', $extensionId)

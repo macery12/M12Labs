@@ -110,11 +110,18 @@ class ExtensionCatalogService
                 'installed' => true,
                 'installable' => false,
                 'canUninstall' => true,
+                // Persisted lifecycle state. "unsupported" marks a package built
+                // for a manifest version this panel no longer accepts: it is inert
+                // and cannot be enabled, so the UI offers Uninstall only.
+                'state' => $package->state,
+                'stateReason' => $package->state_reason,
+                'manifestVersion' => (int) $package->manifest_version,
+                'canEnable' => in_array($package->state, ['enabled', 'installed_disabled'], true),
                 // Whether this package ships a database (migrations). Drives
                 // whether the uninstall UI offers the drop-tables option, so the
                 // operator is never asked about data an extension never created.
                 'hasDatabase' => $this->migrationService->hasMigrations($package->extension_id),
-                'status' => 'installed',
+                'status' => $package->state === 'unsupported' ? 'unsupported' : 'installed',
                 'updateAvailable' => false,
                 // Installed packages (including manual uploads that may sit outside
                 // the declared range) are already on disk and never blocked.

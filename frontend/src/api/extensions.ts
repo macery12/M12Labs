@@ -7,7 +7,20 @@ import http from '@/lib/http';
 // author, source label, security warning, settings-schema labels) are rendered
 // verbatim and intentionally NOT routed through the i18n catalog.
 
-export type ExtensionStatus = 'core' | 'installed' | 'available';
+export type ExtensionStatus = 'core' | 'installed' | 'available' | 'unsupported';
+// Persisted lifecycle state. Anything outside 'enabled' | 'installed_disabled'
+// is inert: the runtime gate will not load it and the API refuses to enable it.
+export type ExtensionLifecycleState =
+    | 'installed_disabled'
+    | 'enabled'
+    | 'unsupported'
+    | 'failed'
+    | 'installing'
+    | 'enabling'
+    | 'disabling'
+    | 'updating'
+    | 'uninstalling'
+    | 'staged';
 export type ExtensionType = 'user' | 'admin' | 'both';
 
 export interface ExtensionSource {
@@ -57,6 +70,12 @@ export interface Extension {
     // The uninstall drawer only offers the drop-tables option when this is set.
     hasDatabase: boolean;
     status: ExtensionStatus;
+    // Present for installed packages only. `canEnable` is false while the
+    // package is quarantined, in which case `stateReason` explains why.
+    state?: ExtensionLifecycleState;
+    stateReason?: string | null;
+    manifestVersion?: number;
+    canEnable?: boolean;
     updateAvailable: boolean;
     // False only for an *available* (repository) extension whose declared
     // compatiblePanelVersions exclude the running panel. Installed/core/manual

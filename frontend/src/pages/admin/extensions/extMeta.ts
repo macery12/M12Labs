@@ -90,11 +90,21 @@ export function resolveExtensionIcon(name: string | null | undefined): LucideIco
     return ICONS[key] ?? Plug;
 }
 
-export type ExtensionTone = 'core' | 'enabled' | 'installed' | 'available' | 'update' | 'incompatible';
+export type ExtensionTone =
+    | 'core'
+    | 'enabled'
+    | 'installed'
+    | 'available'
+    | 'update'
+    | 'incompatible'
+    | 'unsupported';
 
 // A single derived "tone" drives every status-coloured surface for an extension
 // (badge, icon ring, accent) so the card and the drawer stay visually in sync.
 export function extensionTone(ext: Extension): ExtensionTone {
+    // Checked first: a quarantined package is inert regardless of any update
+    // that may be available for it, and offering "Update" would be misleading.
+    if (ext.status === 'unsupported' || ext.canEnable === false) return 'unsupported';
     if (ext.updateAvailable) return 'update';
     // An available repo release the panel can't run reads as "incompatible"
     // (danger tone) rather than a plain, installable "available".
@@ -115,6 +125,7 @@ export function toneVar(tone: ExtensionTone): string {
         case 'available':
             return 'var(--brand)';
         case 'incompatible':
+        case 'unsupported':
             return 'var(--color-danger)';
         case 'core':
         case 'installed':
@@ -124,6 +135,7 @@ export function toneVar(tone: ExtensionTone): string {
 }
 
 type ToneLabelKey =
+    | 'status.unsupported'
     | 'status.updateAvailable'
     | 'status.available'
     | 'status.incompatible'
@@ -133,6 +145,8 @@ type ToneLabelKey =
 // i18n key (in the `extensions` namespace) for a tone's badge label.
 export function toneLabelKey(tone: ExtensionTone): ToneLabelKey {
     switch (tone) {
+        case 'unsupported':
+            return 'status.unsupported';
         case 'update':
             return 'status.updateAvailable';
         case 'available':
