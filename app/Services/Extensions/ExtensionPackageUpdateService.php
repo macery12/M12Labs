@@ -5,6 +5,8 @@ namespace Everest\Services\Extensions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Everest\Models\ExtensionConfig;
+use Illuminate\Support\Facades\Log;
 use Everest\Models\ExtensionPackage;
 use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
@@ -28,18 +30,19 @@ class ExtensionPackageUpdateService
         private ExtensionPermissionRegistry $permissionRegistry,
         private ExtensionJobDrainService $drainService,
         private ExtensionPageManifestService $pageManifestService,
+        private ExtensionSignatureService $signatureService,
     ) {
     }
 
     /**
      * Update an extension from a configured repository.
      */
-    public function update(string $extensionId, int $repositoryId, ?string $version = null, ?string $approvedCapabilityHash = null): ExtensionPackage
+    public function update(string $extensionId, int $repositoryId, ?string $version = null, ?string $approvedCapabilityHash = null, bool $acknowledgeModified = false): ExtensionPackage
     {
-        return $this->operationLockService->withinLock('update', $extensionId, function () use ($extensionId, $repositoryId, $version, $approvedCapabilityHash) {
+        return $this->operationLockService->withinLock('update', $extensionId, function () use ($extensionId, $repositoryId, $version, $approvedCapabilityHash, $acknowledgeModified) {
             $prepared = null;
             try {
-                $prepared = $this->prepareUpdate($extensionId, $repositoryId, $version, $approvedCapabilityHash);
+                $prepared = $this->prepareUpdate($extensionId, $repositoryId, $version, $approvedCapabilityHash, $acknowledgeModified);
 
                 $this->rebuildService->rebuild(
                     sprintf('Update extension %s', $prepared['extensionId']),
@@ -81,12 +84,12 @@ class ExtensionPackageUpdateService
     /**
      * Update an extension from a local .M12LabsExtension archive.
      */
-    public function updateFromArchive(string $archivePath, ?string $sourceLabel = null, ?string $approvedCapabilityHash = null): ExtensionPackage
+    public function updateFromArchive(string $archivePath, ?string $sourceLabel = null, ?string $approvedCapabilityHash = null, bool $acknowledgeModified = false, bool $acknowledgeUnsigned = false): ExtensionPackage
     {
         $resolvedPath = $this->artifactService->resolveArchivePath($archivePath);
         $this->assertSupportedArchiveArtifact($resolvedPath);
 
-        return $this->operationLockService->withinLock('update', basename($resolvedPath), function () use ($resolvedPath, $sourceLabel, $approvedCapabilityHash) {
+        return $this->operationLockService->withinLock('update', basename($resolvedPath), function () use ($resolvedPath, $sourceLabel, $approvedCapabilityHash, $acknowledgeModified, $acknowledgeUnsigned) {
             $prepared = null;
             try {
                 $prepared = $this->performUpdateFileOps(
@@ -101,6 +104,8 @@ class ExtensionPackageUpdateService
                     sourceRegistryUrl: null,
                     sourceArchiveUrl: 'file://' . $resolvedPath,
                     fallbackPackageMetadata: [],
+                    acknowledgeModified: $acknowledgeModified,
+                    acknowledgeUnsigned: $acknowledgeUnsigned,
                 );
 
                 $this->rebuildService->rebuild(
@@ -150,7 +155,7 @@ class ExtensionPackageUpdateService
      *
      * @return array<string, mixed> opaque prepared state; pass to finalizeUpdate() and rollbackUpdate()
      */
-    public function prepareUpdate(string $extensionId, int $repositoryId, ?string $version = null, ?string $approvedCapabilityHash = null): array
+    public function prepareUpdate(string $extensionId, int $repositoryId, ?string $version = null, ?string $approvedCapabilityHash = null, bool $acknowledgeModified = false): array
     {
         $package = $this->catalogService->findRepositoryPackage($extensionId, $repositoryId, $version);
         $release = $package['latestRelease'];
@@ -167,6 +172,7 @@ class ExtensionPackageUpdateService
             sourceRegistryUrl: $package['repository']->manifest_url,
             sourceArchiveUrl: $release['archiveUrl'],
             fallbackPackageMetadata: $package,
+            acknowledgeModified: $acknowledgeModified,
         );
     }
 
@@ -189,6 +195,8 @@ class ExtensionPackageUpdateService
         $sourceRepositoryName = $prepared['sourceRepositoryName'];
         $sourceRegistryUrl = $prepared['sourceRegistryUrl'];
         $sourceArchiveUrl = $prepared['sourceArchiveUrl'];
+        $signature = $prepared['signature'] ?? ['state' => 'unsigned', 'keyId' => null, 'verifiedAt' => null];
+        $approvedCapabilityHash = $prepared['approvedCapabilityHash'] ?? null;
 
         DB::transaction(function () use (
             $archiveChecksum,
@@ -201,7 +209,9 @@ class ExtensionPackageUpdateService
             $sourceArchiveUrl,
             $sourceRegistryUrl,
             $sourceRepositoryId,
-            $sourceRepositoryName
+            $sourceRepositoryName,
+            $signature,
+            $approvedCapabilityHash
         ) {
             ExtensionPackageFile::query()
                 ->where('extension_package_id', $existingPackage->id)
@@ -225,8 +235,23 @@ class ExtensionPackageUpdateService
                 'manifest_version'       => ExtensionManifest::VERSION,
                 'capabilities'           => $parsedManifest->capabilities->jsonSerialize(),
                 'capability_hash'        => $parsedManifest->capabilities->hash(),
+                // The set an administrator consented to. Recording it is what
+                // stops the next update re-prompting for privileges that were
+                // already granted.
+                'approved_capability_hash' => $approvedCapabilityHash,
                 'manifest_hash'          => $parsedManifest->hash(),
                 'publisher'              => $parsedManifest->publisher,
+                'signature_state'        => $signature['state'],
+                'signature_key_id'       => $signature['keyId'],
+                'signature_verified_at'  => $signature['verifiedAt'],
+                // Lifecycle state is re-derived rather than carried over. A
+                // package quarantined as 'unsupported' for its manifest version
+                // has just been replaced by one this panel accepts, and leaving
+                // the old state (and its now-false reason) would keep it inert
+                // with no way back — which made updating out of v2 pointless.
+                // An already-runnable package keeps its enabled flag.
+                'state'                  => $this->stateAfterUpdate($resolvedExtensionId),
+                'state_reason'           => null,
                 'installed_at'           => now(),
             ]);
 
@@ -337,6 +362,8 @@ class ExtensionPackageUpdateService
         ?string $sourceRegistryUrl,
         string $sourceArchiveUrl,
         array $fallbackPackageMetadata,
+        bool $acknowledgeModified = false,
+        bool $acknowledgeUnsigned = false,
     ): array {
         $tempRoot = storage_path('app/extensions/tmp/' . Str::uuid()->toString());
         $archivePath = $tempRoot . '/' . ExtensionPackageArtifactService::PACKAGE_ARTIFACT_FILENAME;
@@ -376,6 +403,25 @@ class ExtensionPackageUpdateService
 
             $this->artifactService->assertCompatiblePanelVersions($compatiblePanelVersions);
             $this->artifactService->assertCompatiblePanelVersions($parsedManifest->compatiblePanelVersions);
+
+            // Verify who signed the NEW release, exactly as an install does.
+            // Without this an update inherited whatever signature state the
+            // previous version happened to carry: a package updated to a signed
+            // release still read as unsigned, and — worse — an unsigned or
+            // untrusted release could be installed over a verified one without
+            // the panel ever checking.
+            $signature = $this->signatureService->verify(
+                $parsedManifest,
+                $manifest,
+                (string) $archiveChecksum,
+                $acknowledgeUnsigned && $sourceRepositoryId === null,
+                auth()->user()?->email,
+            );
+
+            if ($signature['state'] !== 'verified' && $this->signatureService->signingRequired()) {
+                $this->signatureService->assertCapabilitiesAllowedUnverified($parsedManifest);
+            }
+
             $this->assertCapabilitiesApproved($existingPackage, $parsedManifest, $approvedCapabilityHash);
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
 
@@ -389,7 +435,13 @@ class ExtensionPackageUpdateService
             $this->drainService->waitForDrain($resolvedExtensionId, (int) config('extensions.queues.drain_timeout_seconds', 60));
             $this->drainService->assertSafeToRemove($resolvedExtensionId);
 
-            $this->fileService->assertFilesUnmodified($existingPackage->files->all(), 'updated');
+            $discarded = $this->fileService->assertFilesUnmodified($existingPackage->files->all(), 'updated', $acknowledgeModified, (string) $resolvedExtensionId);
+            if ($discarded !== []) {
+                Log::warning('Updating an extension whose files were modified after installation.', [
+                    'extension' => $resolvedExtensionId,
+                    'modified' => $discarded,
+                ]);
+            }
             $this->fileService->createRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
 
             $newBackupRoot = storage_path('app/extensions/backups/' . $resolvedExtensionId . '/' . Str::uuid()->toString());
@@ -447,6 +499,13 @@ class ExtensionPackageUpdateService
                 'newFilePlans'            => $newFilePlans,
                 'oldOnlyFiles'            => $oldOnlyFiles,
                 'archiveChecksum'         => is_string($archiveChecksum) ? $archiveChecksum : null,
+                // Who signed THIS release, and the capability set the operator
+                // consented to. Both are re-derived per update: carrying the
+                // previous version's forward would let an unsigned release
+                // inherit a verified badge, and would re-prompt for privileges
+                // that were already granted.
+                'signature'               => $signature,
+                'approvedCapabilityHash'  => $parsedManifest->capabilities->hash(),
                 'sourceRepositoryId'      => $sourceRepositoryId,
                 'sourceRepositoryName'    => $sourceRepositoryName,
                 'sourceRegistryUrl'       => $sourceRegistryUrl,
@@ -487,6 +546,22 @@ class ExtensionPackageUpdateService
      * needs the administrator to consent to that specific set. The stored
      * projection is the record of what was previously approved.
      */
+    /**
+     * The lifecycle state a freshly updated package should hold.
+     *
+     * Derived from the operator's enable flag rather than from the previous
+     * state, so a package rehabilitated out of 'unsupported' lands somewhere
+     * runnable instead of keeping a quarantine that no longer applies.
+     */
+    private function stateAfterUpdate(string $extensionId): string
+    {
+        $enabled = ExtensionConfig::query()
+            ->where('extension_id', $extensionId)
+            ->value('enabled');
+
+        return $enabled ? 'enabled' : 'installed_disabled';
+    }
+
     private function assertCapabilitiesApproved(ExtensionPackage $existingPackage, ExtensionManifest $manifest, ?string $approvedCapabilityHash): void
     {
         $installed = is_array($existingPackage->capabilities)

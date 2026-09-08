@@ -118,6 +118,10 @@ class ExtensionHealthService
             // executable state, an intact capability projection and an
             // acceptable signature.
             'loadable' => $entry !== null,
+            // Why not, in the panel's own terms. "state is enabled" was the
+            // only thing the UI could say before, which is unhelpful precisely
+            // when the state is fine and something else is stopping the load.
+            'notLoadableReason' => $entry !== null ? null : $this->plan->exclusionReason($package),
             'signature' => [
                 'state' => $package->signature_state,
                 'keyId' => $package->signature_key_id,

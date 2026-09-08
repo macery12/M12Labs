@@ -10,6 +10,7 @@ import {
     updateExtension,
     installExtension,
     CapabilityApprovalRequired,
+    ModifiedFilesRequireAcknowledgement,
     type CapabilityDiff,
     updateExtensionPackage,
     uninstallExtension,
@@ -21,6 +22,7 @@ import { useFlashes } from '@/state/flashes';
 import { cn } from '@/lib/cn';
 import { resolveExtensionIcon, extensionTone, toneVar, toneLabelKey } from './extMeta';
 import { CapabilityApprovalModal } from './CapabilityApprovalModal';
+import { ModifiedFilesModal } from './ModifiedFilesModal';
 import { ExtensionSecretsPanel } from './ExtensionSecretsPanel';
 import { ExtensionHealthPanel, ExtensionHealthIcon } from './ExtensionHealthPanel';
 import { DatabaseChangesModal } from './DatabaseChangesModal';
@@ -31,6 +33,18 @@ const tint = (v: string, pct: number) => `color-mix(in srgb, ${v} ${pct}%, trans
 // Toggle a numeric id within a selection list (immutable).
 const toggleId = (list: number[], id: number) =>
     list.includes(id) ? list.filter(x => x !== id) : [...list, id];
+
+/**
+ * Consent an install or update carries. Both tokens are optional and
+ * independent: the panel can refuse once for privileges and again for locally
+ * modified files, and the second refusal must not lose the first approval.
+ */
+interface Consent {
+    approvedCapabilityHash?: string;
+    acknowledgeModifiedFiles?: boolean;
+    dropData?: boolean;
+    confirm?: string;
+}
 
 export function ExtensionManageDrawer({
     ext,
@@ -87,43 +101,61 @@ export function ExtensionManageDrawer({
         null,
     );
 
-    const approvalAware =
-        (operation: 'install' | 'update', onOther: (error: unknown) => void) =>
+    // A second conflict can follow the first: consenting to the new privileges
+    // gets the update as far as the file check, which then refuses because the
+    // installed files drifted. The approved hash is carried into that retry, so
+    // the operator is not sent back through the privileges dialog.
+    const [pendingModifiedFiles, setPendingModifiedFiles] = useState<
+        { operation: 'update' | 'uninstall'; verb: string; paths: string[]; consent: Consent } | null
+    >(null);
+
+    const conflictAware =
+        (operation: 'install' | 'update' | 'uninstall', consent: Consent, onOther: (error: unknown) => void) =>
         (error: unknown) => {
-            if (error instanceof CapabilityApprovalRequired) {
+            if (error instanceof CapabilityApprovalRequired && operation !== 'uninstall') {
                 setPendingApproval({ operation, diff: error.diff });
+                return;
+            }
+            if (error instanceof ModifiedFilesRequireAcknowledgement && operation !== 'install') {
+                setPendingModifiedFiles({ operation, verb: error.verb, paths: error.paths, consent });
                 return;
             }
             onOther(error);
         };
 
     const install = useMutation({
-        mutationFn: (approvedCapabilityHash?: string) =>
-            installExtension(ext!.id, ext!.source.repositoryId!, ext!.latestVersion, approvedCapabilityHash),
+        mutationFn: (vars: Consent = {}) =>
+            installExtension(ext!.id, ext!.source.repositoryId!, ext!.latestVersion, vars.approvedCapabilityHash),
         onSuccess: e => {
             setPendingApproval(null);
             push({ type: 'success', message: m['extensions.toast.installed']({ name: e.name }) });
             invalidate();
             onClose();
         },
-        onError: approvalAware('install', fail),
+        onError: (error, vars) => conflictAware('install', vars ?? {}, fail)(error),
     });
 
     const updatePkg = useMutation({
-        mutationFn: (approvedCapabilityHash?: string) =>
-            updateExtensionPackage(ext!.id, ext!.source.repositoryId!, ext!.latestVersion, approvedCapabilityHash),
+        mutationFn: (vars: Consent = {}) =>
+            updateExtensionPackage(
+                ext!.id,
+                ext!.source.repositoryId!,
+                ext!.latestVersion,
+                vars.approvedCapabilityHash,
+                vars.acknowledgeModifiedFiles,
+            ),
         onSuccess: e => {
             setPendingApproval(null);
             push({ type: 'success', message: m['extensions.toast.updated']({ name: e.name }) });
             invalidate();
             onClose();
         },
-        onError: approvalAware('update', fail),
+        onError: (error, vars) => conflictAware('update', vars ?? {}, fail)(error),
     });
 
     const remove = useMutation({
-        mutationFn: (vars: { dropData: boolean; confirm?: string }) =>
-            uninstallExtension(ext!.id, vars.dropData, vars.confirm),
+        mutationFn: (vars: { dropData: boolean; confirm?: string; acknowledgeModifiedFiles?: boolean }) =>
+            uninstallExtension(ext!.id, vars.dropData, vars.confirm, vars.acknowledgeModifiedFiles),
         onSuccess: res => {
             push({ type: 'success', message: m['extensions.toast.uninstalled']({ name: res.extension.name ?? ext!.id }) });
             if (res.dataDropped) {
@@ -134,7 +166,8 @@ export function ExtensionManageDrawer({
             invalidate();
             onClose();
         },
-        onError: fail,
+        onError: (error, vars) =>
+            conflictAware('uninstall', { dropData: vars.dropData, confirm: vars.confirm }, fail)(error),
     });
 
     const eggsByNest = useMemo(() => {
@@ -490,8 +523,8 @@ export function ExtensionManageDrawer({
                         ]}
                         onClose={() => setDbModal(null)}
                         onConfirm={drops => {
-                            if (dbModal === 'install') install.mutate(undefined);
-                            else if (dbModal === 'update') updatePkg.mutate(undefined);
+                            if (dbModal === 'install') install.mutate({});
+                            else if (dbModal === 'update') updatePkg.mutate({});
                             else remove.mutate({ dropData: drops.length > 0, confirm: drops[0]?.confirm });
                         }}
                     />
@@ -508,8 +541,37 @@ export function ExtensionManageDrawer({
                         busy={install.isPending || updatePkg.isPending}
                         onClose={() => setPendingApproval(null)}
                         onApprove={hash => {
-                            if (pendingApproval.operation === 'install') install.mutate(hash);
-                            else updatePkg.mutate(hash);
+                            const consent = { approvedCapabilityHash: hash };
+                            if (pendingApproval.operation === 'install') install.mutate(consent);
+                            else updatePkg.mutate(consent);
+                        }}
+                    />
+                )}
+
+                {/* Consent step for discarding local edits to installed files.
+                    Carries forward any capability approval already given, so a
+                    package that trips both checks is not asked twice. */}
+                {pendingModifiedFiles && (
+                    <ModifiedFilesModal
+                        open
+                        extensionName={e.name}
+                        verb={pendingModifiedFiles.verb}
+                        paths={pendingModifiedFiles.paths}
+                        busy={updatePkg.isPending || remove.isPending}
+                        onClose={() => setPendingModifiedFiles(null)}
+                        onAcknowledge={() => {
+                            const { operation, consent } = pendingModifiedFiles;
+                            setPendingModifiedFiles(null);
+
+                            if (operation === 'update') {
+                                updatePkg.mutate({ ...consent, acknowledgeModifiedFiles: true });
+                            } else {
+                                remove.mutate({
+                                    dropData: Boolean(consent.dropData),
+                                    confirm: consent.confirm,
+                                    acknowledgeModifiedFiles: true,
+                                });
+                            }
                         }}
                     />
                 )}

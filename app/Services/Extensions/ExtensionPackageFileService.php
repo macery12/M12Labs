@@ -3,8 +3,8 @@
 namespace Everest\Services\Extensions;
 
 use Illuminate\Support\Facades\File;
-use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
+use Everest\Exceptions\Service\Extension\ModifiedFilesRequireAcknowledgementException;
 
 /**
  * Shared file-level helpers used by the install, update and uninstall services:
@@ -22,33 +22,58 @@ class ExtensionPackageFileService
     /**
      * Throw if any tracked file has been externally modified since installation.
      *
+     * The check exists so the panel never silently discards an operator's local
+     * edits, and so tampering is visible. It is not a security boundary — the
+     * files are already on disk and already executing — which is why an
+     * explicit acknowledgement is allowed to proceed past it.
+     *
+     * Legitimate drift happens: a code formatter run over the panel tree will
+     * rewrite installed package PHP, and until this branch the repository's own
+     * php-cs-fixer configuration did exactly that. Without an escape hatch such
+     * a package can be neither updated nor removed, which is a worse outcome
+     * than the one the check protects against.
+     *
      * @param array<int, ExtensionPackageFile> $files
      * @param string $verb Human-readable operation verb for the error message (e.g. 'uninstalled', 'updated').
+     * @param bool $acknowledgeModified Proceed anyway, discarding local edits
+     *
+     * @return array<int, string> the paths that differ, empty when nothing drifted
+     *
+     * @throws ModifiedFilesRequireAcknowledgementException
      */
-    public function assertFilesUnmodified(array $files, string $verb): void
+    public function assertFilesUnmodified(array $files, string $verb, bool $acknowledgeModified = false, string $extensionId = ''): array
+    {
+        $modified = $this->modifiedPaths($files);
+
+        if ($modified === [] || $acknowledgeModified) {
+            return $modified;
+        }
+
+        throw new ModifiedFilesRequireAcknowledgementException($extensionId, $verb, $modified);
+    }
+
+    /**
+     * Tracked files whose contents no longer match what was installed. A file
+     * that has been deleted counts as modified: it cannot be restored on
+     * rollback either.
+     *
+     * @param array<int, ExtensionPackageFile> $files
+     *
+     * @return array<int, string>
+     */
+    public function modifiedPaths(array $files): array
     {
         $modified = [];
 
         foreach ($files as $file) {
             $targetPath = base_path($file->path);
-            if (!is_file($targetPath)) {
-                $modified[] = $file->path;
-                continue;
-            }
 
-            if (hash_file('sha256', $targetPath) !== $file->installed_checksum) {
+            if (!is_file($targetPath) || hash_file('sha256', $targetPath) !== $file->installed_checksum) {
                 $modified[] = $file->path;
             }
         }
 
-        if ($modified === []) {
-            return;
-        }
-
-        $preview = implode(', ', array_slice($modified, 0, 5));
-        $suffix = count($modified) > 5 ? ', and more' : '';
-
-        throw new DisplayException(sprintf('The extension cannot be %s because these files were modified after installation: %s%s.', $verb, $preview, $suffix));
+        return $modified;
     }
 
     /**

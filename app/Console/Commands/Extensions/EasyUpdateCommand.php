@@ -12,6 +12,8 @@ class EasyUpdateCommand extends UpdateExtensionCommand
                             {--file : Prefer local package-file update mode}
                             {--label= : Stored source label for manual file updates}
                             {--yes : Skip interactive prompts when possible}
+                            {--allow-modified : Proceed even though tracked files were changed after installation, discarding those changes}
+                            {--approve-capabilities : Grant the privileges the new release declares without prompting}
                             {--debug : Show detailed update diagnostics}';
 
     protected $description = 'Update an installed M12Labs extension from the current directory, a package file, or the configured repository.';

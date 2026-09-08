@@ -22,6 +22,7 @@ class InstallExtensionCommand extends Command
                             {--file : Prefer local package-file install mode}
                             {--label= : Stored source label for manual file installs}
                             {--acknowledge-unsigned= : Type the extension id to install an unsigned local archive}
+                            {--approve-capabilities : Grant the privileges the package declares without prompting}
                             {--yes : Skip interactive prompts when possible}
                             {--debug : Show detailed install diagnostics}';
 
@@ -46,27 +47,33 @@ class InstallExtensionCommand extends Command
                 $this->renderDebugResolution($resolution);
             }
 
-            if ($resolution['mode'] === 'file') {
-                // Typed, not a boolean flag: installing something the panel
-                // cannot attribute to anybody should cost more than -y, and the
-                // value has to name the extension being installed.
-                $acknowledged = trim((string) $this->option('acknowledge-unsigned'));
+            // Typed, not a boolean flag: installing something the panel
+            // cannot attribute to anybody should cost more than -y, and the
+            // value has to name the extension being installed.
+            $acknowledged = $resolution['mode'] === 'file'
+                ? trim((string) $this->option('acknowledge-unsigned'))
+                : '';
 
-                $package = $this->installService->installFromArchive(
-                    $resolution['archivePath'],
-                    $resolution['label'],
-                    null,
-                    $acknowledged !== '' && $acknowledged === ($resolution['extensionId'] ?? $acknowledged),
-                );
-            } else {
+            $package = $this->withCapabilityApproval(function (?string $approvedCapabilityHash) use ($resolution, $acknowledged) {
+                if ($resolution['mode'] === 'file') {
+                    return $this->installService->installFromArchive(
+                        $resolution['archivePath'],
+                        $resolution['label'],
+                        $approvedCapabilityHash,
+                        $acknowledged !== '' && $acknowledged === ($resolution['extensionId'] ?? $acknowledged),
+                    );
+                }
+
                 /** @var ExtensionRepository $repository */
                 $repository = $resolution['repository'];
-                $package = $this->installService->install(
+
+                return $this->installService->install(
                     $resolution['extensionId'],
                     $repository->id,
                     $resolution['release'],
+                    $approvedCapabilityHash,
                 );
-            }
+            });
         } catch (\Throwable $exception) {
             $this->components->error($exception->getMessage());
 

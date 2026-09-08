@@ -5,6 +5,7 @@ namespace Everest\Services\Extensions;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Everest\Models\ExtensionConfig;
+use Illuminate\Support\Facades\Log;
 use Everest\Models\ExtensionPackage;
 use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
@@ -32,12 +33,12 @@ class ExtensionPackageUninstallService
      *
      * @return array{dataDropped: bool, preservedTables: array<int, string>, manualCleanup: array<int, string>, migrationLog: ?string}
      */
-    public function uninstall(string $extensionId, bool $dropData = false, ?string $initiator = null): array
+    public function uninstall(string $extensionId, bool $dropData = false, ?string $initiator = null, bool $acknowledgeModified = false): array
     {
-        return $this->operationLockService->withinLock('uninstall', $extensionId, function () use ($extensionId, $dropData, $initiator) {
+        return $this->operationLockService->withinLock('uninstall', $extensionId, function () use ($extensionId, $dropData, $initiator, $acknowledgeModified) {
             $prepared = null;
             try {
-                $prepared = $this->prepareUninstall($extensionId, $dropData, $initiator);
+                $prepared = $this->prepareUninstall($extensionId, $dropData, $initiator, $acknowledgeModified);
 
                 $this->rebuildService->rebuild(
                     sprintf('Uninstall extension %s', $extensionId),
@@ -95,7 +96,7 @@ class ExtensionPackageUninstallService
      *
      * @return array<string, mixed> opaque prepared state; pass to finalizeUninstall() and rollbackUninstall()
      */
-    public function prepareUninstall(string $extensionId, bool $dropData = false, ?string $initiator = null): array
+    public function prepareUninstall(string $extensionId, bool $dropData = false, ?string $initiator = null, bool $acknowledgeModified = false): array
     {
         $package = ExtensionPackage::query()->with('files')->where('extension_id', $extensionId)->first();
         if (!$package) {
@@ -119,7 +120,13 @@ class ExtensionPackageUninstallService
         $this->ownershipService->repairStandardPaths($extensionId);
 
         $this->progressService->report('uninstall', $extensionId, 'validating');
-        $this->fileService->assertFilesUnmodified($files->all(), 'uninstalled');
+        $discarded = $this->fileService->assertFilesUnmodified($files->all(), 'uninstalled', $acknowledgeModified, $extensionId);
+        if ($discarded !== []) {
+            Log::warning('Uninstalling an extension whose files were modified after installation.', [
+                'extension' => $extensionId,
+                'modified' => $discarded,
+            ]);
+        }
         $this->fileService->createRollbackSnapshot($files->all(), $rollbackRoot);
         $this->assertWritableUninstallTargets($files->all());
 

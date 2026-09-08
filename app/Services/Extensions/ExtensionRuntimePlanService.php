@@ -194,6 +194,52 @@ class ExtensionRuntimePlanService
     }
 
     /**
+     * Why an installed package is not in the runtime plan.
+     *
+     * entryFor() answers yes/no, which is all the request path needs; an
+     * operator staring at a disabled extension needs the reason. Mirrors the
+     * checks below in the same order, and returns null when the package does
+     * load. The keys are stable identifiers for the UI to translate, not prose.
+     */
+    public function exclusionReason(ExtensionPackage $package): ?string
+    {
+        if (!config('modules.extensions.enabled', true)) {
+            return 'module_disabled';
+        }
+
+        $enabled = ExtensionConfig::query()
+            ->where('extension_id', $package->extension_id)
+            ->value('enabled');
+
+        if (!$enabled) {
+            return 'config_disabled';
+        }
+
+        if (!in_array($package->state, self::EXECUTABLE_STATES, true)) {
+            return 'state';
+        }
+
+        if ((int) $package->manifest_version !== ExtensionManifest::VERSION) {
+            return 'manifest_version';
+        }
+
+        if (!$this->signatureStateAllowed((string) $package->signature_state)) {
+            return 'signature';
+        }
+
+        $capabilities = $this->hydrate($package->capabilities);
+        if ($capabilities === null) {
+            return 'capabilities_missing';
+        }
+
+        if ($package->capability_hash !== null && $capabilities->hash() !== $package->capability_hash) {
+            return 'capability_hash';
+        }
+
+        return null;
+    }
+
+    /**
      * Decide whether one installed package may load, and rehydrate its
      * capabilities from the stored projection.
      */

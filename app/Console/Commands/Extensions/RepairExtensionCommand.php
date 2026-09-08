@@ -24,6 +24,7 @@ class RepairExtensionCommand extends Command
                             {--uninstall= : Extension id to force-remove, including one quarantined as unsupported}
                             {--drop-data : With --uninstall, also roll back the extension\'s migrations, DROPPING its tables (unrecoverable)}
                             {--force : Skip the confirmation prompts}
+                            {--allow-modified : Remove the package even though its files were changed after installation, discarding those changes}
                             {--debug : Show detailed diagnostics}';
 
     protected $description = 'Inspect and repair extension packages that cannot run on this panel.';
@@ -145,10 +146,19 @@ class RepairExtensionCommand extends Command
             $result = $this->uninstallService->uninstall(
                 $extensionId,
                 $dropData,
-                sprintf('cli-repair:%s', get_current_user() ?: 'unknown')
+                sprintf('cli-repair:%s', get_current_user() ?: 'unknown'),
+                (bool) $this->option('allow-modified')
             );
         } catch (\Throwable $exception) {
             $this->components->error($exception->getMessage());
+
+            if (!$this->option('allow-modified') && str_contains($exception->getMessage(), 'modified after installation')) {
+                $this->newLine();
+                $this->components->warn(sprintf(
+                    'Re-run with --allow-modified to remove it anyway: php artisan p:ext:repair --uninstall=%s --allow-modified',
+                    $extensionId
+                ));
+            }
 
             if ($this->isDebug()) {
                 $this->renderDebugException($exception);

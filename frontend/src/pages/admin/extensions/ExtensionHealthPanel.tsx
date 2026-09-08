@@ -4,7 +4,7 @@ import { Activity, AlertTriangle, CheckCircle2, Copy, Check } from 'lucide-react
 import { m } from '@/i18n/messages';
 import { Spinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
-import { getExtensionHealth, getExtensionHealthExport } from '@/api/extensions';
+import { getExtensionHealth, getExtensionHealthExport, type ExtensionHealth } from '@/api/extensions';
 
 /**
  * Runtime diagnostics for an installed extension.
@@ -15,6 +15,35 @@ import { getExtensionHealth, getExtensionHealthExport } from '@/api/extensions';
  * manifest, and an acceptable signature. Each of those gets its own line, so
  * the answer is "this specific thing is wrong" rather than "it says enabled".
  */
+/**
+ * Why the panel is refusing to load an extension, in the operator's terms.
+ *
+ * The generic "lifecycle state is enabled" is unhelpful exactly when it matters
+ * — the state is fine and something else (an untrusted signature, a stale
+ * capability record) is the real cause — so the backend names the check that
+ * failed and this maps it to an actionable sentence.
+ */
+function notLoadableLabel(health: ExtensionHealth): string {
+    const state = health.state ?? '';
+
+    switch (health.notLoadableReason) {
+        case 'module_disabled':
+            return m['extensions.health.reason.module_disabled']();
+        case 'config_disabled':
+            return m['extensions.health.reason.config_disabled']();
+        case 'manifest_version':
+            return m['extensions.health.reason.manifest_version']();
+        case 'signature':
+            return m['extensions.health.reason.signature']();
+        case 'capabilities_missing':
+            return m['extensions.health.reason.capabilities_missing']();
+        case 'capability_hash':
+            return m['extensions.health.reason.capability_hash']();
+        default:
+            return m['extensions.health.reason.state']({ state });
+    }
+}
+
 export function ExtensionHealthPanel({ extensionId }: { extensionId: string }) {
     const { push } = useFlashes();
     const [copied, setCopied] = useState(false);
@@ -56,7 +85,7 @@ export function ExtensionHealthPanel({ extensionId }: { extensionId: string }) {
             <StatusRow
                 ok={health.loadable === true}
                 okLabel={m['extensions.health.loadable']()}
-                failLabel={health.stateReason || m['extensions.health.notLoadable']({ state: health.state ?? '' })}
+                failLabel={health.stateReason || notLoadableLabel(health)}
             />
 
             <StatusRow

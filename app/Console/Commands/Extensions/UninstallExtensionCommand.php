@@ -16,6 +16,7 @@ class UninstallExtensionCommand extends Command
     protected $signature = 'p:extensions:uninstall
                             {extensionId : Installed extension id to remove}
                             {--force : Skip the confirmation prompts}
+                            {--allow-modified : Proceed even though tracked files were changed after installation, discarding those changes}
                             {--drop-data : Also roll back the extension\'s migrations, DROPPING its database tables (unrecoverable)}
                             {--debug : Show detailed uninstall diagnostics}';
 
@@ -54,10 +55,16 @@ class UninstallExtensionCommand extends Command
             $result = $this->uninstallService->uninstall(
                 $extensionId,
                 $dropData,
-                sprintf('cli:%s', get_current_user() ?: 'unknown')
+                sprintf('cli:%s', get_current_user() ?: 'unknown'),
+                (bool) $this->option('allow-modified')
             );
         } catch (\Throwable $exception) {
             $this->components->error($exception->getMessage());
+
+            if (!$this->option('allow-modified') && str_contains($exception->getMessage(), 'modified after installation')) {
+                $this->newLine();
+                $this->components->warn('Re-run with --allow-modified to proceed and discard those changes.');
+            }
 
             if ($this->isDebug()) {
                 $this->renderDebugException($exception);

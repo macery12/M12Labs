@@ -238,16 +238,49 @@ export class CapabilityApprovalRequired extends Error {
     }
 }
 
+/**
+ * Raised when the operation would discard local edits to installed files.
+ *
+ * Legitimate drift is common — a code formatter run over the panel tree
+ * rewrites installed package PHP — and until this is acknowledged the package
+ * can be neither updated nor removed.
+ */
+export class ModifiedFilesRequireAcknowledgement extends Error {
+    constructor(
+        public readonly extensionId: string,
+        public readonly verb: string,
+        public readonly paths: string[],
+        message: string,
+    ) {
+        super(message);
+        this.name = 'ModifiedFilesRequireAcknowledgement';
+    }
+}
+
 // The panel computes the diff from the VERIFIED manifest, so it can only answer
 // after downloading and checking the archive — which is why approval is a 409
 // on the real request rather than a separate preflight endpoint.
-function rethrowCapabilityApproval(error: unknown): never {
+//
+// The modified-files conflict arrives the same way and for the same reason: it
+// is only knowable once the package's files are compared on disk.
+function rethrowExtensionConflicts(error: unknown): never {
     const response = (error as { response?: { status?: number; data?: Record<string, unknown> } }).response;
 
     if (response?.status === 409 && response.data?.capability_diff) {
         throw new CapabilityApprovalRequired(
             String(response.data.extension_id ?? ''),
             response.data.capability_diff as CapabilityDiff,
+        );
+    }
+
+    if (response?.status === 409 && response.data?.modified_files) {
+        const modified = response.data.modified_files as { verb: string; paths: string[] };
+
+        throw new ModifiedFilesRequireAcknowledgement(
+            String(response.data.extension_id ?? ''),
+            modified.verb,
+            modified.paths ?? [],
+            String(response.data.error ?? 'Files were modified after installation.'),
         );
     }
 
@@ -269,7 +302,7 @@ export async function installExtension(
         });
         return data.attributes as Extension;
     } catch (error) {
-        rethrowCapabilityApproval(error);
+        rethrowExtensionConflicts(error);
     }
 }
 
@@ -279,16 +312,18 @@ export async function updateExtensionPackage(
     repositoryId: number,
     version?: string,
     approvedCapabilityHash?: string,
+    acknowledgeModifiedFiles?: boolean,
 ): Promise<Extension> {
     try {
         const { data } = await http.post(`${BASE}/${id}/update-package`, {
             repository_id: repositoryId,
             version,
             approved_capability_hash: approvedCapabilityHash,
+            acknowledge_modified_files: acknowledgeModifiedFiles,
         });
         return data.attributes as Extension;
     } catch (error) {
-        rethrowCapabilityApproval(error);
+        rethrowExtensionConflicts(error);
     }
 }
 
@@ -303,8 +338,22 @@ export interface UninstallResult {
 
 // POST /extensions/{id}/uninstall — remove an installed package. Pass dropData
 // (with confirm === id) to also drop the extension's database tables.
-export async function uninstallExtension(id: string, dropData = false, confirm?: string): Promise<UninstallResult> {
-    const { data } = await http.post(`${BASE}/${id}/uninstall`, dropData ? { drop_data: true, confirm } : {});
+export async function uninstallExtension(
+    id: string,
+    dropData = false,
+    confirm?: string,
+    acknowledgeModifiedFiles?: boolean,
+): Promise<UninstallResult> {
+    let data;
+    try {
+        ({ data } = await http.post(`${BASE}/${id}/uninstall`, {
+            ...(dropData ? { drop_data: true, confirm } : {}),
+            acknowledge_modified_files: acknowledgeModifiedFiles,
+        }));
+    } catch (error) {
+        rethrowExtensionConflicts(error);
+    }
+
     return {
         extension: data.attributes as Extension,
         dataDropped: Boolean(data.meta?.data_dropped),
@@ -354,6 +403,8 @@ export interface ExtensionHealth {
     // executable state, an intact capability projection and an acceptable
     // signature. This is the field that says which.
     loadable?: boolean;
+    /** Which runtime check refused the extension, when loadable is false. */
+    notLoadableReason?: string | null;
     signature?: {
         state: string;
         keyId: string | null;

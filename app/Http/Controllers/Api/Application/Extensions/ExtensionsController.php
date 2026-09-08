@@ -295,7 +295,8 @@ class ExtensionsController extends ApplicationApiController
         $result = $this->uninstallService->uninstall(
             $extensionId,
             $dropData,
-            sprintf('admin:%s', $request->user()->email)
+            sprintf('admin:%s', $request->user()->email),
+            $request->boolean('acknowledge_modified_files')
         );
 
         Activity::event('admin:extensions:uninstall')
@@ -406,7 +407,8 @@ class ExtensionsController extends ApplicationApiController
             $extensionId,
             (int) $request->input('repository_id'),
             $request->input('version'),
-            $request->input('approved_capability_hash')
+            $request->input('approved_capability_hash'),
+            $request->boolean('acknowledge_modified_files')
         );
 
         Activity::event('admin:extensions:update-package')

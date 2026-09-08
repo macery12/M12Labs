@@ -221,8 +221,15 @@ class ExtensionCatalogService
                         // check mis-fires when a manually installed build is ahead
                         // of the repo (e.g. local 2.0.0 vs published 1.0.0) and
                         // would otherwise advertise a downgrade as an "update".
+                        //
+                        // 'unsupported' is included deliberately: a package
+                        // quarantined for its manifest version is exactly the
+                        // one that needs updating, and a newer release is the
+                        // only way out that keeps its data. Excluding it left
+                        // every pre-v3 install with uninstall as the sole
+                        // option.
                         $localExtensions[$extensionId]['updateAvailable'] =
-                            in_array($localExtensions[$extensionId]['status'], ['installed', 'core'], true)
+                            in_array($localExtensions[$extensionId]['status'], ['installed', 'core', 'unsupported'], true)
                             && version_compare(
                                 (string) $latestRelease['version'],
                                 (string) $localExtensions[$extensionId]['version'],
