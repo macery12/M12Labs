@@ -12,6 +12,7 @@ use Everest\Models\ExtensionConfig;
 use Everest\Models\ExtensionPackage;
 use Everest\Models\ExtensionRepository;
 use Everest\Services\Extensions\ExtensionCatalogService;
+use Everest\Services\Extensions\ExtensionSettingsValidator;
 use Everest\Services\Extensions\ExtensionPermissionRegistry;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Services\Extensions\ExtensionDatabasePlanService;
@@ -48,6 +49,7 @@ class ExtensionsController extends ApplicationApiController
         private ExtensionInstallProgressService $progressService,
         private ExtensionDatabasePlanService $databasePlanService,
         private ExtensionPermissionRegistry $permissionRegistry,
+        private ExtensionSettingsValidator $settingsValidator,
     ) {
         parent::__construct();
     }
@@ -135,7 +137,11 @@ class ExtensionsController extends ApplicationApiController
         $payload = [
             'allowed_nests' => $request->input('allowed_nests', []),
             'allowed_eggs' => $request->input('allowed_eggs', []),
-            'settings' => $request->input('settings', []),
+            // Validated against what the package declared, with unknown keys
+            // rejected: extension_configs.settings used to accept anything, so
+            // a typo became silent permanent configuration and every package
+            // had to defend against every value an admin could type.
+            'settings' => $this->validatedSettings($extensionId, (array) $request->input('settings', [])),
         ];
 
         if ($request->has('enabled')) {
@@ -162,6 +168,28 @@ class ExtensionsController extends ApplicationApiController
             'object' => 'extension',
             'attributes' => $this->catalogService->getExtension($extensionId, true),
         ]);
+    }
+
+    /**
+     * Apply the package's declared settings schema, when it has one.
+     *
+     * A package with no schema keeps the old free-form behaviour — tightening
+     * that would break every already-installed package on upgrade rather than
+     * at its next release.
+     *
+     * @param array<string, mixed> $settings
+     *
+     * @return array<string, mixed>
+     */
+    private function validatedSettings(string $extensionId, array $settings): array
+    {
+        $entry = app(ExtensionRuntimePlanService::class)->entry($extensionId);
+
+        if ($entry === null) {
+            return $settings;
+        }
+
+        return $this->settingsValidator->validate($entry->capabilities, $settings);
     }
 
     /**

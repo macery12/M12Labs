@@ -443,6 +443,14 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/{extensionId}/install', [Application\Extensions\ExtensionsController::class, 'install']);
         Route::post('/{extensionId}/update-package', [Application\Extensions\ExtensionsController::class, 'updatePackage']);
         Route::post('/{extensionId}/uninstall', [Application\Extensions\ExtensionsController::class, 'uninstall']);
+
+        // Secrets are metadata-only on read: the API can say whether a key is
+        // configured and when it changed, never what it holds. Writes are
+        // blind, and an empty body means "unchanged" so an unrelated save
+        // cannot wipe a working credential.
+        Route::get('/{extensionId}/secrets', [Application\Extensions\ExtensionSecretsController::class, 'index']);
+        Route::put('/{extensionId}/secrets/{key}', [Application\Extensions\ExtensionSecretsController::class, 'update']);
+        Route::delete('/{extensionId}/secrets/{key}', [Application\Extensions\ExtensionSecretsController::class, 'destroy']);
     });
 
     /*

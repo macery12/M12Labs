@@ -21,6 +21,7 @@ class ExtensionPackageUninstallService
         private ExtensionMigrationService $migrationService,
         private ExtensionPermissionRegistry $permissionRegistry,
         private ExtensionJobDrainService $drainService,
+        private ExtensionSecretStore $secretStore,
     ) {
     }
 
@@ -196,6 +197,11 @@ class ExtensionPackageUninstallService
             // died mid-job. Marking it quarantined records that work was
             // abandoned rather than completed.
             $this->drainService->quarantine($extensionId);
+
+            // Unconditionally, whatever the drop-data choice: a credential
+            // outliving the extension that used it is a standing liability
+            // nobody is watching, and reinstalling asks for it again anyway.
+            $this->secretStore->purge($extensionId);
 
             $package->delete();
 

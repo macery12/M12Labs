@@ -21,6 +21,7 @@ import { useFlashes } from '@/state/flashes';
 import { cn } from '@/lib/cn';
 import { resolveExtensionIcon, extensionTone, toneVar, toneLabelKey } from './extMeta';
 import { CapabilityApprovalModal } from './CapabilityApprovalModal';
+import { ExtensionSecretsPanel } from './ExtensionSecretsPanel';
 import { DatabaseChangesModal } from './DatabaseChangesModal';
 import type { DatabasePlanOperation } from '@/api/extensions';
 
@@ -321,6 +322,14 @@ export function ExtensionManageDrawer({
                                         ))}
                                     </div>
                                 )}
+                            </Section>
+
+                            {/* credentials — write-only; see ExtensionSecretsPanel */}
+                            <Section icon={ShieldCheck} title={m['extensions.secrets.title']()}>
+                                <p className="-mt-1 mb-2 text-[11px] text-[var(--color-ink-faint)]">
+                                    {m['extensions.secrets.hint']()}
+                                </p>
+                                <ExtensionSecretsPanel extensionId={e.id} disabled={busy} />
                             </Section>
 
                             {/* access control — only meaningful for extensions with a

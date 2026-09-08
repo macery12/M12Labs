@@ -310,6 +310,37 @@ export interface DatabasePlan {
     roleAssignments?: number;
 }
 
+// Metadata for one declared credential. The value is never returned — the API
+// only says whether something is stored and when it last changed.
+export interface ExtensionSecret {
+    key: string;
+    labelKey: string;
+    helpKey: string | null;
+    rotatable: boolean;
+    configured: boolean;
+    updatedAt: string | null;
+    rotatedAt: string | null;
+}
+
+// GET /extensions/{id}/secrets
+export async function getExtensionSecrets(id: string): Promise<ExtensionSecret[]> {
+    const { data } = await http.get(`${BASE}/${id}/secrets`);
+    return (data.data ?? []) as ExtensionSecret[];
+}
+
+// PUT /extensions/{id}/secrets/{key} — write-only. An empty value means
+// "unchanged", so a blind form cannot wipe a working credential.
+export async function putExtensionSecret(id: string, key: string, value: string): Promise<ExtensionSecret[]> {
+    const { data } = await http.put(`${BASE}/${id}/secrets/${encodeURIComponent(key)}`, { value });
+    return (data.data ?? []) as ExtensionSecret[];
+}
+
+// DELETE /extensions/{id}/secrets/{key}
+export async function deleteExtensionSecret(id: string, key: string): Promise<ExtensionSecret[]> {
+    const { data } = await http.delete(`${BASE}/${id}/secrets/${encodeURIComponent(key)}`);
+    return (data.data ?? []) as ExtensionSecret[];
+}
+
 // POST /extensions/{id}/database-plan — preview DB changes before committing.
 // install/update need the source repository (and optional version) to fetch
 // and parse the archive's migrations; uninstall reads local state.
