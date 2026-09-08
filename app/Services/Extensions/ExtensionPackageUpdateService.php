@@ -25,6 +25,7 @@ class ExtensionPackageUpdateService
         private ExtensionPackageFileService $fileService,
         private ExtensionMigrationService $migrationService,
         private ExtensionRuntimePlanService $planService,
+        private ExtensionPermissionRegistry $permissionRegistry,
     ) {
     }
 
@@ -243,6 +244,16 @@ class ExtensionPackageUpdateService
                     File::delete($oldFile->backup_path);
                 }
             }
+
+            // Permissions the new version dropped are removed from every role
+            // here rather than left dangling; ones it added were part of the
+            // approved capability diff.
+            $this->permissionRegistry->sync(
+                $resolvedExtensionId,
+                $parsedManifest->capabilities,
+                approved: true,
+                approvedBy: auth()->id(),
+            );
         });
 
         return $existingPackage->fresh(['repository', 'files']);

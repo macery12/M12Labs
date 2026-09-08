@@ -2446,6 +2446,7 @@
   "admin.roles.section.content": "Контент и расширения",
   "admin.roles.section.customization": "Настройка",
   "admin.roles.section.infrastructure": "Инфраструктура",
+  "admin.roles.section.extensionsContributed": "Разрешения расширений",
   "admin.roles.section.other": "Прочее",
   "admin.roles.section.servers": "Серверы",
   "admin.roles.section.system": "Система",

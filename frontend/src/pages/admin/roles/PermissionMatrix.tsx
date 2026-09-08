@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Check, ChevronDown, Minus } from 'lucide-react';
-import { m } from '@/i18n/messages';
+import { m, td } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 import type { AdminPermissionGroups } from '@/api/adminRoles';
 
@@ -38,6 +38,13 @@ const SECTIONS: { key: string; groups: string[] }[] = [
     { key: 'customization', groups: ['theme', 'links', 'custom-domains'] },
 ];
 
+// Installed extensions contribute their own namespaces (`ext.<id>.admin`).
+// They are collected into a section of their own rather than falling through to
+// "Other", so an operator can tell at a glance which authority came from a
+// package and which is core's.
+const EXTENSION_SECTION = 'extensionsContributed';
+const isExtensionGroup = (groupKey: string) => groupKey.startsWith('ext.');
+
 // Paraglide resolves messages through static property access, so the label set is
 // a literal map rather than a computed `m[...]` lookup.
 const SECTION_LABELS: Record<string, () => string> = {
@@ -49,6 +56,7 @@ const SECTION_LABELS: Record<string, () => string> = {
     content: m['admin.roles.section.content'],
     billing: m['admin.roles.section.billing'],
     customization: m['admin.roles.section.customization'],
+    [EXTENSION_SECTION]: m['admin.roles.section.extensionsContributed'],
     other: m['admin.roles.section.other'],
 };
 
@@ -58,9 +66,29 @@ const sectionLabel = (key: string) => (SECTION_LABELS[key] ?? m['admin.roles.sec
 // -> "Server Presets"). These are backend-provided identifiers, not UI copy.
 const humanize = (s: string) =>
     s
-        .split('-')
+        .split(/[-_]/)
         .map(w => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ');
+
+/** Row label: an extension's own name, not its dotted capability namespace. */
+const groupLabel = (groupKey: string, group: AdminPermissionGroups[string]) =>
+    group.extensionId ? humanize(group.extensionId) : humanize(groupKey);
+
+/**
+ * Copy for one permission. Core supplies English descriptions inline; an
+ * extension supplies keys into its own translation catalog, which the panel
+ * merges at build time under `ext.<id>.` and `td()` resolves at runtime.
+ */
+function permissionText(group: AdminPermissionGroups[string], key: string) {
+    const labelKey = group.labelKeys?.[key];
+    const descriptionKey = group.descriptionKeys?.[key];
+    const fallback = group.keys[key] ?? '';
+
+    return {
+        label: labelKey ? td(labelKey, humanize(key)) : humanize(key),
+        description: descriptionKey ? td(descriptionKey, fallback) : fallback,
+    };
+}
 
 interface ResolvedSection {
     key: string;
@@ -76,7 +104,11 @@ function buildSections(catalog: AdminPermissionGroups): ResolvedSection[] {
     })).filter(s => s.groups.length > 0);
 
     const leftover = Object.keys(catalog).filter(g => !known.has(g));
-    if (leftover.length) sections.push({ key: 'other', groups: leftover });
+    const contributed = leftover.filter(isExtensionGroup);
+    if (contributed.length) sections.push({ key: EXTENSION_SECTION, groups: contributed });
+
+    const other = leftover.filter(g => !isExtensionGroup(g));
+    if (other.length) sections.push({ key: 'other', groups: other });
     return sections;
 }
 
@@ -178,14 +210,15 @@ function ExtrasRow({
                         const id = `${groupKey}.${key}`;
                         const checked = selected.has(id);
                         const highlighted = matches?.has(id) ?? false;
+                        const { label, description } = permissionText(group, key);
                         return (
                             <button
                                 key={id}
                                 type="button"
                                 role="checkbox"
                                 aria-checked={checked}
-                                aria-label={`${id} — ${group.keys[key] ?? ''}`}
-                                title={`${id}\n${group.keys[key] ?? ''}`}
+                                aria-label={`${id} — ${description}`}
+                                title={`${id}\n${description}`}
                                 disabled={readOnly}
                                 onClick={() => onToggle(id)}
                                 className={cn(
@@ -197,7 +230,7 @@ function ExtrasRow({
                                 )}
                             >
                                 <Checkbox checked={checked} highlighted={highlighted} />
-                                {humanize(key)}
+                                {label}
                             </button>
                         );
                     })}
@@ -344,12 +377,12 @@ export default function PermissionMatrix({
                                                         disabled={readOnly}
                                                         onClick={() => onToggleAll(all, !rowAll)}
                                                         title={m['admin.roles.matrix.toggleRow']({
-                                                            resource: humanize(groupKey),
+                                                            resource: groupLabel(groupKey, group),
                                                         })}
                                                         className="block max-w-full text-left disabled:cursor-default"
                                                     >
                                                         <span className="block truncate text-sm font-medium text-[var(--color-ink)]">
-                                                            {humanize(groupKey)}
+                                                            {groupLabel(groupKey, group)}
                                                         </span>
                                                         <span className="block truncate text-xs text-[var(--color-ink-faint)]">
                                                             {group.description}
@@ -362,7 +395,7 @@ export default function PermissionMatrix({
                                                         <ActionCell
                                                             key={action}
                                                             id={id}
-                                                            description={(id && group.keys[action]) || ''}
+                                                            description={id ? permissionText(group, action).description : ''}
                                                             checked={Boolean(id && selected.has(id))}
                                                             highlighted={Boolean(id && matches?.has(id))}
                                                             readOnly={readOnly}

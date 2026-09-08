@@ -12,6 +12,8 @@ use Everest\Models\ExtensionConfig;
 use Everest\Models\ExtensionPackage;
 use Everest\Models\ExtensionRepository;
 use Everest\Services\Extensions\ExtensionCatalogService;
+use Everest\Services\Extensions\ExtensionPermissionRegistry;
+use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Services\Extensions\ExtensionDatabasePlanService;
 use Everest\Services\Extensions\ExtensionPackageBatchService;
 use Everest\Traits\Controllers\RespondsWithExtensionEnvelope;
@@ -45,6 +47,7 @@ class ExtensionsController extends ApplicationApiController
         private ExtensionPackageBatchService $batchService,
         private ExtensionInstallProgressService $progressService,
         private ExtensionDatabasePlanService $databasePlanService,
+        private ExtensionPermissionRegistry $permissionRegistry,
     ) {
         parent::__construct();
     }
@@ -146,11 +149,7 @@ class ExtensionsController extends ApplicationApiController
         }
 
         $config = ExtensionConfig::updateOrCreateConfig($extensionId, $payload);
-
-        ExtensionPackage::query()
-            ->where('extension_id', $extensionId)
-            ->whereIn('state', ['enabled', 'installed_disabled'])
-            ->update(['state' => $config->enabled ? 'enabled' : 'installed_disabled']);
+        $this->applyEnabledState($extensionId, (bool) $config->enabled);
 
         Activity::event('admin:extensions:update')
             ->property('extension_id', $extensionId)
@@ -206,11 +205,7 @@ class ExtensionsController extends ApplicationApiController
         $config = ExtensionConfig::updateOrCreateConfig($extensionId, [
             'enabled' => $newEnabled,
         ]);
-
-        ExtensionPackage::query()
-            ->where('extension_id', $extensionId)
-            ->whereIn('state', ['enabled', 'installed_disabled'])
-            ->update(['state' => $config->enabled ? 'enabled' : 'installed_disabled']);
+        $this->applyEnabledState($extensionId, (bool) $config->enabled);
 
         Activity::event('admin:extensions:toggle')
             ->property('extension_id', $extensionId)
@@ -315,6 +310,33 @@ class ExtensionsController extends ApplicationApiController
         if (app()->routesAreCached()) {
             \Illuminate\Support\Facades\Artisan::call('route:clear');
         }
+
+        // Both registries memoize per process. Nothing else in this request
+        // may answer from a plan or capability catalog the operation just
+        // invalidated.
+        ExtensionRuntimePlanService::flush();
+        ExtensionPermissionRegistry::flush();
+    }
+
+    /**
+     * Carry an enabled/disabled decision through to everything derived from it.
+     *
+     * The lifecycle state and the permission suspension have to move together:
+     * a disabled extension whose permissions still authorize would keep its
+     * admin API reachable with its routes gone, and suspending rather than
+     * deleting is what stops the grant disappearing from every role the moment
+     * an operator toggles the extension off.
+     */
+    private function applyEnabledState(string $extensionId, bool $enabled): void
+    {
+        ExtensionPackage::query()
+            ->where('extension_id', $extensionId)
+            ->whereIn('state', ['enabled', 'installed_disabled'])
+            ->update(['state' => $enabled ? 'enabled' : 'installed_disabled']);
+
+        $enabled
+            ? $this->permissionRegistry->resume($extensionId)
+            : $this->permissionRegistry->suspend($extensionId);
     }
 
     /**

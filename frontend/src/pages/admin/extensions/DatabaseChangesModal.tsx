@@ -205,6 +205,16 @@ function ExtensionPlan({
             ) : (
                 <AddPlan plan={plan} />
             )}
+
+            {/* Losing a role grant is not undone by reinstalling, so the count
+                is shown whether or not the extension owns any tables — the
+                no-database branch above would otherwise hide it. */}
+            {operation === 'uninstall' && !query.isLoading && (plan?.roleAssignments ?? 0) > 0 && (
+                <p className="mt-2 flex items-start gap-1.5 text-xs text-[var(--color-warning)]">
+                    <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                    {m['extensions.dbchanges.roleAssignments']({ count: plan!.roleAssignments! })}
+                </p>
+            )}
         </section>
     );
 }

@@ -9,6 +9,7 @@ use Everest\Models\AdminRole;
 use Laravel\Sanctum\TransientToken;
 use Everest\Services\Authorization\AdminAuthorizer;
 use Everest\Services\Authorization\AdminCapabilityRegistry;
+use Everest\Services\Extensions\ExtensionPermissionRegistry;
 
 class AdminAuthorizerTest extends TestCase
 {
@@ -53,7 +54,7 @@ class AdminAuthorizerTest extends TestCase
 
     private function authorizer(): AdminAuthorizer
     {
-        return new AdminAuthorizer(new AdminCapabilityRegistry());
+        return new AdminAuthorizer(new AdminCapabilityRegistry(), new ExtensionPermissionRegistry());
     }
 
     private function userWithProfile(?AdminRole $profile): User

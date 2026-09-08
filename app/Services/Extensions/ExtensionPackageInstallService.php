@@ -24,6 +24,7 @@ class ExtensionPackageInstallService
         private ExtensionInstallProgressService $progressService,
         private ExtensionPackageArtifactService $artifactService,
         private ExtensionMigrationService $migrationService,
+        private ExtensionPermissionRegistry $permissionRegistry,
     ) {
     }
 
@@ -371,6 +372,16 @@ class ExtensionPackageInstallService
                 'backup_checksum' => $plan['backupChecksum'],
             ]);
         }
+
+        // Reaching here means the capability diff was approved, so the admin
+        // permissions the package declares become assignable. They are not
+        // granted to anybody — no role is touched.
+        $this->permissionRegistry->sync(
+            $extensionId,
+            $parsedManifest->capabilities,
+            approved: true,
+            approvedBy: auth()->id(),
+        );
 
         ExtensionConfig::query()->firstOrCreate(
             ['extension_id' => $extensionId],

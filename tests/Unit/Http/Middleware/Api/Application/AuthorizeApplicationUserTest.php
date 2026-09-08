@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Everest\Services\Authorization\AdminAuthorizer;
 use Everest\Services\Authorization\AdminCapabilityRegistry;
+use Everest\Services\Extensions\ExtensionPermissionRegistry;
 use Everest\Http\Controllers\Api\Application\Nodes\NodeController;
 use Everest\Services\Authorization\ApplicationApiPermissionResolver;
 use Everest\Http\Middleware\Api\Application\AuthorizeApplicationUser;
@@ -159,7 +160,7 @@ class AuthorizeApplicationUserTest extends TestCase
         return new AuthorizeApplicationUser(
             new ApplicationApiPermissionResolver(),
             new ApplicationApiAccessProfileService($registry),
-            new AdminAuthorizer($registry),
+            new AdminAuthorizer($registry, new ExtensionPermissionRegistry()),
         );
     }
 

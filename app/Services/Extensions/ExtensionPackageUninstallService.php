@@ -19,6 +19,7 @@ class ExtensionPackageUninstallService
         private ExtensionInstallProgressService $progressService,
         private ExtensionPackageFileService $fileService,
         private ExtensionMigrationService $migrationService,
+        private ExtensionPermissionRegistry $permissionRegistry,
     ) {
     }
 
@@ -165,6 +166,11 @@ class ExtensionPackageUninstallService
                     File::delete($file->backup_path);
                 }
             }
+
+            // The permission rows go with the package, and every role holding
+            // one is stripped in the same transaction — a role must never carry
+            // an identifier that no longer resolves to anything.
+            $this->permissionRegistry->purge($extensionId);
 
             $package->delete();
 

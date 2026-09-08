@@ -25,6 +25,7 @@ class ExtensionDatabasePlanService
         private ExtensionCatalogService $catalogService,
         private ExtensionPackageArtifactService $artifactService,
         private ExtensionMigrationService $migrationService,
+        private ExtensionPermissionRegistry $permissionRegistry,
     ) {
     }
 
@@ -61,6 +62,10 @@ class ExtensionDatabasePlanService
             'manualCleanup' => $existingTables === [] && $ranMigrations === []
                 ? []
                 : $this->migrationService->manualCleanupStatements($extensionId, $ranMigrations),
+            // Uninstalling strips this extension's permissions from every role
+            // that holds them. Reinstalling brings the permissions back but not
+            // the grants, so the count is shown before the operation runs.
+            'roleAssignments' => $this->permissionRegistry->assignmentCount($extensionId),
         ];
     }
 

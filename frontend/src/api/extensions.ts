@@ -304,6 +304,10 @@ export interface DatabasePlan {
     existingTables?: string[];
     ranMigrations?: string[];
     manualCleanup?: string[];
+    // uninstall — how many role assignments of this extension's admin
+    // permissions will be removed. Reinstalling restores the permissions but
+    // not the grants.
+    roleAssignments?: number;
 }
 
 // POST /extensions/{id}/database-plan — preview DB changes before committing.

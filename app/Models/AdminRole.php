@@ -4,13 +4,14 @@ namespace Everest\Models;
 
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Everest\Services\Extensions\ExtensionPermissionRegistry;
 
 /**
  * @property int $id
  * @property string $name
  * @property string|null $description
  * @property int $sort_id
- * @property array $permissions
+ * @property array|null $permissions
  * @property bool $is_system
  * @property bool $is_owner
  * @property bool $api_eligible
@@ -459,9 +460,33 @@ class AdminRole extends Model
     /**
      * Gets the permissions associated with an admin role.
      */
+    /**
+     * The human-facing capability catalog: core's static namespaces plus the
+     * ones installed extensions contribute.
+     *
+     * Merging here rather than at each consumer is deliberate — every place
+     * that decides whether a capability exists (role validation, the
+     * authorizer, the Application API access profile, the permission matrix)
+     * already reads this one method, so extension permissions become real
+     * capabilities everywhere at once instead of in whichever call sites
+     * somebody remembered.
+     *
+     * Contributed groups can never collide with core's: they are namespaced
+     * ext.<id>.admin, and core declares no namespace containing a dot.
+     */
     public static function permissions(): Collection
     {
-        return Collection::make(self::$permissions);
+        $contributed = [];
+
+        try {
+            $contributed = app(ExtensionPermissionRegistry::class)->groups();
+        } catch (\Throwable) {
+            // The catalog must resolve before the container is fully booted and
+            // on installs where the extension tables do not exist yet. Core's
+            // own permissions are never allowed to depend on that working.
+        }
+
+        return Collection::make(self::$permissions + $contributed);
     }
 
     /**
