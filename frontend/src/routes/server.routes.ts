@@ -34,6 +34,10 @@ const ServerActivityPage = lazy(() => import('@/pages/server/activity/ServerActi
 const BillingPage = lazy(() => import('@/pages/server/billing/BillingPage'));
 const ExtensionsSection = lazy(() => import('@/pages/server/extensions/ExtensionsSection'));
 
+// Imported by module path, not through the SDK barrel: the barrel would pull
+// the whole SDK into the entry chunk.
+import { extensionServerRoutes } from '@/pages/server/extensions/registry';
+
 // Server area (/server/:id/*) — sidebar grouped by `category`.
 // Seeded from V1_UI_Map §3.3. The index is the modular widget dashboard
 // (console-focal); the rest remain placeholders.
@@ -58,4 +62,11 @@ export const serverRoutes: RouteDef[] = [
     route('activity/*', { name: 'Activity', icon: Activity, permission: 'activity.*', element: ServerActivityPage }),
     route('billing/*', { name: 'Billing', icon: CreditCard, permission: 'billing.*', condition: f => f.billing.enabled, element: BillingPage }),
     route('extensions/*', { name: 'Extensions', icon: Puzzle, permission: 'extension.*', condition: f => f.extensions.enabled, element: ExtensionsSection }),
+
+    // Pages contributed by installed extensions, promoted into the sidebar
+    // category each one declared. The URL keeps the extensions/ext/<id>/ prefix
+    // rather than minting a top-level segment: an extension able to claim
+    // /files or /backups would shadow a core route, and route-ranking
+    // collisions with core are a security problem, not a cosmetic one.
+    ...extensionServerRoutes,
 ];

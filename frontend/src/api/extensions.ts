@@ -37,12 +37,17 @@ export interface ExtensionSource {
 export interface ExtensionSettingField {
     key: string;
     label: string;
-    type: string; // text | textarea | number | boolean | select | password | …
+    type: string; // text | textarea | number | boolean | select | url | host
     description?: string;
     placeholder?: string;
     default?: unknown;
     required?: boolean;
     options?: Array<{ value: string; label: string }>;
+    // v3 packages ship copy in their own translation catalog, which the panel
+    // cannot resolve server-side; the keys travel and `td()` resolves them, with
+    // `label`/`description` as the fallback.
+    labelKey?: string;
+    helpKey?: string;
 }
 
 export interface Extension {

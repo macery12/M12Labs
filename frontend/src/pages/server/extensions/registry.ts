@@ -1,41 +1,100 @@
 /// <reference types="vite/client" />
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
 import { withExtensionIsolation } from '@/extensions-sdk/ExtensionErrorBoundary';
+import {
+    pageManifests,
+    byDeclaredOrder,
+    serverCategory,
+    type ExtensionPage,
+} from '@/extensions-sdk/pages';
+import { route, type RouteDef, type ServerCategory } from '@/routes/registry';
+import { td } from '@/i18n/messages';
+import { resolveExtensionIcon } from '@/pages/admin/extensions/extMeta';
 
-// Extension package registry. Ported from V1's components/server/extensions/registry.ts:
-// packages under src/extensions/packages/<name>/ self-register by shipping a
-// meta.json ({ id, route }) next to an index.tsx default-exporting the page.
-// No central list to edit — dropping the folder in is the whole install.
+// Server pages contributed by installed extension packages.
+//
+// Driven by the panel-written extension.pages.json rather than by globbing for
+// entry files: a package that ships a page it never declared contributes
+// nothing, and the nav category, label and permission all come from a manifest
+// the installer verified. A package may now ship several pages instead of the
+// single index.tsx the v2 layout allowed.
 export interface ExtensionRouteDefinition {
     id: string;
-    route: string;
+    /** URL segment under /server/:id/extensions/ext/<id>/. */
+    slug: string;
+    labelKey: string;
+    icon: string;
+    category: ServerCategory;
+    order: number;
+    requiredServerPermission?: string;
     component: LazyExoticComponent<ComponentType>;
 }
 
-type PackageMeta = { id: string; route?: string };
-
-const packageMetas = import.meta.glob('../../../extensions/packages/**/meta.json', {
+const manifests = import.meta.glob('../../../extensions/packages/*/extension.pages.json', {
     eager: true,
     import: 'default',
-}) as Record<string, PackageMeta>;
+});
 
-const packageComponents = import.meta.glob('../../../extensions/packages/**/index.tsx') as Record<
+const pageModules = import.meta.glob('../../../extensions/packages/*/pages/server/*.tsx') as Record<
     string,
     () => Promise<{ default: ComponentType }>
 >;
 
-export const extensionRoutes: ExtensionRouteDefinition[] = Object.entries(packageMetas)
-    .map(([path, meta]) => {
-        const loader = packageComponents[path.replace(/meta\.json$/, 'index.tsx')];
-        if (!loader || !meta?.id) return null;
+export const extensionRoutes: ExtensionRouteDefinition[] = pageManifests(manifests)
+    .flatMap(({ dir, manifest }) =>
+        [...manifest.server].sort(byDeclaredOrder).flatMap((page: ExtensionPage) => {
+            const loader = pageModules[`${dir}pages/server/${page.slug}.tsx`];
+            // A declared page whose entry file is absent is skipped rather than
+            // mounted as a broken route. The server-side parser rejects this
+            // pairing at install, so reaching it means the files were edited
+            // afterwards.
+            if (!loader) return [];
 
-        // Every extension page gets its own error boundary and suspense: extension
-        // code shares this React tree, so an unisolated throw would unmount the
-        // whole server route including the navigation away from it.
-        return {
-            id: meta.id,
-            route: meta.route || meta.id,
-            component: lazy(async () => ({ default: withExtensionIsolation((await loader()).default, meta.id) })),
-        };
-    })
-    .filter((route): route is ExtensionRouteDefinition => route !== null);
+            return [
+                {
+                    id: manifest.id,
+                    slug: page.slug,
+                    labelKey: page.labelKey,
+                    icon: page.icon,
+                    category: serverCategory(page.category),
+                    order: page.order,
+                    requiredServerPermission: page.requiredServerPermission,
+                    // Every extension page gets its own error boundary: extension
+                    // code shares this React tree, so an unisolated throw would
+                    // unmount the whole server route including the navigation
+                    // away from it.
+                    component: lazy(async () => ({
+                        default: withExtensionIsolation((await loader()).default, manifest.id),
+                    })),
+                },
+            ];
+        }),
+    )
+    .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+
+/**
+ * The same pages as RouteDefs, mounted directly under the server area so each
+ * one appears in its declared sidebar category instead of being buried behind
+ * a single "Extensions" tab.
+ *
+ * The path keeps the extensions/ext/<id>/ prefix on purpose. A top-level
+ * segment chosen by a package could shadow /files or /backups, and a
+ * route-ranking collision with a core route is a security problem rather than
+ * a cosmetic one.
+ *
+ * Known limitation, shared with core: RouteDef.name is a plain string and nav
+ * reads it once at module scope, so switching locale does not re-render these
+ * labels until the page reloads. Core routes use literals and behave the same.
+ */
+export const extensionServerRoutes: RouteDef[] = extensionRoutes.map(def =>
+    route(`extensions/ext/${def.id}/${def.slug}/*`, {
+        name: td(def.labelKey, def.slug),
+        icon: resolveExtensionIcon(def.icon),
+        category: def.category,
+        permission: def.requiredServerPermission,
+        // Hidden unless the module is on AND this extension is enabled; the
+        // client API middleware enforces the same state server-side.
+        condition: f => f.extensions.enabled && (f.extensions.active ?? []).includes(def.id),
+        element: def.component,
+    }),
+);

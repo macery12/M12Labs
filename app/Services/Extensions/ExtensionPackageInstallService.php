@@ -25,6 +25,7 @@ class ExtensionPackageInstallService
         private ExtensionPackageArtifactService $artifactService,
         private ExtensionMigrationService $migrationService,
         private ExtensionPermissionRegistry $permissionRegistry,
+        private ExtensionPageManifestService $pageManifestService,
     ) {
     }
 
@@ -291,6 +292,13 @@ class ExtensionPackageInstallService
                 File::copy($plan['sourcePath'], $plan['targetPath']);
                 $appliedFiles[] = $plan;
             }
+
+            // Written after the package's own files and before the rebuild
+            // that follows, because the bundle reads it. Tracked as a file plan
+            // so it is checksummed, rolled back and uninstalled like any other.
+            $generated = $this->pageManifestService->write($parsedManifest);
+            $filePlans[] = $generated;
+            $appliedFiles[] = $generated;
 
             $appliedMigrations = $this->runPackageMigrations($extensionId, $filePlans, 'install');
 

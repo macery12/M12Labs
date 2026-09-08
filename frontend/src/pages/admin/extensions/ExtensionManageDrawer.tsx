@@ -571,14 +571,18 @@ function SettingFieldRow({
     onChange: (v: unknown) => void;
 }) {
     const type = field.type.toLowerCase();
+    // A v3 package's copy lives in its own catalog under `ext.<id>.`; core has
+    // only the key. `label` is the server-supplied fallback.
+    const label = field.labelKey ? td(field.labelKey, field.label) : field.label;
+    const description = field.helpKey ? td(field.helpKey, field.description ?? '') : field.description;
 
     if (type === 'boolean' || type === 'bool' || type === 'toggle') {
         return (
             <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-3 py-2.5">
                 <div className="min-w-0">
-                    <p className="text-xs font-medium text-[var(--color-ink)]">{field.label}</p>
-                    {field.description && (
-                        <p className="mt-0.5 text-[11px] text-[var(--color-ink-faint)]">{field.description}</p>
+                    <p className="text-xs font-medium text-[var(--color-ink)]">{label}</p>
+                    {description && (
+                        <p className="mt-0.5 text-[11px] text-[var(--color-ink-faint)]">{description}</p>
                     )}
                 </div>
                 <Switch checked={Boolean(value)} disabled={disabled} onChange={onChange} />
@@ -588,7 +592,7 @@ function SettingFieldRow({
 
     return (
         <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-[var(--color-ink-muted)]">{field.label}</label>
+            <label className="text-xs font-medium text-[var(--color-ink-muted)]">{label}</label>
             {type === 'textarea' ? (
                 <textarea
                     rows={3}
@@ -620,8 +624,8 @@ function SettingFieldRow({
                     onChange={ev => onChange(type === 'number' ? Number(ev.target.value) : ev.target.value)}
                 />
             )}
-            {field.description && type !== 'boolean' && (
-                <span className="text-[11px] text-[var(--color-ink-faint)]">{field.description}</span>
+            {description && type !== 'boolean' && (
+                <span className="text-[11px] text-[var(--color-ink-faint)]">{description}</span>
             )}
         </div>
     );

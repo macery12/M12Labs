@@ -27,6 +27,7 @@ class ExtensionPackageUpdateService
         private ExtensionRuntimePlanService $planService,
         private ExtensionPermissionRegistry $permissionRegistry,
         private ExtensionJobDrainService $drainService,
+        private ExtensionPageManifestService $pageManifestService,
     ) {
     }
 
@@ -429,6 +430,11 @@ class ExtensionPackageUpdateService
                 File::ensureDirectoryExists(dirname($plan['targetPath']));
                 File::copy($plan['sourcePath'], $plan['targetPath']);
             }
+
+            // Regenerated from the new manifest, so a version that adds,
+            // removes or re-categorises a page takes effect on this rebuild
+            // rather than at the next install.
+            $newFilePlans[] = $this->pageManifestService->write($parsedManifest);
 
             $appliedMigrations = $this->runNewMigrations($resolvedExtensionId, $newFilePlans);
 

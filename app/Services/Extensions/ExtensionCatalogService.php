@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Everest\Models\ExtensionRepository;
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 
 class ExtensionCatalogService
 {
@@ -20,6 +21,7 @@ class ExtensionCatalogService
         private ExtensionRepositoryBootstrapService $bootstrapService,
         private ExtensionMigrationService $migrationService,
         private ExtensionPackageArtifactService $artifactService,
+        private ExtensionRuntimePlanService $planService,
     ) {
     }
 
@@ -83,9 +85,24 @@ class ExtensionCatalogService
             $extension = (array) Arr::get($manifest, 'extension', []);
             $repository = $package->repository;
 
-            // Admin-only extensions declare "route": null in their manifest; the
-            // server gallery skips them and the admin drawer hides nest/egg scoping.
-            $hasServerPage = Arr::get($extension, 'route', $package->route ?: $package->extension_id) !== null;
+            // v3 packages declare pages as capabilities; the surfaces are read
+            // from the verified projection rather than from manifest prose.
+            // The v2 shape (`extension.route` / `extension.admin`) is still read
+            // for a package that predates the projection — those are
+            // quarantined and cannot run, but the catalog still has to render
+            // them so an operator can see what to uninstall.
+            $capabilities = is_array($package->capabilities)
+                ? $this->planService->hydrateCapabilities($package->capabilities)
+                : null;
+
+            $hasServerPage = $capabilities !== null
+                ? $capabilities->hasServerPages()
+                : Arr::get($extension, 'route', $package->route ?: $package->extension_id) !== null;
+
+            $hasAdminPage = $capabilities !== null
+                ? $capabilities->hasAdminPages()
+                : (is_array(Arr::get($extension, 'admin')) && Arr::get($extension, 'admin') !== []);
+
             $adminSurface = Arr::get($extension, 'admin');
 
             $extensions[$package->extension_id] = [
@@ -99,14 +116,16 @@ class ExtensionCatalogService
                 'route' => $package->route ?: $package->extension_id,
                 'hasServerPage' => $hasServerPage,
                 'admin' => $adminSurface,
-                'type' => $this->deriveExtensionType($hasServerPage, $adminSurface),
+                'type' => $this->deriveExtensionType($hasServerPage, $hasAdminPage),
                 'enabled' => (bool) ($config?->enabled ?? false),
                 'allowedNests' => array_values($config?->allowed_nests ?? Arr::get($extension, 'defaults.allowedNests', [])),
                 'allowedEggs' => array_values($config?->allowed_eggs ?? Arr::get($extension, 'defaults.allowedEggs', [])),
                 'settings' => is_array($config?->settings)
                     ? $config->settings
                     : (array) Arr::get($extension, 'defaults.settings', []),
-                'settingsSchema' => $this->normalizeSettingsSchema(Arr::get($extension, 'settingsSchema', [])),
+                'settingsSchema' => $capabilities !== null
+                    ? $this->projectSettingsSchema($capabilities)
+                    : $this->normalizeSettingsSchema(Arr::get($extension, 'settingsSchema', [])),
                 'installed' => true,
                 'installable' => false,
                 'canUninstall' => true,
@@ -224,7 +243,13 @@ class ExtensionCatalogService
                         'route' => $package['route'],
                         'hasServerPage' => $package['hasServerPage'] ?? true,
                         'admin' => $package['admin'] ?? null,
-                        'type' => $this->deriveExtensionType($package['hasServerPage'] ?? true, $package['admin'] ?? null),
+                        // Registry metadata is untrusted until the signed
+                        // artifact is verified at install; this is only what the
+                        // repository advertises.
+                        'type' => $this->deriveExtensionType(
+                            $package['hasServerPage'] ?? true,
+                            is_array($package['admin'] ?? null) && ($package['admin'] ?? []) !== []
+                        ),
                         'enabled' => false,
                         'allowedNests' => array_values($config?->allowed_nests ?? []),
                         'allowedEggs' => array_values($config?->allowed_eggs ?? []),
@@ -480,10 +505,45 @@ class ExtensionCatalogService
      *           access scoping is meaningless and is hidden in the UI.
      * 'both'  — exposes both surfaces.
      */
-    private function deriveExtensionType(bool $hasServerPage, mixed $admin): string
+    /**
+     * The declared settings fields, in the shape the admin drawer renders.
+     *
+     * Secret-visibility fields are excluded: they are written through the
+     * secret store, and this payload is returned by the catalog API.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function projectSettingsSchema(ExtensionCapabilitySet $capabilities): array
     {
-        $hasAdminPage = is_array($admin) && $admin !== [];
+        $fields = [];
 
+        foreach ($capabilities->settings as $field) {
+            if ($field->isSecret()) {
+                continue;
+            }
+
+            $fields[] = array_filter([
+                'key' => $field->key,
+                'type' => $field->type,
+                // The label lives in the extension's own translation catalog,
+                // which the panel cannot resolve server-side. The key travels
+                // and the frontend resolves it; the key itself is the fallback.
+                'labelKey' => $field->labelKey,
+                'label' => $field->key,
+                'helpKey' => $field->helpKey,
+                'required' => $field->required,
+                'default' => $field->default,
+                'options' => $field->enum === null
+                    ? null
+                    : array_map(fn (string $value): array => ['value' => $value, 'label' => $value], $field->enum),
+            ], fn ($value) => $value !== null && $value !== false);
+        }
+
+        return $fields;
+    }
+
+    private function deriveExtensionType(bool $hasServerPage, bool $hasAdminPage): string
+    {
         if ($hasServerPage && $hasAdminPage) {
             return 'both';
         }

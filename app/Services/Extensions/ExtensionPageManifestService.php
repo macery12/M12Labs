@@ -1,0 +1,116 @@
+<?php
+
+namespace Everest\Services\Extensions;
+
+use Illuminate\Support\Facades\File;
+use Everest\Services\Extensions\Manifest\ExtensionManifest;
+use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
+
+/**
+ * Writes the page manifest the frontend build reads.
+ *
+ * Vite globs the filesystem and the database does not exist at build time, so
+ * the declared pages have to reach the bundle as a file. That file cannot be
+ * one the package ships: it decides nav category, permission and label for
+ * every page, which is exactly the set of claims the manifest parser exists to
+ * verify. So the panel writes it, from the already-verified manifest, into the
+ * package's own frontend directory — and records it in extension_package_files
+ * as `generated`, so uninstall removes it like anything else.
+ *
+ * A missing file means zero pages. That is the fail-closed direction: a package
+ * whose generated manifest was lost contributes no navigation rather than
+ * falling back to guessing from whatever .tsx files happen to be on disk.
+ */
+class ExtensionPageManifestService
+{
+    public const FILENAME = 'extension.pages.json';
+
+    /**
+     * Relative path of the generated file for an extension.
+     */
+    public function relativePath(string $extensionId): string
+    {
+        return sprintf('frontend/src/extensions/packages/%s/%s', $extensionId, self::FILENAME);
+    }
+
+    /**
+     * Write the file and return a file plan entry for it, in the same shape
+     * prepareFilePlans() produces so the install path treats it identically.
+     *
+     * @return array<string, mixed>
+     */
+    public function write(ExtensionManifest $manifest): array
+    {
+        $path = $this->relativePath($manifest->id);
+        $targetPath = base_path($path);
+
+        $contents = json_encode(
+            $this->payload($manifest),
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+        ) . "\n";
+
+        File::ensureDirectoryExists(dirname($targetPath));
+        File::put($targetPath, $contents);
+
+        return [
+            'path' => $path,
+            'sourcePath' => null,
+            'targetPath' => $targetPath,
+            'operation' => 'generated',
+            'checksum' => hash('sha256', $contents),
+            'backupPath' => null,
+            'backupChecksum' => null,
+        ];
+    }
+
+    public function remove(string $extensionId): void
+    {
+        $targetPath = base_path($this->relativePath($extensionId));
+
+        if (is_file($targetPath)) {
+            File::delete($targetPath);
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function payload(ExtensionManifest $manifest): array
+    {
+        return [
+            'id' => $manifest->id,
+            'version' => $manifest->version,
+            'icon' => $manifest->icon,
+            'server' => array_map(
+                fn (PageDefinition $page): array => $this->page($manifest->id, $page),
+                $manifest->capabilities->serverPages
+            ),
+            'admin' => array_map(
+                fn (PageDefinition $page): array => $this->page($manifest->id, $page),
+                $manifest->capabilities->adminPages
+            ),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function page(string $extensionId, PageDefinition $page): array
+    {
+        return array_filter([
+            'slug' => $page->slug,
+            'labelKey' => $page->labelKey,
+            'icon' => $page->icon,
+            'category' => $page->category,
+            'order' => $page->order,
+            'requiredServerPermission' => $page->requiredServerPermission,
+            // Expanded to the full capability identifier here, not in the
+            // browser: deriving a permission name client-side from a
+            // package-supplied fragment is how a package ends up influencing
+            // which permission is checked.
+            'requiredPermission' => $page->requiredExtensionPermission === null
+                ? null
+                : sprintf('ext.%s.admin.%s', $extensionId, $page->requiredExtensionPermission),
+        ], fn ($value) => $value !== null);
+    }
+}
