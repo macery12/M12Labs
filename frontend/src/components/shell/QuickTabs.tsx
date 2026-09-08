@@ -26,7 +26,7 @@ export function QuickTabs() {
     if (tabs.length === 0) return null;
 
     // Highlight the tab owning the current page so the top bar reflects where
-    // you are, the way the sidebar's active NavLink does.
+    // you are, the way the sidebar highlights its active entry.
     const isActiveTab = (paths: string[]) =>
         paths.some(p => location.pathname === p || location.pathname.startsWith(`${p}/`));
 

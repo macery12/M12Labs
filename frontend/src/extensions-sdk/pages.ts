@@ -1,6 +1,4 @@
 /// <reference types="vite/client" />
-import type { ServerCategory, AdminCategory } from '@/routes/registry';
-
 /**
  * The page manifest the panel writes into each installed package
  * (`extension.pages.json`), and the two globs that read it.
@@ -19,6 +17,13 @@ export interface ExtensionPage {
     slug: string;
     labelKey: string;
     icon: string;
+    /**
+     * Declared sidebar category, kept for ordering metadata only.
+     *
+     * Both route generators place extension pages in the Extensions section
+     * regardless: which sidebar group a package appears in is the panel's
+     * decision, not the package's.
+     */
     category: string;
     order: number;
     /** Core server permission needed for a server page. */
@@ -33,30 +38,6 @@ export interface ExtensionPageManifest {
     icon: string;
     server: ExtensionPage[];
     admin: ExtensionPage[];
-}
-
-const SERVER_CATEGORIES: ServerCategory[] = ['general', 'data', 'configuration'];
-const ADMIN_CATEGORIES: AdminCategory[] = [
-    'general',
-    'access',
-    'developers',
-    'modules',
-    'management',
-    'extensions',
-];
-
-/**
- * Narrow a declared category to one the router knows, falling back to the
- * extensions section. The server validates this too; the fallback is here so a
- * manifest written against a newer panel degrades to a visible page in a
- * sensible place rather than an invisible one.
- */
-export function serverCategory(value: string): ServerCategory {
-    return (SERVER_CATEGORIES as string[]).includes(value) ? (value as ServerCategory) : 'general';
-}
-
-export function adminCategory(value: string): AdminCategory {
-    return (ADMIN_CATEGORIES as string[]).includes(value) ? (value as AdminCategory) : 'extensions';
 }
 
 /** Manifests keyed by their file path, for correlating with page modules. */

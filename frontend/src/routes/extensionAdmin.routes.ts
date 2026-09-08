@@ -1,20 +1,24 @@
 /// <reference types="vite/client" />
 import { lazy, type ComponentType } from 'react';
 import { withExtensionIsolation } from '@/extensions-sdk/ExtensionErrorBoundary';
-import { pageManifests, byDeclaredOrder, adminCategory, type ExtensionPage } from '@/extensions-sdk/pages';
+import { pageManifests, byDeclaredOrder, type ExtensionPage } from '@/extensions-sdk/pages';
 import { route, type RouteDef } from './registry';
 import { resolveExtensionIcon } from '@/pages/admin/extensions/extMeta';
-import { td } from '@/i18n/messages';
 
 // Admin pages contributed by installed extension packages.
 //
 // Driven by the panel-written extension.pages.json, the same file the server
 // registry reads. What changes versus the v2 layout is that a package may ship
-// several admin pages instead of one admin.tsx, and that the nav category and
-// required permission come from the verified manifest rather than being
-// hardcoded to 'extensions' / 'extensions.read' here — an extension's admin
-// screens are no longer all gated by the permission that also manages
-// extensions themselves.
+// several admin pages instead of one admin.tsx, and that the required
+// permission comes from the verified manifest rather than being hardcoded to
+// 'extensions.read' — an extension's admin screens are no longer all gated by
+// the permission that also manages extensions themselves.
+//
+// Nav placement is the panel's call, not the package's: every page lands in the
+// Extensions category regardless of the category its manifest declares, so
+// installing an extension never interleaves third-party screens with the
+// panel's own. The manifest field survives as ordering metadata within that
+// section.
 //
 // Page bodies use the Paraglide catalog: a package ships messages/<locale>.json
 // fragments keyed `ext.<id>.*`, which scripts/merge-extension-messages.mjs
@@ -44,12 +48,14 @@ export const extensionAdminRoutes: RouteDef[] = pageManifests(manifests)
 
             return [
                 route(`extensions/ext/${id}/${page.slug}/*`, {
-                    // Known limitation, shared with core: nav reads RouteDef.name
-                    // once at module scope, so a locale switch does not re-render
-                    // these labels until the page reloads.
-                    name: td(page.labelKey, page.slug),
+                    // The id travels to the sidebar rather than being resolved
+                    // here: this runs at module scope, before the locale catalog
+                    // loads, so resolving now would freeze every label at its
+                    // slug fallback.
+                    name: page.slug,
+                    labelKey: page.labelKey,
                     icon: resolveExtensionIcon(page.icon),
-                    category: adminCategory(page.category),
+                    category: 'extensions',
                     // The full ext.<id>.admin.<action> identifier, expanded
                     // server-side when the manifest was written.
                     permission: page.requiredPermission ?? 'extensions.read',

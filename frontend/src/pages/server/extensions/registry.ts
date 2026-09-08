@@ -1,14 +1,8 @@
 /// <reference types="vite/client" />
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
 import { withExtensionIsolation } from '@/extensions-sdk/ExtensionErrorBoundary';
-import {
-    pageManifests,
-    byDeclaredOrder,
-    serverCategory,
-    type ExtensionPage,
-} from '@/extensions-sdk/pages';
+import { pageManifests, byDeclaredOrder, type ExtensionPage } from '@/extensions-sdk/pages';
 import { route, type RouteDef, type ServerCategory } from '@/routes/registry';
-import { td } from '@/i18n/messages';
 import { resolveExtensionIcon } from '@/pages/admin/extensions/extMeta';
 
 // Server pages contributed by installed extension packages.
@@ -56,7 +50,7 @@ export const extensionRoutes: ExtensionRouteDefinition[] = pageManifests(manifes
                     slug: page.slug,
                     labelKey: page.labelKey,
                     icon: page.icon,
-                    category: serverCategory(page.category),
+                    category: 'extensions' as const,
                     order: page.order,
                     requiredServerPermission: page.requiredServerPermission,
                     // Every extension page gets its own error boundary: extension
@@ -74,21 +68,25 @@ export const extensionRoutes: ExtensionRouteDefinition[] = pageManifests(manifes
 
 /**
  * The same pages as RouteDefs, mounted directly under the server area so each
- * one appears in its declared sidebar category instead of being buried behind
- * a single "Extensions" tab.
+ * one gets its own sidebar entry instead of being buried behind a single
+ * "Extensions" tab.
+ *
+ * They group under Extensions rather than the category the manifest declares.
+ * Placement is the panel's call: an installed package should never interleave
+ * its screens with Files, Backups and Startup, where a user has no way to tell
+ * core apart from third-party.
  *
  * The path keeps the extensions/ext/<id>/ prefix on purpose. A top-level
  * segment chosen by a package could shadow /files or /backups, and a
  * route-ranking collision with a core route is a security problem rather than
  * a cosmetic one.
- *
- * Known limitation, shared with core: RouteDef.name is a plain string and nav
- * reads it once at module scope, so switching locale does not re-render these
- * labels until the page reloads. Core routes use literals and behave the same.
  */
 export const extensionServerRoutes: RouteDef[] = extensionRoutes.map(def =>
     route(`extensions/ext/${def.id}/${def.slug}/*`, {
-        name: td(def.labelKey, def.slug),
+        // Resolved by the sidebar, not here: this runs at module scope, before
+        // the locale catalog loads.
+        name: def.slug,
+        labelKey: def.labelKey,
         icon: resolveExtensionIcon(def.icon),
         category: def.category,
         permission: def.requiredServerPermission,

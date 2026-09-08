@@ -46,6 +46,15 @@ final class ExtensionCapabilityVocabulary
     /** Extension ids: snake_case, matching the install directory name. */
     public const EXTENSION_ID_PATTERN = '/^[a-z][a-z0-9_]{1,63}$/';
 
+    /**
+     * Declared page categories.
+     *
+     * Accepted and recorded, but they no longer decide sidebar placement: both
+     * frontend route generators file every extension page under the Extensions
+     * section, so an installed package cannot interleave its screens with the
+     * panel's own and leave an operator unable to tell core from third-party.
+     * What survives is ordering metadata within that section.
+     */
     public const SERVER_CATEGORIES = ['general', 'data', 'configuration'];
 
     public const ADMIN_CATEGORIES = ['general', 'access', 'developers', 'modules', 'management', 'extensions'];

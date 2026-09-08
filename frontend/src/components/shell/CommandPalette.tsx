@@ -88,7 +88,11 @@ export function CommandPalette() {
         // "Go to" is generated, so it tracks the route registry automatically.
         for (const group of buildNav(adminRoutes, { flags, held, basePath: '/admin' })) {
             for (const item of group.items) {
-                const label = td(`nav.items.${item.name}`, item.name);
+                // Extension pages carry their label id explicitly; core routes
+                // are looked up from their English name under nav.items.*.
+                const label = item.labelKey
+                    ? td(item.labelKey, item.name)
+                    : td(`nav.items.${item.name}`, item.name);
                 const category = group.category ? td(`nav.category.${group.category}`, group.category) : '';
                 out.push({
                     id: `goto:${item.to}`,
