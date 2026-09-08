@@ -23,7 +23,6 @@ use Everest\Http\Requests\Api\Application\Servers\ServerWriteRequest;
 use Everest\Http\Requests\Api\Application\Settings\FinishSetupRequest;
 use Everest\Http\Controllers\Api\Application\Billing\InvoiceController;
 use Everest\Http\Requests\Api\Application\Intelligence\ProbeToolCallingRequest;
-use Everest\Http\Requests\Api\Application\Billing\CustomDomains\UpdateCustomDomainRequest;
 
 class ApplicationApiPermissionResolverTest extends TestCase
 {
@@ -118,7 +117,6 @@ class ApplicationApiPermissionResolverTest extends TestCase
     public function testCorrectedActionRequestsUseTheirDedicatedPermissions(): void
     {
         $this->assertSame(AdminRole::SETTINGS_UPDATE, (new FinishSetupRequest())->permission());
-        $this->assertSame(AdminRole::CUSTOM_DOMAINS_UPDATE, (new UpdateCustomDomainRequest())->permission());
         $this->assertSame(AdminRole::ALERTS_READ, (new GetAlertsRequest())->permission());
         $this->assertSame(AdminRole::THEME_READ, (new GetThemeRequest())->permission());
         $this->assertSame(AdminRole::THEME_UPDATE, (new UpdateThemeRequest())->permission());

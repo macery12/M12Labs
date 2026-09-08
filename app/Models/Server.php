@@ -368,15 +368,6 @@ class Server extends Model
     }
 
     /**
-     * Gets all custom domain mappings associated with this server.
-     */
-    /** @return HasMany<ServerCustomDomain, $this> */
-    public function customDomains(): HasMany
-    {
-        return $this->hasMany(ServerCustomDomain::class, 'server_id');
-    }
-
-    /**
      * Gets information for the nest associated with this server.
      */
     public function nest(): BelongsTo

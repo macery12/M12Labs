@@ -104,9 +104,7 @@ class SchemaBaselineTest extends TestCase
         $created = [];
 
         foreach (glob(database_path('migrations') . '/*.php') ?: [] as $file) {
-            $source = (string) file_get_contents($file);
-
-            preg_match_all("/Schema::create\(\s*'([^']+)'/", $source, $matches);
+            preg_match_all("/Schema::create\(\s*'([^']+)'/", $this->upBody($file), $matches);
 
             foreach ($matches[1] as $table) {
                 $created[$table] = basename($file);
@@ -116,7 +114,7 @@ class SchemaBaselineTest extends TestCase
         // Dropped again by a later migration in the same chain, so a fresh
         // install never ends up with it.
         foreach (glob(database_path('migrations') . '/*.php') ?: [] as $file) {
-            preg_match_all("/Schema::dropIfExists\(\s*'([^']+)'/", (string) file_get_contents($file), $matches);
+            preg_match_all("/Schema::dropIfExists\(\s*'([^']+)'/", $this->upBody($file), $matches);
 
             foreach ($matches[1] as $table) {
                 if (isset($created[$table]) && basename($file) > $created[$table]) {
@@ -126,5 +124,28 @@ class SchemaBaselineTest extends TestCase
         }
 
         return $created;
+    }
+
+    /**
+     * The forward half of a migration.
+     *
+     * Only up() describes the schema a fresh install ends with. A migration that
+     * drops a table and offers to recreate it in down() would otherwise read as
+     * one that creates a table the baseline has never heard of — the create and
+     * the drop sit in the same file, so the later-drop rule above cannot cancel
+     * them out.
+     */
+    private function upBody(string $file): string
+    {
+        $source = (string) file_get_contents($file);
+
+        $start = strpos($source, 'function up(');
+        if ($start === false) {
+            return $source;
+        }
+
+        $end = strpos($source, 'function down(', $start);
+
+        return $end === false ? substr($source, $start) : substr($source, $start, $end - $start);
     }
 }

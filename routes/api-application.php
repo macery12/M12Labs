@@ -128,13 +128,6 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::get('/{order:id}/threat', [Application\Billing\OrderController::class, 'threat']);
         });
 
-        Route::group(['prefix' => '/custom-domains'], function () {
-            Route::get('/', [Application\Billing\CustomDomainController::class, 'index']);
-            Route::post('/', [Application\Billing\CustomDomainController::class, 'store']);
-            Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
-            Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
-        });
-
         Route::group(['prefix' => '/coupons'], function () {
             Route::get('/', [Application\Billing\CouponController::class, 'index']);
             Route::post('/', [Application\Billing\CouponController::class, 'store']);
@@ -186,31 +179,6 @@ Route::middleware([AdminSubject::class])->group(function () {
 
         // Get suggested multiplier ranges
         Route::get('/multiplier-ranges', [Application\Billing\BillingCycleController::class, 'multiplierRanges']);
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Custom Domains Module Routes
-    |--------------------------------------------------------------------------
-    |
-    | Endpoint: /api/application/custom-domains
-    |
-    */
-    Route::group(['prefix' => '/custom-domains'], function () {
-        Route::get('/', [Application\Billing\CustomDomainController::class, 'index']);
-        Route::post('/', [Application\Billing\CustomDomainController::class, 'store']);
-        Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
-        Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
-
-        Route::get('/options', [Application\Billing\CustomDomainController::class, 'options']);
-        Route::get('/api-keys', [Application\Billing\CustomDomainController::class, 'apiKeys']);
-        Route::post('/api-keys', [Application\Billing\CustomDomainController::class, 'storeApiKey']);
-        Route::patch('/api-keys/{apiKey:id}', [Application\Billing\CustomDomainController::class, 'updateApiKey']);
-        Route::delete('/api-keys/{apiKey:id}', [Application\Billing\CustomDomainController::class, 'deleteApiKey']);
-
-        Route::get('/settings', [Application\CustomDomains\SettingsController::class, 'index']);
-        Route::put('/settings', [Application\CustomDomains\SettingsController::class, 'update']);
-        Route::delete('/settings/cloudflare-token', [Application\CustomDomains\SettingsController::class, 'clearToken']);
     });
 
     /*

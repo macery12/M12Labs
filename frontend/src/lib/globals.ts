@@ -191,7 +191,6 @@ export interface EverestConfiguration {
     // `active` (enabled extension ids) is only present in admin sessions; it
     // gates extension-contributed admin nav entries.
     extensions: { enabled: boolean; active?: string[] };
-    custom_domains: { enabled: boolean };
     [k: string]: unknown;
 }
 

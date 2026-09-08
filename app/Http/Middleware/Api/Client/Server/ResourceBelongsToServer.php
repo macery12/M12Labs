@@ -11,7 +11,6 @@ use Everest\Models\Database;
 use Everest\Models\Schedule;
 use Illuminate\Http\Request;
 use Everest\Models\Allocation;
-use Everest\Models\ServerCustomDomain;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -53,7 +52,6 @@ class ResourceBelongsToServer
                 case Database::class:
                 case Schedule::class:
                 case Subuser::class:
-                case ServerCustomDomain::class:
                     if ($model->server_id !== $server->id) {
                         throw $exception;
                     }

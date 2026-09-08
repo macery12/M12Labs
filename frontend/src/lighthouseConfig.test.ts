@@ -13,8 +13,8 @@ const { selectedBaselineRoutes } = require('../lighthouse.config.cjs') as {
 
 describe('Lighthouse route selection', () => {
     it('keeps full and area audit modes', () => {
-        expect(selectedBaselineRoutes({})).toHaveLength(115);
-        expect(selectedBaselineRoutes({ LIGHTHOUSE_AREA: 'server' })).toHaveLength(21);
+        expect(selectedBaselineRoutes({})).toHaveLength(111);
+        expect(selectedBaselineRoutes({ LIGHTHOUSE_AREA: 'server' })).toHaveLength(20);
     });
 
     it('selects exact changed routes in the requested order', () => {

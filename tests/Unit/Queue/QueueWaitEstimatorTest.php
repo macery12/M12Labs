@@ -34,13 +34,13 @@ class QueueWaitEstimatorTest extends TestCase
     public function testWaitAccumulatesDownThePriorityOrder(): void
     {
         $waits = $this->estimator()->estimate(
-            ['critical' => 10_000.0, 'mail' => 5_000.0, 'dns' => 5_000.0],
-            $this->supervisor(['critical', 'mail', 'dns']),
+            ['critical' => 10_000.0, 'mail' => 5_000.0, 'standard' => 5_000.0],
+            $this->supervisor(['critical', 'mail', 'standard']),
         );
 
         $this->assertSame(10, $waits['critical']);
         $this->assertSame(15, $waits['mail'], 'A job on mail also waits for critical to clear.');
-        $this->assertSame(20, $waits['dns']);
+        $this->assertSame(20, $waits['standard']);
     }
 
     public function testProcessesDrainTheGroupInParallel(): void
@@ -151,9 +151,9 @@ class QueueWaitEstimatorTest extends TestCase
      */
     public function testAnExplicitZeroDisablesTheCheck(): void
     {
-        config(['queue.default' => 'redis', 'horizon.waits.redis:dns' => 0]);
+        config(['queue.default' => 'redis', 'horizon.waits.redis:standard' => 0]);
 
-        $this->assertNull($this->estimator()->thresholdFor('dns', 'dns'));
+        $this->assertNull($this->estimator()->thresholdFor('standard', 'standard'));
     }
 
     public function testAnUnlistedQueueFallsBackToHorizonsDefault(): void

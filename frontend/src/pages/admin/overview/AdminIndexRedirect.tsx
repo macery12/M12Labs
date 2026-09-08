@@ -20,11 +20,6 @@ const DESTINATIONS: {
     { to: '/admin/activity', permission: 'activity.read' },
     { to: '/admin/auth', permission: 'auth.read' },
     { to: '/admin/billing', permission: 'billing.read', condition: flags => flags.billing.enabled },
-    {
-        to: '/admin/custom-domains',
-        permission: 'custom-domains.read',
-        condition: flags => flags.custom_domains.enabled,
-    },
     { to: '/admin/tickets', permission: 'tickets.read', condition: flags => flags.tickets.enabled },
     { to: '/admin/ai', permission: 'ai.read', condition: flags => flags.ai.enabled },
     { to: '/admin/marketplace', permission: 'mods.read', condition: flags => flags.mods.enabled },

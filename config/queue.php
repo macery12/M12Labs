@@ -136,7 +136,6 @@ return [
         'critical' => env('QUEUE_CRITICAL', 'critical'),
         'schedules' => env('QUEUE_SCHEDULES', 'schedules'),
         'mail' => env('QUEUE_MAIL', 'mail'),
-        'dns' => env('QUEUE_DNS', 'dns'),
         'mods' => env('QUEUE_MODS', 'mods'),
         'agent' => env('QUEUE_AGENT', 'agent'),
         'standard' => env('QUEUE_STANDARD', 'standard'),
@@ -212,10 +211,6 @@ return [
         Everest\Jobs\Email\SendEmailJob::class => 'mail',
         Everest\Jobs\Email\ProcessDeferredEmailsJob::class => 'mail',
 
-        Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob::class => 'dns',
-        Everest\Jobs\CustomDomains\ProvisionCustomDomainRecordJob::class => 'dns',
-        Everest\Jobs\CustomDomains\CleanupServerCustomDomainsJob::class => 'dns',
-
         Everest\Jobs\InstallModpackJob::class => 'mods',
         Everest\Jobs\DownloadModJob::class => 'mods',
 
@@ -248,10 +243,6 @@ return [
         'mail' => [
             'title' => 'Outbound email',
             'summary' => 'Queued messages and the deferred-send flush.',
-        ],
-        'dns' => [
-            'title' => 'Custom domains',
-            'summary' => 'DNS records for server custom domains, rate limited per provider.',
         ],
         'mods' => [
             'title' => 'Modpack installs',
@@ -339,19 +330,6 @@ return [
         Everest\Jobs\Email\ProcessDeferredEmailsJob::class => [
             'title' => 'Flush deferred email',
             'summary' => 'Releases messages held back by the deferred-send window.',
-        ],
-
-        Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob::class => [
-            'title' => 'Provision custom domains',
-            'summary' => 'Creates the DNS records for every custom domain on a server.',
-        ],
-        Everest\Jobs\CustomDomains\ProvisionCustomDomainRecordJob::class => [
-            'title' => 'Provision domain record',
-            'summary' => 'Creates or updates one DNS record at the domain provider.',
-        ],
-        Everest\Jobs\CustomDomains\CleanupServerCustomDomainsJob::class => [
-            'title' => 'Remove custom domains',
-            'summary' => 'Deletes the DNS records left behind by a removed server or domain.',
         ],
 
         Everest\Jobs\InstallModpackJob::class => [

@@ -128,9 +128,6 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
     });
 
     Route::prefix('/billing')->group(function () {
-        Route::get('/custom-domains/options', [Client\Billing\CustomDomainOptionsController::class, 'index'])
-            ->middleware('throttle:custom-domains-billing-options');
-
         Route::middleware('verified.view:billing')->group(function () {
             Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
             Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
@@ -319,16 +316,6 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             Route::post('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'update']);
             Route::post('/allocations/{allocation}/primary', [Client\Servers\NetworkAllocationController::class, 'setPrimary']);
             Route::delete('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'delete']);
-        });
-
-        Route::group(['prefix' => '/custom-domains'], function () {
-            Route::get('/', [Client\Servers\CustomDomainController::class, 'index']);
-            Route::get('/options', [Client\Servers\CustomDomainController::class, 'options']);
-            Route::post('/', [Client\Servers\CustomDomainController::class, 'store'])
-                ->middleware('throttle:custom-domains-create');
-            Route::post('/sync', [Client\Servers\CustomDomainController::class, 'sync'])
-                ->middleware('throttle:custom-domains-sync');
-            Route::delete('/{customDomain:id}', [Client\Servers\CustomDomainController::class, 'destroy']);
         });
 
         Route::group(['prefix' => '/users'], function () {

@@ -10,7 +10,6 @@ use Everest\Repositories\Wings\DaemonServerRepository;
 use Everest\Extensions\Hooks\Events\ServerPreDeleteHook;
 use Everest\Services\Extensions\ExtensionHookDispatcher;
 use Everest\Services\Databases\DatabaseManagementService;
-use Everest\Jobs\CustomDomains\CleanupServerCustomDomainsJob;
 use Everest\Exceptions\Http\Connection\DaemonConnectionException;
 
 class ServerDeletionService
@@ -60,18 +59,8 @@ class ServerDeletionService
             Log::warning($exception);
         }
 
-        // Clean up custom domain DNS records BEFORE deleting the server.
-        // The server_custom_domains table has a cascadeOnDelete FK on server_id, which means
-        // the DB cascade removes the rows at the same time the server row is deleted. By the
-        // time the async CleanupServerCustomDomainsJob (dispatched in ServerObserver::deleted)
-        // runs, the rows are already gone and Cloudflare DNS records are never removed.
-        // Running the job synchronously here — outside the transaction and before the server
-        // row is deleted — ensures the rows still exist when cleanup runs.
-        if (config('modules.custom_domains.cleanup_on_delete', true)) {
-            CleanupServerCustomDomainsJob::dispatchSync($server->id);
-        }
-
-        // Extensions get the same slot, and for the same reason: their tables
+        // Extensions get the slot custom-domain cleanup used to hold, and for
+        // the same reason: their tables
         // reference servers with cascadeOnDelete, so a handler that ran after
         // the transaction would find its own rows already gone. Dispatched
         // outside the transaction as well as before it — a handler must not be

@@ -208,10 +208,6 @@ class AdminRole extends Model
     public const EXTENSIONS_DELETE = 'extensions.delete';
     public const EXTENSIONS_REPOSITORIES = 'extensions.repositories';
 
-    public const CUSTOM_DOMAINS_READ = 'custom-domains.read';
-    public const CUSTOM_DOMAINS_CREATE = 'custom-domains.create';
-    public const CUSTOM_DOMAINS_UPDATE = 'custom-domains.update';
-    public const CUSTOM_DOMAINS_DELETE = 'custom-domains.delete';
 
     /**
      * All the permissions available on the system. You should use self::permissions()
@@ -444,15 +440,6 @@ class AdminRole extends Model
                 'update' => 'Update extension settings or toggle extensions.',
                 'delete' => 'Uninstall an extension.',
                 'repositories' => 'Add, edit, or remove extension repositories.',
-            ],
-        ],
-        'custom-domains' => [
-            'description' => 'Permissions to configure the Custom Domains module.',
-            'keys' => [
-                'read' => 'View custom domains, Cloudflare API keys, and settings.',
-                'create' => 'Create a new custom domain.',
-                'update' => 'Update a custom domain, API key, or module settings.',
-                'delete' => 'Delete a custom domain or API key.',
             ],
         ],
     ];

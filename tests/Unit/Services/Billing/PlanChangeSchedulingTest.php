@@ -425,10 +425,6 @@ class PlanChangeSchedulingTest extends TestCase
             $table->unsignedInteger('server_id');
             $table->softDeletes();
         });
-        Schema::create('server_custom_domains', function (Blueprint $table): void {
-            $table->increments('id');
-            $table->unsignedInteger('server_id');
-        });
         Schema::create('products', function (Blueprint $table): void {
             $table->increments('id');
             $table->string('uuid');

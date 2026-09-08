@@ -35,7 +35,7 @@ const SECTIONS: { key: string; groups: string[] }[] = [
     { key: 'communication', groups: ['tickets', 'email', 'webhooks', 'alerts'] },
     { key: 'content', groups: ['extensions', 'mods', 'ai'] },
     { key: 'billing', groups: ['billing'] },
-    { key: 'customization', groups: ['theme', 'links', 'custom-domains'] },
+    { key: 'customization', groups: ['theme', 'links'] },
 ];
 
 // Installed extensions contribute their own namespaces (`ext.<id>.admin`).

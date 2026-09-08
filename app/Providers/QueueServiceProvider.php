@@ -8,11 +8,9 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\ServiceProvider;
 use Everest\Services\Queue\JobCatalogue;
-use Illuminate\Cache\RateLimiting\Limit;
 use Everest\Services\Queue\QueueTopology;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
-use Illuminate\Support\Facades\RateLimiter;
 use Everest\Services\Queue\QueueWaitEstimator;
 use Illuminate\Console\Events\CommandStarting;
 use Everest\Services\Queue\QueueWorkerHeartbeat;
@@ -58,7 +56,6 @@ class QueueServiceProvider extends ServiceProvider
     {
         $this->configureSupervisorTopology();
         $this->registerRoutes();
-        $this->registerRateLimiters();
         $this->registerHeartbeat();
         $this->registerSchedulerHeartbeat();
         $this->guardWorkerStartup();
@@ -92,17 +89,10 @@ class QueueServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Named limiters consumed by `RateLimited` job middleware.
-     */
-    private function registerRateLimiters(): void
-    {
-        RateLimiter::for('cloudflare', function () {
-            $perMinute = (int) config('modules.custom_domains.rate_limits.cloudflare_jobs_per_minute', 60);
-
-            return $perMinute > 0 ? Limit::perMinute($perMinute) : Limit::none();
-        });
-    }
+    // Core registers no named job limiters of its own. The only one was
+    // `cloudflare`, for custom-domain provisioning; an extension's queue groups
+    // get their limiters from ExtensionQueueRegistry, built from the verified
+    // manifest, so nothing needs registering here.
 
     /**
      * Every worker announces itself from its own loop, so the panel can tell

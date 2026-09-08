@@ -497,62 +497,6 @@ CREATE TABLE `coupons` (
   UNIQUE KEY `coupons_code_unique` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `custom_domain_api_keys`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `custom_domain_api_keys` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(191) NOT NULL,
-  `token` text NOT NULL,
-  `enabled` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `custom_domain_api_keys_name_unique` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `custom_domain_dns_logs`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `custom_domain_dns_logs` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `server_id` int(10) unsigned DEFAULT NULL,
-  `server_custom_domain_id` bigint(20) unsigned DEFAULT NULL,
-  `action` enum('create','update','delete','sync','ssl') NOT NULL,
-  `status` enum('success','failed') NOT NULL,
-  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payload`)),
-  `message` text DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `custom_domain_dns_logs_server_id_created_at_index` (`server_id`,`created_at`),
-  KEY `custom_domain_dns_logs_server_custom_domain_id_foreign` (`server_custom_domain_id`),
-  CONSTRAINT `custom_domain_dns_logs_server_custom_domain_id_foreign` FOREIGN KEY (`server_custom_domain_id`) REFERENCES `server_custom_domains` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `custom_domain_dns_logs_server_id_foreign` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `custom_domains`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `custom_domains` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `domain` varchar(191) NOT NULL,
-  `cloudflare_zone_id` varchar(191) DEFAULT NULL,
-  `api_key_id` bigint(20) unsigned DEFAULT NULL,
-  `allowed_nest_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`allowed_nest_ids`)),
-  `allowed_egg_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`allowed_egg_ids`)),
-  `service_tag` varchar(191) DEFAULT NULL,
-  `egg_service_tags` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`egg_service_tags`)),
-  `wildcard_enabled` tinyint(1) NOT NULL DEFAULT 0,
-  `enabled` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `custom_domains_domain_unique` (`domain`),
-  KEY `custom_domains_api_key_id_foreign` (`api_key_id`),
-  CONSTRAINT `custom_domains_api_key_id_foreign` FOREIGN KEY (`api_key_id`) REFERENCES `custom_domain_api_keys` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `custom_links`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -1325,7 +1269,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(191) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mount_node`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1667,36 +1611,6 @@ CREATE TABLE `schedules` (
   PRIMARY KEY (`id`),
   KEY `schedules_server_id_foreign` (`server_id`),
   CONSTRAINT `schedules_server_id_foreign` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `server_custom_domains`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `server_custom_domains` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `server_id` int(10) unsigned NOT NULL,
-  `allocation_id` int(10) unsigned DEFAULT NULL,
-  `custom_domain_id` bigint(20) unsigned NOT NULL,
-  `subdomain` varchar(191) NOT NULL,
-  `full_domain` varchar(191) NOT NULL,
-  `port` int(10) unsigned NOT NULL,
-  `protocol` enum('tcp','udp','both') NOT NULL DEFAULT 'both',
-  `record_type` enum('srv','cname') DEFAULT NULL,
-  `service_tag` varchar(191) DEFAULT NULL,
-  `status` enum('pending','active','failed') NOT NULL DEFAULT 'pending',
-  `dns_records` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`dns_records`)),
-  `last_error` text DEFAULT NULL,
-  `last_synced_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `server_custom_domains_unique_target` (`full_domain`,`port`,`protocol`),
-  KEY `server_custom_domains_server_id_status_index` (`server_id`,`status`),
-  KEY `server_custom_domains_custom_domain_id_foreign` (`custom_domain_id`),
-  KEY `server_custom_domains_allocation_id_index` (`allocation_id`),
-  CONSTRAINT `server_custom_domains_allocation_id_foreign` FOREIGN KEY (`allocation_id`) REFERENCES `allocations` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `server_custom_domains_custom_domain_id_foreign` FOREIGN KEY (`custom_domain_id`) REFERENCES `custom_domains` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `server_custom_domains_server_id_foreign` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `server_group_members`;

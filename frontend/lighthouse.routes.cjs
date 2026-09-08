@@ -44,7 +44,6 @@ const routes = [
     page('server', 'Backups', '/server/fixture/backups'),
     page('server', 'Startup', '/server/fixture/startup'),
     page('server', 'Network', '/server/fixture/network'),
-    page('server', 'Custom domains', '/server/fixture/custom-domains'),
     page('server', 'Schedules', '/server/fixture/schedules'),
     page('server', 'Schedule detail', '/server/fixture/schedules/1'),
     page('server', 'Users', '/server/fixture/users'),
@@ -93,9 +92,6 @@ const routes = [
     page('admin', 'Invoice settings', '/admin/billing/invoice-settings'),
 
     // Feature-module administration and nested tabs.
-    page('admin', 'Custom domains', '/admin/custom-domains'),
-    page('admin', 'Custom-domain API keys', '/admin/custom-domains/api-keys'),
-    page('admin', 'Custom-domain settings', '/admin/custom-domains/settings'),
     page('admin', 'Tickets', '/admin/tickets'),
     page('admin', 'Ticket detail', '/admin/tickets/1'),
     page('admin', 'AI overview', '/admin/ai'),

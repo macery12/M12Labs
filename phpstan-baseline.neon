@@ -41,13 +41,6 @@ parameters:
 			count: 2
 			path: app/Http/Controllers/Api/Application/Billing/BillingController.php
 
-		# Defensive ?-> on $egg->nest; relation typed non-null but FK can be orphaned.
-		-
-			message: '#^Using nullsafe property access on non\-nullable type Everest\\Models\\Nest\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Http/Controllers/Api/Application/Billing/CustomDomainController.php
-
 		# Defensive $request->user()?-> behind auth middleware; contract says non-null but kept as belt-and-braces.
 		-
 			message: '#^Using nullsafe property access on non\-nullable type Everest\\Models\\User\. Use \-\> instead\.$#'
@@ -127,13 +120,6 @@ parameters:
 			count: 1
 			path: app/Http/Controllers/Api/Client/Servers/ActivityLogController.php
 
-		# Defensive ?-> on route-model-bound parameter typed non-null.
-		-
-			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Requests/Api/Application/CustomDomains/UpdateCustomDomainApiKeyRequest.php
-
 		# Defensive orphaned-owner guard on $server->user.
 		-
 			message: '#^If condition is always true\.$#'
@@ -179,43 +165,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Billing/InvoiceGenerationService.php
-
-		# Defensive ?->/?? chains over allocation/node/api-key relations in DNS provisioning; relations typed non-null but can be absent.
-		-
-			message: '#^Expression on left side of \?\? is not nullable\.$#'
-			identifier: nullCoalesce.expr
-			count: 2
-			path: app/Services/CustomDomains/CustomDomainProvisioningService.php
-
-		-
-			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: app/Services/CustomDomains/CustomDomainProvisioningService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>ip_alias" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Services/CustomDomains/CustomDomainProvisioningService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Services/CustomDomains/CustomDomainProvisioningService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>port" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Services/CustomDomains/CustomDomainProvisioningService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>token" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 3
-			path: app/Services/CustomDomains/CustomDomainProvisioningService.php
 
 		# False positive family: $config comes from Collection::get() which larastan types non-null; it is genuinely nullable at runtime, so ?-> must stay.
 		-

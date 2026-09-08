@@ -160,13 +160,13 @@ class FailedJobRepositoryTest extends TestCase
     public function testFailuresCanBeNarrowedToOneQueue(): void
     {
         $this->recordFailure(queue: 'mail');
-        $this->recordFailure(queue: 'dns');
+        $this->recordFailure(queue: 'standard');
 
-        $page = $this->repository()->paginate(queue: 'dns');
+        $page = $this->repository()->paginate(queue: 'standard');
 
         $this->assertSame(1, $page['total']);
-        $this->assertSame('dns', $page['items'][0]['queue']);
-        $this->assertSame(['dns', 'mail'], $page['queues'], 'The filter must offer the queues that actually have failures.');
+        $this->assertSame('standard', $page['items'][0]['queue']);
+        $this->assertSame(['mail', 'standard'], $page['queues'], 'The filter must offer the queues that actually have failures.');
     }
 
     public function testRetryingPushesTheJobBackAndClearsTheFailure(): void
@@ -256,7 +256,7 @@ class FailedJobRepositoryTest extends TestCase
     public function testDiscardingASelectionReportsWhatActuallyWent(): void
     {
         $first = $this->recordFailure();
-        $second = $this->recordFailure(queue: 'dns');
+        $second = $this->recordFailure(queue: 'standard');
         $this->recordFailure(queue: 'mods');
 
         $this->assertSame(2, $this->repository()->deleteMany([$first, $second, (string) Str::uuid()]));
@@ -280,7 +280,7 @@ class FailedJobRepositoryTest extends TestCase
     public function testASweepTakesOnlyWhatItsScopeNames(): void
     {
         $this->recordFailure(queue: 'mail', failedAt: now()->subDays(30)->toDateTimeString());
-        $this->recordFailure(queue: 'dns', failedAt: now()->subDays(30)->toDateTimeString());
+        $this->recordFailure(queue: 'standard', failedAt: now()->subDays(30)->toDateTimeString());
         $this->recordFailure(queue: 'mail');
 
         $this->assertSame(1, $this->repository()->countMatching('mail', 7));
@@ -322,7 +322,7 @@ class FailedJobRepositoryTest extends TestCase
     public function testTheRetryAllSentinelIsNotReachableThroughASelection(): void
     {
         $this->recordFailure();
-        $this->recordFailure(queue: 'dns');
+        $this->recordFailure(queue: 'standard');
 
         $this->assertSame(0, $this->repository()->retryMany(['all']));
         $this->assertSame(2, DB::table('failed_jobs')->count(), 'Nothing may be retried by naming the sentinel.');
@@ -332,7 +332,7 @@ class FailedJobRepositoryTest extends TestCase
     public function testRetryingASelectionReportsWhatActuallyWent(): void
     {
         $first = $this->recordFailure();
-        $second = $this->recordFailure(queue: 'dns');
+        $second = $this->recordFailure(queue: 'standard');
 
         $this->assertSame(2, $this->repository()->retryMany([$first, $second, (string) Str::uuid()]));
         $this->assertSame(0, DB::table('failed_jobs')->count());

@@ -206,7 +206,6 @@ const everestConfiguration = {
     webhooks: { enabled: true },
     email: { enabled: true, module_enabled: true },
     extensions: { enabled: true, active: ['node_health_history'] },
-    custom_domains: { enabled: true },
 };
 
 const fixtureServer = {

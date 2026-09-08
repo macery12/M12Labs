@@ -6,7 +6,6 @@ import {
     BookOpen,
     ShieldCheck,
     CreditCard,
-    Globe,
     LifeBuoy,
     Bot,
     Boxes,
@@ -57,7 +56,6 @@ const AuthSection = lazy(() => import('@/pages/admin/auth/AuthSection'));
 const WebhooksSection = lazy(() => import('@/pages/admin/webhooks/WebhooksSection'));
 const AlertsSection = lazy(() => import('@/pages/admin/alerts/AlertsSection'));
 const OverviewPage = lazy(() => import('@/pages/admin/overview/OverviewPage'));
-const CustomDomainsSection = lazy(() => import('@/pages/admin/customdomains/CustomDomainsSection'));
 const DatabasesSection = lazy(() => import('@/pages/admin/databases/DatabasesSection'));
 const FeaturesSection = lazy(() => import('@/pages/admin/features/FeaturesSection'));
 const AiSection = lazy(() => import('@/pages/admin/ai/AiSection'));
@@ -106,7 +104,6 @@ export const adminRoutes: RouteDef[] = [
     route('access', { element: AccessIndexRedirect }),
 
     route('billing/*', { name: 'Billing', icon: CreditCard, category: 'modules', permission: 'billing.read', condition: f => f.billing.enabled, element: BillingSection }),
-    route('custom-domains/*', { name: 'Custom Domains', icon: Globe, category: 'modules', permission: 'custom-domains.read', condition: f => f.custom_domains.enabled, element: CustomDomainsSection }),
     route('tickets/*', { name: 'Tickets', icon: LifeBuoy, category: 'modules', permission: 'tickets.read', condition: f => f.tickets.enabled, element: TicketsSection }),
     route('ai/*', { name: 'AI', icon: Bot, category: 'modules', permission: 'ai.read', condition: f => f.ai.enabled, element: AiSection }),
     route('marketplace/*', { name: 'Marketplace', icon: Boxes, category: 'modules', permission: 'mods.read', condition: f => f.mods.enabled, element: MarketplaceSection }),

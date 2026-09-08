@@ -55,7 +55,6 @@ return [
         'redis:critical' => 30,
         'redis:schedules' => 60,
         'redis:mail' => 60,
-        'redis:dns' => 300,
         'redis:standard' => 300,
         'redis:high' => 60,
         'redis:low' => 600,
@@ -104,7 +103,7 @@ return [
         */
         'supervisor-interactive' => [
             'connection' => 'redis',
-            'queue' => ['critical', 'schedules', 'mail', 'dns', 'standard', 'high', 'low'],
+            'queue' => ['critical', 'schedules', 'mail', 'standard', 'high', 'low'],
             'balance' => false,
             'minProcesses' => 1,
             'maxProcesses' => 6,
