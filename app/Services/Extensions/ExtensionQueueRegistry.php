@@ -4,6 +4,7 @@ namespace Everest\Services\Extensions;
 
 use Everest\Models\ExtensionQueueJob;
 use Illuminate\Support\Facades\Cache;
+use Everest\Extensions\Jobs\RunExtensionHookJob;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 
 /**
@@ -37,7 +38,34 @@ class ExtensionQueueRegistry
      */
     public function definition(string $extensionId, string $queueName): ?QueueDefinition
     {
-        return $this->plan->entry($extensionId)?->capabilities->queue($queueName);
+        $entry = $this->plan->entry($extensionId);
+
+        // The extension still has to be runnable for a reserved group: a
+        // disabled extension's hooks must not execute either.
+        if ($entry === null) {
+            return null;
+        }
+
+        return self::reserved($queueName) ?? $entry->capabilities->queue($queueName);
+    }
+
+    /**
+     * Queue groups the panel owns and a manifest can never declare — the slug
+     * pattern forbids a leading underscore, so there is no collision to guard
+     * against. Their budgets belong to core precisely because a package cannot
+     * widen them.
+     */
+    private static function reserved(string $queueName): ?QueueDefinition
+    {
+        return match ($queueName) {
+            RunExtensionHookJob::QUEUE_GROUP => new QueueDefinition(
+                name: RunExtensionHookJob::QUEUE_GROUP,
+                maxAttempts: 3,
+                timeoutSeconds: 30,
+                backoffSeconds: [10, 60, 300],
+            ),
+            default => null,
+        };
     }
 
     /**

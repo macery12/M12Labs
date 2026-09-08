@@ -13,6 +13,9 @@ use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\RateLimiter;
 use Everest\Services\Extensions\ExtensionQueueJournal;
 use Everest\Services\Extensions\ExtensionQueueRegistry;
+use Everest\Services\Extensions\ExtensionHookDispatcher;
+use Everest\Services\Extensions\ExtensionJobDrainService;
+use Everest\Services\Extensions\ExtensionPermissionRegistry;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 
 /**
@@ -34,6 +37,9 @@ class ExtensionServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ExtensionQueueRegistry::class);
         $this->app->singleton(ExtensionQueueJournal::class);
+        $this->app->singleton(ExtensionJobDrainService::class);
+        $this->app->singleton(ExtensionHookDispatcher::class);
+        $this->app->singleton(ExtensionPermissionRegistry::class);
     }
 
     public function boot(): void

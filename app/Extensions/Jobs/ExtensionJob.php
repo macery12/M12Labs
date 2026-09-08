@@ -47,6 +47,9 @@ abstract class ExtensionJob implements ShouldQueue
     /** Namespace segment that identifies a package's own classes. */
     private const PACKAGE_NAMESPACE = 'Everest\\Extensions\\Packages\\';
 
+    /** Where core's own extension jobs live. */
+    private const CORE_NAMESPACE = 'Everest\\Extensions\\Jobs\\';
+
     public function __construct()
     {
         $this->onQueue(app(QueueTopology::class)->queueFor('extensions'));
@@ -67,11 +70,30 @@ abstract class ExtensionJob implements ShouldQueue
     {
         $class = static::class;
 
-        if (!str_starts_with($class, self::PACKAGE_NAMESPACE)) {
-            throw new \LogicException(sprintf('%s extends ExtensionJob but does not live under %s<id>\\.', $class, self::PACKAGE_NAMESPACE));
+        // A package's own job: ownership is the namespace, full stop. Final and
+        // unreachable by an override, so a package cannot claim another
+        // extension's quota, limiter or enabled state.
+        if (str_starts_with($class, self::PACKAGE_NAMESPACE)) {
+            return explode('\\', substr($class, strlen(self::PACKAGE_NAMESPACE)))[0];
         }
 
-        return explode('\\', substr($class, strlen(self::PACKAGE_NAMESPACE)))[0];
+        // One of core's own jobs, running work on behalf of an extension named
+        // at construction — RunExtensionHookJob is the case that exists.
+        if (str_starts_with($class, self::CORE_NAMESPACE)) {
+            return $this->ownerExtensionId();
+        }
+
+        throw new \LogicException(sprintf('%s extends ExtensionJob but lives under neither %s<id>\\ nor %s.', $class, self::PACKAGE_NAMESPACE, self::CORE_NAMESPACE));
+    }
+
+    /**
+     * The extension a core-owned job is acting for. Overriding this in a
+     * package class has no effect: extensionId() never consults it for a class
+     * under the package namespace.
+     */
+    protected function ownerExtensionId(): string
+    {
+        throw new \LogicException(static::class . ' must say which extension it runs on behalf of.');
     }
 
     /**

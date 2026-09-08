@@ -6,6 +6,8 @@ use Everest\Models\Server;
 use Illuminate\Support\Arr;
 use Illuminate\Database\ConnectionInterface;
 use Everest\Traits\Services\ReturnsUpdatedModels;
+use Everest\Extensions\Hooks\Events\ServerUpdatedHook;
+use Everest\Services\Extensions\ExtensionHookDispatcher;
 use Everest\Repositories\Wings\DaemonRevocationRepository;
 use Everest\Services\Billing\FreeProductEntitlementService;
 use Everest\Exceptions\Http\Connection\DaemonConnectionException;
@@ -21,6 +23,7 @@ class DetailsModificationService
         private ConnectionInterface $connection,
         private DaemonRevocationRepository $revocationRepository,
         private FreeProductEntitlementService $entitlementService,
+        private ExtensionHookDispatcher $hooks,
     ) {
     }
 
@@ -31,7 +34,7 @@ class DetailsModificationService
      */
     public function handle(Server $server, array $data): Server
     {
-        return $this->connection->transaction(function () use ($data, $server) {
+        $updated = $this->connection->transaction(function () use ($data, $server) {
             /** @var Server $server */
             $server = Server::query()->whereKey($server->id)->lockForUpdate()->firstOrFail();
             $original = $server->user;
@@ -75,5 +78,12 @@ class DetailsModificationService
 
             return $server;
         }, 5);
+
+        // After the commit, never inside it: a handler running in the same
+        // transaction could roll back a change core has already reported as
+        // done, and would read a database state nothing else can see yet.
+        $this->hooks->dispatch(ServerUpdatedHook::fromServer($updated, ['details']));
+
+        return $updated;
     }
 }

@@ -8,8 +8,11 @@ use Everest\Models\Allocation;
 use Illuminate\Support\Facades\Log;
 use Everest\Exceptions\DisplayException;
 use Illuminate\Database\ConnectionInterface;
+use Everest\Extensions\Hooks\Events\ServerUpdatedHook;
 use Everest\Repositories\Wings\DaemonServerRepository;
+use Everest\Services\Extensions\ExtensionHookDispatcher;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Everest\Extensions\Hooks\Events\ServerAllocationChangedHook;
 use Everest\Exceptions\Http\Connection\DaemonConnectionException;
 
 class BuildModificationService
@@ -21,6 +24,7 @@ class BuildModificationService
         private ConnectionInterface $connection,
         private DaemonServerRepository $daemonServerRepository,
         private ServerConfigurationStructureService $structureService,
+        private ExtensionHookDispatcher $hooks,
     ) {
     }
 
@@ -71,6 +75,18 @@ class BuildModificationService
             } catch (DaemonConnectionException $exception) {
                 Log::warning($exception, ['server_id' => $server->id]);
             }
+        }
+
+        // After the commit and after the daemon sync, never inside the
+        // transaction: a handler running in it could roll back a change core
+        // has already reported as done.
+        $this->hooks->dispatch(ServerUpdatedHook::fromServer($server, ['build']));
+
+        // Allocations are a separate subscription because a handler that maps
+        // external state (DNS, firewall rules) to a server's addresses cares
+        // about this and not about a memory change.
+        if (!empty($data['add_allocations']) || !empty($data['remove_allocations']) || isset($data['allocation_id'])) {
+            $this->hooks->dispatch(ServerAllocationChangedHook::fromServer($server));
         }
 
         return $server;
