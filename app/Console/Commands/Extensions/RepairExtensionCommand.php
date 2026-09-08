@@ -7,7 +7,6 @@ use Everest\Models\ExtensionConfig;
 use Everest\Models\ExtensionPackage;
 use Everest\Services\Extensions\ExtensionRuntimeGate;
 use Everest\Services\Extensions\ExtensionPackageUninstallService;
-use Everest\Console\Commands\Extensions\Concerns\HandlesExtensionPackages;
 
 /**
  * Core-owned repair command for packages that cannot run on this panel.
@@ -21,8 +20,6 @@ use Everest\Console\Commands\Extensions\Concerns\HandlesExtensionPackages;
  */
 class RepairExtensionCommand extends Command
 {
-    use HandlesExtensionPackages;
-
     protected $signature = 'p:ext:repair
                             {--uninstall= : Extension id to force-remove, including one quarantined as unsupported}
                             {--drop-data : With --uninstall, also roll back the extension\'s migrations, DROPPING its tables (unrecoverable)}
@@ -34,6 +31,23 @@ class RepairExtensionCommand extends Command
     public function __construct(private ExtensionPackageUninstallService $uninstallService)
     {
         parent::__construct();
+    }
+
+    private function isDebug(): bool
+    {
+        return (bool) $this->option('debug');
+    }
+
+    private function renderDebugException(\Throwable $exception): void
+    {
+        $this->newLine();
+        $this->line(sprintf('Debug: %s', $exception::class));
+
+        $previous = $exception->getPrevious();
+        while ($previous) {
+            $this->line(sprintf('Caused by: %s - %s', $previous::class, $previous->getMessage()));
+            $previous = $previous->getPrevious();
+        }
     }
 
     public function handle(): int

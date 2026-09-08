@@ -10,6 +10,7 @@ use Everest\Models\ExtensionPackage;
 use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
+use Everest\Services\Extensions\Manifest\ExtensionManifest;
 
 class ExtensionPackageInstallService
 {
@@ -164,7 +165,7 @@ class ExtensionPackageInstallService
         return DB::transaction(function () use ($prepared) {
             return $this->persistInstalledPackage(
                 extensionId: $prepared['extensionId'],
-                normalizedManifest: $prepared['normalizedManifest'],
+                parsedManifest: $prepared['parsedManifest'],
                 fallbackPackageMetadata: $prepared['fallbackPackageMetadata'],
                 filePlans: $prepared['filePlans'],
                 sourceRepositoryId: $prepared['sourceRepositoryId'],
@@ -258,8 +259,8 @@ class ExtensionPackageInstallService
 
             $this->progressService->report('install', $resolvedExtensionId ?? 'unknown', 'validating');
             $manifest = $this->artifactService->readPackageManifest($extractPath);
-            $normalizedManifest = $this->artifactService->normalizeManifest($manifest, $expectedExtensionId, $expectedVersion);
-            $extensionId = (string) Arr::get($normalizedManifest, 'extension.id');
+            $parsedManifest = $this->artifactService->parseManifest($manifest, $expectedExtensionId, $expectedVersion);
+            $extensionId = $parsedManifest->id;
             $resolvedExtensionId = $extensionId;
             $backupRoot = storage_path('app/extensions/backups/' . $extensionId . '/' . Str::uuid()->toString());
 
@@ -270,11 +271,11 @@ class ExtensionPackageInstallService
             // on the declared panel-version range.
             if ($sourceRepositoryId !== null) {
                 $this->artifactService->assertCompatiblePanelVersions($compatiblePanelVersions);
-                $this->artifactService->assertCompatiblePanelVersions(Arr::get($normalizedManifest, 'compatiblePanelVersions', []));
+                $this->artifactService->assertCompatiblePanelVersions($parsedManifest->compatiblePanelVersions);
             }
             $this->ownershipService->repairStandardPaths($extensionId);
 
-            $filePlans = $this->prepareFilePlans($extractPath, $normalizedManifest, $backupRoot, $extensionId);
+            $filePlans = $this->prepareFilePlans($extractPath, $parsedManifest, $backupRoot, $extensionId);
             $this->assertWritableInstallTargets($filePlans);
 
             $this->progressService->report('install', $extensionId, 'copying');
@@ -289,7 +290,7 @@ class ExtensionPackageInstallService
             return [
                 'extensionId' => $extensionId,
                 'appliedMigrations' => $appliedMigrations,
-                'normalizedManifest' => $normalizedManifest,
+                'parsedManifest' => $parsedManifest,
                 'fallbackPackageMetadata' => $fallbackPackageMetadata,
                 'filePlans' => $filePlans,
                 'appliedFiles' => $appliedFiles,
@@ -314,13 +315,12 @@ class ExtensionPackageInstallService
     }
 
     /**
-     * @param array<string, mixed> $normalizedManifest
      * @param array<string, mixed> $fallbackPackageMetadata
      * @param array<int, array<string, mixed>> $filePlans
      */
     private function persistInstalledPackage(
         string $extensionId,
-        array $normalizedManifest,
+        ExtensionManifest $parsedManifest,
         array $fallbackPackageMetadata,
         array $filePlans,
         ?int $sourceRepositoryId,
@@ -331,19 +331,27 @@ class ExtensionPackageInstallService
     ): ExtensionPackage {
         $packageModel = ExtensionPackage::query()->create([
             'extension_id' => $extensionId,
-            'package_id' => Arr::get($normalizedManifest, 'package.id', Arr::get($fallbackPackageMetadata, 'id', $extensionId)),
-            'name' => Arr::get($normalizedManifest, 'extension.name', Arr::get($fallbackPackageMetadata, 'name', $extensionId)),
-            'description' => Arr::get($normalizedManifest, 'extension.description', Arr::get($fallbackPackageMetadata, 'description', '')),
-            'author' => Arr::get($normalizedManifest, 'extension.author', Arr::get($fallbackPackageMetadata, 'author', 'M12Labs')),
-            'icon' => Arr::get($normalizedManifest, 'extension.icon', Arr::get($fallbackPackageMetadata, 'icon', 'puzzle')),
-            'route' => Arr::get($normalizedManifest, 'extension.route', Arr::get($fallbackPackageMetadata, 'route', $extensionId)),
-            'installed_version' => Arr::get($normalizedManifest, 'package.version'),
+            'package_id' => $parsedManifest->packageId,
+            'name' => $parsedManifest->name,
+            'description' => $parsedManifest->description,
+            'author' => $parsedManifest->publisher ?? Arr::get($fallbackPackageMetadata, 'author', 'M12Labs'),
+            'icon' => $parsedManifest->icon,
+            // v3 packages declare pages rather than a single route; the column
+            // is retained for the catalog's legacy shape and mirrors the id.
+            'route' => $extensionId,
+            'installed_version' => $parsedManifest->version,
             'source_repository_id' => $sourceRepositoryId,
             'source_repository_name' => $sourceRepositoryName,
             'source_registry_url' => $sourceRegistryUrl,
             'source_archive_url' => $sourceArchiveUrl,
             'package_checksum' => $archiveChecksum,
-            'manifest' => $normalizedManifest,
+            'manifest' => $parsedManifest->jsonSerialize(),
+            'manifest_version' => ExtensionManifest::VERSION,
+            'capabilities' => $parsedManifest->capabilities->jsonSerialize(),
+            'capability_hash' => $parsedManifest->capabilities->hash(),
+            'manifest_hash' => $parsedManifest->hash(),
+            'publisher' => $parsedManifest->publisher,
+            'state' => 'installed_disabled',
             'installed_at' => now(),
         ]);
 
@@ -361,10 +369,12 @@ class ExtensionPackageInstallService
         ExtensionConfig::query()->firstOrCreate(
             ['extension_id' => $extensionId],
             [
-                'enabled' => (bool) Arr::get($normalizedManifest, 'extension.defaults.enabled', false),
-                'allowed_nests' => Arr::get($normalizedManifest, 'extension.defaults.allowedNests', []),
-                'allowed_eggs' => Arr::get($normalizedManifest, 'extension.defaults.allowedEggs', []),
-                'settings' => Arr::get($normalizedManifest, 'extension.defaults.settings', []),
+                // A freshly installed package is never activated implicitly;
+                // enabling is a separate, explicit administrator action.
+                'enabled' => false,
+                'allowed_nests' => $parsedManifest->defaultAllowedNests(),
+                'allowed_eggs' => $parsedManifest->defaultAllowedEggs(),
+                'settings' => $parsedManifest->defaultSettings(),
             ]
         );
 
@@ -434,29 +444,17 @@ class ExtensionPackageInstallService
     }
 
     /**
-     * @param array<string, mixed> $manifest
-     *
      * @return array<int, array<string, mixed>>
      */
-    private function prepareFilePlans(string $extractPath, array $manifest, string $backupRoot, string $extensionId): array
+    private function prepareFilePlans(string $extractPath, ExtensionManifest $manifest, string $backupRoot, string $extensionId): array
     {
         $plans = [];
-        $files = Arr::get($manifest, 'files', []);
-        if (!is_array($files) || $files === []) {
-            throw new DisplayException('The extension package manifest does not declare any installable files.');
-        }
 
-        foreach ($files as $file) {
-            if (!is_array($file)) {
-                continue;
-            }
-
-            $path = $this->artifactService->normalizeTargetPath((string) ($file['path'] ?? ''), $extensionId);
-            $checksum = trim((string) ($file['sha256'] ?? ''));
-
-            if ($path === '' || $checksum === '') {
-                throw new DisplayException('The extension package manifest contains an invalid file entry.');
-            }
+        foreach ($manifest->files as $file) {
+            // The parser has already validated the shape; this re-checks that
+            // the path stays inside the two install roots for this extension.
+            $path = $this->artifactService->normalizeTargetPath($file['path'], $extensionId);
+            $checksum = $file['sha256'];
 
             $sourcePath = $extractPath . '/' . $path;
             if (!is_file($sourcePath)) {

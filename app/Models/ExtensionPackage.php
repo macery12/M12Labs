@@ -25,6 +25,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property int $manifest_version
  * @property string $state
  * @property string|null $state_reason
+ * @property array|null $capabilities
+ * @property string|null $capability_hash
+ * @property string|null $approved_capability_hash
+ * @property string|null $manifest_hash
+ * @property string|null $publisher
+ * @property string $signature_state
  * @property \Carbon\Carbon|null $installed_at
  * @property ExtensionRepository|null $repository
  * @property \Illuminate\Database\Eloquent\Collection|ExtensionPackageFile[] $files
@@ -53,12 +59,24 @@ class ExtensionPackage extends Model
         'manifest_version',
         'state',
         'state_reason',
+        'capabilities',
+        'capability_hash',
+        'approved_capability_hash',
+        'manifest_hash',
+        'publisher',
+        'signature_state',
+        'signature_key_id',
+        'signature_verified_at',
+        'previous_version',
+        'last_operation_id',
         'installed_at',
     ];
 
     protected $casts = [
         'manifest' => 'array',
         'manifest_version' => 'integer',
+        'capabilities' => 'array',
+        'signature_verified_at' => 'datetime',
         'installed_at' => 'datetime',
     ];
 

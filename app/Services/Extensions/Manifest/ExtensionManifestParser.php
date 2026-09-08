@@ -85,7 +85,7 @@ class ExtensionManifestParser
             compatiblePanelVersions: $this->parseCompatibility($manifest['compatiblePanelVersions'] ?? []),
             capabilities: $capabilities,
             requirements: $this->parseRequirements($manifest['requirements'] ?? []),
-            files: $this->parseFiles($manifest['files'] ?? []),
+            files: $this->parseFiles($manifest['files'] ?? [], $id),
             integrity: $this->parseIntegrity($manifest['integrity'] ?? null),
             raw: $manifest,
         );
@@ -708,7 +708,7 @@ class ExtensionManifestParser
     /**
      * @return array<int, array{path: string, sha256: string}>
      */
-    private function parseFiles($files): array
+    private function parseFiles($files, string $extensionId): array
     {
         if (!is_array($files) || !array_is_list($files) || $files === []) {
             throw new DisplayException('The manifest must declare the files the package ships.');
@@ -733,6 +733,8 @@ class ExtensionManifestParser
                 throw new DisplayException(sprintf('The manifest declares "%s" more than once.', $path));
             }
             $seen[$path] = true;
+
+            $this->assertWithinInstallRoots($path, $extensionId);
 
             $parsed[] = ['path' => $path, 'sha256' => $checksum];
         }
@@ -766,6 +768,34 @@ class ExtensionManifestParser
             'keyId' => isset($integrity['keyId']) ? (string) $integrity['keyId'] : null,
             'signature' => isset($integrity['signature']) ? (string) $integrity['signature'] : null,
         ];
+    }
+
+    /**
+     * The installer permits exactly two roots, both scoped to this extension.
+     *
+     * Enforced here rather than only at copy time so inspecting an archive
+     * tells the truth about what it would install: a package declaring a core
+     * controller, a provider or another extension's directory is refused while
+     * it is still an untrusted file being listed.
+     */
+    private function assertWithinInstallRoots(string $path, string $extensionId): void
+    {
+        if (str_starts_with($path, '/') || str_contains($path, '../') || str_contains($path, "\0")) {
+            throw new DisplayException(sprintf('The manifest declares an unsafe path "%s".', $path));
+        }
+
+        $allowed = [
+            sprintf('app/Extensions/Packages/%s/', $extensionId),
+            sprintf('frontend/src/extensions/packages/%s/', $extensionId),
+        ];
+
+        foreach ($allowed as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return;
+            }
+        }
+
+        throw new DisplayException(sprintf('The manifest declares "%s", which is outside this extension\'s install roots (%s).', $path, implode(' and ', $allowed)));
     }
 
     // ---------------------------------------------------------------- helpers

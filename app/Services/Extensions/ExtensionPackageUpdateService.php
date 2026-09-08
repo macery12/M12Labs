@@ -9,6 +9,7 @@ use Everest\Models\ExtensionPackage;
 use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
+use Everest\Services\Extensions\Manifest\ExtensionManifest;
 
 class ExtensionPackageUpdateService
 {
@@ -170,7 +171,7 @@ class ExtensionPackageUpdateService
     public function finalizeUpdate(array $prepared): ExtensionPackage
     {
         $existingPackage = $prepared['existingPackage'];
-        $normalizedManifest = $prepared['normalizedManifest'];
+        $parsedManifest = $prepared['parsedManifest'];
         $fallbackPackageMetadata = $prepared['fallbackPackageMetadata'];
         $newFilePlans = $prepared['newFilePlans'];
         $oldOnlyFiles = $prepared['oldOnlyFiles'];
@@ -186,8 +187,8 @@ class ExtensionPackageUpdateService
             $existingPackage,
             $fallbackPackageMetadata,
             $newFilePlans,
-            $normalizedManifest,
             $oldOnlyFiles,
+            $parsedManifest,
             $resolvedExtensionId,
             $sourceArchiveUrl,
             $sourceRegistryUrl,
@@ -199,19 +200,25 @@ class ExtensionPackageUpdateService
                 ->delete();
 
             $existingPackage->update([
-                'package_id'             => Arr::get($normalizedManifest, 'package.id', Arr::get($fallbackPackageMetadata, 'id', $resolvedExtensionId)),
-                'name'                   => Arr::get($normalizedManifest, 'extension.name', Arr::get($fallbackPackageMetadata, 'name', $resolvedExtensionId)),
-                'description'            => Arr::get($normalizedManifest, 'extension.description', Arr::get($fallbackPackageMetadata, 'description', '')),
-                'author'                 => Arr::get($normalizedManifest, 'extension.author', Arr::get($fallbackPackageMetadata, 'author', 'M12Labs')),
-                'icon'                   => Arr::get($normalizedManifest, 'extension.icon', Arr::get($fallbackPackageMetadata, 'icon', 'puzzle')),
-                'route'                  => Arr::get($normalizedManifest, 'extension.route', Arr::get($fallbackPackageMetadata, 'route', $resolvedExtensionId)),
-                'installed_version'      => Arr::get($normalizedManifest, 'package.version'),
+                'package_id'             => $parsedManifest->packageId,
+                'name'                   => $parsedManifest->name,
+                'description'            => $parsedManifest->description,
+                'author'                 => $parsedManifest->publisher ?? Arr::get($fallbackPackageMetadata, 'author', 'M12Labs'),
+                'icon'                   => $parsedManifest->icon,
+                'route'                  => $resolvedExtensionId,
+                'previous_version'       => $existingPackage->installed_version,
+                'installed_version'      => $parsedManifest->version,
                 'source_repository_id'   => $sourceRepositoryId ?? $existingPackage->source_repository_id,
                 'source_repository_name' => $sourceRepositoryName ?? $existingPackage->source_repository_name,
                 'source_registry_url'    => $sourceRegistryUrl ?? $existingPackage->source_registry_url,
                 'source_archive_url'     => $sourceArchiveUrl,
                 'package_checksum'       => is_string($archiveChecksum) ? $archiveChecksum : null,
-                'manifest'               => $normalizedManifest,
+                'manifest'               => $parsedManifest->jsonSerialize(),
+                'manifest_version'       => ExtensionManifest::VERSION,
+                'capabilities'           => $parsedManifest->capabilities->jsonSerialize(),
+                'capability_hash'        => $parsedManifest->capabilities->hash(),
+                'manifest_hash'          => $parsedManifest->hash(),
+                'publisher'              => $parsedManifest->publisher,
                 'installed_at'           => now(),
             ]);
 
@@ -329,8 +336,8 @@ class ExtensionPackageUpdateService
 
             $this->progressService->report('update', $resolvedExtensionId ?? 'unknown', 'validating');
             $manifest = $this->artifactService->readPackageManifest($extractPath);
-            $normalizedManifest = $this->artifactService->normalizeManifest($manifest, $extensionId, $expectedVersion);
-            $resolvedExtensionId = (string) Arr::get($normalizedManifest, 'extension.id');
+            $parsedManifest = $this->artifactService->parseManifest($manifest, $extensionId, $expectedVersion);
+            $resolvedExtensionId = $parsedManifest->id;
 
             $existingPackage = ExtensionPackage::query()
                 ->with('files')
@@ -342,7 +349,7 @@ class ExtensionPackageUpdateService
             }
 
             $this->artifactService->assertCompatiblePanelVersions($compatiblePanelVersions);
-            $this->artifactService->assertCompatiblePanelVersions(Arr::get($normalizedManifest, 'compatiblePanelVersions', []));
+            $this->artifactService->assertCompatiblePanelVersions($parsedManifest->compatiblePanelVersions);
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
 
             $this->fileService->assertFilesUnmodified($existingPackage->files->all(), 'updated');
@@ -352,7 +359,7 @@ class ExtensionPackageUpdateService
 
             $newFilePlans = $this->prepareUpdateFilePlans(
                 $extractPath,
-                $normalizedManifest,
+                $parsedManifest,
                 $newBackupRoot,
                 $resolvedExtensionId,
                 $existingPackage
@@ -393,7 +400,7 @@ class ExtensionPackageUpdateService
                 'extensionId'             => $resolvedExtensionId,
                 'appliedMigrations'       => $appliedMigrations,
                 'existingPackage'         => $existingPackage,
-                'normalizedManifest'      => $normalizedManifest,
+                'parsedManifest'          => $parsedManifest,
                 'fallbackPackageMetadata' => $fallbackPackageMetadata,
                 'newFilePlans'            => $newFilePlans,
                 'oldOnlyFiles'            => $oldOnlyFiles,
@@ -426,37 +433,25 @@ class ExtensionPackageUpdateService
      * Build the file plans for the new version, inheriting pre-extension backups
      * from the current install for any paths that were already tracked.
      *
-     * @param array<string, mixed> $manifest
-     *
      * @return array<int, array<string, mixed>>
      */
     private function prepareUpdateFilePlans(
         string $extractPath,
-        array $manifest,
+        ExtensionManifest $manifest,
         string $newBackupRoot,
         string $extensionId,
         ExtensionPackage $existingPackage,
     ): array {
         $plans = [];
-        $files = Arr::get($manifest, 'files', []);
-        if (!is_array($files) || $files === []) {
-            throw new DisplayException('The extension package manifest does not declare any installable files.');
-        }
 
         /** @var array<string, ExtensionPackageFile> $oldFilesByPath */
         $oldFilesByPath = $existingPackage->files->keyBy('path')->all();
 
-        foreach ($files as $file) {
-            if (!is_array($file)) {
-                continue;
-            }
-
-            $path = $this->artifactService->normalizeTargetPath((string) ($file['path'] ?? ''), $extensionId);
-            $checksum = trim((string) ($file['sha256'] ?? ''));
-
-            if ($path === '' || $checksum === '') {
-                throw new DisplayException('The extension package manifest contains an invalid file entry.');
-            }
+        foreach ($manifest->files as $file) {
+            // The parser has already validated the shape; this re-checks that
+            // the path stays inside the two install roots for this extension.
+            $path = $this->artifactService->normalizeTargetPath($file['path'], $extensionId);
+            $checksum = $file['sha256'];
 
             $sourcePath = $extractPath . '/' . $path;
             if (!is_file($sourcePath)) {
