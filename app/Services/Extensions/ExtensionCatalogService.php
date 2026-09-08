@@ -22,6 +22,7 @@ class ExtensionCatalogService
         private ExtensionMigrationService $migrationService,
         private ExtensionPackageArtifactService $artifactService,
         private ExtensionRuntimePlanService $planService,
+        private ExtensionSignatureService $signatureService,
     ) {
     }
 
@@ -393,6 +394,14 @@ class ExtensionCatalogService
      */
     private function normalizeRepositoryManifest(array $payload, ExtensionRepository $repository): array
     {
+        // Release keys travel with the registry but are trusted only once the
+        // pinned offline root's signature over each key record verifies. Doing
+        // this on every refresh is also how a revocation reaches the panel.
+        if (isset($payload['keys']) && is_array($payload['keys'])) {
+            $this->signatureService->syncRegistryKeys($payload['keys'], $repository->id);
+            $this->signatureService->markRevokedInstalls();
+        }
+
         $packages = [];
         foreach ((array) ($payload['packages'] ?? []) as $package) {
             if (!is_array($package)) {

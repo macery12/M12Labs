@@ -26,6 +26,7 @@ class ExtensionPackageInstallService
         private ExtensionMigrationService $migrationService,
         private ExtensionPermissionRegistry $permissionRegistry,
         private ExtensionPageManifestService $pageManifestService,
+        private ExtensionSignatureService $signatureService,
     ) {
     }
 
@@ -72,12 +73,12 @@ class ExtensionPackageInstallService
         });
     }
 
-    public function installFromArchive(string $archivePath, ?string $sourceLabel = null, ?string $approvedCapabilityHash = null): ExtensionPackage
+    public function installFromArchive(string $archivePath, ?string $sourceLabel = null, ?string $approvedCapabilityHash = null, bool $acknowledgeUnsigned = false): ExtensionPackage
     {
         $resolvedArchivePath = $this->artifactService->resolveArchivePath($archivePath);
         $this->assertSupportedArchiveArtifact($resolvedArchivePath);
 
-        return $this->operationLockService->withinLock('install', basename($resolvedArchivePath), function () use ($resolvedArchivePath, $sourceLabel, $approvedCapabilityHash) {
+        return $this->operationLockService->withinLock('install', basename($resolvedArchivePath), function () use ($resolvedArchivePath, $sourceLabel, $approvedCapabilityHash, $acknowledgeUnsigned) {
             $prepared = null;
             try {
                 $prepared = $this->performInstallFileOps(
@@ -92,6 +93,7 @@ class ExtensionPackageInstallService
                     sourceRegistryUrl: null,
                     sourceArchiveUrl: 'file://' . $resolvedArchivePath,
                     fallbackPackageMetadata: [],
+                    acknowledgeUnsigned: $acknowledgeUnsigned,
                 );
 
                 $this->rebuildService->rebuild(
@@ -179,6 +181,7 @@ class ExtensionPackageInstallService
                 sourceRegistryUrl: $prepared['sourceRegistryUrl'],
                 sourceArchiveUrl: $prepared['sourceArchiveUrl'],
                 archiveChecksum: $prepared['archiveChecksum'],
+                signature: $prepared['signature'] ?? ['state' => 'unsigned', 'keyId' => null, 'verifiedAt' => null],
             );
         });
     }
@@ -243,6 +246,7 @@ class ExtensionPackageInstallService
         ?string $sourceRegistryUrl,
         string $sourceArchiveUrl,
         array $fallbackPackageMetadata,
+        bool $acknowledgeUnsigned = false,
     ): array {
         $tempRoot = storage_path('app/extensions/tmp/' . Str::uuid()->toString());
         $archivePath = $tempRoot . '/' . ExtensionPackageArtifactService::PACKAGE_ARTIFACT_FILENAME;
@@ -272,6 +276,30 @@ class ExtensionPackageInstallService
             $backupRoot = storage_path('app/extensions/backups/' . $extensionId . '/' . Str::uuid()->toString());
 
             $this->assertExtensionNotInstalled($extensionId);
+
+            // Before capability approval, and before a single file is copied:
+            // an artifact the panel cannot attribute to anybody should never
+            // reach the point where an operator is asked to consent to its
+            // privileges.
+            $signature = $this->signatureService->verify(
+                $parsedManifest,
+                $manifest,
+                (string) $archiveChecksum,
+                // The unsigned acknowledgement is only ever honoured for a
+                // local archive an operator handed over deliberately, never
+                // for anything fetched from a repository.
+                $acknowledgeUnsigned && $sourceRepositoryId === null,
+                auth()->user()?->email,
+            );
+
+            // Only meaningful once a trust anchor exists. On a panel with no
+            // pinned root nothing can be attributed to anybody, including the
+            // official packages, so restricting unverified capabilities there
+            // would ban hooks and queues outright rather than protect anything.
+            if ($signature['state'] !== 'verified' && $this->signatureService->signingRequired()) {
+                $this->signatureService->assertCapabilitiesAllowedUnverified($parsedManifest);
+            }
+
             $this->assertCapabilitiesApproved($extensionId, $parsedManifest, $approvedCapabilityHash);
             // Compatibility is enforced only for repository fetches. A manual
             // package upload (sourceRepositoryId === null) is an explicit operator
@@ -303,6 +331,7 @@ class ExtensionPackageInstallService
             $appliedMigrations = $this->runPackageMigrations($extensionId, $filePlans, 'install');
 
             return [
+                'signature' => $signature,
                 'extensionId' => $extensionId,
                 'appliedMigrations' => $appliedMigrations,
                 'parsedManifest' => $parsedManifest,
@@ -343,6 +372,7 @@ class ExtensionPackageInstallService
         ?string $sourceRegistryUrl,
         ?string $sourceArchiveUrl,
         ?string $archiveChecksum,
+        array $signature,
     ): ExtensionPackage {
         $packageModel = ExtensionPackage::query()->create([
             'extension_id' => $extensionId,
@@ -366,6 +396,9 @@ class ExtensionPackageInstallService
             'capability_hash' => $parsedManifest->capabilities->hash(),
             'manifest_hash' => $parsedManifest->hash(),
             'publisher' => $parsedManifest->publisher,
+            'signature_state' => $signature['state'],
+            'signature_key_id' => $signature['keyId'],
+            'signature_verified_at' => $signature['verifiedAt'],
             'state' => 'installed_disabled',
             'installed_at' => now(),
         ]);

@@ -242,7 +242,10 @@ class ExtensionRuntimePlanService
             return false;
         }
 
-        if (!config('extensions.signing.require_signature', false)) {
+        // Enforcement follows the same rule as the verifier: a panel with no
+        // pinned root cannot verify anything, so requiring a verified state
+        // there would make every installed package inert.
+        if (!app(ExtensionSignatureService::class)->signingRequired()) {
             return true;
         }
 

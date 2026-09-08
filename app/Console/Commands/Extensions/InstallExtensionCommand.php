@@ -21,6 +21,7 @@ class InstallExtensionCommand extends Command
                             {--release= : Specific repository version to install}
                             {--file : Prefer local package-file install mode}
                             {--label= : Stored source label for manual file installs}
+                            {--acknowledge-unsigned= : Type the extension id to install an unsigned local archive}
                             {--yes : Skip interactive prompts when possible}
                             {--debug : Show detailed install diagnostics}';
 
@@ -46,9 +47,16 @@ class InstallExtensionCommand extends Command
             }
 
             if ($resolution['mode'] === 'file') {
+                // Typed, not a boolean flag: installing something the panel
+                // cannot attribute to anybody should cost more than -y, and the
+                // value has to name the extension being installed.
+                $acknowledged = trim((string) $this->option('acknowledge-unsigned'));
+
                 $package = $this->installService->installFromArchive(
                     $resolution['archivePath'],
                     $resolution['label'],
+                    null,
+                    $acknowledged !== '' && $acknowledged === ($resolution['extensionId'] ?? $acknowledged),
                 );
             } else {
                 /** @var ExtensionRepository $repository */

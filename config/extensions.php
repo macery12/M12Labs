@@ -67,6 +67,28 @@ return [
         'prune_store' => (bool) env('EXTENSIONS_BUILD_PRUNE_STORE', true),
     ],
 
+    'signing' => [
+        // The OFFLINE root key, base64-encoded raw Ed25519 public key. It never
+        // touches a build machine: it signs short-lived release keys, and those
+        // sign artifacts. Only this value is pinned by the panel.
+        'root_public_key' => env('EXTENSIONS_SIGNING_ROOT_KEY', ''),
+
+        // sha256 of the decoded root key. An operator can compare it out of
+        // band, and a swapped root_public_key fails the comparison rather than
+        // silently becoming a new root of trust.
+        'root_fingerprint' => env('EXTENSIONS_SIGNING_ROOT_FINGERPRINT', ''),
+
+        // Refuse to install an artifact that is not signed by a trusted release
+        // key. Turning this off is not supported for repository installs.
+        'require_signature' => (bool) env('EXTENSIONS_REQUIRE_SIGNATURE', true),
+
+        // Whether a local .M12LabsExtension archive may be installed unsigned,
+        // with an explicit acknowledgement. Such a package can never declare
+        // hooks, queues or a dangerous permission — the panel cannot attribute
+        // it to anybody, so it must not run code on core's behalf.
+        'allow_unsigned_local' => (bool) env('EXTENSIONS_ALLOW_UNSIGNED_LOCAL', false),
+    ],
+
     'queues' => [
         // How long an update or uninstall waits for an extension's in-flight
         // jobs before giving up. Queued work is discarded immediately; this
