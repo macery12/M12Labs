@@ -22,13 +22,11 @@ use Illuminate\Database\Migrations\Migration;
  *
  * `orders.domain_payload` fed two HMACs: CheckoutIntegrityService's tamper
  * fingerprint and CheckoutSnapshotService's request-idempotency fingerprint.
- * Both keep a constant empty entry in the column's place, so every order that
- * never bought a domain keeps the fingerprint it was locked with — including
- * the copy written into the payment provider's own metadata, which no migration
- * can reach. Without that, an order already paid at the provider would fail
- * capture after this deploy and need manual reconciliation. Orders that really
- * did carry a domain payload will fail verification and have to be re-checked
- * out; they were buying a feature that no longer exists.
+ * Both dropped the field outright, which changes the hash for any order locked
+ * before this deploy — including the copy written into the payment provider's
+ * own metadata, which no migration can reach. That was checked rather than
+ * assumed: there were no open locked orders when this ran, so nothing could be
+ * stranded. Anywhere that is not true, drain open checkouts first.
  *
  * Plan-change orders cannot be protected the same way. PlanChangeService hashes
  * a product state that included subdomain_limit into orders.plan_change_snapshot,
