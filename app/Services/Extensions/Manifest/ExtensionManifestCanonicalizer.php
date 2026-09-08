@@ -38,15 +38,23 @@ final class ExtensionManifestCanonicalizer
     /**
      * Message a publisher signs and the panel verifies. Domain-separated so a
      * signature over one artifact can never be replayed as one over another.
+     *
+     * The archive's own sha256 is deliberately absent. The signature ships
+     * inside the archive, so covering the archive hash would be circular —
+     * inserting the signature changes the hash it just committed to. Nothing is
+     * lost by leaving it out: the canonical manifest carries a sha256 for every
+     * file, the installer copies only files the manifest lists and verifies
+     * each one, so signing the manifest already commits to everything that
+     * reaches the panel. Archive-level integrity for a repository install comes
+     * from the registry's own checksum, which is checked before extraction.
      */
-    public function signingMessage(string $extensionId, string $version, string $canonicalManifest, string $archiveSha256): string
+    public function signingMessage(string $extensionId, string $version, string $canonicalManifest): string
     {
         return implode("\n", [
             'm12labs-ext-v3',
             $extensionId,
             $version,
             hash('sha256', $canonicalManifest),
-            strtolower($archiveSha256),
         ]);
     }
 

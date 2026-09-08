@@ -41,6 +41,12 @@ class ExtensionQuarantineApiTest extends ApplicationApiIntegrationTestCase
             'installed_version' => '1.0.0',
             'manifest' => ['manifestVersion' => $manifestVersion, 'extension' => ['id' => $id]],
             'manifest_version' => $manifestVersion,
+            // What ExtensionSignatureService::verify() records for a package
+            // installed while no signing root was pinned. The column default is
+            // 'unsigned', which no install path produces and which the runtime
+            // plan refuses once a root exists — so a fixture leaving it unset is
+            // not a package this panel could actually have.
+            'signature_state' => 'unsigned_acknowledged',
             'state' => $state,
             'state_reason' => $state === 'unsupported'
                 ? 'Built for manifest version 2. This panel requires manifest version 3.'

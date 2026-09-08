@@ -71,15 +71,35 @@ class ExtensionManifestCanonicalizerTest extends TestCase
     /** Domain separation stops a signature over one artifact being replayed for another. */
     public function testSigningMessageIsDomainSeparatedAndVersionBound(): void
     {
-        $message = $this->canonicalizer->signingMessage('demo', '1.0.0', '{"a":1}', str_repeat('A', 64));
+        $message = $this->canonicalizer->signingMessage('demo', '1.0.0', '{"a":1}');
 
         $this->assertStringStartsWith("m12labs-ext-v3\ndemo\n1.0.0\n", $message);
-        $this->assertStringContainsString(hash('sha256', '{"a":1}'), $message);
-        $this->assertStringEndsWith(strtolower(str_repeat('A', 64)), $message);
+        $this->assertStringEndsWith(hash('sha256', '{"a":1}'), $message);
 
         $this->assertNotSame(
             $message,
-            $this->canonicalizer->signingMessage('demo', '1.0.1', '{"a":1}', str_repeat('A', 64))
+            $this->canonicalizer->signingMessage('demo', '1.0.1', '{"a":1}')
         );
+
+        $this->assertNotSame(
+            $message,
+            $this->canonicalizer->signingMessage('other', '1.0.0', '{"a":1}')
+        );
+    }
+
+    /**
+     * The archive's own hash is deliberately not in the message.
+     *
+     * The signature ships inside the archive, so covering the archive hash
+     * would be circular: writing the signature changes the hash it committed
+     * to. A publisher that included it would produce signatures that verify
+     * nowhere, which is exactly the bug this asserts against.
+     */
+    public function testSigningMessageDoesNotCoverTheArchiveHash(): void
+    {
+        $message = $this->canonicalizer->signingMessage('demo', '1.0.0', '{"a":1}');
+
+        $this->assertSame(4, substr_count($message, "\n") + 1);
+        $this->assertStringNotContainsString(str_repeat('a', 64), $message);
     }
 }

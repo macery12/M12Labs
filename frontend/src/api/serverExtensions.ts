@@ -12,7 +12,14 @@ export interface ServerExtension {
     description: string;
     icon: string;
     version: string;
+    /** Legacy v2 identifier. Kept for core extensions; not a URL for v3 packages. */
     route: string;
+    /**
+     * Path under /server/:id/ for this extension's primary page, derived by the
+     * panel from the verified manifest. A v3 package's pages are mounted at
+     * extensions/ext/<id>/<slug>, so linking to `route` reaches nothing.
+     */
+    path: string;
     settings: Record<string, unknown>;
 }
 
@@ -25,6 +32,7 @@ export async function getServerExtensions(uuid: string): Promise<ServerExtension
         icon: e.icon ?? 'puzzle',
         version: e.version ?? '1.0.0',
         route: e.route || e.id,
+        path: e.path || `extensions/${e.route || e.id}`,
         settings: e.settings ?? {},
     }));
 }

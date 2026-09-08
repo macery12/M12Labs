@@ -755,7 +755,7 @@ class ExtensionManifestParser
             throw new DisplayException('The manifest "integrity" section must be an object.');
         }
 
-        $this->assertKnownKeys($integrity, ['archiveSha256', 'signatureAlgorithm', 'keyId', 'signature'], 'integrity');
+        $this->assertKnownKeys($integrity, ['signatureAlgorithm', 'keyId', 'signature'], 'integrity');
 
         $algorithm = (string) ($integrity['signatureAlgorithm'] ?? 'ed25519');
         if ($algorithm !== 'ed25519') {
@@ -763,7 +763,6 @@ class ExtensionManifestParser
         }
 
         return [
-            'archiveSha256' => strtolower((string) ($integrity['archiveSha256'] ?? '')),
             'signatureAlgorithm' => $algorithm,
             'keyId' => isset($integrity['keyId']) ? (string) $integrity['keyId'] : null,
             'signature' => isset($integrity['signature']) ? (string) $integrity['signature'] : null,

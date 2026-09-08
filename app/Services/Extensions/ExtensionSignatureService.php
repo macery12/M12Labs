@@ -179,7 +179,7 @@ class ExtensionSignatureService
         }
 
         $decoded = $this->decodeKey($key->public_key);
-        $message = $this->canonicalizer->signingMessage($manifest->id, $manifest->version, $canonical, $archiveSha256);
+        $message = $this->canonicalizer->signingMessage($manifest->id, $manifest->version, $canonical);
 
         if ($decoded === null || !$this->verifyDetached($message, $signature, $decoded)) {
             $this->audit($manifest, ExtensionSignatureAudit::VERDICT_REJECTED, $keyId, $archiveSha256, $canonical, 'Signature did not verify.', $initiator);
@@ -291,6 +291,51 @@ class ExtensionSignatureService
      * can downgrade an extension to one with a known flaw — the signature is
      * genuine, so nothing else in the chain objects.
      */
+    /**
+     * Whether a release advertised as signed by $keyId could verify here.
+     *
+     * A catalog-time filter, not a gate. It lets the catalog skip a release the
+     * install would refuse — an unknown, expired or revoked key — instead of
+     * offering it and failing partway through. A null key id means the release
+     * advertises no signature, which is fine on a panel with no root pinned and
+     * caught at install by verify() on one that has.
+     */
+    public function isReleaseKeyUsable(?string $keyId): bool
+    {
+        if ($keyId === null || $keyId === '' || !$this->signingRequired()) {
+            return true;
+        }
+
+        $key = ExtensionTrustedKey::query()->where('key_id', $keyId)->first();
+
+        return $key !== null && $key->isUsable();
+    }
+
+    /**
+     * Whether installing $version would be a rollback for $extensionId.
+     *
+     * The read-only half of assertNotARollback, so the catalog can decline to
+     * advertise a version the installer is going to refuse. The install-time
+     * check remains authoritative — this one is advisory and unauthenticated,
+     * since it reads a version string the repository supplied.
+     */
+    public function isRollback(string $extensionId, string $version): bool
+    {
+        $seen = ExtensionSignatureAudit::query()
+            ->where('extension_id', $extensionId)
+            ->where('verdict', ExtensionSignatureAudit::VERDICT_VERIFIED)
+            ->pluck('version')
+            ->all();
+
+        foreach ($seen as $installed) {
+            if (version_compare($this->comparable($version), $this->comparable((string) $installed), '<')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function assertNotARollback(ExtensionManifest $manifest, ?string $initiator): void
     {
         $highest = ExtensionSignatureAudit::query()

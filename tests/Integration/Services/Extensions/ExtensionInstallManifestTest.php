@@ -200,6 +200,61 @@ class ExtensionInstallManifestTest extends IntegrationTestCase
         $this->assertStringContainsString('manifest version 3', $found[0]['error']);
     }
 
+    /**
+     * A file whose contents do not match its declared sha256 is refused.
+     *
+     * This is what binds a signature to code. The signature covers the
+     * canonical manifest, which lists every file with its hash; it cannot cover
+     * the archive's own hash, because the signature ships inside the archive.
+     * So swapping a file inside a validly signed package has to fail here, or
+     * a signature would vouch for bytes nobody signed.
+     */
+    public function testRejectsAFileWhoseContentsDoNotMatchItsDeclaredChecksum(): void
+    {
+        $archivePath = $this->workspace . '/tampered.M12LabsExtension';
+        $path = 'app/Extensions/Packages/demo/routes/admin.php';
+
+        $manifest = [
+            'manifestVersion' => 3,
+            'package' => ['id' => 'demo', 'version' => '1.0.0', 'publisher' => 'm12labs'],
+            'extension' => [
+                'id' => 'demo',
+                'name' => 'Demo',
+                'description' => 'Fixture package.',
+                'icon' => 'puzzle',
+                'defaults' => ['enabled' => false],
+            ],
+            'compatiblePanelVersions' => ['>=Alpha 4.0 <Alpha 5.0'],
+            'capabilities' => ['routes' => ['admin' => true]],
+            // The hash the publisher signed...
+            'files' => [['path' => $path, 'sha256' => hash('sha256', '<?php // reviewed')]],
+        ];
+
+        $zip = new \ZipArchive();
+        $zip->open($archivePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString(ExtensionPackageArtifactService::MANIFEST_FILENAME, json_encode($manifest));
+        // ...and what the archive actually carries.
+        $zip->addFromString($path, '<?php // swapped after signing');
+        $zip->close();
+
+        $extractPath = $this->workspace . '/extracted';
+        $this->service()->extractArchive($archivePath, $extractPath);
+
+        $parsed = $this->service()->parseManifest($manifest);
+
+        // The two calls the installer makes per file, in
+        // ExtensionPackageInstallService::prepareFilePlans().
+        $this->expectException(DisplayException::class);
+
+        foreach ($parsed->files as $file) {
+            $this->service()->verifyChecksum(
+                $extractPath . '/' . $this->service()->normalizeTargetPath($file['path'], 'demo'),
+                $file['sha256'],
+                sprintf('file "%s"', $file['path']),
+            );
+        }
+    }
+
     public function testNoPackageRowIsCreatedByInspection(): void
     {
         $this->archive(['routes' => ['admin' => true]], ['app/Extensions/Packages/demo/routes/admin.php' => '<?php']);

@@ -102,17 +102,38 @@ class ExtensionSignatureServiceTest extends IntegrationTestCase
     }
 
     /**
-     * @param array<string, mixed> $raw
-     *
      * @return array<string, mixed>
      */
+    /**
+     * A signature must not depend on the archive's own hash.
+     *
+     * It ships inside the archive, so a message covering the archive hash could
+     * never be produced: writing the signature changes the hash it committed
+     * to. This asserts the property a publisher relies on — sign once, and the
+     * result verifies against whatever the resulting archive hashes to.
+     */
+    public function testSignatureIsIndependentOfTheArchiveHash(): void
+    {
+        $this->service()->syncRegistryKeys([$this->keyRecord()]);
+
+        $raw = $this->sign($this->rawManifest(), hash('sha256', 'the-archive-before-signing'));
+
+        $result = $this->service()->verify(
+            $this->parse($raw),
+            $raw,
+            // What the archive actually hashes to once the signature is in it.
+            hash('sha256', 'the-archive-after-signing'),
+        );
+
+        $this->assertSame('verified', $result['state']);
+    }
+
     private function sign(array $raw, string $archiveSha, ?string $signWith = null, string $keyId = 'release-2026-09'): array
     {
         // The publisher signs the manifest AS SHIPPED: the integrity block is
         // present, only its own signature is absent. Canonicalizing before
         // adding the block would sign different bytes than the panel verifies.
         $raw['integrity'] = [
-            'archiveSha256' => $archiveSha,
             'signatureAlgorithm' => 'ed25519',
             'keyId' => $keyId,
         ];
@@ -123,7 +144,6 @@ class ExtensionSignatureServiceTest extends IntegrationTestCase
             $raw['extension']['id'],
             $raw['package']['version'],
             $canonicalizer->canonicalize($raw),
-            $archiveSha
         );
 
         $raw['integrity']['signature'] = base64_encode(
@@ -185,19 +205,27 @@ class ExtensionSignatureServiceTest extends IntegrationTestCase
     }
 
     /**
-     * The signature covers the archive hash, so a signature lifted from one
-     * release cannot be replayed onto different bytes.
+     * A signature lifted onto a different package is rejected, because the
+     * manifest names the extension and version it was issued for.
+     *
+     * Contents are bound separately: the signed manifest carries a sha256 per
+     * file, and the installer copies only files the manifest lists, verifying
+     * each (see ExtensionInstallManifestTest). That is what stops a valid
+     * signature being wrapped around different code — not the archive hash,
+     * which the signature cannot cover.
      */
-    public function testASignatureDoesNotTransferToAnotherArchive(): void
+    public function testASignatureDoesNotTransferToAnotherPackage(): void
     {
         $this->service()->syncRegistryKeys([$this->keyRecord()]);
 
         $raw = $this->sign($this->rawManifest(), hash('sha256', 'archive-one'));
+        $raw['package']['version'] = '9.9.9';
+        $raw['extension']['defaults'] = ['enabled' => true];
 
         $this->expectException(DisplayException::class);
         $this->expectExceptionMessage('does not match its contents');
 
-        $this->service()->verify($this->parse($raw), $raw, hash('sha256', 'archive-two'));
+        $this->service()->verify($this->parse($raw), $raw, hash('sha256', 'archive-one'));
     }
 
     /** It also covers the manifest, so an edit after signing is caught. */

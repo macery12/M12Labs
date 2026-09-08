@@ -72,6 +72,12 @@ class ExtensionPermissionRegistryTest extends IntegrationTestCase
             'installed_version' => '1.0.0',
             'manifest' => ['manifestVersion' => 3, 'extension' => ['id' => $id]],
             'manifest_version' => 3,
+            // What ExtensionSignatureService::verify() records for a package
+            // installed while no signing root was pinned. The column default is
+            // 'unsigned', which no install path produces and which the runtime plan
+            // refuses once a root exists — so a fixture that leaves it unset is not
+            // a package this panel could actually have.
+            'signature_state' => 'unsigned_acknowledged',
             'state' => $enabled ? 'enabled' : 'installed_disabled',
         ]);
 

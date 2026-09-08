@@ -67,16 +67,41 @@ return [
         'prune_store' => (bool) env('EXTENSIONS_BUILD_PRUNE_STORE', true),
     ],
 
+    /*
+     * Package signing.
+     *
+     * Who provisions what:
+     *
+     *  - The ROOT keypair is generated once, by whoever operates the extension
+     *    repository, and its private half is kept offline. It never signs a
+     *    package; it signs release-key records, which is all a panel needs to
+     *    decide whom to trust. In this deployment the repository is
+     *    M12Labs-Extensions, and `tools/m12labs_extension_tool.py authorize-key`
+     *    is the only operation that touches the root key.
+     *  - A RELEASE key lives in CI and signs artifacts. It is short-lived and
+     *    replaceable: authorizing a new one or revoking an old one is a change
+     *    to registry.json, not to any panel.
+     *  - An OPERATOR pins the root's public key and fingerprint below, out of
+     *    band. That pin is the entire trust decision this panel makes.
+     *
+     * With no root pinned the panel cannot attribute a package to anybody, so
+     * it admits packages as UNVERIFIED rather than refusing everything — but an
+     * unverified package may not declare hooks, queues or dangerous
+     * permissions. Pinning a root is what turns enforcement on.
+     */
     'signing' => [
         // The OFFLINE root key, base64-encoded raw Ed25519 public key. It never
         // touches a build machine: it signs short-lived release keys, and those
         // sign artifacts. Only this value is pinned by the panel.
-        'root_public_key' => env('EXTENSIONS_SIGNING_ROOT_KEY', ''),
+        'root_public_key' => env('EXTENSIONS_SIGNING_ROOT_KEY', 'ggFN5FMVZ0I3WAWstAAK9Gh7yTN4DMA/aKVAcyxamRw='),
 
         // sha256 of the decoded root key. An operator can compare it out of
         // band, and a swapped root_public_key fails the comparison rather than
         // silently becoming a new root of trust.
-        'root_fingerprint' => env('EXTENSIONS_SIGNING_ROOT_FINGERPRINT', ''),
+        'root_fingerprint' => env(
+            'EXTENSIONS_SIGNING_ROOT_FINGERPRINT',
+            'd00b21be261647e0518f232b782f273d2a9f4485523862040321a122c4f0c1c3'
+        ),
 
         // Refuse to install an artifact that is not signed by a trusted release
         // key. Turning this off is not supported for repository installs.

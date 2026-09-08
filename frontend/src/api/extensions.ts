@@ -50,6 +50,25 @@ export interface ExtensionSettingField {
     helpKey?: string;
 }
 
+/**
+ * Counts a repository advertises for a package, rendered on the catalog card
+ * with an "as advertised by the repository — verified at install" caption.
+ */
+export interface ExtensionCapabilitySummary {
+    serverPages: number;
+    adminPages: number;
+    clientRoutes: boolean;
+    adminRoutes: boolean;
+    migrations: boolean;
+    schedule: boolean;
+    commands: number;
+    hooks: string[];
+    queues: number;
+    permissions: number;
+    secrets: number;
+    settings: number;
+}
+
 export interface Extension {
     id: string;
     name: string;
@@ -63,6 +82,12 @@ export interface Extension {
     // page, 'admin' = admin page only (no per-server access scoping), 'both'.
     type: ExtensionType;
     hasServerPage: boolean;
+    // What a repository ADVERTISES a package contains, for the catalog card of
+    // something not yet installed. Never a capability the panel acts on:
+    // registry metadata is unauthenticated, and the panel gates on the signed
+    // manifest inside the archive instead. Null for installed and core
+    // extensions, whose real projection is already known.
+    capabilitySummary?: ExtensionCapabilitySummary | null;
     enabled: boolean;
     allowedNests: number[];
     allowedEggs: number[];

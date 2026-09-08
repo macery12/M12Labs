@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Everest\Models\ExtensionRepository;
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Extensions\Manifest\ExtensionManifest;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 
 class ExtensionCatalogService
@@ -115,6 +116,11 @@ class ExtensionCatalogService
                 'author' => $package->author ?? 'M12Labs',
                 'icon' => $package->icon ?: 'puzzle',
                 'route' => $package->route ?: $package->extension_id,
+                // Where a v3 package's primary server page actually lives. The
+                // legacy `route` above is the v2 shape (extensions/<route>) and
+                // resolves to nothing for a v3 package, whose pages the loader
+                // mounts at extensions/ext/<id>/<slug>.
+                'serverPagePath' => $this->primaryServerPagePath($package->extension_id, $capabilities),
                 'hasServerPage' => $hasServerPage,
                 'admin' => $adminSurface,
                 'type' => $this->deriveExtensionType($hasServerPage, $hasAdminPage),
@@ -204,7 +210,7 @@ class ExtensionCatalogService
                     // a previous one; picking blindly by recency would flag the
                     // whole extension incompatible whenever the newest build
                     // targets a different panel version.
-                    $latestRelease = $this->selectInstallableRelease($package['versions']);
+                    $latestRelease = $this->selectInstallableRelease($package['versions'], $extensionId);
                     $config = $configs->get($extensionId);
 
                     if (isset($localExtensions[$extensionId])) {
@@ -241,21 +247,28 @@ class ExtensionCatalogService
                         'latestVersion' => $latestRelease['version'],
                         'author' => $package['author'],
                         'icon' => $package['icon'],
-                        'route' => $package['route'],
-                        'hasServerPage' => $package['hasServerPage'] ?? true,
-                        'admin' => $package['admin'] ?? null,
                         // Registry metadata is untrusted until the signed
-                        // artifact is verified at install; this is only what the
-                        // repository advertises.
+                        // artifact is verified at install, so nothing here is a
+                        // capability claim the panel acts on. `route` is gone
+                        // entirely — routes are derived by the loader from the
+                        // verified manifest — and the surface counts below are
+                        // an advertisement rendered on the catalog card, marked
+                        // as such in the UI.
+                        'capabilitySummary' => $package['capabilitySummary'],
+                        'hasServerPage' => ($package['capabilitySummary']['serverPages'] ?? 0) > 0,
+                        'admin' => null,
                         'type' => $this->deriveExtensionType(
-                            $package['hasServerPage'] ?? true,
-                            is_array($package['admin'] ?? null) && ($package['admin'] ?? []) !== []
+                            ($package['capabilitySummary']['serverPages'] ?? 0) > 0,
+                            ($package['capabilitySummary']['adminPages'] ?? 0) > 0,
                         ),
                         'enabled' => false,
                         'allowedNests' => array_values($config?->allowed_nests ?? []),
                         'allowedEggs' => array_values($config?->allowed_eggs ?? []),
                         'settings' => is_array($config?->settings) ? $config->settings : [],
-                        'settingsSchema' => $this->normalizeSettingsSchema($package['settingsSchema'] ?? []),
+                        // An uninstalled package has no verified schema to
+                        // render, and the repository's copy is not one. The
+                        // settings form appears after install.
+                        'settingsSchema' => [],
                         'installed' => false,
                         'installable' => true,
                         'canUninstall' => false,
@@ -434,6 +447,17 @@ class ExtensionCatalogService
                     'publishedAt' => $release['publishedAt'] ?? null,
                     'compatiblePanelVersions' => array_values(array_filter((array) ($release['compatiblePanelVersions'] ?? []), 'is_string')),
                     'notes' => $release['notes'] ?? null,
+                    // Schema 2 states each release's manifest version, so a
+                    // package this panel cannot install is filtered out before
+                    // it is offered rather than after it is downloaded. A
+                    // schema-1 registry says nothing, and everything it lists
+                    // predates manifest v3.
+                    'manifestVersion' => isset($release['manifestVersion']) ? (int) $release['manifestVersion'] : null,
+                    // A withdrawn release. Advisory only: the panel still
+                    // verifies the signature and the key's own revocation at
+                    // install, so a registry cannot use this to force anything.
+                    'revoked' => (bool) ($release['revoked'] ?? false),
+                    'signature' => $this->normalizeReleaseSignature($release['signature'] ?? null),
                 ];
             }
 
@@ -458,15 +482,12 @@ class ExtensionCatalogService
                 'description' => (string) ($package['description'] ?? ''),
                 'author' => (string) ($package['author'] ?? 'M12Labs'),
                 'icon' => (string) ($package['icon'] ?? 'puzzle'),
-                'route' => (string) ($package['route'] ?? $extensionId),
-                // Surface hints for admin-only packages. Registries may declare a
-                // "surfaces" list or a null "route"; absent either, assume a
-                // server page (the classic v1 surface) for backwards compatibility.
-                'hasServerPage' => isset($package['surfaces']) && is_array($package['surfaces'])
-                    ? in_array('server', $package['surfaces'], true)
-                    : (array_key_exists('route', $package) ? $package['route'] !== null : true),
-                'admin' => $package['admin'] ?? null,
-                'settingsSchema' => $this->normalizeSettingsSchema($package['settingsSchema'] ?? []),
+                // Display only, and labelled as such in the UI. Schema 2 stopped
+                // carrying routes, surfaces, admin blocks and settings schemas
+                // because the panel gated on them while a repository could
+                // rewrite them at will. Every one of those now comes from the
+                // signed manifest inside the archive.
+                'capabilitySummary' => $this->normalizeCapabilitySummary($package['capabilitySummary'] ?? null),
                 'versions' => $versions,
                 'latestRelease' => $versions[0],
             ];
@@ -483,10 +504,85 @@ class ExtensionCatalogService
     }
 
     /**
-     * Choose which repository release to surface for install/update. Releases
-     * arrive newest-first (see the usort in normalizeRepositoryManifest); we
-     * prefer the newest one the running panel can actually install. Only when
-     * NO release is compatible do we fall back to the newest overall — the
+     * A release's detached signature, as advertised by the repository.
+     *
+     * Kept for display and for the pre-download filter in
+     * selectInstallableRelease(). It is never the thing that authorizes an
+     * install: the signature that matters travels inside the archive and is
+     * checked against the trusted key store after download.
+     *
+     * @return array{keyId: string, value: string, canonicalManifestSha256: ?string}|null
+     */
+    private function normalizeReleaseSignature(mixed $signature): ?array
+    {
+        if (!is_array($signature)) {
+            return null;
+        }
+
+        $keyId = trim((string) ($signature['keyId'] ?? ''));
+        $value = trim((string) ($signature['value'] ?? ''));
+
+        if ($keyId === '' || $value === '') {
+            return null;
+        }
+
+        return [
+            'keyId' => $keyId,
+            'value' => $value,
+            'canonicalManifestSha256' => isset($signature['canonicalManifestSha256'])
+                ? strtolower((string) $signature['canonicalManifestSha256'])
+                : null,
+        ];
+    }
+
+    /**
+     * The repository's advertised capability counts, coerced to a fixed shape.
+     *
+     * Only what a catalog card renders. Booleans and counts rather than the
+     * capability block itself, so there is nothing here a caller could mistake
+     * for the verified projection.
+     *
+     * @return array<string, int|bool|array<int, string>>|null
+     */
+    private function normalizeCapabilitySummary(mixed $summary): ?array
+    {
+        if (!is_array($summary)) {
+            return null;
+        }
+
+        return [
+            'serverPages' => (int) ($summary['serverPages'] ?? 0),
+            'adminPages' => (int) ($summary['adminPages'] ?? 0),
+            'clientRoutes' => (bool) ($summary['clientRoutes'] ?? false),
+            'adminRoutes' => (bool) ($summary['adminRoutes'] ?? false),
+            'migrations' => (bool) ($summary['migrations'] ?? false),
+            'schedule' => (bool) ($summary['schedule'] ?? false),
+            'commands' => (int) ($summary['commands'] ?? 0),
+            'hooks' => array_values(array_filter((array) ($summary['hooks'] ?? []), 'is_string')),
+            'queues' => (int) ($summary['queues'] ?? 0),
+            'permissions' => (int) ($summary['permissions'] ?? 0),
+            'secrets' => (int) ($summary['secrets'] ?? 0),
+            'settings' => (int) ($summary['settings'] ?? 0),
+        ];
+    }
+
+    /**
+     * Choose which repository release to surface for install/update.
+     *
+     * Releases arrive newest-first (see the usort in
+     * normalizeRepositoryManifest). We prefer the newest one the running panel
+     * can actually install, which means skipping four kinds of release the
+     * install would reject anyway — offering one produces an install that fails
+     * partway rather than a button that is simply absent:
+     *
+     *   - a manifest version this panel does not parse,
+     *   - a release the repository has withdrawn,
+     *   - a release signed by a key the panel does not trust or that has
+     *     expired or been revoked,
+     *   - a version at or below one already installed on this panel, which the
+     *     rollback guard refuses.
+     *
+     * Only when NO release survives do we fall back to the newest overall. The
      * extension then reads as "incompatible" and the install button is blocked,
      * listing that release's requirements.
      *
@@ -494,15 +590,61 @@ class ExtensionCatalogService
      *
      * @return array<string, mixed>
      */
-    private function selectInstallableRelease(array $versions): array
+    private function selectInstallableRelease(array $versions, string $extensionId): array
     {
         foreach ($versions as $release) {
-            if ($this->artifactService->isCompatiblePanelVersions($release['compatiblePanelVersions'] ?? [])) {
-                return $release;
+            if (!$this->artifactService->isCompatiblePanelVersions($release['compatiblePanelVersions'] ?? [])) {
+                continue;
             }
+
+            // A registry that omits manifestVersion is schema 1, and everything
+            // it lists predates v3. Treating "unstated" as installable would
+            // offer exactly the packages the parser rejects.
+            $manifestVersion = $release['manifestVersion'] ?? null;
+            if ($manifestVersion !== null && $manifestVersion !== ExtensionManifest::VERSION) {
+                continue;
+            }
+
+            if ($release['revoked'] ?? false) {
+                continue;
+            }
+
+            if (!$this->signatureService->isReleaseKeyUsable($release['signature']['keyId'] ?? null)) {
+                continue;
+            }
+
+            if ($this->signatureService->isRollback($extensionId, (string) $release['version'])) {
+                continue;
+            }
+
+            return $release;
         }
 
         return $versions[0];
+    }
+
+    /**
+     * The URL segment under /server/:id/ for a package's first server page.
+     *
+     * Derived from the verified capability projection and the extension id, in
+     * the same shape frontend/src/pages/server/extensions/registry.ts mounts —
+     * a package never names its own path, so a link can never point at a
+     * segment it does not own. Null when the package declares no server page,
+     * or when it predates the projection.
+     */
+    private function primaryServerPagePath(string $extensionId, ?ExtensionCapabilitySet $capabilities): ?string
+    {
+        if ($capabilities === null || $capabilities->serverPages === []) {
+            return null;
+        }
+
+        $pages = $capabilities->serverPages;
+        usort(
+            $pages,
+            fn ($left, $right): int => $left->order <=> $right->order ?: strcmp($left->slug, $right->slug),
+        );
+
+        return sprintf('extensions/ext/%s/%s', $extensionId, $pages[0]->slug);
     }
 
     /**
