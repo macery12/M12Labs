@@ -22,6 +22,7 @@ import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
 import { cn } from '@/lib/cn';
 import { resolveExtensionIcon, extensionTone, toneVar, toneLabelKey } from './extMeta';
+import { ExtensionTypeBadge } from './ExtensionTypeBadge';
 import { CapabilityApprovalModal } from './CapabilityApprovalModal';
 import { ModifiedFilesModal } from './ModifiedFilesModal';
 import { ExtensionSecretsPanel } from './ExtensionSecretsPanel';
@@ -243,9 +244,7 @@ export function ExtensionManageDrawer({
                             <span className="text-[var(--color-ink-faint)]">·</span>
                             <span style={{ color: accent }}>{td(`extensions.${toneLabelKey(tone)}`)}</span>
                             <span className="text-[var(--color-ink-faint)]">·</span>
-                            <span className="rounded border border-[var(--color-border)] px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-                                {td(`extensions.type.${e.type}`)}
-                            </span>
+                            <ExtensionTypeBadge type={e.type} />
                         </p>
                     </div>
                     <button
