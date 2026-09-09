@@ -43,6 +43,7 @@ class ExtensionLifecycleStateTest extends IntegrationTestCase
         // projection and checks it against capability_hash, so a fixture
         // without one is (correctly) treated as inconsistent and never loads.
         $capabilities = new ExtensionCapabilitySet(clientRoutes: true);
+        $key = $this->trustExtensionSigningKey();
 
         $package = ExtensionPackage::create([
             'extension_id' => $id,
@@ -52,12 +53,8 @@ class ExtensionLifecycleStateTest extends IntegrationTestCase
             'installed_version' => '1.0.0',
             'manifest' => ['manifestVersion' => $manifestVersion, 'extension' => ['id' => $id]],
             'manifest_version' => $manifestVersion,
-            // What ExtensionSignatureService::verify() records for a package
-            // installed while no signing root was pinned. The column default is
-            // 'unsigned', which no install path produces and which the runtime
-            // plan refuses once a root exists — so a fixture leaving it unset is
-            // not a package this panel could actually have.
-            'signature_state' => 'unsigned_acknowledged',
+            'signature_state' => 'verified',
+            'signature_key_id' => $key->key_id,
             'capabilities' => $capabilities->jsonSerialize(),
             'capability_hash' => $capabilities->hash(),
             'state' => $state,
@@ -98,9 +95,29 @@ class ExtensionLifecycleStateTest extends IntegrationTestCase
      */
     public function testConfigWithoutPackageRowStillLoads(): void
     {
+        config()->set('modules.extensions.available.core_extension', [
+            'name' => 'Core Extension',
+        ]);
         ExtensionConfig::create(['extension_id' => 'core_extension', 'enabled' => true]);
 
         $this->assertContains('core_extension', ExtensionRuntimeGate::enabledExtensionIds());
+    }
+
+    public function testOrphanedConfigRowDoesNotBypassPackageTrustAsACoreExtension(): void
+    {
+        ExtensionConfig::create(['extension_id' => 'not_declared_by_core', 'enabled' => true]);
+
+        $this->assertNotContains('not_declared_by_core', ExtensionRuntimeGate::enabledExtensionIds());
+    }
+
+    public function testInvalidPackageCannotFallBackToConfiguredCoreExtensionTrust(): void
+    {
+        config()->set('modules.extensions.available.ext_invalid_core_overlap', [
+            'name' => 'Invalid Package Overlap',
+        ]);
+        $this->package('ext_invalid_core_overlap', 'unsupported', 2, true);
+
+        $this->assertNotContains('ext_invalid_core_overlap', ExtensionRuntimeGate::enabledExtensionIds());
     }
 
     public function testDisabledSupportedPackageDoesNotLoad(): void
@@ -110,12 +127,50 @@ class ExtensionLifecycleStateTest extends IntegrationTestCase
         $this->assertNotContains('ext_off', ExtensionRuntimeGate::enabledExtensionIds());
     }
 
+    public function testRuntimeStateChangesAreObservedWithoutProcessLocalInvalidation(): void
+    {
+        $package = $this->package('ext_live', 'enabled', 3, true);
+
+        $this->assertTrue(ExtensionRuntimeGate::isEnabled('ext_live'));
+
+        // Simulate another request/process disabling the extension. The
+        // current process must not keep serving its previously-built plan.
+        ExtensionConfig::query()
+            ->where('extension_id', 'ext_live')
+            ->update(['enabled' => false]);
+
+        $this->assertFalse(ExtensionRuntimeGate::isEnabled('ext_live'));
+
+        ExtensionConfig::query()
+            ->where('extension_id', 'ext_live')
+            ->update(['enabled' => true]);
+        $this->assertTrue(ExtensionRuntimeGate::isEnabled('ext_live'));
+
+        // Registry refreshes can revoke an installed package in a different
+        // process too. Revocation must take effect on the next lookup.
+        $package->update(['signature_state' => 'revoked']);
+
+        $this->assertFalse(ExtensionRuntimeGate::isEnabled('ext_live'));
+    }
+
+    public function testChangingToAnotherValidRootMakesPreviouslyVerifiedPackagesInert(): void
+    {
+        $this->package('ext_rotated', 'enabled', 3, true);
+        $this->assertTrue(ExtensionRuntimeGate::isEnabled('ext_rotated'));
+
+        $newRoot = sodium_crypto_sign_publickey(sodium_crypto_sign_keypair());
+        config()->set('extensions.signing.root_public_key', base64_encode($newRoot));
+        config()->set('extensions.signing.root_fingerprint', hash('sha256', $newRoot));
+
+        $this->assertFalse(ExtensionRuntimeGate::isEnabled('ext_rotated'));
+    }
+
     /**
      * The capability projection is denormalized from the manifest so the
-     * runtime plan stays a single cheap query. capability_hash is what keeps
-     * that duplication honest: a projection edited in the database no longer
-     * matches, and the package goes inert rather than running with privileges
-     * nobody approved.
+     * runtime plan can avoid reparsing package files. capability_hash is what
+     * keeps that duplication honest: a projection edited in the database no
+     * longer matches, and the package goes inert rather than running with
+     * privileges nobody approved.
      */
     public function testATamperedCapabilityProjectionMakesThePackageInert(): void
     {

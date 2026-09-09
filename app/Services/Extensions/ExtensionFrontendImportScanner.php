@@ -38,8 +38,8 @@ class ExtensionFrontendImportScanner
      *   import x from '@/lib/http'      export { y } from '@/state/flashes'
      *   import '@/styles/thing.css'     await import('@/api/servers')
      */
-    private const PANEL_IMPORT = <<<'REGEX'
-        ~(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)(['"])(@/[^'"]*)\1~
+    private const MODULE_IMPORT = <<<'REGEX'
+        ~(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)(['"`])([^'"`\r\n]*)\1~
         REGEX;
 
     /**
@@ -56,8 +56,8 @@ class ExtensionFrontendImportScanner
                 continue;
             }
 
-            foreach ($this->panelImportsIn((string) file_get_contents($plan['sourcePath'])) as $specifier) {
-                if ($this->isAllowed($specifier)) {
+            foreach ($this->moduleImportsIn((string) file_get_contents($plan['sourcePath'])) as $specifier) {
+                if ($this->isAllowed($plan['path'], $specifier)) {
                     continue;
                 }
 
@@ -77,19 +77,89 @@ class ExtensionFrontendImportScanner
     /**
      * @return array<int, string>
      */
-    private function panelImportsIn(string $source): array
+    private function moduleImportsIn(string $source): array
     {
-        // Strip comments first: a commented-out import is not an import, and a
-        // package explaining in prose why it does not use @/lib/http should not
-        // be refused for saying so.
-        $source = preg_replace('~/\*.*?\*/~s', '', $source) ?? $source;
-        $source = preg_replace('~//[^\n]*~', '', $source) ?? $source;
+        // Strip comments without treating comment-looking bytes inside a
+        // string as comments. A naive `//.*` replacement lets a harmless
+        // string earlier on the line hide the real import that follows it, and
+        // also lets a doubled slash inside a module path evade the scan.
+        $source = $this->stripComments($source);
 
-        if (preg_match_all(trim(self::PANEL_IMPORT), $source, $matches) === false) {
+        if (preg_match_all(trim(self::MODULE_IMPORT), $source, $matches) === false) {
             return [];
         }
 
         return array_values(array_unique($matches[2] ?? []));
+    }
+
+    private function stripComments(string $source): string
+    {
+        $result = '';
+        $length = strlen($source);
+        $quote = null;
+        $escaped = false;
+
+        for ($index = 0; $index < $length; ++$index) {
+            $character = $source[$index];
+            $next = $index + 1 < $length ? $source[$index + 1] : null;
+
+            if ($quote !== null) {
+                $result .= $character;
+
+                if ($escaped) {
+                    $escaped = false;
+                } elseif ($character === '\\') {
+                    $escaped = true;
+                } elseif ($character === $quote) {
+                    $quote = null;
+                }
+
+                continue;
+            }
+
+            if (in_array($character, ["'", '"', '`'], true)) {
+                $quote = $character;
+                $result .= $character;
+
+                continue;
+            }
+
+            if ($character === '/' && $next === '/') {
+                $result .= '  ';
+                ++$index;
+                while ($index + 1 < $length && $source[$index + 1] !== "\n") {
+                    $result .= ' ';
+                    ++$index;
+                }
+
+                continue;
+            }
+
+            if ($character === '/' && $next === '*') {
+                $result .= '  ';
+                ++$index;
+                while ($index + 1 < $length) {
+                    $character = $source[++$index];
+                    $next = $index + 1 < $length ? $source[$index + 1] : null;
+
+                    if ($character === '*' && $next === '/') {
+                        $result .= '  ';
+                        ++$index;
+                        break;
+                    }
+
+                    // Preserve line boundaries for predictable regex behavior
+                    // and diagnostics while masking every other comment byte.
+                    $result .= $character === "\n" ? "\n" : ' ';
+                }
+
+                continue;
+            }
+
+            $result .= $character;
+        }
+
+        return $result;
     }
 
     /**
@@ -97,10 +167,65 @@ class ExtensionFrontendImportScanner
      * boundary so a sibling directory whose name merely starts the same way —
      * `@/extensions-sdk-internal` — is not admitted.
      */
-    private function isAllowed(string $specifier): bool
+    private function isAllowed(string $sourcePath, string $specifier): bool
     {
-        return $specifier === self::ALLOWED_PREFIX
-            || str_starts_with($specifier, self::ALLOWED_PREFIX . '/');
+        if (str_contains($specifier, '\\')) {
+            // JavaScript string escapes can spell a forbidden alias without
+            // its literal bytes appearing in the source. Module paths never
+            // need a backslash, so reject the ambiguous form outright.
+            return false;
+        }
+
+        if (str_starts_with($specifier, '@/')) {
+            // Vite normalizes path segments before resolving the alias. Check
+            // that effective path, otherwise an apparently allowed prefix such
+            // as `@/extensions-sdk/../lib/http` escapes into panel internals.
+            $normalized = $this->normalizePath($specifier);
+
+            return $normalized === self::ALLOWED_PREFIX
+                || str_starts_with($normalized, self::ALLOWED_PREFIX . '/');
+        }
+
+        // A Vite-root absolute path can reach the panel source tree without
+        // using the @/ alias at all (for example /src/lib/http).
+        if (str_starts_with($specifier, '/')) {
+            return false;
+        }
+
+        if (!str_starts_with($specifier, '.')) {
+            // Bare imports are resolved from the panel's pinned dependency
+            // graph. Packages cannot install their own npm dependencies.
+            return true;
+        }
+
+        if (preg_match('~^(frontend/src/extensions/packages/[^/]+)(?:/|$)~', $sourcePath, $matches) !== 1) {
+            return false;
+        }
+
+        $packageRoot = $matches[1];
+        $resolved = $this->normalizePath(dirname($sourcePath) . '/' . $specifier);
+
+        return $resolved === $packageRoot || str_starts_with($resolved, $packageRoot . '/');
+    }
+
+    private function normalizePath(string $path): string
+    {
+        $segments = [];
+        foreach (explode('/', str_replace('\\', '/', $path)) as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+
+            if ($segment === '..') {
+                array_pop($segments);
+
+                continue;
+            }
+
+            $segments[] = $segment;
+        }
+
+        return implode('/', $segments);
     }
 
     private function isFrontendSource(string $path): bool

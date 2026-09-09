@@ -8,6 +8,7 @@ use Everest\Models\ExtensionSignatureAudit;
 use Everest\Tests\Integration\IntegrationTestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Everest\Services\Extensions\ExtensionSignatureService;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 use Everest\Services\Extensions\Manifest\ExtensionManifestParser;
 use Everest\Services\Extensions\Manifest\ExtensionManifestCanonicalizer;
 
@@ -51,11 +52,12 @@ class ExtensionSignatureServiceTest extends IntegrationTestCase
     /**
      * @return array<string, mixed>
      */
-    private function keyRecord(bool $revoked = false, ?string $signWith = null): array
+    private function keyRecord(bool $revoked = false, ?string $signWith = null, ?string $publicKey = null): array
     {
+        $publicKey ??= $this->release[0];
         $record = [
             'keyId' => 'release-2026-09',
-            'publicKey' => base64_encode($this->release[0]),
+            'publicKey' => base64_encode($publicKey),
             'validFrom' => null,
             'validUntil' => null,
             'revoked' => $revoked,
@@ -173,6 +175,73 @@ class ExtensionSignatureServiceTest extends IntegrationTestCase
         $this->assertTrue(ExtensionTrustedKey::query()->where('key_id', 'release-2026-09')->exists());
     }
 
+    public function testAKeyIsBoundToTheRootThatAuthorizedIt(): void
+    {
+        $this->service()->syncRegistryKeys([$this->keyRecord()]);
+        $this->assertTrue($this->service()->isReleaseKeyUsable('release-2026-09'));
+
+        $newRootPair = sodium_crypto_sign_keypair();
+        $newRootPublic = sodium_crypto_sign_publickey($newRootPair);
+        $newRootSecret = sodium_crypto_sign_secretkey($newRootPair);
+        config()->set('extensions.signing.root_public_key', base64_encode($newRootPublic));
+        config()->set('extensions.signing.root_fingerprint', hash('sha256', $newRootPublic));
+
+        $this->assertFalse($this->service()->isReleaseKeyUsable('release-2026-09'));
+        $raw = $this->sign($this->rawManifest(), hash('sha256', 'root-rotation'));
+        try {
+            $this->service()->verify($this->parse($raw), $raw, hash('sha256', 'root-rotation'));
+            $this->fail('A package signed by a key from the previous root should be rejected.');
+        } catch (DisplayException $exception) {
+            $this->assertStringContainsString('does not trust', $exception->getMessage());
+        }
+
+        $result = $this->service()->syncRegistryKeys([$this->keyRecord(signWith: $newRootSecret)]);
+
+        $this->assertSame(1, $result['admitted']);
+        $this->assertTrue($this->service()->isReleaseKeyUsable('release-2026-09'));
+        $this->assertSame(
+            hash('sha256', $newRootPublic),
+            ExtensionTrustedKey::query()->where('key_id', 'release-2026-09')->value('root_fingerprint'),
+        );
+    }
+
+    public function testANewRootCannotReplaceAnExistingKeyIdWithDifferentKeyBytes(): void
+    {
+        $this->service()->syncRegistryKeys([$this->keyRecord()]);
+        $original = ExtensionTrustedKey::query()->where('key_id', 'release-2026-09')->firstOrFail();
+
+        $newRootPair = sodium_crypto_sign_keypair();
+        $newRootPublic = sodium_crypto_sign_publickey($newRootPair);
+        $newRootSecret = sodium_crypto_sign_secretkey($newRootPair);
+        $differentRelease = sodium_crypto_sign_publickey(sodium_crypto_sign_keypair());
+        config()->set('extensions.signing.root_public_key', base64_encode($newRootPublic));
+        config()->set('extensions.signing.root_fingerprint', hash('sha256', $newRootPublic));
+
+        $result = $this->service()->syncRegistryKeys([
+            $this->keyRecord(signWith: $newRootSecret, publicKey: $differentRelease),
+        ]);
+
+        $persisted = ExtensionTrustedKey::query()->where('key_id', 'release-2026-09')->firstOrFail();
+        $this->assertSame(1, $result['rejected']);
+        $this->assertSame($original->public_key, $persisted->public_key);
+        $this->assertSame($original->root_fingerprint, $persisted->root_fingerprint);
+        $this->assertFalse($this->service()->isReleaseKeyUsable('release-2026-09'));
+    }
+
+    public function testALegacyKeyWithoutARootBindingFailsClosedUntilRefresh(): void
+    {
+        $this->service()->syncRegistryKeys([$this->keyRecord()]);
+        ExtensionTrustedKey::query()
+            ->where('key_id', 'release-2026-09')
+            ->update(['root_fingerprint' => null]);
+
+        $this->assertFalse($this->service()->isReleaseKeyUsable('release-2026-09'));
+
+        $this->service()->syncRegistryKeys([$this->keyRecord()]);
+
+        $this->assertTrue($this->service()->isReleaseKeyUsable('release-2026-09'));
+    }
+
     /**
      * A swapped root_public_key must fail the pinned fingerprint rather than
      * silently becoming a new root of trust.
@@ -257,6 +326,20 @@ class ExtensionSignatureServiceTest extends IntegrationTestCase
         $this->service()->verify($this->parse($raw), $raw, $archiveSha);
     }
 
+    public function testReplayingAnOlderActiveRecordCannotUndoRevocation(): void
+    {
+        $active = $this->keyRecord();
+        $this->service()->syncRegistryKeys([$active]);
+        $this->service()->syncRegistryKeys([$this->keyRecord(revoked: true)]);
+        $result = $this->service()->syncRegistryKeys([$active]);
+
+        $key = ExtensionTrustedKey::query()->where('key_id', 'release-2026-09')->firstOrFail();
+
+        $this->assertNotNull($key->revoked_at);
+        $this->assertSame(1, $result['revoked']);
+        $this->assertSame(0, $result['admitted']);
+    }
+
     public function testAnUnknownKeyIdIsRejected(): void
     {
         $archiveSha = hash('sha256', 'archive-bytes');
@@ -321,12 +404,46 @@ class ExtensionSignatureServiceTest extends IntegrationTestCase
         $this->service()->verify($this->parse($raw), $raw, hash('sha256', 'archive-bytes'), acknowledgeUnsigned: true);
     }
 
-    public function testAnAcknowledgedUnsignedInstallIsAllowedWithoutThoseCapabilities(): void
+    public function testAllExecutableAndPrivilegedSurfacesAreRestrictedWhenUnverified(): void
+    {
+        $capabilities = new ExtensionCapabilitySet(
+            clientRoutes: true,
+            adminRoutes: true,
+            serverPages: [new \stdClass()],
+            adminPages: [new \stdClass()],
+            adminPermissions: [new \stdClass()],
+            migrations: true,
+            hooks: [new \stdClass()],
+            queues: [new \stdClass()],
+            schedule: true,
+            commands: ['p:ext:signdemo:run'],
+        );
+
+        $this->assertSame([
+            'routes.client',
+            'routes.admin',
+            'pages.server',
+            'pages.admin',
+            'database.migrations',
+            'schedule',
+            'commands',
+            'hooks',
+            'queues',
+            'permissions.admin',
+        ], $this->service()->restrictedCapabilitiesForUnverified($capabilities));
+    }
+
+    public function testAnAcknowledgedUnsignedInstallIsAllowedOnlyWhenInert(): void
     {
         config()->set('extensions.signing.allow_unsigned_local', true);
         $this->service()->syncRegistryKeys([$this->keyRecord()]);
 
         $raw = $this->rawManifest();
+        $raw['capabilities'] = [];
+        $raw['files'] = [[
+            'path' => 'app/Extensions/Packages/signdemo/README.md',
+            'sha256' => str_repeat('0', 64),
+        ]];
 
         $result = $this->service()->verify(
             $this->parse($raw),
@@ -338,17 +455,37 @@ class ExtensionSignatureServiceTest extends IntegrationTestCase
         $this->assertSame('unsigned_acknowledged', $result['state']);
     }
 
-    /**
-     * With no root pinned there is no authority to check against, so signing is
-     * not enforced. Requiring it would make the extension system unusable
-     * rather than safer.
-     */
-    public function testWithNoRootPinnedNothingIsEnforced(): void
+    public function testRequiredSigningFailsClosedWithNoRootPin(): void
     {
         config()->set('extensions.signing.root_public_key', '');
         config()->set('extensions.signing.root_fingerprint', '');
 
-        $this->assertFalse($this->service()->signingRequired());
+        $this->assertTrue($this->service()->signingRequired());
+
+        $raw = $this->rawManifest();
+
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('Signature verification is required');
+        $this->service()->verify($this->parse($raw), $raw, hash('sha256', 'archive-bytes'));
+    }
+
+    public function testRequiredSigningFailsClosedWithMalformedRootPin(): void
+    {
+        config()->set('extensions.signing.root_public_key', 'not-base64');
+        config()->set('extensions.signing.root_fingerprint', str_repeat('0', 64));
+
+        $raw = $this->rawManifest();
+
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('missing, malformed, or do not match');
+        $this->service()->verify($this->parse($raw), $raw, hash('sha256', 'archive-bytes'));
+    }
+
+    public function testSigningCanBeExplicitlyDisabledForLocalDevelopment(): void
+    {
+        config()->set('extensions.signing.require_signature', false);
+        config()->set('extensions.signing.root_public_key', '');
+        config()->set('extensions.signing.root_fingerprint', '');
 
         $raw = $this->rawManifest();
         $result = $this->service()->verify($this->parse($raw), $raw, hash('sha256', 'archive-bytes'));

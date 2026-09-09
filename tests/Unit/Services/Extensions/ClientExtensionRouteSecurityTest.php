@@ -45,13 +45,22 @@ PHP);
 
         try {
             $this->app->useAppPath($root);
-            (new \ReflectionProperty(ExtensionRuntimePlanService::class, 'plan'))->setValue(null, [
+            $entries = [
                 'demo' => new ExtensionRuntimeEntry('demo', '1.0.0', new ExtensionCapabilitySet(clientRoutes: true)),
                 // Declares no client routes, so the loader must not require its
                 // file even though one exists on disk and throws when included.
                 'disabled' => new ExtensionRuntimeEntry('disabled', '1.0.0', new ExtensionCapabilitySet()),
-            ]);
-            (new \ReflectionProperty(ExtensionRuntimePlanService::class, 'coreExtensionIds'))->setValue(null, []);
+            ];
+            $this->app->instance(ExtensionRuntimePlanService::class, new class ($entries) extends ExtensionRuntimePlanService {
+                public function __construct(private array $entries)
+                {
+                }
+
+                public function plan(): array
+                {
+                    return $this->entries;
+                }
+            });
             Route::setRoutes(new RouteCollection());
             Route::prefix('api/client')->middleware(['api', 'auth:sanctum', 'throttle:api.client'])->group($routeFile);
             $this->assertBoundary();
@@ -67,6 +76,7 @@ PHP);
             $this->assertBoundary();
         } finally {
             $this->app->useAppPath($appPath);
+            $this->app->forgetInstance(ExtensionRuntimePlanService::class);
             ExtensionRuntimeGate::flush();
             app('files')->deleteDirectory($root);
         }
@@ -116,11 +126,20 @@ class ClientExtensionFixtureController
 
         try {
             $this->app->useAppPath($root);
-            (new \ReflectionProperty(ExtensionRuntimePlanService::class, 'plan'))->setValue(null, [
+            $entries = [
                 // Enabled and executable, but declares no client routes.
                 'undeclared' => new ExtensionRuntimeEntry('undeclared', '1.0.0', new ExtensionCapabilitySet()),
-            ]);
-            (new \ReflectionProperty(ExtensionRuntimePlanService::class, 'coreExtensionIds'))->setValue(null, []);
+            ];
+            $this->app->instance(ExtensionRuntimePlanService::class, new class ($entries) extends ExtensionRuntimePlanService {
+                public function __construct(private array $entries)
+                {
+                }
+
+                public function plan(): array
+                {
+                    return $this->entries;
+                }
+            });
             Route::setRoutes(new RouteCollection());
 
             Route::prefix('api/client')->middleware(['api', 'auth:sanctum', 'throttle:api.client'])->group($routeFile);
@@ -130,6 +149,7 @@ class ClientExtensionFixtureController
             }
         } finally {
             $this->app->useAppPath($appPath);
+            $this->app->forgetInstance(ExtensionRuntimePlanService::class);
             ExtensionRuntimeGate::flush();
             app('files')->deleteDirectory($root);
         }

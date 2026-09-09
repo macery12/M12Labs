@@ -5,7 +5,9 @@ namespace Everest\Tests\Integration\Services\Extensions;
 use Everest\Exceptions\DisplayException;
 use Illuminate\Console\Scheduling\Schedule;
 use Everest\Tests\Integration\IntegrationTestCase;
+use Everest\Services\Extensions\ExtensionRuntimeEntry;
 use Everest\Services\Extensions\ExtensionScheduleBuilder;
+use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 
 /**
@@ -85,5 +87,38 @@ class ExtensionScheduleBuilderTest extends IntegrationTestCase
         $event = end($events);
         $this->assertNotNull($event->expiresAt, 'withoutOverlapping() was not applied.');
         $this->assertTrue($event->onOneServer, 'onOneServer() was not applied.');
+    }
+
+    public function testALongLivedSchedulerRechecksRuntimeStateBeforeExecution(): void
+    {
+        $capabilities = new ExtensionCapabilitySet(
+            schedule: true,
+            commands: ['p:ext:demo:sync'],
+        );
+        $plan = new class (new ExtensionRuntimeEntry('demo', '1.0.0', $capabilities)) extends ExtensionRuntimePlanService {
+            public function __construct(public ?ExtensionRuntimeEntry $current)
+            {
+            }
+
+            public function entry(string $extensionId): ?ExtensionRuntimeEntry
+            {
+                return $extensionId === 'demo' ? $this->current : null;
+            }
+        };
+        $this->app->instance(ExtensionRuntimePlanService::class, $plan);
+
+        $schedule = app(Schedule::class);
+        $before = count($schedule->events());
+        $this->builder('p:ext:demo:sync')->command('p:ext:demo:sync')->hourly();
+        $events = $schedule->events();
+        $event = $events[$before];
+
+        $this->assertTrue($event->filtersPass($this->app));
+
+        // The event remains registered in this process, just as it does under
+        // schedule:work, but it no longer passes once the live plan excludes it.
+        $plan->current = null;
+
+        $this->assertFalse($event->filtersPass($this->app));
     }
 }

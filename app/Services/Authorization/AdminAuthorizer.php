@@ -67,10 +67,11 @@ class AdminAuthorizer
         // are still "valid" — they must be filtered here instead, or disabling
         // an extension would leave its admin actions authorized.
         $suspended = array_flip($this->extensionPermissions->suspendedIdentifiers());
+        $known = array_flip($this->capabilities->all());
 
         return array_values(array_filter(
             $this->capabilities->normalizeMany($profile->permissions ?? []),
-            fn (string $capability): bool => $this->capabilities->isValid($capability)
+            fn (string $capability): bool => isset($known[$capability])
                 && !isset($suspended[$capability])
         ));
     }

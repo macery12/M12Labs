@@ -130,6 +130,66 @@ class ExtensionFrontendImportScannerTest extends TestCase
         ]));
     }
 
+    public function testSdkAliasImportCannotTraverseIntoPanelInternals(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('@/extensions-sdk/../lib/http');
+
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => "import http from '@/extensions-sdk/../lib/http';\n",
+        ]));
+    }
+
+    public function testBacktickDynamicImportIsRefused(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('@/lib/http');
+
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => 'const http = await import(`@/lib/http`);',
+        ]));
+    }
+
+    public function testRelativeImportCannotEscapeItsPackage(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessageMatches('~imports ../../../../lib/http~');
+
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => "import http from '../../../../lib/http';\n",
+        ]));
+    }
+
+    public function testViteRootAbsoluteImportIsRefused(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessageMatches('~imports /src/lib/http~');
+
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => "import http from '/src/lib/http';\n",
+        ]));
+    }
+
+    public function testEscapedModuleSpecifierIsRefused(): void
+    {
+        $this->expectException(DisplayException::class);
+
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => <<<'TSX'
+                import http from '@\/lib/http';
+                TSX,
+        ]));
+    }
+
+    public function testRelativeImportMayStayInsideItsPackage(): void
+    {
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => "import api from '../../api';\n",
+        ]));
+
+        $this->assertTrue(true);
+    }
+
     /**
      * A package explaining in prose why it does not import something should not
      * be refused for saying so.
@@ -145,6 +205,28 @@ class ExtensionFrontendImportScannerTest extends TestCase
         ]));
 
         $this->assertTrue(true, 'Comments are prose, not imports.');
+    }
+
+    public function testCommentMarkerInsideAStringCannotHideALaterImport(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('@/lib/http');
+
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => <<<'TSX'
+                const marker = '//'; import http from '@/lib/http';
+                TSX,
+        ]));
+    }
+
+    public function testDoubledSlashInsideAModulePathCannotHideIt(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('@/lib//http');
+
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => "import http from '@/lib//http';\n",
+        ]));
     }
 
     /**

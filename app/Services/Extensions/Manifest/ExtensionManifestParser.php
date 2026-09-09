@@ -4,6 +4,7 @@ namespace Everest\Services\Extensions\Manifest;
 
 use Illuminate\Support\Str;
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Extensions\ExtensionPageManifestService;
 use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
@@ -735,6 +736,10 @@ class ExtensionManifestParser
             $seen[$path] = true;
 
             $this->assertWithinInstallRoots($path, $extensionId);
+
+            if ($path === sprintf('frontend/src/extensions/packages/%s/%s', $extensionId, ExtensionPageManifestService::FILENAME)) {
+                throw new DisplayException(sprintf('The manifest declares reserved panel-generated file "%s".', $path));
+            }
 
             $parsed[] = ['path' => $path, 'sha256' => $checksum];
         }

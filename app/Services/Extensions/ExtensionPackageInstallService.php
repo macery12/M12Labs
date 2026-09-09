@@ -28,6 +28,7 @@ class ExtensionPackageInstallService
         private ExtensionPageManifestService $pageManifestService,
         private ExtensionSignatureService $signatureService,
         private ExtensionFrontendImportScanner $importScanner,
+        private ExtensionRequirementService $requirementService,
     ) {
     }
 
@@ -35,6 +36,8 @@ class ExtensionPackageInstallService
     {
         return $this->operationLockService->withinLock('install', $extensionId, function () use ($extensionId, $repositoryId, $version, $approvedCapabilityHash) {
             $prepared = null;
+            $packageModel = null;
+            $committed = false;
             try {
                 $prepared = $this->prepareInstall($extensionId, $repositoryId, $version, $approvedCapabilityHash);
 
@@ -51,10 +54,17 @@ class ExtensionPackageInstallService
 
                 $this->progressService->report('install', $prepared['extensionId'], 'registering');
                 $packageModel = $this->finalizeInstall($prepared);
+                $committed = true;
                 $this->progressService->report('install', $prepared['extensionId'], 'completed');
 
-                return $packageModel->fresh(['repository', 'files']);
+                return $packageModel;
             } catch (\Throwable $exception) {
+                if ($committed && $packageModel instanceof ExtensionPackage) {
+                    $this->reportPostCommitFailure($exception);
+
+                    return $packageModel;
+                }
+
                 if ($prepared !== null) {
                     $this->rollbackInstall($prepared);
                     $this->attemptRollbackRebuild($prepared['extensionId'], 'install rollback');
@@ -81,6 +91,8 @@ class ExtensionPackageInstallService
 
         return $this->operationLockService->withinLock('install', basename($resolvedArchivePath), function () use ($resolvedArchivePath, $sourceLabel, $approvedCapabilityHash, $acknowledgeUnsigned) {
             $prepared = null;
+            $packageModel = null;
+            $committed = false;
             try {
                 $prepared = $this->performInstallFileOps(
                     approvedCapabilityHash: $approvedCapabilityHash,
@@ -95,6 +107,7 @@ class ExtensionPackageInstallService
                     sourceArchiveUrl: 'file://' . $resolvedArchivePath,
                     fallbackPackageMetadata: [],
                     acknowledgeUnsigned: $acknowledgeUnsigned,
+                    allowLocalArchive: true,
                 );
 
                 $this->rebuildService->rebuild(
@@ -110,10 +123,17 @@ class ExtensionPackageInstallService
 
                 $this->progressService->report('install', $prepared['extensionId'], 'registering');
                 $packageModel = $this->finalizeInstall($prepared);
+                $committed = true;
                 $this->progressService->report('install', $prepared['extensionId'], 'completed');
 
-                return $packageModel->fresh(['repository', 'files']);
+                return $packageModel;
             } catch (\Throwable $exception) {
+                if ($committed && $packageModel instanceof ExtensionPackage) {
+                    $this->reportPostCommitFailure($exception);
+
+                    return $packageModel;
+                }
+
                 if ($prepared !== null) {
                     $this->rollbackInstall($prepared);
                     $this->attemptRollbackRebuild($prepared['extensionId'], 'install rollback');
@@ -248,6 +268,7 @@ class ExtensionPackageInstallService
         string $sourceArchiveUrl,
         array $fallbackPackageMetadata,
         bool $acknowledgeUnsigned = false,
+        bool $allowLocalArchive = false,
     ): array {
         $tempRoot = storage_path('app/extensions/tmp/' . Str::uuid()->toString());
         $archivePath = $tempRoot . '/' . ExtensionPackageArtifactService::PACKAGE_ARTIFACT_FILENAME;
@@ -260,7 +281,13 @@ class ExtensionPackageInstallService
 
         try {
             $this->progressService->report('install', $resolvedExtensionId ?? 'unknown', 'downloading');
-            $this->artifactService->downloadArchive($archiveLocation, $archivePath);
+            if ($sourceRepositoryId !== null) {
+                // The repository may have been disabled after catalog
+                // resolution or capability approval. Recheck at the last safe
+                // point before making its archive request.
+                $this->catalogService->assertRepositoryEnabled($sourceRepositoryId);
+            }
+            $this->artifactService->downloadArchive($archiveLocation, $archivePath, $allowLocalArchive);
 
             $this->progressService->report('install', $resolvedExtensionId ?? 'unknown', 'extracting');
             $archiveChecksum = hash_file('sha256', $archivePath);
@@ -277,6 +304,7 @@ class ExtensionPackageInstallService
             $backupRoot = storage_path('app/extensions/backups/' . $extensionId . '/' . Str::uuid()->toString());
 
             $this->assertExtensionNotInstalled($extensionId);
+            $this->requirementService->assertSatisfied($parsedManifest);
 
             // Before capability approval, and before a single file is copied:
             // an artifact the panel cannot attribute to anybody should never
@@ -293,10 +321,8 @@ class ExtensionPackageInstallService
                 auth()->user()?->email,
             );
 
-            // Only meaningful once a trust anchor exists. On a panel with no
-            // pinned root nothing can be attributed to anybody, including the
-            // official packages, so restricting unverified capabilities there
-            // would ban hooks and queues outright rather than protect anything.
+            // Defense in depth for unsigned packages admitted through the
+            // explicitly acknowledged local-file path.
             if ($signature['state'] !== 'verified' && $this->signatureService->signingRequired()) {
                 $this->signatureService->assertCapabilitiesAllowedUnverified($parsedManifest);
             }
@@ -314,6 +340,8 @@ class ExtensionPackageInstallService
 
             $filePlans = $this->prepareFilePlans($extractPath, $parsedManifest, $backupRoot, $extensionId);
             $this->assertWritableInstallTargets($filePlans);
+            $generatedPath = $this->pageManifestService->relativePath($extensionId);
+            $this->ownershipService->ensureWritablePath(base_path($generatedPath), $generatedPath);
 
             $this->progressService->report('install', $extensionId, 'copying');
             foreach ($filePlans as $plan) {
@@ -325,7 +353,7 @@ class ExtensionPackageInstallService
             // Written after the package's own files and before the rebuild
             // that follows, because the bundle reads it. Tracked as a file plan
             // so it is checksummed, rolled back and uninstalled like any other.
-            $generated = $this->pageManifestService->write($parsedManifest);
+            $generated = $this->pageManifestService->write($parsedManifest, $backupRoot);
             $filePlans[] = $generated;
             $appliedFiles[] = $generated;
 
@@ -621,6 +649,16 @@ class ExtensionPackageInstallService
             $this->rebuildService->rebuild(sprintf('%s for %s', $reason, $extensionId));
         } catch (\Throwable $exception) {
             report($exception);
+        }
+    }
+
+    private function reportPostCommitFailure(\Throwable $exception): void
+    {
+        try {
+            report($exception);
+        } catch (\Throwable) {
+            // Never compensate files after the database has committed merely
+            // because progress reporting or another cleanup step failed.
         }
     }
 }

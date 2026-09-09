@@ -200,6 +200,27 @@ class ExtensionInstallManifestTest extends IntegrationTestCase
         $this->assertStringContainsString('manifest version 3', $found[0]['error']);
     }
 
+    public function testRejectsAnOversizedCompressedManifestBeforeParsingIt(): void
+    {
+        $originalLimit = config('extensions.archive.max_manifest_bytes');
+        config()->set('extensions.archive.max_manifest_bytes', 256);
+
+        try {
+            $archive = $this->archive([], [], function (array $manifest): array {
+                $manifest['extension']['description'] = str_repeat('compressible manifest input ', 100);
+
+                return $manifest;
+            });
+
+            $this->expectException(DisplayException::class);
+            $this->expectExceptionMessage('manifest is larger than the permitted 256 bytes');
+
+            $this->service()->inspectArchive($archive);
+        } finally {
+            config()->set('extensions.archive.max_manifest_bytes', $originalLimit);
+        }
+    }
+
     /**
      * A file whose contents do not match its declared sha256 is refused.
      *

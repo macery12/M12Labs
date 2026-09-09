@@ -375,9 +375,9 @@ Route::middleware([AdminSubject::class])->group(function () {
         // Loading is driven by the declared capability rather than a
         // filesystem glob, so a package that ships routes/admin.php without
         // declaring capabilities.routes.admin is never require()'d. Only
-        // enabled extensions load: a disabled extension's route file — and
-        // therefore any top-level code in it — is never included, so disabling
-        // an extension makes its code fully inert, not just 404'd.
+        // enabled extensions load at boot; the extensions.admin middleware
+        // re-checks the live runtime plan so cached routes and long-lived
+        // workers deny packages later disabled, revoked, or quarantined.
         //
         // Every route the file registers is audited immediately afterwards
         // (ExtensionRouteGuardService): a route that strips its inherited

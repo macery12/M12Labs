@@ -31,6 +31,7 @@ use Everest\Http\Requests\Api\Application\Extensions\InstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\UninstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\BatchUpdateExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\BatchInstallExtensionRequest;
+use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionPackageRequest;
 use Everest\Http\Requests\Api\Application\Extensions\BatchUninstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionSettingsRequest;
 use Everest\Http\Requests\Api\Application\Extensions\StoreExtensionRepositoryRequest;
@@ -367,9 +368,9 @@ class ExtensionsController extends ApplicationApiController
             \Illuminate\Support\Facades\Artisan::call('route:clear');
         }
 
-        // Both registries memoize per process. Nothing else in this request
-        // may answer from a plan or capability catalog the operation just
-        // invalidated.
+        // These calls remain part of the lifecycle contract for compatibility
+        // with older implementations. Runtime and permission state are now
+        // read live; health still owns a real cache.
         ExtensionRuntimePlanService::flush();
         ExtensionPermissionRegistry::flush();
         $this->healthService->flush();
@@ -399,7 +400,7 @@ class ExtensionsController extends ApplicationApiController
     /**
      * Update an already-installed repository-backed extension package to a newer version.
      */
-    public function updatePackage(InstallExtensionRequest $request, string $extensionId): JsonResponse
+    public function updatePackage(UpdateExtensionPackageRequest $request, string $extensionId): JsonResponse
     {
         $this->abortIfOperationRunning();
 
@@ -608,6 +609,7 @@ class ExtensionsController extends ApplicationApiController
             'extensionId'  => $item['extension_id'],
             'repositoryId' => (int) $item['repository_id'],
             'version'      => $item['version'] ?? null,
+            'approvedCapabilityHash' => $item['approved_capability_hash'] ?? null,
         ], $request->input('extensions', []));
 
         $this->batchService->batchInstall($items);
@@ -691,6 +693,8 @@ class ExtensionsController extends ApplicationApiController
             'extensionId'  => $item['extension_id'],
             'repositoryId' => (int) $item['repository_id'],
             'version'      => $item['version'] ?? null,
+            'approvedCapabilityHash' => $item['approved_capability_hash'] ?? null,
+            'acknowledgeModified' => (bool) ($item['acknowledge_modified_files'] ?? false),
         ], $request->input('extensions', []));
 
         $this->batchService->batchUpdate($items);

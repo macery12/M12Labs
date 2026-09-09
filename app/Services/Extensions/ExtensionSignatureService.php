@@ -8,6 +8,7 @@ use Everest\Models\ExtensionTrustedKey;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionSignatureAudit;
 use Everest\Services\Extensions\Manifest\ExtensionManifest;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 use Everest\Services\Extensions\Manifest\ExtensionManifestCanonicalizer;
 
 /**
@@ -21,18 +22,30 @@ use Everest\Services\Extensions\Manifest\ExtensionManifestCanonicalizer;
  *     what stops a compromised registry from listing a key of its own.
  *  2. The **release key** signs a domain-separated message naming the
  *     extension, version, canonical manifest hash and archive hash. That
- *     binding is what makes a signature unreplayable onto a different artifact,
- *     a different version, or a manifest edited after signing.
+ *     binding is what makes a signature unreplayable onto a different package,
+ *     version, or manifest. The signed manifest in turn contains every
+ *     installed file's checksum.
  *
  * There are no third-party publishers. A self-added repository parses, but its
  * packages are untrusted and carry the same restrictions as an unsigned local
- * install: no hooks, no queues, no dangerous permissions. Prose warnings do not
- * stop anybody; a capability gate does.
+ * install: they cannot expose executable or privileged capabilities. Prose
+ * warnings do not stop anybody; a capability gate does.
  */
 class ExtensionSignatureService
 {
     /** Capabilities an unverified package may never hold. */
-    private const RESTRICTED_CAPABILITIES = ['hooks', 'queues', 'dangerous permissions'];
+    private const RESTRICTED_CAPABILITIES = [
+        'routes.client',
+        'routes.admin',
+        'pages.server',
+        'pages.admin',
+        'database.migrations',
+        'schedule',
+        'commands',
+        'hooks',
+        'queues',
+        'permissions.admin',
+    ];
 
     public function __construct(private ExtensionManifestCanonicalizer $canonicalizer)
     {
@@ -41,20 +54,27 @@ class ExtensionSignatureService
     /**
      * Whether signatures are actually enforced right now.
      *
-     * Enforcement needs a pinned root: with none configured there is no
-     * authority to verify anything against, and requiring signatures would make
-     * the extension system unusable rather than safer. Pinning a root turns
-     * enforcement on by itself — there is no second switch to forget.
+     * This reports policy, not whether its trust anchor is healthy. If the
+     * operator enables enforcement while the root configuration is missing or
+     * invalid, verification fails closed instead of quietly changing policy to
+     * unsigned mode.
      */
     public function signingRequired(): bool
     {
-        return (bool) config('extensions.signing.require_signature', true)
-            && $this->rootPublicKey() !== null;
+        return (bool) config('extensions.signing.require_signature', true);
     }
 
     public function rootPinned(): bool
     {
         return $this->rootPublicKey() !== null;
+    }
+
+    /** The validated identity of the currently configured signing root. */
+    public function currentRootFingerprint(): ?string
+    {
+        $root = $this->rootPublicKey();
+
+        return $root === null ? null : hash('sha256', $root);
     }
 
     /**
@@ -72,6 +92,7 @@ class ExtensionSignatureService
     public function syncRegistryKeys(array $keys, ?int $repositoryId = null): array
     {
         $rootKey = $this->rootPublicKey();
+        $rootFingerprint = $rootKey === null ? null : hash('sha256', $rootKey);
         $admitted = $rejected = $revoked = 0;
 
         foreach ($keys as $key) {
@@ -99,23 +120,41 @@ class ExtensionSignatureService
             }
 
             $isRevoked = (bool) Arr::get($key, 'revoked', false);
+            $fingerprint = hash('sha256', $decoded);
 
-            ExtensionTrustedKey::query()->updateOrCreate(
-                ['key_id' => $keyId],
-                [
-                    'public_key' => $publicKey,
-                    'fingerprint' => hash('sha256', $decoded),
-                    'repository_id' => $repositoryId,
-                    'label' => Arr::get($key, 'label'),
-                    'valid_from' => Arr::get($key, 'validFrom'),
-                    'valid_until' => Arr::get($key, 'validUntil'),
-                    // Revocation is one-way. A registry that stops advertising
-                    // a revocation must not un-revoke the key.
-                    'revoked_at' => $isRevoked ? now() : null,
-                ]
-            );
+            $trustedKey = ExtensionTrustedKey::query()->firstOrNew(['key_id' => $keyId]);
+            if ($trustedKey->exists) {
+                $storedKey = $this->decodeKey((string) $trustedKey->public_key);
+                if ($storedKey === null
+                    || !hash_equals($fingerprint, hash('sha256', $storedKey))
+                    || !hash_equals($fingerprint, (string) $trustedKey->fingerprint)) {
+                    // Installed packages bind to key_id. Permitting another
+                    // root to replace that id with different key bytes would
+                    // make old packages appear authorized by the new root.
+                    ++$rejected;
 
-            $isRevoked ? $revoked++ : $admitted++;
+                    continue;
+                }
+            }
+            $wasRevoked = $trustedKey->exists && $trustedKey->revoked_at !== null;
+
+            $trustedKey->forceFill([
+                'public_key' => $publicKey,
+                'fingerprint' => $fingerprint,
+                'root_fingerprint' => $rootFingerprint,
+                'repository_id' => $repositoryId,
+                'label' => Arr::get($key, 'label'),
+                'valid_from' => Arr::get($key, 'validFrom'),
+                'valid_until' => Arr::get($key, 'validUntil'),
+                // A root-signed active record may be older than a root-signed
+                // revocation. Once observed, revocation is therefore
+                // monotonic: replaying the older record cannot clear it.
+                'revoked_at' => $wasRevoked || $isRevoked
+                    ? ($trustedKey->revoked_at ?? now())
+                    : null,
+            ])->save();
+
+            ($wasRevoked || $isRevoked) ? $revoked++ : $admitted++;
         }
 
         return ['admitted' => $admitted, 'rejected' => $rejected, 'revoked' => $revoked];
@@ -141,11 +180,28 @@ class ExtensionSignatureService
         $signature = $manifest->signature();
         $keyId = $manifest->signingKeyId();
 
-        // No root pinned: nothing can be verified against anything, so the
-        // package is admitted as unverified rather than refused. It still
-        // carries the unverified capability restrictions, so the panel is not
-        // simply trusting it — it is declining to let it run code on core's
-        // behalf.
+        // Enabling signature enforcement without a valid trust anchor is a
+        // configuration failure, never an implicit request to allow unsigned
+        // code. This check precedes every artifact-specific branch so even an
+        // unsigned acknowledgement cannot bypass it.
+        if ($this->signingRequired() && !$this->rootPinned()) {
+            $reason = 'Signature verification is required, but the configured root public key and fingerprint are missing, malformed, or do not match.';
+            $this->audit(
+                $manifest,
+                ExtensionSignatureAudit::VERDICT_REJECTED,
+                $keyId,
+                $archiveSha256,
+                $canonical,
+                $reason,
+                $initiator
+            );
+
+            throw new DisplayException($reason);
+        }
+
+        // Explicit development mode: without a usable root there is no
+        // authority against which to check a signature. This behavior exists
+        // only when signature enforcement itself is deliberately disabled.
         if (!$this->rootPinned()) {
             $this->audit(
                 $manifest,
@@ -164,7 +220,7 @@ class ExtensionSignatureService
             return $this->handleUnsigned($manifest, $canonical, $archiveSha256, $acknowledgeUnsigned, $initiator);
         }
 
-        $key = ExtensionTrustedKey::query()->where('key_id', $keyId)->first();
+        $key = $this->trustedKeyForCurrentRoot($keyId);
 
         if ($key === null) {
             $this->audit($manifest, ExtensionSignatureAudit::VERDICT_REJECTED, $keyId, $archiveSha256, $canonical, 'Unknown signing key.', $initiator);
@@ -197,34 +253,61 @@ class ExtensionSignatureService
     /**
      * The capabilities an unverified package is not allowed to hold.
      *
-     * A package the panel cannot attribute to anybody must not be able to run
-     * code on core's deletion path, dispatch background work, or contribute a
-     * permission marked dangerous.
+     * A package the panel cannot attribute to anybody must not expose any
+     * executable surface or contribute any administrator permission. The
+     * restriction is enforced both before install and again while constructing
+     * the runtime plan, so packages admitted under older policy become inert.
      */
     public function assertCapabilitiesAllowedUnverified(ExtensionManifest $manifest): void
     {
-        $held = [];
-
-        if ($manifest->capabilities->hooks !== []) {
-            $held[] = 'hooks';
-        }
-
-        if ($manifest->capabilities->queues !== []) {
-            $held[] = 'queues';
-        }
-
-        foreach ($manifest->capabilities->adminPermissions as $permission) {
-            if ($permission->dangerous) {
-                $held[] = 'dangerous permissions';
-                break;
-            }
-        }
+        $held = $this->restrictedCapabilitiesForUnverified($manifest->capabilities);
 
         if ($held === []) {
             return;
         }
 
-        throw new DisplayException(sprintf('An unverified package may not declare %s. Allowed for unverified packages: everything except %s.', implode(' or ', $held), implode(', ', self::RESTRICTED_CAPABILITIES)));
+        throw new DisplayException(sprintf('An unverified package may not declare executable or privileged capabilities: %s. Sign the package, or remove those capabilities.', implode(', ', $held)));
+    }
+
+    /**
+     * @return array<int, string> prohibited capability names the set holds
+     */
+    public function restrictedCapabilitiesForUnverified(ExtensionCapabilitySet $capabilities): array
+    {
+        $held = [];
+
+        if ($capabilities->clientRoutes) {
+            $held[] = 'routes.client';
+        }
+        if ($capabilities->adminRoutes) {
+            $held[] = 'routes.admin';
+        }
+        if ($capabilities->serverPages !== []) {
+            $held[] = 'pages.server';
+        }
+        if ($capabilities->adminPages !== []) {
+            $held[] = 'pages.admin';
+        }
+        if ($capabilities->migrations) {
+            $held[] = 'database.migrations';
+        }
+        if ($capabilities->schedule) {
+            $held[] = 'schedule';
+        }
+        if ($capabilities->commands !== []) {
+            $held[] = 'commands';
+        }
+        if ($capabilities->hooks !== []) {
+            $held[] = 'hooks';
+        }
+        if ($capabilities->queues !== []) {
+            $held[] = 'queues';
+        }
+        if ($capabilities->adminPermissions !== []) {
+            $held[] = 'permissions.admin';
+        }
+
+        return array_values(array_intersect(self::RESTRICTED_CAPABILITIES, $held));
     }
 
     /**
@@ -275,9 +358,12 @@ class ExtensionSignatureService
             throw new DisplayException('This package is not signed. Install it from a signed release, or install it from a local archive with the unsigned acknowledgement.');
         }
 
-        // An unsigned package is admissible only in the narrow shape that
-        // cannot execute on core's behalf.
-        $this->assertCapabilitiesAllowedUnverified($manifest);
+        // With enforcement enabled, an unsigned package is admissible only in
+        // the narrow shape that cannot execute on core's behalf. Explicitly
+        // disabling enforcement remains available for local development.
+        if ($this->signingRequired()) {
+            $this->assertCapabilitiesAllowedUnverified($manifest);
+        }
 
         $this->audit($manifest, ExtensionSignatureAudit::VERDICT_UNSIGNED, null, $archiveSha256, $canonical, 'Operator acknowledged an unsigned install.', $initiator);
 
@@ -285,30 +371,58 @@ class ExtensionSignatureService
     }
 
     /**
-     * Refuse a version at or below the highest already recorded.
-     *
-     * Without this, an attacker who can serve an old *validly signed* release
-     * can downgrade an extension to one with a known flaw — the signature is
-     * genuine, so nothing else in the chain objects.
-     */
-    /**
      * Whether a release advertised as signed by $keyId could verify here.
      *
      * A catalog-time filter, not a gate. It lets the catalog skip a release the
      * install would refuse — an unknown, expired or revoked key — instead of
-     * offering it and failing partway through. A null key id means the release
-     * advertises no signature, which is fine on a panel with no root pinned and
-     * caught at install by verify() on one that has.
+     * offering it and failing partway through. When enforcement is enabled, a
+     * missing key id or unusable root is rejected here as well as by verify().
      */
     public function isReleaseKeyUsable(?string $keyId): bool
     {
-        if ($keyId === null || $keyId === '' || !$this->signingRequired()) {
+        if (!$this->signingRequired()) {
             return true;
         }
 
-        $key = ExtensionTrustedKey::query()->where('key_id', $keyId)->first();
+        return $this->isTrustedKeyUsable($keyId);
+    }
 
-        return $key !== null && $key->isUsable();
+    /** A current-root key that is active now, for catalog and runtime gates. */
+    public function isTrustedKeyUsable(?string $keyId): bool
+    {
+        if ($keyId === null || $keyId === '') {
+            return false;
+        }
+
+        return $this->trustedKeyForCurrentRoot($keyId)?->isUsable() === true;
+    }
+
+    /**
+     * Resolve several runtime/package checks with one trusted-key query.
+     *
+     * @param array<int, string> $keyIds
+     *
+     * @return array<int, string>
+     */
+    public function usableTrustedKeyIds(array $keyIds): array
+    {
+        $rootFingerprint = $this->currentRootFingerprint();
+        $keyIds = array_values(array_unique(array_filter($keyIds, fn ($id): bool => is_string($id) && $id !== '')));
+
+        if ($rootFingerprint === null || $keyIds === []) {
+            return [];
+        }
+
+        $now = now();
+
+        return ExtensionTrustedKey::query()
+            ->whereIn('key_id', $keyIds)
+            ->where('root_fingerprint', $rootFingerprint)
+            ->whereNull('revoked_at')
+            ->where(fn ($query) => $query->whereNull('valid_from')->orWhere('valid_from', '<=', $now))
+            ->where(fn ($query) => $query->whereNull('valid_until')->orWhere('valid_until', '>', $now))
+            ->pluck('key_id')
+            ->all();
     }
 
     /**
@@ -378,7 +492,7 @@ class ExtensionSignatureService
 
     private function rootPublicKey(): ?string
     {
-        $configured = (string) config('extensions.signing.root_public_key', '');
+        $configured = trim((string) config('extensions.signing.root_public_key', ''));
 
         if ($configured === '') {
             return null;
@@ -393,13 +507,26 @@ class ExtensionSignatureService
         // The fingerprint pin is the actual root of trust: an operator can
         // compare it out of band, and a swapped config value fails here rather
         // than silently trusting a different root.
-        $pinned = strtolower((string) config('extensions.signing.root_fingerprint', ''));
+        $pinned = strtolower(trim((string) config('extensions.signing.root_fingerprint', '')));
 
-        if ($pinned !== '' && !hash_equals($pinned, hash('sha256', $decoded))) {
+        if (!preg_match('/^[a-f0-9]{64}$/', $pinned)
+            || !hash_equals($pinned, hash('sha256', $decoded))) {
             return null;
         }
 
         return $decoded;
+    }
+
+    private function trustedKeyForCurrentRoot(string $keyId): ?ExtensionTrustedKey
+    {
+        $rootFingerprint = $this->currentRootFingerprint();
+        if ($rootFingerprint === null) {
+            return null;
+        }
+
+        $key = ExtensionTrustedKey::query()->where('key_id', $keyId)->first();
+
+        return $key?->isAuthorizedBy($rootFingerprint) === true ? $key : null;
     }
 
     private function decodeKey(string $base64): ?string

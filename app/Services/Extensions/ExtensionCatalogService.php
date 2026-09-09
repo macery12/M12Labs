@@ -8,8 +8,6 @@ use Illuminate\Support\Str;
 use GuzzleHttp\Psr7\UriResolver;
 use Everest\Models\ExtensionConfig;
 use Everest\Models\ExtensionPackage;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Everest\Models\ExtensionRepository;
 use Everest\Exceptions\DisplayException;
@@ -24,6 +22,8 @@ class ExtensionCatalogService
         private ExtensionPackageArtifactService $artifactService,
         private ExtensionRuntimePlanService $planService,
         private ExtensionSignatureService $signatureService,
+        private ExtensionRemoteUrlGuard $urlGuard,
+        private ExtensionRemoteResourceService $remoteResourceService,
     ) {
     }
 
@@ -347,6 +347,10 @@ class ExtensionCatalogService
         $this->bootstrapService->ensureOfficialRepository();
 
         $repository = ExtensionRepository::query()->findOrFail($repositoryId);
+        if (!$repository->enabled) {
+            throw new DisplayException('The selected extension repository is disabled.');
+        }
+
         $manifest = $this->fetchRepositoryManifest($repository, true);
 
         foreach ($manifest['packages'] ?? [] as $package) {
@@ -375,6 +379,8 @@ class ExtensionCatalogService
 
     public function validateRepository(ExtensionRepository $repository): void
     {
+        $this->urlGuard->assertSafeHttpsUrl($repository->manifest_url, 'Repository manifest URL');
+
         if (!$repository->enabled) {
             return;
         }
@@ -387,6 +393,8 @@ class ExtensionCatalogService
      */
     public function fetchRepositoryManifest(ExtensionRepository $repository, bool $forceRefresh = false): array
     {
+        $this->urlGuard->assertSafeHttpsUrl($repository->manifest_url, 'Repository manifest URL');
+
         $cacheKey = sprintf(
             'extensions:repository:%s:%s',
             $repository->id,
@@ -447,9 +455,12 @@ class ExtensionCatalogService
                     continue;
                 }
 
+                $archiveUrl = $this->resolveLocation($repository->manifest_url, $archive);
+                $this->urlGuard->assertSafeHttpsUrl($archiveUrl, sprintf('Archive URL for extension "%s"', $extensionId));
+
                 $versions[] = [
                     'version' => $version,
-                    'archiveUrl' => $this->resolveLocation($repository->manifest_url, $archive),
+                    'archiveUrl' => $archiveUrl,
                     'archiveChecksum' => $checksum,
                     'publishedAt' => $release['publishedAt'] ?? null,
                     'compatiblePanelVersions' => array_values(array_filter((array) ($release['compatiblePanelVersions'] ?? []), 'is_string')),
@@ -787,21 +798,16 @@ class ExtensionCatalogService
 
     private function readLocationContents(string $location): string
     {
-        if ($this->isHttpLocation($location)) {
-            $response = Http::timeout(30)->get($location);
-            if (!$response->successful()) {
-                throw new DisplayException(sprintf('Unable to fetch repository manifest from "%s".', $location));
-            }
+        $limits = (array) config('extensions.repository', []);
 
-            return (string) $response->body();
-        }
-
-        $path = $this->toLocalPath($location);
-        if (!is_file($path)) {
-            throw new DisplayException(sprintf('Repository manifest "%s" does not exist on disk.', $path));
-        }
-
-        return File::get($path);
+        return $this->remoteResourceService->getContents(
+            $location,
+            (int) ($limits['max_manifest_bytes'] ?? 1024 * 1024),
+            (int) ($limits['download_timeout_seconds'] ?? 30),
+            (int) ($limits['download_connect_timeout_seconds'] ?? 10),
+            (int) ($limits['max_redirects'] ?? 3),
+            'extension repository manifest',
+        );
     }
 
     private function resolveLocation(string $baseLocation, string $path): string
@@ -810,15 +816,11 @@ class ExtensionCatalogService
             return $path;
         }
 
-        if ($this->isHttpLocation($path) || Str::startsWith($path, 'file://') || Str::startsWith($path, '/')) {
-            return $path;
-        }
-
-        if ($this->isHttpLocation($baseLocation)) {
+        try {
             return (string) UriResolver::resolve(Utils::uriFor($baseLocation), Utils::uriFor($path));
+        } catch (\Throwable $exception) {
+            throw new DisplayException('The extension repository contains an invalid archive URL.', $exception);
         }
-
-        return dirname($this->toLocalPath($baseLocation)) . '/' . ltrim($path, '/');
     }
 
     private function normalizeChecksum(string $checksum): string
@@ -828,17 +830,10 @@ class ExtensionCatalogService
         return Str::startsWith($checksum, 'sha256:') ? substr($checksum, 7) : $checksum;
     }
 
-    private function isHttpLocation(string $location): bool
+    public function assertRepositoryEnabled(int $repositoryId): void
     {
-        return Str::startsWith($location, ['http://', 'https://']);
-    }
-
-    private function toLocalPath(string $location): string
-    {
-        if (Str::startsWith($location, 'file://')) {
-            return rawurldecode(substr($location, 7));
+        if (!ExtensionRepository::query()->whereKey($repositoryId)->where('enabled', true)->exists()) {
+            throw new DisplayException('The selected extension repository is disabled or no longer exists.');
         }
-
-        return $location;
     }
 }

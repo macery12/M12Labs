@@ -19,6 +19,7 @@ import { Switch } from '@/components/ui/Switch';
 import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
+import { firstError } from '@/lib/apiError';
 import { cn } from '@/lib/cn';
 import { resolveExtensionIcon, extensionTone, toneVar, toneLabelKey } from './extMeta';
 import { CapabilityApprovalModal } from './CapabilityApprovalModal';
@@ -82,7 +83,8 @@ export function ExtensionManageDrawer({
     }, [ext]);
 
     const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
-    const fail = () => push({ type: 'error', message: m['common.states.genericError']() });
+    const fail = (error: unknown) =>
+        push({ type: 'error', message: firstError(error) ?? m['common.states.genericError']() });
 
     const save = useMutation({
         mutationFn: () => updateExtension(ext!.id, { enabled, allowedNests, allowedEggs, settings }),

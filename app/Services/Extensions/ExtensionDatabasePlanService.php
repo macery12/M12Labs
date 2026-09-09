@@ -89,6 +89,7 @@ class ExtensionDatabasePlanService
         File::ensureDirectoryExists($extractPath);
 
         try {
+            $this->catalogService->assertRepositoryEnabled($package['repository']->id);
             $this->artifactService->downloadArchive($release['archiveUrl'], $archivePath);
             if (!empty($release['archiveChecksum'])) {
                 $this->artifactService->verifyChecksum($archivePath, $release['archiveChecksum'], 'archive');

@@ -3,6 +3,7 @@
 namespace Everest\Services\Extensions;
 
 use Illuminate\Support\Facades\File;
+use Everest\Models\ExtensionPackageFile;
 use Everest\Services\Extensions\Manifest\ExtensionManifest;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
 
@@ -39,8 +40,11 @@ class ExtensionPageManifestService
      *
      * @return array<string, mixed>
      */
-    public function write(ExtensionManifest $manifest): array
-    {
+    public function write(
+        ExtensionManifest $manifest,
+        string $backupRoot,
+        ?ExtensionPackageFile $previousFile = null,
+    ): array {
         $path = $this->relativePath($manifest->id);
         $targetPath = base_path($path);
 
@@ -49,6 +53,28 @@ class ExtensionPageManifestService
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
         ) . "\n";
 
+        $operation = 'generated';
+        $backupPath = null;
+        $backupChecksum = null;
+
+        if ($previousFile?->operation === 'updated') {
+            // A prior install replaced an untracked file here. Keep its
+            // original backup across updates so a future uninstall can still
+            // restore what existed before the extension was installed.
+            $operation = 'updated';
+            $backupPath = $previousFile->backup_path;
+            $backupChecksum = $previousFile->backup_checksum;
+        } elseif ($previousFile === null && is_file($targetPath)) {
+            // First install into a pre-existing, untracked target. Snapshot it
+            // before generating our file so a failed install and a later
+            // uninstall both restore the original bytes.
+            $operation = 'updated';
+            $backupPath = $backupRoot . '/' . $path;
+            File::ensureDirectoryExists(dirname($backupPath));
+            File::copy($targetPath, $backupPath);
+            $backupChecksum = hash_file('sha256', $backupPath);
+        }
+
         File::ensureDirectoryExists(dirname($targetPath));
         File::put($targetPath, $contents);
 
@@ -56,10 +82,10 @@ class ExtensionPageManifestService
             'path' => $path,
             'sourcePath' => null,
             'targetPath' => $targetPath,
-            'operation' => 'generated',
+            'operation' => $operation,
             'checksum' => hash('sha256', $contents),
-            'backupPath' => null,
-            'backupChecksum' => null,
+            'backupPath' => $backupPath,
+            'backupChecksum' => $backupChecksum,
         ];
     }
 

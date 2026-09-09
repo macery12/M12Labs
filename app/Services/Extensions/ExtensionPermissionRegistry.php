@@ -41,29 +41,23 @@ class ExtensionPermissionRegistry
     private const NAMESPACE_SUFFIX = '.admin';
 
     /**
-     * Per-process memo of the contributed catalog. AdminRole::permissions() is
-     * called several times per request (validation, the authorizer, the API
-     * profile), and none of them may pay for a query each.
-     *
-     * @var array<string, array{description: string, keys: array<string, string>, labelKeys: array<string, string>, descriptionKeys: array<string, string>, extensionId: string}>|null
-     */
-    private static ?array $groups = null;
-
-    /** @var array<int, string>|null */
-    private static ?array $suspended = null;
-
-    /**
      * The capability groups to merge into AdminRole::permissions().
      *
      * @return array<string, array{description: string, keys: array<string, string>, labelKeys: array<string, string>, descriptionKeys: array<string, string>, extensionId: string}>
      */
     public function groups(): array
     {
-        if (self::$groups !== null) {
-            return self::$groups;
-        }
-
         try {
+            $signature = app(ExtensionSignatureService::class);
+
+            // A "verified" database value is meaningful only under the root
+            // that verified it. If the configured root pin is missing or
+            // malformed, fail closed rather than exposing stale identifiers as
+            // assignable capabilities.
+            if ($signature->signingRequired() && !$signature->rootPinned()) {
+                return [];
+            }
+
             $names = ExtensionPackage::query()
                 ->pluck('name', 'extension_id')
                 ->all();
@@ -71,7 +65,18 @@ class ExtensionPermissionRegistry
             $groups = [];
 
             $permissions = ExtensionPermission::query()
-                ->whereNotNull('approved_at')
+                ->whereNotNull('approved_at');
+
+            if ($signature->signingRequired()) {
+                // Existing rows may predate the stricter unsigned-package
+                // policy. Do not leave their identifiers assignable merely
+                // because they were approved under the older policy.
+                $verifiedExtensionIds = $this->verifiedExtensionIds($signature);
+
+                $permissions->whereIn('extension_id', $verifiedExtensionIds);
+            }
+
+            $permissions = $permissions
                 ->orderBy('extension_id')
                 ->orderBy('action')
                 ->get();
@@ -100,7 +105,7 @@ class ExtensionPermissionRegistry
                 }
             }
 
-            return self::$groups = $groups;
+            return $groups;
         } catch (\Throwable) {
             // The catalog is read during migrations and on a fresh install, at
             // which point the table does not exist. Failing to an empty
@@ -119,15 +124,31 @@ class ExtensionPermissionRegistry
      */
     public function suspendedIdentifiers(): array
     {
-        if (self::$suspended !== null) {
-            return self::$suspended;
-        }
-
         try {
-            return self::$suspended = ExtensionPermission::query()
-                ->whereNotNull('suspended_at')
-                ->pluck('identifier')
-                ->all();
+            $signature = app(ExtensionSignatureService::class);
+            $permissions = ExtensionPermission::query();
+
+            if ($signature->signingRequired() && !$signature->rootPinned()) {
+                // With no trustworthy root, every extension permission is
+                // suspended even if an old row still says "verified".
+                return $permissions->pluck('identifier')->all();
+            }
+
+            if ($signature->signingRequired()) {
+                $verifiedExtensionIds = $this->verifiedExtensionIds($signature);
+                $unverifiedExtensionIds = ExtensionPackage::query()
+                    ->whereNotIn('extension_id', $verifiedExtensionIds)
+                    ->pluck('extension_id');
+
+                $permissions->where(function ($query) use ($unverifiedExtensionIds): void {
+                    $query->whereNotNull('suspended_at')
+                        ->orWhereIn('extension_id', $unverifiedExtensionIds);
+                });
+            } else {
+                $permissions->whereNotNull('suspended_at');
+            }
+
+            return $permissions->pluck('identifier')->all();
         } catch (\Throwable) {
             return [];
         }
@@ -216,6 +237,26 @@ class ExtensionPermissionRegistry
         });
 
         self::flush();
+    }
+
+    /**
+     * Packages whose persisted verification still chains to the current root.
+     *
+     * @return array<int, string>
+     */
+    private function verifiedExtensionIds(ExtensionSignatureService $signature): array
+    {
+        $packages = ExtensionPackage::query()
+            ->where('signature_state', 'verified')
+            ->get(['extension_id', 'signature_key_id']);
+        $usableKeyIds = $signature->usableTrustedKeyIds(
+            $packages->pluck('signature_key_id')->filter(fn ($keyId): bool => is_string($keyId))->values()->all(),
+        );
+
+        return $packages
+            ->filter(fn (ExtensionPackage $package): bool => in_array($package->signature_key_id, $usableKeyIds, true))
+            ->pluck('extension_id')
+            ->all();
     }
 
     /**
@@ -336,7 +377,7 @@ class ExtensionPermissionRegistry
 
     public static function flush(): void
     {
-        self::$groups = null;
-        self::$suspended = null;
+        // Compatibility no-op. Permission state is read live so long-lived
+        // workers cannot retain grants after disablement or key revocation.
     }
 }

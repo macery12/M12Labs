@@ -8,6 +8,7 @@ use Everest\Models\ExtensionQueueJob;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Queue\QueueTopology;
 use Everest\Tests\Integration\IntegrationTestCase;
+use Illuminate\Cache\RateLimiter as CacheRateLimiter;
 use Everest\Services\Extensions\ExtensionQueueRegistry;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Everest\Services\Extensions\ExtensionJobDrainService;
@@ -56,6 +57,7 @@ class ExtensionQueueContractTest extends IntegrationTestCase
 
     private function installFixture(?QueueDefinition $queue = null, bool $enabled = true): void
     {
+        $key = $this->trustExtensionSigningKey();
         $capabilities = new ExtensionCapabilitySet(
             queues: [$queue ?? new QueueDefinition(
                 name: 'slow',
@@ -73,12 +75,8 @@ class ExtensionQueueContractTest extends IntegrationTestCase
             'installed_version' => '1.0.0',
             'manifest' => ['manifestVersion' => 3, 'extension' => ['id' => 'fixture_queue']],
             'manifest_version' => 3,
-            // What ExtensionSignatureService::verify() records for a package
-            // installed while no signing root was pinned. The column default is
-            // 'unsigned', which no install path produces and which the runtime plan
-            // refuses once a root exists — so a fixture that leaves it unset is not
-            // a package this panel could actually have.
-            'signature_state' => 'unsigned_acknowledged',
+            'signature_state' => 'verified',
+            'signature_key_id' => $key->key_id,
             'capabilities' => $capabilities->jsonSerialize(),
             'capability_hash' => $capabilities->hash(),
             'state' => $enabled ? 'enabled' : 'installed_disabled',
@@ -133,6 +131,51 @@ class ExtensionQueueContractTest extends IntegrationTestCase
 
         $this->assertSame(1, $job->tries());
         $this->assertSame(60, $job->timeout());
+    }
+
+    public function testAWorkerObservesDisablementWithoutFlushingItsRuntimePlan(): void
+    {
+        $this->installFixture();
+        $registry = app(ExtensionQueueRegistry::class);
+
+        $this->assertNotNull($registry->definition('fixture_queue', 'slow'));
+
+        ExtensionConfig::query()
+            ->where('extension_id', 'fixture_queue')
+            ->update(['enabled' => false]);
+
+        $this->assertNull($registry->definition('fixture_queue', 'slow'));
+    }
+
+    public function testAWorkerRefreshesTheRateLimiterFromTheLiveQueueContract(): void
+    {
+        $initial = new QueueDefinition(name: 'slow', rateLimit: '2/minute');
+        $this->installFixture($initial);
+
+        (new SlowFixtureJob())->middleware();
+
+        $limiter = app(CacheRateLimiter::class)->limiter($initial->limiterName('fixture_queue'));
+        $this->assertNotNull($limiter);
+        $limit = $limiter(new SlowFixtureJob());
+        $this->assertSame(2, $limit->maxAttempts);
+        $this->assertSame(60, $limit->decaySeconds);
+
+        $updated = new ExtensionCapabilitySet(
+            queues: [new QueueDefinition(name: 'slow', rateLimit: '5/hour')],
+        );
+        ExtensionPackage::query()
+            ->where('extension_id', 'fixture_queue')
+            ->update([
+                'capabilities' => json_encode($updated->jsonSerialize()),
+                'capability_hash' => $updated->hash(),
+            ]);
+
+        (new SlowFixtureJob())->middleware();
+
+        $limiter = app(CacheRateLimiter::class)->limiter($initial->limiterName('fixture_queue'));
+        $limit = $limiter(new SlowFixtureJob());
+        $this->assertSame(5, $limit->maxAttempts);
+        $this->assertSame(3600, $limit->decaySeconds);
     }
 
     public function testDispatchIsRefusedForAnUndeclaredQueueGroup(): void

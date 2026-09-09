@@ -46,14 +46,14 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         $added = array_values(array_diff(array_keys($after), array_keys($before)));
         $removed = array_values(array_diff(array_keys($before), array_keys($after)));
 
-        // Only surfaces that grant new reach need consent. A page or a settings
-        // field cannot do anything the extension could not already do; routes,
-        // permissions, hooks, queues, secrets, commands, migrations and
-        // schedules can.
+        // Only surfaces that grant new reach need consent. Pages are executable
+        // frontend entry points mounted into user/admin navigation, so adding
+        // one is a privilege increase just like adding a route. A settings
+        // field is declarative metadata and remains review-only.
         $escalations = array_values(array_filter(
             $added,
             fn (string $capability): bool => (bool) preg_match(
-                '/^(routes|permission|hook|queue|secret|command|migrations|schedule|table)\b/',
+                '/^(routes|page|permission|hook|queue|secret|command|migrations|schedule|table)\b/',
                 $capability
             )
         ));

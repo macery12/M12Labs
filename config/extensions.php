@@ -13,6 +13,17 @@
 
 return [
     /*
+     * Repository manifests are untrusted remote input. They are fetched only
+     * from public HTTPS destinations and read through a bounded stream.
+     */
+    'repository' => [
+        'max_manifest_bytes' => (int) env('EXTENSIONS_REPOSITORY_MAX_MANIFEST_BYTES', 1024 * 1024),
+        'download_timeout_seconds' => (int) env('EXTENSIONS_REPOSITORY_DOWNLOAD_TIMEOUT', 30),
+        'download_connect_timeout_seconds' => (int) env('EXTENSIONS_REPOSITORY_CONNECT_TIMEOUT', 10),
+        'max_redirects' => (int) env('EXTENSIONS_REPOSITORY_MAX_REDIRECTS', 3),
+    ],
+
+    /*
      * Installing, updating or uninstalling a package rebuilds the panel's
      * frontend, because extension pages are compiled into the bundle. That
      * build runs on the panel host, so it is bounded here rather than left to
@@ -34,6 +45,9 @@ return [
         'max_path_depth' => (int) env('EXTENSIONS_ARCHIVE_MAX_PATH_DEPTH', 12),
         // Ceiling on a download before any of it is trusted.
         'max_download_bytes' => (int) env('EXTENSIONS_ARCHIVE_MAX_DOWNLOAD_BYTES', 64 * 1024 * 1024),
+        // The package manifest is parsed while merely discovering a local
+        // archive, before the bounded extractor runs.
+        'max_manifest_bytes' => (int) env('EXTENSIONS_ARCHIVE_MAX_MANIFEST_BYTES', 512 * 1024),
         'download_timeout_seconds' => (int) env('EXTENSIONS_ARCHIVE_DOWNLOAD_TIMEOUT', 120),
         'download_connect_timeout_seconds' => (int) env('EXTENSIONS_ARCHIVE_CONNECT_TIMEOUT', 10),
         'max_redirects' => (int) env('EXTENSIONS_ARCHIVE_MAX_REDIRECTS', 3),
@@ -84,10 +98,10 @@ return [
      *  - An OPERATOR pins the root's public key and fingerprint below, out of
      *    band. That pin is the entire trust decision this panel makes.
      *
-     * With no root pinned the panel cannot attribute a package to anybody, so
-     * it admits packages as UNVERIFIED rather than refusing everything — but an
-     * unverified package may not declare hooks, queues or dangerous
-     * permissions. Pinning a root is what turns enforcement on.
+     * Signature enforcement is fail-closed. If it is enabled and either the
+     * root key or its fingerprint is missing or malformed, repository and
+     * local installs are refused until the trust anchor is repaired. It may be
+     * disabled explicitly for a local development environment.
      */
     'signing' => [
         // The OFFLINE root key, base64-encoded raw Ed25519 public key. It never
@@ -108,9 +122,9 @@ return [
         'require_signature' => (bool) env('EXTENSIONS_REQUIRE_SIGNATURE', true),
 
         // Whether a local .M12LabsExtension archive may be installed unsigned,
-        // with an explicit acknowledgement. Such a package can never declare
-        // hooks, queues or a dangerous permission — the panel cannot attribute
-        // it to anybody, so it must not run code on core's behalf.
+        // with an explicit acknowledgement. While enforcement is enabled,
+        // such a package must be inert: no routes, pages, migrations, schedule,
+        // commands, hooks, queues, or administrator permissions.
         'allow_unsigned_local' => (bool) env('EXTENSIONS_ALLOW_UNSIGNED_LOCAL', false),
     ],
 

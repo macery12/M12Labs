@@ -64,6 +64,8 @@ class ExtensionPermissionRegistryTest extends IntegrationTestCase
 
     private function installed(string $id = 'demo', bool $enabled = true): void
     {
+        $key = $this->trustExtensionSigningKey();
+
         ExtensionPackage::create([
             'extension_id' => $id,
             'package_id' => $id,
@@ -72,12 +74,8 @@ class ExtensionPermissionRegistryTest extends IntegrationTestCase
             'installed_version' => '1.0.0',
             'manifest' => ['manifestVersion' => 3, 'extension' => ['id' => $id]],
             'manifest_version' => 3,
-            // What ExtensionSignatureService::verify() records for a package
-            // installed while no signing root was pinned. The column default is
-            // 'unsigned', which no install path produces and which the runtime plan
-            // refuses once a root exists — so a fixture that leaves it unset is not
-            // a package this panel could actually have.
-            'signature_state' => 'unsigned_acknowledged',
+            'signature_state' => 'verified',
+            'signature_key_id' => $key->key_id,
             'state' => $enabled ? 'enabled' : 'installed_disabled',
         ]);
 
@@ -164,6 +162,70 @@ class ExtensionPermissionRegistryTest extends IntegrationTestCase
 
         $this->registry->resume('demo');
         $this->assertTrue($authorizer->hasCapability($user->fresh(), 'ext.demo.admin.read'));
+    }
+
+    public function testAnotherProcessSuspendingAPermissionIsObservedWithoutAFlush(): void
+    {
+        $this->installed();
+        $this->registry->sync('demo', $this->capabilities('read'), approved: true);
+
+        // Prime both reads in this process before simulating a different
+        // worker writing the suspension directly.
+        $this->assertArrayHasKey('ext.demo.admin', $this->registry->groups());
+        $this->assertNotContains('ext.demo.admin.read', $this->registry->suspendedIdentifiers());
+
+        ExtensionPermission::query()
+            ->where('extension_id', 'demo')
+            ->update(['suspended_at' => now()]);
+
+        $this->assertContains('ext.demo.admin.read', $this->registry->suspendedIdentifiers());
+    }
+
+    public function testAnotherProcessRevokingAPackageImmediatelyRemovesItsPermissions(): void
+    {
+        $this->installed();
+        $this->registry->sync('demo', $this->capabilities('read'), approved: true);
+
+        $this->assertArrayHasKey('ext.demo.admin', $this->registry->groups());
+
+        ExtensionPackage::query()
+            ->where('extension_id', 'demo')
+            ->update(['signature_state' => 'revoked']);
+
+        $this->assertArrayNotHasKey('ext.demo.admin', $this->registry->groups());
+        $this->assertContains('ext.demo.admin.read', $this->registry->suspendedIdentifiers());
+    }
+
+    public function testAnInvalidRootPinMakesAllExtensionPermissionsInert(): void
+    {
+        $this->installed();
+        $this->registry->sync('demo', $this->capabilities('read'), approved: true);
+
+        $role = $this->role(['ext.demo.admin.read']);
+        $user = User::factory()->create(['admin_role_id' => $role->id]);
+        $authorizer = new AdminAuthorizer(new AdminCapabilityRegistry(), $this->registry);
+
+        $this->assertTrue($authorizer->hasCapability($user->fresh(), 'ext.demo.admin.read'));
+
+        config()->set('extensions.signing.root_public_key', 'not-a-valid-ed25519-key');
+        config()->set('extensions.signing.root_fingerprint', str_repeat('0', 64));
+
+        $this->assertSame([], $this->registry->groups());
+        $this->assertContains('ext.demo.admin.read', $this->registry->suspendedIdentifiers());
+        $this->assertFalse($authorizer->hasCapability($user->fresh(), 'ext.demo.admin.read'));
+    }
+
+    public function testRootRotationSuspendsPermissionsVerifiedUnderThePreviousRoot(): void
+    {
+        $this->installed();
+        $this->registry->sync('demo', $this->capabilities('read'), approved: true);
+
+        $newRoot = sodium_crypto_sign_publickey(sodium_crypto_sign_keypair());
+        config()->set('extensions.signing.root_public_key', base64_encode($newRoot));
+        config()->set('extensions.signing.root_fingerprint', hash('sha256', $newRoot));
+
+        $this->assertArrayNotHasKey('ext.demo.admin', $this->registry->groups());
+        $this->assertContains('ext.demo.admin.read', $this->registry->suspendedIdentifiers());
     }
 
     /**

@@ -37,6 +37,7 @@ class ExtensionPackageUninstallService
     {
         return $this->operationLockService->withinLock('uninstall', $extensionId, function () use ($extensionId, $dropData, $initiator, $acknowledgeModified) {
             $prepared = null;
+            $committed = false;
             try {
                 $prepared = $this->prepareUninstall($extensionId, $dropData, $initiator, $acknowledgeModified);
 
@@ -53,6 +54,8 @@ class ExtensionPackageUninstallService
 
                 $this->progressService->report('uninstall', $extensionId, 'registering');
                 $this->finalizeUninstall($prepared);
+                $committed = true;
+                $this->completeUninstall($prepared);
                 $this->progressService->report('uninstall', $extensionId, 'completed');
 
                 return [
@@ -62,6 +65,17 @@ class ExtensionPackageUninstallService
                     'migrationLog' => $prepared['migrationLog'] ?? null,
                 ];
             } catch (\Throwable $exception) {
+                if ($committed) {
+                    $this->reportPostCommitFailure($exception);
+
+                    return [
+                        'dataDropped' => (bool) ($prepared['resetMigrations'] ?? false),
+                        'preservedTables' => $prepared['preservedTables'] ?? [],
+                        'manualCleanup' => $prepared['manualCleanup'] ?? [],
+                        'migrationLog' => $prepared['migrationLog'] ?? null,
+                    ];
+                }
+
                 if ($prepared !== null) {
                     $this->rollbackUninstall($prepared);
                     $this->attemptRollbackRebuild($extensionId, 'uninstall rollback');
@@ -185,16 +199,9 @@ class ExtensionPackageUninstallService
     public function finalizeUninstall(array $prepared): void
     {
         $package = $prepared['package'];
-        $files = $prepared['files'];
         $extensionId = $prepared['extensionId'];
 
-        DB::transaction(function () use ($package, $files, $extensionId) {
-            foreach ($files as $file) {
-                if ($file->backup_path && is_file($file->backup_path)) {
-                    File::delete($file->backup_path);
-                }
-            }
-
+        DB::transaction(function () use ($package, $extensionId) {
             // The permission rows go with the package, and every role holding
             // one is stripped in the same transaction — a role must never carry
             // an identifier that no longer resolves to anything.
@@ -214,6 +221,28 @@ class ExtensionPackageUninstallService
 
             ExtensionConfig::query()->where('extension_id', $extensionId)->update(['enabled' => false]);
         });
+    }
+
+    /**
+     * Remove pre-extension backups only after the package deletion commits.
+     *
+     * @param array<string, mixed> $prepared
+     */
+    public function completeUninstall(array $prepared): void
+    {
+        foreach ($prepared['files'] ?? [] as $file) {
+            if (!$file->backup_path || !is_file($file->backup_path)) {
+                continue;
+            }
+
+            try {
+                File::delete($file->backup_path);
+            } catch (\Throwable $exception) {
+                // The uninstall is committed; retaining a now-orphaned backup
+                // is safer than attempting an impossible transactional rollback.
+                report($exception);
+            }
+        }
     }
 
     /**
@@ -344,6 +373,16 @@ class ExtensionPackageUninstallService
             $this->rebuildService->rebuild(sprintf('%s for %s', $reason, $extensionId));
         } catch (\Throwable $exception) {
             report($exception);
+        }
+    }
+
+    private function reportPostCommitFailure(\Throwable $exception): void
+    {
+        try {
+            report($exception);
+        } catch (\Throwable) {
+            // Never compensate files after the database has committed merely
+            // because progress reporting or backup cleanup failed.
         }
     }
 }

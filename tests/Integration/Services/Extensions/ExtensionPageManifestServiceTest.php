@@ -20,16 +20,25 @@ class ExtensionPageManifestServiceTest extends IntegrationTestCase
 {
     private ExtensionPageManifestService $service;
 
+    private string $originalBasePath;
+
+    private string $workspace;
+
     public function setUp(): void
     {
         parent::setUp();
 
+        $this->originalBasePath = $this->app->basePath();
+        $this->workspace = sys_get_temp_dir() . '/extension-pages-' . bin2hex(random_bytes(6));
+        File::ensureDirectoryExists($this->workspace);
+        $this->app->setBasePath($this->workspace);
         $this->service = new ExtensionPageManifestService();
     }
 
     public function tearDown(): void
     {
-        File::deleteDirectory(base_path('frontend/src/extensions/packages/pagedemo'));
+        $this->app->setBasePath($this->originalBasePath);
+        File::deleteDirectory($this->workspace);
 
         parent::tearDown();
     }
@@ -72,7 +81,7 @@ class ExtensionPageManifestServiceTest extends IntegrationTestCase
             ]
         );
 
-        $plan = $this->service->write($manifest);
+        $plan = $this->service->write($manifest, $this->workspace . '/backups');
 
         $this->assertSame('generated', $plan['operation']);
         $this->assertSame('frontend/src/extensions/packages/pagedemo/extension.pages.json', $plan['path']);
@@ -116,7 +125,7 @@ class ExtensionPageManifestServiceTest extends IntegrationTestCase
             ]
         );
 
-        $written = json_decode((string) file_get_contents($this->service->write($manifest)['targetPath']), true);
+        $written = json_decode((string) file_get_contents($this->service->write($manifest, $this->workspace . '/backups')['targetPath']), true);
 
         $this->assertSame('ext.pagedemo.admin.read', $written['admin'][0]['requiredPermission']);
         $this->assertSame('modules', $written['admin'][0]['category']);
@@ -130,7 +139,7 @@ class ExtensionPageManifestServiceTest extends IntegrationTestCase
             ['frontend/src/extensions/packages/pagedemo/pages/server/overview.tsx']
         );
 
-        $plan = $this->service->write($manifest);
+        $plan = $this->service->write($manifest, $this->workspace . '/backups');
 
         $this->assertSame(hash_file('sha256', $plan['targetPath']), $plan['checksum']);
     }
@@ -142,10 +151,26 @@ class ExtensionPageManifestServiceTest extends IntegrationTestCase
             ['frontend/src/extensions/packages/pagedemo/pages/server/overview.tsx']
         );
 
-        $plan = $this->service->write($manifest);
+        $plan = $this->service->write($manifest, $this->workspace . '/backups');
         $this->assertFileExists($plan['targetPath']);
 
         $this->service->remove('pagedemo');
         $this->assertFileDoesNotExist($plan['targetPath']);
+    }
+
+    public function testItBacksUpAPreExistingUntrackedGeneratedTarget(): void
+    {
+        $manifest = $this->manifest([], [
+            'frontend/src/extensions/packages/pagedemo/pages/server/overview.tsx',
+        ]);
+        $target = base_path($this->service->relativePath('pagedemo'));
+        File::ensureDirectoryExists(dirname($target));
+        File::put($target, 'pre-existing panel file');
+
+        $plan = $this->service->write($manifest, $this->workspace . '/backups');
+
+        $this->assertSame('updated', $plan['operation']);
+        $this->assertSame('pre-existing panel file', File::get($plan['backupPath']));
+        $this->assertSame(hash('sha256', 'pre-existing panel file'), $plan['backupChecksum']);
     }
 }

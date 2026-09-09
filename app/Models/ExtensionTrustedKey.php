@@ -9,6 +9,7 @@ namespace Everest\Models;
  * @property string $key_id
  * @property string $public_key
  * @property string $fingerprint
+ * @property string|null $root_fingerprint
  * @property int|null $repository_id
  * @property string|null $label
  * @property \Carbon\Carbon|null $valid_from
@@ -23,6 +24,7 @@ class ExtensionTrustedKey extends Model
         'key_id',
         'public_key',
         'fingerprint',
+        'root_fingerprint',
         'repository_id',
         'label',
         'valid_from',
@@ -41,6 +43,7 @@ class ExtensionTrustedKey extends Model
         'key_id' => 'required|string|max:191',
         'public_key' => 'required|string|max:191',
         'fingerprint' => 'required|string|size:64',
+        'root_fingerprint' => 'nullable|string|size:64',
         'repository_id' => 'nullable|integer',
         'label' => 'nullable|string|max:191',
     ];
@@ -57,5 +60,13 @@ class ExtensionTrustedKey extends Model
         }
 
         return $this->valid_until === null || $this->valid_until->isFuture();
+    }
+
+    public function isAuthorizedBy(?string $rootFingerprint): bool
+    {
+        return $rootFingerprint !== null
+            && is_string($this->root_fingerprint)
+            && preg_match('/^[a-f0-9]{64}$/', $this->root_fingerprint) === 1
+            && hash_equals($rootFingerprint, $this->root_fingerprint);
     }
 }

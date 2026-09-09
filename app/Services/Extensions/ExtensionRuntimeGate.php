@@ -38,9 +38,8 @@ class ExtensionRuntimeGate
     }
 
     /**
-     * Drop the per-process memo. Call after mutating enabled state within a
-     * long-lived process (e.g. tests, queue workers) so a subsequent lookup
-     * reflects the change.
+     * Compatibility entry point for lifecycle callers. Runtime decisions are
+     * read live, so current implementations have no process-local plan to drop.
      */
     public static function flush(): void
     {

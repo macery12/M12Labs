@@ -396,8 +396,9 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             // glob: a package that ships routes/client.php without declaring
             // capabilities.routes.client is rejected at install, and one that
             // slipped through would still never be require()'d here. Only
-            // enabled extensions are loaded, so a disabled extension's route
-            // file — and any top-level code in it — never executes.
+            // enabled extensions are loaded at boot, and the access middleware
+            // re-checks the live runtime plan so a route retained by a cached
+            // table or long-lived worker becomes unreachable after disablement.
             //
             // The prefix and the access gate are BOTH loader-owned, derived
             // from the package directory. A package therefore cannot choose its

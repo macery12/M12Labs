@@ -4,7 +4,6 @@ namespace Everest\Services\Extensions;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Extensions\Manifest\ExtensionManifest;
 use Everest\Services\Extensions\Manifest\ExtensionManifestParser;
@@ -20,6 +19,7 @@ class ExtensionPackageArtifactService
         private ExtensionManifestParser $manifestParser,
         private ExtensionCapabilityFileValidator $capabilityFileValidator,
         private ExtensionArchiveExtractor $archiveExtractor,
+        private ExtensionRemoteResourceService $remoteResourceService,
     ) {
     }
 
@@ -36,9 +36,25 @@ class ExtensionPackageArtifactService
         }
 
         try {
-            $rawManifest = $zip->getFromName(self::MANIFEST_FILENAME);
-            if (!is_string($rawManifest)) {
+            $manifestIndex = $zip->locateName(self::MANIFEST_FILENAME);
+            if ($manifestIndex === false) {
                 throw new DisplayException(sprintf('The extension package "%s" does not contain %s.', basename($resolvedPath), self::MANIFEST_FILENAME));
+            }
+
+            $manifestLimit = (int) config('extensions.archive.max_manifest_bytes', 512 * 1024);
+            $manifestStat = $zip->statIndex($manifestIndex);
+            if (!is_array($manifestStat) || (int) ($manifestStat['size'] ?? 0) > $manifestLimit) {
+                throw new DisplayException(sprintf('The extension package manifest is larger than the permitted %d bytes.', $manifestLimit));
+            }
+
+            // Supplying a maximum length ensures discovery never asks libzip
+            // to allocate an attacker-declared manifest before checking it.
+            $rawManifest = $zip->getFromIndex($manifestIndex, $manifestLimit + 1);
+            if (!is_string($rawManifest)) {
+                throw new DisplayException(sprintf('The extension package "%s" contains an unreadable manifest.', basename($resolvedPath)));
+            }
+            if (strlen($rawManifest) > $manifestLimit) {
+                throw new DisplayException(sprintf('The extension package manifest is larger than the permitted %d bytes.', $manifestLimit));
             }
 
             $manifest = json_decode($rawManifest, true, 512, JSON_THROW_ON_ERROR);
@@ -172,54 +188,27 @@ class ExtensionPackageArtifactService
     // Shared archive helpers — used by install and update services
     // ---------------------------------------------------------------------------
 
-    public function downloadArchive(string $location, string $destination): void
+    public function downloadArchive(string $location, string $destination, bool $allowLocalFile = false): void
     {
-        if (Str::startsWith($location, ['http://', 'https://'])) {
-            // HTTPS only: an archive fetched over plaintext can be swapped in
-            // transit, and the checksum that would catch it comes from the same
-            // registry response.
-            if (!Str::startsWith($location, 'https://')) {
-                throw new DisplayException('Extension archives may only be downloaded over HTTPS.');
-            }
-
+        if (Str::startsWith($location, 'https://')) {
             $limits = (array) config('extensions.archive', []);
             $maxBytes = (int) ($limits['max_download_bytes'] ?? 64 * 1024 * 1024);
 
-            $response = Http::timeout((int) ($limits['download_timeout_seconds'] ?? 120))
-                ->connectTimeout((int) ($limits['download_connect_timeout_seconds'] ?? 10))
-                ->withOptions([
-                    'sink' => $destination,
-                    // Bounded, HTTPS-only redirects that do not leak the referer.
-                    'allow_redirects' => [
-                        'max' => (int) ($limits['max_redirects'] ?? 3),
-                        'strict' => true,
-                        'protocols' => ['https'],
-                        'referer' => false,
-                    ],
-                    // Refuse an oversized body before reading it, when the
-                    // server is honest enough to declare a length.
-                    'on_headers' => function ($response) use ($maxBytes): void {
-                        $length = (int) ($response->getHeaderLine('Content-Length') ?: 0);
-                        if ($length > $maxBytes) {
-                            throw new \RuntimeException(sprintf('The extension archive declares %d bytes, more than the permitted %d.', $length, $maxBytes));
-                        }
-                    },
-                ])
-                ->get($location);
-
-            if (!$response->successful()) {
-                throw new DisplayException(sprintf('Unable to download extension archive from "%s".', $location));
-            }
-
-            // A server that under-declared or omitted Content-Length is caught
-            // here, once the bytes are actually on disk.
-            if (is_file($destination) && filesize($destination) > $maxBytes) {
-                @unlink($destination);
-
-                throw new DisplayException(sprintf('The downloaded extension archive is larger than the permitted %d bytes.', $maxBytes));
-            }
+            $this->remoteResourceService->download(
+                $location,
+                $destination,
+                $maxBytes,
+                (int) ($limits['download_timeout_seconds'] ?? 120),
+                (int) ($limits['download_connect_timeout_seconds'] ?? 10),
+                (int) ($limits['max_redirects'] ?? 3),
+                'extension archive',
+            );
 
             return;
+        }
+
+        if (!$allowLocalFile) {
+            throw new DisplayException('Extension archives must use a public HTTPS URL. Local files are accepted only by the explicit CLI file-install flow.');
         }
 
         $sourcePath = Str::startsWith($location, 'file://') ? rawurldecode(substr($location, 7)) : $location;
@@ -259,6 +248,11 @@ class ExtensionPackageArtifactService
         $manifestPath = $extractPath . '/' . self::MANIFEST_FILENAME;
         if (!is_file($manifestPath)) {
             throw new DisplayException('The extension archive did not include an m12labs-extension.json manifest.');
+        }
+
+        $manifestLimit = (int) config('extensions.archive.max_manifest_bytes', 512 * 1024);
+        if (filesize($manifestPath) > $manifestLimit) {
+            throw new DisplayException(sprintf('The extension package manifest is larger than the permitted %d bytes.', $manifestLimit));
         }
 
         $manifest = json_decode(File::get($manifestPath), true, 512, JSON_THROW_ON_ERROR);

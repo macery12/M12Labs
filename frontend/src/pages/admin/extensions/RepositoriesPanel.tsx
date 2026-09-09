@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Spinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
+import { firstError } from '@/lib/apiError';
 import { cn } from '@/lib/cn';
 
 const tint = (v: string, pct: number) => `color-mix(in srgb, ${v} ${pct}%, transparent)`;
@@ -34,11 +35,13 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
         qc.invalidateQueries({ queryKey: ['admin', 'extension-repositories'] });
         qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
     };
+    const reportError = (error: unknown) =>
+        push({ type: 'error', message: firstError(error) ?? m['common.states.genericError']() });
 
     const toggle = useMutation({
         mutationFn: (repo: Repository) => updateRepository(repo.id, { name: repo.name, enabled: !repo.enabled }),
         onSuccess: invalidate,
-        onError: () => push({ type: 'error', message: m['common.states.genericError']() }),
+        onError: reportError,
     });
 
     const remove = useMutation({
@@ -47,7 +50,7 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
             push({ type: 'success', message: m['extensions.toast.repoDeleted']() });
             invalidate();
         },
-        onError: () => push({ type: 'error', message: m['common.states.genericError']() }),
+        onError: reportError,
     });
 
     return (
@@ -199,13 +202,7 @@ function RepoFormModal({
         },
         onSuccess: onSaved,
         onError: (err: unknown) => {
-            const msg =
-                (err as { response?: { data?: { error?: string; errors?: Array<{ detail?: string }> } } })?.response?.data
-                    ?.error ??
-                (err as { response?: { data?: { errors?: Array<{ detail?: string }> } } })?.response?.data?.errors?.[0]
-                    ?.detail ??
-                m['common.states.genericError']();
-            push({ type: 'error', message: msg });
+            push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() });
         },
     });
 

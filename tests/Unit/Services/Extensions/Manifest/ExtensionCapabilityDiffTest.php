@@ -53,11 +53,8 @@ class ExtensionCapabilityDiffTest extends TestCase
         $this->assertContains('secret:api_token', $diff->escalations);
     }
 
-    /**
-     * Adding a page grants no reach the extension did not already have, so it
-     * appears in the diff for review but does not force a re-approval.
-     */
-    public function testAddingAPageIsReportedButIsNotAnEscalation(): void
+    /** A new page mounts executable package code into panel navigation. */
+    public function testAddingAPageRequiresFreshApproval(): void
     {
         $before = new ExtensionCapabilitySet(clientRoutes: true);
         $after = new ExtensionCapabilitySet(
@@ -68,7 +65,8 @@ class ExtensionCapabilityDiffTest extends TestCase
         $diff = ExtensionCapabilityDiff::between($before, $after);
 
         $this->assertContains('page.server:main', $diff->added);
-        $this->assertFalse($diff->isEscalation());
+        $this->assertContains('page.server:main', $diff->escalations);
+        $this->assertTrue($diff->isEscalation());
     }
 
     /** Narrowing needs no consent. */

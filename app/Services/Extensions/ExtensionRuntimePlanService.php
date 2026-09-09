@@ -46,70 +46,80 @@ class ExtensionRuntimePlanService
     public const EXECUTABLE_STATES = ['enabled'];
 
     /**
-     * Per-process memo. The plan does not change within one request or command,
-     * so every load site shares a single query.
-     *
-     * @var array<string, ExtensionRuntimeEntry>|null
-     */
-    private static ?array $plan = null;
-
-    /**
-     * Enabled extension ids with no installed package row — the legacy
-     * core-extension declarations in config/modules/extensions.php. They ship
-     * no package and therefore no capabilities, but they remain part of the
-     * request-time enabled set so their access middleware behaves as before.
-     *
-     * @var array<int, string>|null
-     */
-    private static ?array $coreExtensionIds = null;
-
-    /**
      * @return array<string, ExtensionRuntimeEntry> keyed by extension id
      */
     public function plan(): array
     {
-        if (self::$plan !== null) {
-            return self::$plan;
-        }
+        return $this->resolve()['plan'];
+    }
 
+    /**
+     * Build a live snapshot of the runtime state.
+     *
+     * This deliberately is not cached in a static or singleton property.
+     * Octane workers, queue workers and schedule:work all serve more than one
+     * operation in the same process; a process-local snapshot would let an
+     * extension continue executing after another process disabled it or marked
+     * its signing key revoked.
+     *
+     * @return array{plan: array<string, ExtensionRuntimeEntry>, core: array<int, string>}
+     */
+    private function resolve(): array
+    {
         if (!config('modules.extensions.enabled')) {
-            self::$coreExtensionIds = [];
-
-            return self::$plan = [];
+            return ['plan' => [], 'core' => []];
         }
 
         try {
-            $enabledIds = ExtensionConfig::query()
-                ->where('enabled', true)
-                ->pluck('extension_id')
-                ->all();
-
-            if ($enabledIds === []) {
-                self::$coreExtensionIds = [];
-
-                return self::$plan = [];
-            }
-
+            // Keep enablement and package state in one database snapshot. Two
+            // separate reads leave a window where another worker can disable
+            // the extension after the enabled-id query but before this process
+            // loads and executes its package capabilities.
             $packages = ExtensionPackage::query()
-                ->whereIn('extension_id', $enabledIds)
-                ->get(['extension_id', 'installed_version', 'state', 'manifest_version', 'capabilities', 'capability_hash', 'signature_state']);
+                ->join('extension_configs', 'extension_configs.extension_id', '=', 'extension_packages.extension_id')
+                ->where('extension_configs.enabled', true)
+                ->get([
+                    'extension_packages.extension_id',
+                    'extension_packages.installed_version',
+                    'extension_packages.state',
+                    'extension_packages.manifest_version',
+                    'extension_packages.capabilities',
+                    'extension_packages.capability_hash',
+                    'extension_packages.signature_state',
+                    'extension_packages.signature_key_id',
+                ]);
 
-            self::$coreExtensionIds = array_values(array_diff($enabledIds, $packages->pluck('extension_id')->all()));
+            $usableKeyIds = $this->usableKeyIdsFor($packages->pluck('signature_key_id')->all());
+
+            // A missing package row does not by itself make an id a trusted
+            // core extension. Only ids explicitly declared in the local core
+            // configuration receive that legacy treatment; otherwise a stale
+            // or manually inserted config row could bypass package/signature
+            // checks through the core-extension fallback.
+            $configuredCoreIds = array_keys((array) config('modules.extensions.available', []));
+            $coreExtensionIds = $configuredCoreIds === []
+                ? []
+                : ExtensionConfig::query()
+                    ->where('enabled', true)
+                    ->whereIn('extension_id', $configuredCoreIds)
+                    ->whereNotIn('extension_id', ExtensionPackage::query()->select('extension_id'))
+                    ->pluck('extension_id')
+                    ->all();
 
             $plan = [];
             foreach ($packages as $package) {
-                $entry = $this->entryFor($package);
+                $entry = $this->entryFor($package, $usableKeyIds);
                 if ($entry !== null) {
                     $plan[$entry->id] = $entry;
                 }
             }
 
-            return self::$plan = $plan;
+            return ['plan' => $plan, 'core' => $coreExtensionIds];
         } catch (\Throwable) {
-            // Do not memoize the failure: a fresh install may run artisan before
-            // the tables exist, and a later call in the same process (after
-            // migrations) should resolve the real plan.
-            return [];
+            // A fresh install may run artisan before the tables exist. Failing
+            // closed keeps the panel bootable and a later call re-checks the
+            // database rather than retaining the failure.
+            return ['plan' => [], 'core' => []];
         }
     }
 
@@ -154,9 +164,9 @@ class ExtensionRuntimePlanService
      */
     public function enabledIdsIncludingCoreExtensions(): array
     {
-        $this->plan();
+        $resolved = $this->resolve();
 
-        return array_values(array_merge(array_keys(self::$plan ?? []), self::$coreExtensionIds ?? []));
+        return array_values(array_merge(array_keys($resolved['plan']), $resolved['core']));
     }
 
     public function isEnabled(string $extensionId): bool
@@ -166,7 +176,30 @@ class ExtensionRuntimePlanService
 
     public function entry(string $extensionId): ?ExtensionRuntimeEntry
     {
-        return $this->plan()[$extensionId] ?? null;
+        if (!config('modules.extensions.enabled')) {
+            return null;
+        }
+
+        try {
+            $package = ExtensionPackage::query()
+                ->join('extension_configs', 'extension_configs.extension_id', '=', 'extension_packages.extension_id')
+                ->where('extension_packages.extension_id', $extensionId)
+                ->where('extension_configs.enabled', true)
+                ->first([
+                    'extension_packages.extension_id',
+                    'extension_packages.installed_version',
+                    'extension_packages.state',
+                    'extension_packages.manifest_version',
+                    'extension_packages.capabilities',
+                    'extension_packages.capability_hash',
+                    'extension_packages.signature_state',
+                    'extension_packages.signature_key_id',
+                ]);
+
+            return $package === null ? null : $this->entryFor($package);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -189,8 +222,9 @@ class ExtensionRuntimePlanService
 
     public static function flush(): void
     {
-        self::$plan = null;
-        self::$coreExtensionIds = null;
+        // Retained as a compatibility no-op for lifecycle callers and older
+        // extensions. Runtime state is resolved live, so there is no
+        // process-local plan left to invalidate.
     }
 
     /**
@@ -223,13 +257,17 @@ class ExtensionRuntimePlanService
             return 'manifest_version';
         }
 
-        if (!$this->signatureStateAllowed((string) $package->signature_state)) {
+        if (!$this->signatureStateAllowed((string) $package->signature_state, $package->signature_key_id)) {
             return 'signature';
         }
 
         $capabilities = $this->hydrate($package->capabilities);
         if ($capabilities === null) {
             return 'capabilities_missing';
+        }
+
+        if (!$this->unverifiedCapabilitiesAllowed((string) $package->signature_state, $capabilities)) {
+            return 'signature';
         }
 
         if ($package->capability_hash !== null && $capabilities->hash() !== $package->capability_hash) {
@@ -243,7 +281,7 @@ class ExtensionRuntimePlanService
      * Decide whether one installed package may load, and rehydrate its
      * capabilities from the stored projection.
      */
-    private function entryFor(ExtensionPackage $package): ?ExtensionRuntimeEntry
+    private function entryFor(ExtensionPackage $package, ?array $usableKeyIds = null): ?ExtensionRuntimeEntry
     {
         if (!in_array($package->state, self::EXECUTABLE_STATES, true)) {
             return null;
@@ -253,12 +291,19 @@ class ExtensionRuntimePlanService
             return null;
         }
 
-        if (!$this->signatureStateAllowed((string) $package->signature_state)) {
+        if (!$this->signatureStateAllowed((string) $package->signature_state, $package->signature_key_id, $usableKeyIds)) {
             return null;
         }
 
         $capabilities = $this->hydrate($package->capabilities);
         if ($capabilities === null) {
+            return null;
+        }
+
+        // Defense in depth for packages installed before the unsigned policy
+        // was tightened. A stale unsigned_acknowledged row cannot keep loading
+        // routes, pages, hooks, jobs or any other executable contribution.
+        if (!$this->unverifiedCapabilitiesAllowed((string) $package->signature_state, $capabilities)) {
             return null;
         }
 
@@ -276,26 +321,59 @@ class ExtensionRuntimePlanService
     /**
      * Signature policy.
      *
-     * Publisher signing is not implemented yet, so "unsigned" is currently
-     * acceptable and the panel's trust rests on the registry checksum plus
-     * review. Turning on extensions.signing.require_signature tightens this to
-     * packages that verified against the pinned key, plus ones an operator
-     * explicitly acknowledged as unsigned.
+     * When enforcement is enabled, only a verified package or an explicitly
+     * acknowledged unsigned package may enter the plan. The latter is checked
+     * separately below and is allowed only when it has no executable or
+     * privileged capabilities. Disabling enforcement is an explicit local
+     * development policy and retains the historical permissive behavior.
      */
-    private function signatureStateAllowed(string $state): bool
+    private function signatureStateAllowed(string $state, ?string $keyId, ?array $usableKeyIds = null): bool
     {
         if ($state === 'revoked') {
             return false;
         }
 
-        // Enforcement follows the same rule as the verifier: a panel with no
-        // pinned root cannot verify anything, so requiring a verified state
-        // there would make every installed package inert.
-        if (!app(ExtensionSignatureService::class)->signingRequired()) {
+        $signature = app(ExtensionSignatureService::class);
+        if (!$signature->signingRequired()) {
             return true;
         }
 
-        return in_array($state, ['verified', 'unsigned_acknowledged'], true);
+        if (!$signature->rootPinned()) {
+            return false;
+        }
+
+        if ($state === 'verified') {
+            return $usableKeyIds === null
+                ? $signature->isTrustedKeyUsable($keyId)
+                : in_array($keyId, $usableKeyIds, true);
+        }
+
+        return $state === 'unsigned_acknowledged';
+    }
+
+    /**
+     * @param array<int, mixed> $keyIds
+     *
+     * @return array<int, string>
+     */
+    private function usableKeyIdsFor(array $keyIds): array
+    {
+        $signature = app(ExtensionSignatureService::class);
+
+        return $signature->signingRequired()
+            ? $signature->usableTrustedKeyIds(array_values(array_filter($keyIds, 'is_string')))
+            : [];
+    }
+
+    private function unverifiedCapabilitiesAllowed(string $state, ExtensionCapabilitySet $capabilities): bool
+    {
+        if ($state !== 'unsigned_acknowledged'
+            || !app(ExtensionSignatureService::class)->signingRequired()) {
+            return true;
+        }
+
+        return app(ExtensionSignatureService::class)
+            ->restrictedCapabilitiesForUnverified($capabilities) === [];
     }
 
     /**

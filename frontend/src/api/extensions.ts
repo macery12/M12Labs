@@ -541,14 +541,25 @@ export interface BatchInstallItem {
     extensionId: string;
     repositoryId: number;
     version?: string;
+    approvedCapabilityHash?: string;
+    acknowledgeModifiedFiles?: boolean;
 }
 
 // POST /extensions/batch-install — install several packages in one rebuild.
 export async function batchInstallExtensions(items: BatchInstallItem[]): Promise<Extension[]> {
-    const { data } = await http.post(`${BASE}/batch-install`, {
-        extensions: items.map(i => ({ extension_id: i.extensionId, repository_id: i.repositoryId, version: i.version })),
-    });
-    return (data.data ?? []) as Extension[];
+    try {
+        const { data } = await http.post(`${BASE}/batch-install`, {
+            extensions: items.map(i => ({
+                extension_id: i.extensionId,
+                repository_id: i.repositoryId,
+                version: i.version,
+                approved_capability_hash: i.approvedCapabilityHash,
+            })),
+        });
+        return (data.data ?? []) as Extension[];
+    } catch (error) {
+        rethrowExtensionConflicts(error);
+    }
 }
 
 // A per-extension opt-in to drop data during a batch uninstall. `confirm` must
@@ -574,8 +585,18 @@ export async function batchUninstallExtensions(
 
 // POST /extensions/batch-update — update several packages in one rebuild.
 export async function batchUpdateExtensions(items: BatchInstallItem[]): Promise<Extension[]> {
-    const { data } = await http.post(`${BASE}/batch-update`, {
-        extensions: items.map(i => ({ extension_id: i.extensionId, repository_id: i.repositoryId, version: i.version })),
-    });
-    return (data.data ?? []) as Extension[];
+    try {
+        const { data } = await http.post(`${BASE}/batch-update`, {
+            extensions: items.map(i => ({
+                extension_id: i.extensionId,
+                repository_id: i.repositoryId,
+                version: i.version,
+                approved_capability_hash: i.approvedCapabilityHash,
+                acknowledge_modified_files: i.acknowledgeModifiedFiles,
+            })),
+        });
+        return (data.data ?? []) as Extension[];
+    } catch (error) {
+        rethrowExtensionConflicts(error);
+    }
 }

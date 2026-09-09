@@ -51,6 +51,7 @@ class ExtensionScheduleBuilder
     public function command(string $command, array $parameters = []): ExtensionScheduledTask
     {
         $name = trim(explode(' ', trim($command))[0]);
+        $extensionId = $this->extensionId;
 
         if (!in_array($name, $this->capabilities->commands, true)) {
             throw new DisplayException(sprintf('The extension [%s] scheduled [%s], which it did not declare under capabilities.commands.', $this->extensionId, $name));
@@ -59,6 +60,17 @@ class ExtensionScheduleBuilder
         $event = $this->schedule->command($command, $parameters)
             ->withoutOverlapping()
             ->onOneServer()
+            // schedule:work is a long-lived process. The event may have been
+            // registered while the extension was runnable, then become
+            // disabled/revoked or lose this declaration in an update. Filter
+            // at execution time so stale scheduler state cannot run it.
+            ->when(function () use ($extensionId, $name): bool {
+                $entry = app(ExtensionRuntimePlanService::class)->entry($extensionId);
+
+                return $entry !== null
+                    && $entry->capabilities->schedule
+                    && in_array($name, $entry->capabilities->commands, true);
+            })
             ->runInBackground();
 
         return new ExtensionScheduledTask($event, $this->extensionId);

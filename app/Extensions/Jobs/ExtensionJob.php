@@ -6,10 +6,12 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\Log;
 use Everest\Models\ExtensionQueueJob;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Queue\InteractsWithQueue;
 use Everest\Services\Queue\QueueTopology;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Everest\Services\Extensions\ExtensionQueueRegistry;
@@ -158,7 +160,20 @@ abstract class ExtensionJob implements ShouldQueue
         }
 
         if ($definition->parsedRateLimit() !== null) {
-            $middleware[] = new RateLimited($definition->limiterName($this->extensionId()));
+            [$count, $perSeconds] = $definition->parsedRateLimit();
+            $limiterName = $definition->limiterName($this->extensionId());
+
+            // Workers are long-lived and an extension can be enabled or update
+            // its queue contract after their service providers boot. Refresh
+            // this named limiter from the live manifest projection whenever a
+            // job builds its middleware; otherwise an absent/stale limiter can
+            // silently widen the extension's allowed throughput.
+            RateLimiter::for(
+                $limiterName,
+                fn () => Limit::perSecond($count, max(1, (int) ceil($perSeconds)))
+            );
+
+            $middleware[] = new RateLimited($limiterName);
         }
 
         if ($definition->maxConcurrent !== null) {

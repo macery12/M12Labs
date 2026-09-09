@@ -14,6 +14,7 @@ import {
     toggleExtension,
     installExtension,
     CapabilityApprovalRequired,
+    ModifiedFilesRequireAcknowledgement,
     type CapabilityDiff,
     batchInstallExtensions,
     batchUninstallExtensions,
@@ -22,9 +23,11 @@ import {
 import { BatchActionBar } from './BatchActionBar';
 import { DatabaseChangesModal, type DbModalExtension } from './DatabaseChangesModal';
 import { CapabilityApprovalModal } from './CapabilityApprovalModal';
+import { ModifiedFilesModal } from './ModifiedFilesModal';
 import { Spinner } from '@/components/ui/Spinner';
 import { Input } from '@/components/ui/Input';
 import { useFlashes } from '@/state/flashes';
+import { firstError } from '@/lib/apiError';
 import { cn } from '@/lib/cn';
 import { ExtensionsTable, type Sort, type SortKey } from './ExtensionsTable';
 import { extensionTone } from './extMeta';
@@ -61,6 +64,8 @@ function batchModalExtensions(
 }
 
 type Filter = 'all' | 'installed' | 'available' | 'updates';
+type BatchOperation = 'install' | 'update';
+type BatchConsentMap = Record<string, { approvedCapabilityHash?: string; acknowledgeModifiedFiles?: boolean }>;
 
 function SummaryCell({ icon: Icon, label, value, sub }: { icon: typeof Puzzle; label: string; value: string; sub?: string }) {
     return (
@@ -134,7 +139,8 @@ export default function ExtensionsOverviewPage() {
 
     const reportError = (err: unknown) => {
         const status = (err as { response?: { status?: number } })?.response?.status;
-        push({ type: 'error', message: status === 409 ? m['extensions.toast.running']() : m['common.states.genericError']() });
+        const fallback = status === 409 ? m['extensions.toast.running']() : m['common.states.genericError']();
+        push({ type: 'error', message: firstError(err) ?? fallback });
     };
 
     const toggle = useMutation({
@@ -151,6 +157,18 @@ export default function ExtensionsOverviewPage() {
     // manifest, so it can only answer once the archive has been fetched and
     // checked — hence a 409 on the real request rather than a preflight.
     const [pendingApproval, setPendingApproval] = useState<{ ext: Extension; diff: CapabilityDiff } | null>(null);
+    const [pendingBatchApproval, setPendingBatchApproval] = useState<{
+        operation: BatchOperation;
+        ext: Extension;
+        diff: CapabilityDiff;
+        consents: BatchConsentMap;
+    } | null>(null);
+    const [pendingBatchModified, setPendingBatchModified] = useState<{
+        ext: Extension;
+        verb: string;
+        paths: string[];
+        consents: BatchConsentMap;
+    } | null>(null);
 
     const install = useMutation({
         mutationFn: ({ ext, approvedCapabilityHash }: { ext: Extension; approvedCapabilityHash?: string }) =>
@@ -207,12 +225,26 @@ export default function ExtensionsOverviewPage() {
     };
 
     const batchInstall = useMutation({
-        mutationFn: () =>
+        mutationFn: (consents: BatchConsentMap) =>
             batchInstallExtensions(
-                forInstall.map(e => ({ extensionId: e.id, repositoryId: e.source.repositoryId!, version: e.latestVersion })),
+                forInstall.map(e => ({
+                    extensionId: e.id,
+                    repositoryId: e.source.repositoryId!,
+                    version: e.latestVersion,
+                    approvedCapabilityHash: consents[e.id]?.approvedCapabilityHash,
+                })),
             ),
         onSuccess: data => onBatchSuccess(data, () => m['extensions.toast.batchInstalled']({ count: forInstall.length })),
-        onError: reportError,
+        onError: (error, consents) => {
+            if (error instanceof CapabilityApprovalRequired) {
+                const ext = forInstall.find(item => item.id === error.extensionId);
+                if (ext) {
+                    setPendingBatchApproval({ operation: 'install', ext, diff: error.diff, consents });
+                    return;
+                }
+            }
+            reportError(error);
+        },
     });
 
     const batchUninstall = useMutation({
@@ -222,12 +254,34 @@ export default function ExtensionsOverviewPage() {
     });
 
     const batchUpdate = useMutation({
-        mutationFn: () =>
+        mutationFn: (consents: BatchConsentMap) =>
             batchUpdateExtensions(
-                forUpdate.map(e => ({ extensionId: e.id, repositoryId: e.source.repositoryId!, version: e.latestVersion })),
+                forUpdate.map(e => ({
+                    extensionId: e.id,
+                    repositoryId: e.source.repositoryId!,
+                    version: e.latestVersion,
+                    approvedCapabilityHash: consents[e.id]?.approvedCapabilityHash,
+                    acknowledgeModifiedFiles: consents[e.id]?.acknowledgeModifiedFiles,
+                })),
             ),
         onSuccess: data => onBatchSuccess(data, () => m['extensions.toast.batchUpdated']({ count: forUpdate.length })),
-        onError: reportError,
+        onError: (error, consents) => {
+            if (error instanceof CapabilityApprovalRequired) {
+                const ext = forUpdate.find(item => item.id === error.extensionId);
+                if (ext) {
+                    setPendingBatchApproval({ operation: 'update', ext, diff: error.diff, consents });
+                    return;
+                }
+            }
+            if (error instanceof ModifiedFilesRequireAcknowledgement) {
+                const ext = forUpdate.find(item => item.id === error.extensionId);
+                if (ext) {
+                    setPendingBatchModified({ ext, verb: error.verb, paths: error.paths, consents });
+                    return;
+                }
+            }
+            reportError(error);
+        },
     });
 
     // Enable/disable have no batch endpoint; fan out single toggles and report
@@ -565,10 +619,56 @@ export default function ExtensionsOverviewPage() {
                     extensions={batchModalExtensions(batchModal, { forInstall, forUninstall, forUpdate })}
                     onClose={() => setBatchModal(null)}
                     onConfirm={drops => {
-                        if (batchModal === 'install') batchInstall.mutate();
-                        else if (batchModal === 'update') batchUpdate.mutate();
+                        if (batchModal === 'install') batchInstall.mutate({});
+                        else if (batchModal === 'update') batchUpdate.mutate({});
                         else batchUninstall.mutate(drops);
                         setBatchModal(null);
+                    }}
+                />
+            )}
+
+            {pendingBatchApproval && (
+                <CapabilityApprovalModal
+                    open
+                    extensionName={pendingBatchApproval.ext.name}
+                    diff={pendingBatchApproval.diff}
+                    busy={pendingBatchApproval.operation === 'install' ? batchInstall.isPending : batchUpdate.isPending}
+                    onClose={() => setPendingBatchApproval(null)}
+                    onApprove={hash => {
+                        const pending = pendingBatchApproval;
+                        const consents = {
+                            ...pending.consents,
+                            [pending.ext.id]: {
+                                ...pending.consents[pending.ext.id],
+                                approvedCapabilityHash: hash,
+                            },
+                        };
+                        setPendingBatchApproval(null);
+                        if (pending.operation === 'install') batchInstall.mutate(consents);
+                        else batchUpdate.mutate(consents);
+                    }}
+                />
+            )}
+
+            {pendingBatchModified && (
+                <ModifiedFilesModal
+                    open
+                    extensionName={pendingBatchModified.ext.name}
+                    verb={pendingBatchModified.verb}
+                    paths={pendingBatchModified.paths}
+                    busy={batchUpdate.isPending}
+                    onClose={() => setPendingBatchModified(null)}
+                    onAcknowledge={() => {
+                        const pending = pendingBatchModified;
+                        const consents = {
+                            ...pending.consents,
+                            [pending.ext.id]: {
+                                ...pending.consents[pending.ext.id],
+                                acknowledgeModifiedFiles: true,
+                            },
+                        };
+                        setPendingBatchModified(null);
+                        batchUpdate.mutate(consents);
                     }}
                 />
             )}

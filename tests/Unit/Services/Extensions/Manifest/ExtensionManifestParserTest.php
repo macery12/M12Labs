@@ -385,4 +385,17 @@ class ExtensionManifestParserTest extends TestCase
 
         $this->parser->parse($manifest);
     }
+
+    public function testRejectsThePanelGeneratedPageManifestAsAPackageFile(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('reserved panel-generated file');
+
+        $this->parser->parse($this->manifest([
+            'files' => [[
+                'path' => 'frontend/src/extensions/packages/demo/extension.pages.json',
+                'sha256' => str_repeat('a', 64),
+            ]],
+        ]));
+    }
 }

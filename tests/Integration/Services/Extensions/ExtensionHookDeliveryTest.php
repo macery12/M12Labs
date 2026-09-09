@@ -75,6 +75,7 @@ class ExtensionHookDeliveryTest extends IntegrationTestCase
 
     private function installFixture(string $mode = 'synchronous_best_effort'): void
     {
+        $key = $this->trustExtensionSigningKey();
         $capabilities = new ExtensionCapabilitySet(
             hooks: [new HookDefinition(
                 event: 'server.pre_delete',
@@ -91,12 +92,8 @@ class ExtensionHookDeliveryTest extends IntegrationTestCase
             'installed_version' => '1.0.0',
             'manifest' => ['manifestVersion' => 3, 'extension' => ['id' => 'fixture_hooks']],
             'manifest_version' => 3,
-            // What ExtensionSignatureService::verify() records for a package
-            // installed while no signing root was pinned. The column default is
-            // 'unsigned', which no install path produces and which the runtime plan
-            // refuses once a root exists — so a fixture that leaves it unset is not
-            // a package this panel could actually have.
-            'signature_state' => 'unsigned_acknowledged',
+            'signature_state' => 'verified',
+            'signature_key_id' => $key->key_id,
             'capabilities' => $capabilities->jsonSerialize(),
             'capability_hash' => $capabilities->hash(),
             'state' => 'enabled',
@@ -280,12 +277,11 @@ class ExtensionHookDeliveryTest extends IntegrationTestCase
         $this->assertDatabaseMissing('servers', ['id' => $server->id]);
     }
 
-    /** A disabled extension's hooks do not fire. */
-    public function testADisabledExtensionReceivesNothing(): void
+    /** A long-lived dispatcher observes disablement without a manual flush. */
+    public function testADisabledExtensionReceivesNothingWithoutFlushingTheRuntimePlan(): void
     {
         $this->installFixture();
         ExtensionConfig::query()->where('extension_id', 'fixture_hooks')->update(['enabled' => false]);
-        ExtensionRuntimePlanService::flush();
 
         $server = $this->deletableServer();
 

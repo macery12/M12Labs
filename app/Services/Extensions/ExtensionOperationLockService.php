@@ -11,8 +11,15 @@ class ExtensionOperationLockService
     private const CONTEXT_KEY = 'm12labs:extensions:operation-context';
     private const LOCK_TTL_SECONDS = 1800;
 
+    public function __construct(
+        private ExtensionFilesystemOwnershipService $ownershipService,
+    ) {
+    }
+
     public function withinLock(string $action, ?string $subject, callable $callback)
     {
+        $this->assertSafeExecutionUser();
+
         $lock = Cache::lock(self::LOCK_KEY, self::LOCK_TTL_SECONDS);
 
         if (!$lock->get()) {
@@ -30,6 +37,26 @@ class ExtensionOperationLockService
         } finally {
             Cache::forget(self::CONTEXT_KEY);
             $lock->release();
+        }
+    }
+
+    /**
+     * Package migrations are ordinary in-process PHP. Running a lifecycle
+     * command as root would therefore promote reviewed extension code—and any
+     * file swapped into a web-writable package tree during an update—to root.
+     * Refuse that execution model rather than trying to make a recursive
+     * chown/copy/require sequence race-free.
+     */
+    private function assertSafeExecutionUser(): void
+    {
+        // The test runner in containers commonly has uid 0. Tests do not form
+        // a production trust boundary and need to exercise the lifecycle.
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        if ($this->ownershipService->isRunningAsRoot()) {
+            throw new DisplayException('Extension install, update, and uninstall operations may not run as root. Run the command as the panel service account (for example, sudo -u www-data php artisan ...).');
         }
     }
 

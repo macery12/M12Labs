@@ -1091,6 +1091,7 @@ CREATE TABLE `extension_trusted_keys` (
   `key_id` varchar(191) NOT NULL,
   `public_key` varchar(191) NOT NULL,
   `fingerprint` char(64) NOT NULL,
+  `root_fingerprint` char(64) DEFAULT NULL,
   `repository_id` bigint(20) unsigned DEFAULT NULL,
   `label` varchar(191) DEFAULT NULL,
   `valid_from` timestamp NULL DEFAULT NULL,
@@ -1102,6 +1103,7 @@ CREATE TABLE `extension_trusted_keys` (
   UNIQUE KEY `extension_trusted_keys_key_id_unique` (`key_id`),
   KEY `extension_trusted_keys_repository_id_foreign` (`repository_id`),
   KEY `extension_trusted_keys_fingerprint_index` (`fingerprint`),
+  KEY `extension_trusted_keys_root_fingerprint_index` (`root_fingerprint`),
   CONSTRAINT `extension_trusted_keys_repository_id_foreign` FOREIGN KEY (`repository_id`) REFERENCES `extension_repositories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1269,7 +1271,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(191) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mount_node`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

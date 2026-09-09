@@ -7,9 +7,14 @@ use Everest\Models\Subuser;
 use Illuminate\Http\Request;
 use Everest\Models\ExtensionConfig;
 use Symfony\Component\HttpFoundation\Response;
+use Everest\Services\Extensions\ExtensionRuntimePlanService;
 
 class EnsureExtensionAccess
 {
+    public function __construct(private ExtensionRuntimePlanService $plan)
+    {
+    }
+
     /**
      * Ensure the extension is enabled for the server and not disabled for the current subuser.
      */
@@ -20,6 +25,15 @@ class EnsureExtensionAccess
 
         $server = $request->route()?->parameter('server');
         if (!$server instanceof Server) {
+            return response('', 404);
+        }
+
+        // Routes may have been compiled or registered by a long-lived worker
+        // before this package was disabled, quarantined, revoked, or updated
+        // to drop client routes. Re-check the complete live runtime decision
+        // before any extension controller code is invoked.
+        $entry = $this->plan->entry($extensionId);
+        if ($entry === null || !$entry->capabilities->clientRoutes) {
             return response('', 404);
         }
 
