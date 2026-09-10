@@ -175,8 +175,9 @@ class ExtensionSignatureService
         string $archiveSha256,
         bool $acknowledgeUnsigned = false,
         ?string $initiator = null,
+        ?string $canonicalManifest = null,
     ): array {
-        $canonical = $this->canonicalizer->canonicalize($rawManifest);
+        $canonical = $canonicalManifest ?? $this->canonicalizer->canonicalize($rawManifest);
         $signature = $manifest->signature();
         $keyId = $manifest->signingKeyId();
 
@@ -400,7 +401,7 @@ class ExtensionSignatureService
     /**
      * Resolve several runtime/package checks with one trusted-key query.
      *
-     * @param array<int, string> $keyIds
+     * @param array<int, mixed> $keyIds
      *
      * @return array<int, string>
      */

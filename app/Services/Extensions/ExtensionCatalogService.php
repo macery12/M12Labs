@@ -214,8 +214,21 @@ class ExtensionCatalogService
                     $config = $configs->get($extensionId);
 
                     if (isset($localExtensions[$extensionId])) {
-                        $localExtensions[$extensionId]['latestVersion'] = $latestRelease['version'];
-                        $localExtensions[$extensionId]['compatiblePanelVersions'] = $latestRelease['compatiblePanelVersions'];
+                        $localExtension = $localExtensions[$extensionId];
+                        $installedRepositoryId = Arr::get($localExtension, 'source.repositoryId');
+
+                        // An installed package keeps using the repository it was
+                        // installed from. A second repository may publish the same
+                        // extension id, but must not silently become its update
+                        // source (or advertise a version the selected source does
+                        // not contain).
+                        if (($localExtension['status'] ?? null) !== 'core'
+                            && $installedRepositoryId !== null
+                            && (int) $installedRepositoryId !== (int) $repository->id
+                        ) {
+                            continue;
+                        }
+
                         // Only offer an update when the repository release is
                         // strictly NEWER than what's installed. A plain `!==`
                         // check mis-fires when a manually installed build is ahead
@@ -228,20 +241,45 @@ class ExtensionCatalogService
                         // only way out that keeps its data. Excluding it left
                         // every pre-v3 install with uninstall as the sole
                         // option.
-                        $localExtensions[$extensionId]['updateAvailable'] =
-                            in_array($localExtensions[$extensionId]['status'], ['installed', 'core', 'unsupported'], true)
+                        $updateAvailable =
+                            in_array($localExtension['status'], ['installed', 'core', 'unsupported'], true)
                             && version_compare(
                                 (string) $latestRelease['version'],
-                                (string) $localExtensions[$extensionId]['version'],
+                                (string) $localExtension['version'],
                                 '>'
                             );
 
-                        if ($this->shouldMirrorCoreExtensionFromRepository($localExtensions[$extensionId], $repository)) {
-                            $localExtensions[$extensionId] = $this->mirrorCoreExtensionFromRepository(
-                                $localExtensions[$extensionId],
+                        // Legacy and manual-file installs have no repository FK.
+                        // Once an enabled repository publishes a newer release
+                        // with the same extension id, expose that repository as
+                        // the update source. This is what lets a quarantined v1
+                        // package move directly to v3 through the panel instead
+                        // of requiring a manual uninstall or intermediate v2
+                        // install. Repositories are ordered official-first, so
+                        // the first eligible source wins deterministically.
+                        if (($localExtension['status'] ?? null) !== 'core'
+                            && $installedRepositoryId === null
+                            && !$updateAvailable
+                        ) {
+                            continue;
+                        }
+
+                        $localExtension['latestVersion'] = $latestRelease['version'];
+                        $localExtension['compatiblePanelVersions'] = $latestRelease['compatiblePanelVersions'];
+                        $localExtension['updateAvailable'] = $updateAvailable;
+
+                        if ($installedRepositoryId === null && $updateAvailable) {
+                            $localExtension['source'] = $this->repositorySource($repository);
+                        }
+
+                        if ($this->shouldMirrorCoreExtensionFromRepository($localExtension, $repository)) {
+                            $localExtension = $this->mirrorCoreExtensionFromRepository(
+                                $localExtension,
                                 $repository
                             );
                         }
+
+                        $localExtensions[$extensionId] = $localExtension;
 
                         continue;
                     }
@@ -288,15 +326,7 @@ class ExtensionCatalogService
                         // the same rule server-side).
                         'compatible' => $this->artifactService->isCompatiblePanelVersions($latestRelease['compatiblePanelVersions'] ?? []),
                         'compatiblePanelVersions' => $latestRelease['compatiblePanelVersions'],
-                        'source' => [
-                            'type' => 'repository',
-                            'label' => $repository->name,
-                            'official' => $repository->is_official,
-                            'repositoryId' => $repository->id,
-                            'repositoryName' => $repository->name,
-                            'homepageUrl' => $repository->homepage_url,
-                            'securityWarning' => $this->getRepositorySecurityWarning($repository),
-                        ],
+                        'source' => $this->repositorySource($repository),
                     ];
                 }
             } catch (\Throwable $exception) {
@@ -774,7 +804,17 @@ class ExtensionCatalogService
         $extension['installed'] = true;
         $extension['installable'] = false;
         $extension['canUninstall'] = false;
-        $extension['source'] = [
+        $extension['source'] = $this->repositorySource($repository);
+
+        return $extension;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function repositorySource(ExtensionRepository $repository): array
+    {
+        return [
             'type' => 'repository',
             'label' => $repository->name,
             'official' => (bool) $repository->is_official,
@@ -783,8 +823,6 @@ class ExtensionCatalogService
             'homepageUrl' => $repository->homepage_url,
             'securityWarning' => $this->getRepositorySecurityWarning($repository),
         ];
-
-        return $extension;
     }
 
     private function getRepositorySecurityWarning(?ExtensionRepository $repository): string

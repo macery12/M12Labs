@@ -454,7 +454,8 @@ class ExtensionPackageUpdateService
             $this->artifactService->extractArchive($archivePath, $extractPath);
 
             $this->progressService->report('update', $resolvedExtensionId ?? 'unknown', 'validating');
-            $manifest = $this->artifactService->readPackageManifest($extractPath);
+            $manifestDocument = $this->artifactService->readPackageManifestDocument($extractPath);
+            $manifest = $manifestDocument['manifest'];
             $parsedManifest = $this->artifactService->parseManifest($manifest, $extensionId, $expectedVersion);
             $resolvedExtensionId = $parsedManifest->id;
             $this->requirementService->assertSatisfied($parsedManifest);
@@ -483,6 +484,7 @@ class ExtensionPackageUpdateService
                 (string) $archiveChecksum,
                 $acknowledgeUnsigned && $sourceRepositoryId === null,
                 auth()->user()?->email,
+                $manifestDocument['canonical'],
             );
 
             if ($signature['state'] !== 'verified' && $this->signatureService->signingRequired()) {

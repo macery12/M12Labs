@@ -36,6 +36,35 @@ final class ExtensionManifestCanonicalizer
     }
 
     /**
+     * Canonicalize the manifest directly from its JSON representation.
+     *
+     * json_decode(..., true) cannot distinguish an empty JSON object (`{}`)
+     * from an empty JSON array (`[]`): both become an empty PHP array. That
+     * distinction is part of the signed bytes, so verification must retain it.
+     * Parsing and capability validation still consume associative arrays; only
+     * signature canonicalization uses this type-preserving document path.
+     */
+    public function canonicalizeJson(string $manifestJson): string
+    {
+        $manifest = json_decode($manifestJson, false, 512, JSON_THROW_ON_ERROR);
+        if (!$manifest instanceof \stdClass) {
+            throw new \JsonException('An extension manifest must be a JSON object.');
+        }
+
+        if (isset($manifest->integrity) && $manifest->integrity instanceof \stdClass) {
+            unset($manifest->integrity->signature);
+            if (get_object_vars($manifest->integrity) === []) {
+                unset($manifest->integrity);
+            }
+        }
+
+        return (string) json_encode(
+            $this->sort($manifest),
+            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+        );
+    }
+
+    /**
      * Message a publisher signs and the panel verifies. Domain-separated so a
      * signature over one artifact can never be replayed as one over another.
      *
@@ -60,6 +89,18 @@ final class ExtensionManifestCanonicalizer
 
     private function sort(mixed $value): mixed
     {
+        if ($value instanceof \stdClass) {
+            $properties = get_object_vars($value);
+            ksort($properties);
+
+            $sorted = new \stdClass();
+            foreach ($properties as $key => $item) {
+                $sorted->{$key} = $this->sort($item);
+            }
+
+            return $sorted;
+        }
+
         if (!is_array($value)) {
             return $value;
         }

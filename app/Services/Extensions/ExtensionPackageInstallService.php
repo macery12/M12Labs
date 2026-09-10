@@ -59,7 +59,7 @@ class ExtensionPackageInstallService
 
                 return $packageModel;
             } catch (\Throwable $exception) {
-                if ($committed && $packageModel instanceof ExtensionPackage) {
+                if ($committed) {
                     $this->reportPostCommitFailure($exception);
 
                     return $packageModel;
@@ -128,7 +128,7 @@ class ExtensionPackageInstallService
 
                 return $packageModel;
             } catch (\Throwable $exception) {
-                if ($committed && $packageModel instanceof ExtensionPackage) {
+                if ($committed) {
                     $this->reportPostCommitFailure($exception);
 
                     return $packageModel;
@@ -297,7 +297,8 @@ class ExtensionPackageInstallService
             $this->artifactService->extractArchive($archivePath, $extractPath);
 
             $this->progressService->report('install', $resolvedExtensionId ?? 'unknown', 'validating');
-            $manifest = $this->artifactService->readPackageManifest($extractPath);
+            $manifestDocument = $this->artifactService->readPackageManifestDocument($extractPath);
+            $manifest = $manifestDocument['manifest'];
             $parsedManifest = $this->artifactService->parseManifest($manifest, $expectedExtensionId, $expectedVersion);
             $extensionId = $parsedManifest->id;
             $resolvedExtensionId = $extensionId;
@@ -319,6 +320,7 @@ class ExtensionPackageInstallService
                 // for anything fetched from a repository.
                 $acknowledgeUnsigned && $sourceRepositoryId === null,
                 auth()->user()?->email,
+                $manifestDocument['canonical'],
             );
 
             // Defense in depth for unsigned packages admitted through the

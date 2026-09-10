@@ -68,6 +68,18 @@ class ExtensionManifestCanonicalizerTest extends TestCase
         $this->assertStringContainsString('Ünïcode', $output);
     }
 
+    public function testJsonCanonicalizationPreservesEmptyObjectsAndArrays(): void
+    {
+        $output = $this->canonicalizer->canonicalizeJson(
+            '{"settings":{},"allowedEggs":[],"integrity":{"signature":"ignored","keyId":"release-key"}}'
+        );
+
+        $this->assertSame(
+            '{"allowedEggs":[],"integrity":{"keyId":"release-key"},"settings":{}}',
+            $output
+        );
+    }
+
     /** Domain separation stops a signature over one artifact being replayed for another. */
     public function testSigningMessageIsDomainSeparatedAndVersionBound(): void
     {

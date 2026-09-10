@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Extensions\Manifest\ExtensionManifest;
 use Everest\Services\Extensions\Manifest\ExtensionManifestParser;
+use Everest\Services\Extensions\Manifest\ExtensionManifestCanonicalizer;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilityFileValidator;
 
 class ExtensionPackageArtifactService
@@ -20,6 +21,7 @@ class ExtensionPackageArtifactService
         private ExtensionCapabilityFileValidator $capabilityFileValidator,
         private ExtensionArchiveExtractor $archiveExtractor,
         private ExtensionRemoteResourceService $remoteResourceService,
+        private ExtensionManifestCanonicalizer $manifestCanonicalizer,
     ) {
     }
 
@@ -43,7 +45,7 @@ class ExtensionPackageArtifactService
 
             $manifestLimit = (int) config('extensions.archive.max_manifest_bytes', 512 * 1024);
             $manifestStat = $zip->statIndex($manifestIndex);
-            if (!is_array($manifestStat) || (int) ($manifestStat['size'] ?? 0) > $manifestLimit) {
+            if (!is_array($manifestStat) || (int) $manifestStat['size'] > $manifestLimit) {
                 throw new DisplayException(sprintf('The extension package manifest is larger than the permitted %d bytes.', $manifestLimit));
             }
 
@@ -245,6 +247,18 @@ class ExtensionPackageArtifactService
      */
     public function readPackageManifest(string $extractPath): array
     {
+        return $this->readPackageManifestDocument($extractPath)['manifest'];
+    }
+
+    /**
+     * Read one manifest in both forms needed downstream: an associative array
+     * for strict schema parsing and type-preserved canonical JSON for signature
+     * verification.
+     *
+     * @return array{manifest: array<string, mixed>, canonical: string}
+     */
+    public function readPackageManifestDocument(string $extractPath): array
+    {
         $manifestPath = $extractPath . '/' . self::MANIFEST_FILENAME;
         if (!is_file($manifestPath)) {
             throw new DisplayException('The extension archive did not include an m12labs-extension.json manifest.');
@@ -255,12 +269,16 @@ class ExtensionPackageArtifactService
             throw new DisplayException(sprintf('The extension package manifest is larger than the permitted %d bytes.', $manifestLimit));
         }
 
-        $manifest = json_decode(File::get($manifestPath), true, 512, JSON_THROW_ON_ERROR);
+        $manifestJson = File::get($manifestPath);
+        $manifest = json_decode($manifestJson, true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($manifest)) {
             throw new DisplayException('The extension package manifest is invalid.');
         }
 
-        return $manifest;
+        return [
+            'manifest' => $manifest,
+            'canonical' => $this->manifestCanonicalizer->canonicalizeJson($manifestJson),
+        ];
     }
 
     /**
