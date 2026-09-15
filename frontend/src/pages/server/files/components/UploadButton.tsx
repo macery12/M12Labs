@@ -21,7 +21,16 @@ interface Upload {
 // Upload files to the current directory via the daemon's signed upload URL.
 // Shows a per-file progress list with cancel (restores V1's upload feedback,
 // which V2 had dropped down to a greyed-out button) plus a drag-and-drop overlay.
-export function UploadButton({ uuid, directory }: { uuid: string; directory: string }) {
+export function UploadButton({
+    uuid,
+    directory,
+    uploadLimitMib,
+}: {
+    uuid: string;
+    directory: string;
+    /** The node's per-file ceiling in MiB; 0 means unlimited. */
+    uploadLimitMib: number;
+}) {
     const inputRef = useRef<HTMLInputElement>(null);
     const qc = useQueryClient();
     const push = useFlashes(s => s.push);
@@ -63,23 +72,42 @@ export function UploadButton({ uuid, directory }: { uuid: string; directory: str
     const clearFinished = () =>
         setUploads(prev => Object.fromEntries(Object.entries(prev).filter(([, u]) => !u.done && !u.error)));
 
-    const submit = async (files: FileList) => {
+    const submit = async (files: FileList, fromDrop = false) => {
         const list = Array.from(files);
         if (list.length === 0) return;
-        if (list.some(f => !f.type && (!f.size || f.size === 4096))) {
+        // Dropped directories surface as typeless entries of 0 or 4096 bytes.
+        // Only apply that heuristic to drops — via the file picker it is a false
+        // positive that rejects legitimate uploads (an empty .env, any typeless
+        // 4096-byte file).
+        if (fromDrop && list.some(f => !f.type && (!f.size || f.size === 4096))) {
             push({ type: 'error', message: m['server.files.folderUploadUnsupported']() });
             return;
         }
 
-        let url: string;
-        try {
-            url = await getFileUploadUrl(uuid);
-        } catch (e) {
-            push({ type: 'error', message: firstError(e) ?? m['common.states.genericError']() });
-            return;
+        // Refuse an oversized file here rather than spending the whole transfer
+        // on it. The node's limit is the same number the panel writes into the
+        // daemon's api.upload_limit, and the daemon enforces it mid-stream —
+        // aborting the request and leaving a truncated partial file behind.
+        const limitBytes = uploadLimitMib > 0 ? uploadLimitMib * 1024 * 1024 : 0;
+        const oversized = limitBytes > 0 ? list.filter(file => file.size > limitBytes) : [];
+
+        if (oversized.length > 0) {
+            for (const file of oversized) {
+                push({
+                    type: 'error',
+                    message: m['server.files.uploadTooLarge']({
+                        name: file.name,
+                        size: formatBytes(file.size),
+                        limit: formatBytes(limitBytes),
+                    }),
+                });
+            }
         }
 
-        const started = list.map(file => ({ file, controller: new AbortController() }));
+        const accepted = limitBytes > 0 ? list.filter(file => file.size <= limitBytes) : list;
+        if (accepted.length === 0) return;
+
+        const started = accepted.map(file => ({ file, controller: new AbortController() }));
         setUploads(prev => {
             const next = { ...prev };
             for (const { file, controller } of started) {
@@ -88,39 +116,60 @@ export function UploadButton({ uuid, directory }: { uuid: string; directory: str
             return next;
         });
 
-        const results = await Promise.allSettled(
-            started.map(({ file, controller }) =>
-                axios
-                    .post(
-                        url,
-                        { files: file },
-                        {
-                            headers: { 'Content-Type': 'multipart/form-data' },
-                            params: { directory },
-                            signal: controller.signal,
-                            onUploadProgress: e =>
-                                patch(file.name, { loaded: e.loaded, total: e.total ?? file.size }),
-                        },
-                    )
-                    .then(() => patch(file.name, { done: true, loaded: file.size }))
-                    .catch(err => {
-                        // A user-cancelled upload is already removed from state; don't flag it.
-                        if (axios.isCancel(err)) throw err;
-                        patch(file.name, { error: true });
-                        throw err;
-                    }),
-            ),
-        );
+        // One signed URL per file. The daemon budgets each upload token for a
+        // small number of uses (`max_jwt_uses`, 5 by default), so reusing a
+        // single URL across a multi-file selection made every file past the
+        // fifth fail with "token has already been used".
+        const uploadOne = async ({ file, controller }: { file: File; controller: AbortController }) => {
+            try {
+                const url = await getFileUploadUrl(uuid);
+                await axios.post(
+                    url,
+                    { files: file },
+                    {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                        // Deliberately no `total_size`: it would let the daemon
+                        // reject an oversized file before the transfer, but it
+                        // also arms a disk-quota pre-check that measures the new
+                        // size against whole-server cached usage without
+                        // crediting the file being replaced — re-uploading a
+                        // large file in place on a near-full server would start
+                        // failing. Left off until the daemon accounts for that.
+                        params: { directory },
+                        signal: controller.signal,
+                        onUploadProgress: e => patch(file.name, { loaded: e.loaded, total: e.total ?? file.size }),
+                    },
+                );
+                patch(file.name, { done: true, loaded: file.size });
+            } catch (err) {
+                // A user-cancelled upload is already removed from state; don't flag it.
+                if (axios.isCancel(err)) throw err;
+                patch(file.name, { error: true });
+                throw err;
+            }
+        };
+
+        const results = await Promise.allSettled(started.map(uploadOne));
 
         const ok = results.filter(r => r.status === 'fulfilled').length;
-        const failed = results.filter(
-            r => r.status === 'rejected' && !axios.isCancel((r as PromiseRejectedResult).reason),
-        ).length;
+        const failures = results.filter(
+            (r): r is PromiseRejectedResult => r.status === 'rejected' && !axios.isCancel(r.reason),
+        );
         if (ok > 0) {
             push({ type: 'success', message: m['server.files.uploaded']({ count: ok }) });
             await qc.invalidateQueries({ queryKey: ['server-files', uuid] });
         }
-        if (failed > 0) push({ type: 'error', message: m['server.files.uploadFailed']({ count: failed }) });
+        if (failures.length > 0) {
+            // Surface the daemon's own reason (size limit, disk quota, …) when it
+            // gave one — a bare failure count told the user nothing actionable.
+            const reason = firstError(failures[0]?.reason);
+            push({
+                type: 'error',
+                message: reason
+                    ? `${m['server.files.uploadFailed']({ count: failures.length })} ${reason}`
+                    : m['server.files.uploadFailed']({ count: failures.length }),
+            });
+        }
         // Auto-clear the tray shortly after everything settles.
         setTimeout(clearFinished, 2500);
     };
@@ -135,7 +184,7 @@ export function UploadButton({ uuid, directory }: { uuid: string; directory: str
                     onDrop={e => {
                         e.preventDefault();
                         setDragging(false);
-                        if (e.dataTransfer?.files.length) void submit(e.dataTransfer.files);
+                        if (e.dataTransfer?.files.length) void submit(e.dataTransfer.files, true);
                     }}
                 >
                     <div className="flex items-center gap-4 rounded-[var(--radius-card)] border-2 border-dashed border-[var(--brand)] bg-[var(--color-surface)] px-8 py-6">

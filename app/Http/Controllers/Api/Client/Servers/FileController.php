@@ -61,13 +61,20 @@ class FileController extends ClientApiController
         return false;
     }
 
+    /**
+     * True when the path lies *inside* an archive the daemon walks as a folder.
+     *
+     * Only the container segments count. Testing the final segment too meant a
+     * plain text file named notes.gz, or any file whose own name merely ended
+     * in an archive extension, was refused with "you cannot write to a file
+     * inside an archive" — the write target is not the archive it is in.
+     */
     private function isArchiveReadOnlyPath(string $path): bool
     {
-        $segments = array_values(array_filter(explode('/', str_replace('\\\\', '/', trim($path))), fn (string $segment) => $segment !== ''));
+        $segments = array_values(array_filter(explode('/', str_replace('\\', '/', trim($path))), fn (string $segment) => $segment !== ''));
 
-        if (count($segments) === 0) {
-            return false;
-        }
+        // Drop the leaf: the thing being written, not a directory it sits under.
+        array_pop($segments);
 
         foreach ($segments as $segment) {
             if ($this->isArchivePathSegment($segment)) {
@@ -145,7 +152,11 @@ class FileController extends ClientApiController
             ->setScope(NodeJWTService::SCOPE_FILE_DOWNLOAD)
             ->setUser($request->user())
             ->setClaims([
-                'file_path' => rawurldecode($request->get('file')),
+                // No rawurldecode here: Laravel has already decoded the query
+                // parameter, and GetFileContentsRequest has normalized it. A
+                // second decode both mangled any name containing a literal '%'
+                // and let a double-encoded %2e%2e slip past that normalization.
+                'file_path' => $request->get('file'),
                 'server_uuid' => $server->uuid,
             ])
             ->handle($server->node, $request->user()->id . $server->uuid);
@@ -187,7 +198,11 @@ class FileController extends ClientApiController
             ->setScope(NodeJWTService::SCOPE_FILE_DOWNLOAD)
             ->setUser($request->user())
             ->setClaims([
-                'file_path' => rawurldecode($request->get('file')),
+                // No rawurldecode here: Laravel has already decoded the query
+                // parameter, and GetFileContentsRequest has normalized it. A
+                // second decode both mangled any name containing a literal '%'
+                // and let a double-encoded %2e%2e slip past that normalization.
+                'file_path' => $request->get('file'),
                 'server_uuid' => $server->uuid,
             ])
             ->handle($server->node, $request->user()->id . $server->uuid);
@@ -233,17 +248,18 @@ class FileController extends ClientApiController
     {
         $file = (string) $request->input('file');
         $content = (string) $request->input('content');
-        $originalContent = (string) $request->input('original_content');
 
         $this->guardArchiveWritePath($file);
 
         // Compare immediately before mutation against content read from Wings.
-        // The submitted original is only a CAS token; it is never trusted as
-        // the source for the audit diff.
+        // The submitted original is only a CAS token — a sha256 the caller sends
+        // directly, or one derived from a full copy it sent instead. Neither is
+        // ever trusted as the source for the audit diff, which is computed from
+        // the live content below.
         $repository = $this->fileRepository->setServer($server);
         $liveContent = $repository->getContent($file, WriteFileWithDiffRequest::MAX_CONTENT_BYTES);
 
-        if (!hash_equals(hash('sha256', $liveContent), hash('sha256', $originalContent))) {
+        if (!hash_equals(hash('sha256', $liveContent), $request->originalHash())) {
             return new JsonResponse([
                 'errors' => [[
                     'code' => 'FileContentConflict',
@@ -417,7 +433,7 @@ class FileController extends ClientApiController
      */
     public function pull(PullFileRequest $request, Server $server): JsonResponse
     {
-        $this->fileRepository->setServer($server)->pull(
+        $response = $this->fileRepository->setServer($server)->pull(
             $request->input('url'),
             $request->input('directory'),
             $request->safe(['filename', 'use_header', 'foreground'])
@@ -427,6 +443,62 @@ class FileController extends ClientApiController
             ->property('directory', $request->input('directory'))
             ->property('url', $request->input('url'))
             ->log();
+
+        // A background pull is acknowledged with the identifier that tracks it.
+        // Hand that back so the caller can follow it via pullStatus() instead of
+        // guessing when the file has landed.
+        $decoded = json_decode($response->getBody()->__toString(), true);
+        $identifier = is_array($decoded) ? ($decoded['identifier'] ?? null) : null;
+
+        if (!is_string($identifier)) {
+            return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        }
+
+        return new JsonResponse([
+            'object' => 'file_pull',
+            'attributes' => ['identifier' => $identifier],
+        ], Response::HTTP_ACCEPTED);
+    }
+
+    /**
+     * Progress of the pulls currently in flight for this server.
+     *
+     * The browser never reaches the daemon directly: this is an authenticated
+     * client-API route bound to one server, gated on the same permission as
+     * starting a pull and throttled, and the daemon leg is the panel's own
+     * node-authenticated connection. So polling exposes no new authority — a
+     * caller can only ever see pulls on a server it may already write to.
+     *
+     * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
+     */
+    public function pullStatus(PullFileRequest $request, Server $server): JsonResponse
+    {
+        $downloads = $this->fileRepository->setServer($server)->pulls();
+
+        return new JsonResponse([
+            'object' => 'list',
+            'data' => array_values(array_map(fn (array $download): array => [
+                'object' => 'file_pull',
+                'attributes' => [
+                    'identifier' => (string) ($download['identifier'] ?? ''),
+                    'destination' => (string) ($download['destination'] ?? ''),
+                    'progress' => (int) ($download['progress'] ?? 0),
+                    'total' => (int) ($download['total'] ?? 0),
+                ],
+            ], array_filter($downloads, 'is_array'))),
+        ]);
+    }
+
+    /**
+     * Aborts one in-flight pull.
+     *
+     * @throws \Everest\Exceptions\Http\Connection\DaemonConnectionException
+     */
+    public function cancelPull(PullFileRequest $request, Server $server, string $identifier): JsonResponse
+    {
+        $this->fileRepository->setServer($server)->cancelPull($identifier);
+
+        Activity::event('server:file.pull-cancel')->property('identifier', $identifier)->log();
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }

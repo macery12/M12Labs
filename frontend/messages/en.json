@@ -4604,5 +4604,13 @@
   "tickets.thread.staff": "Staff",
   "tickets.thread.unknown": "Unknown user",
   "tickets.title": "Support Tickets",
-  "tickets.updatedAgo": "Updated {ago}"
+  "tickets.updatedAgo": "Updated {ago}",
+  "server.files.editor.overwriteTitle": "Replace existing file?",
+  "server.files.editor.overwriteBody": "{name} already exists in this folder. Creating it will replace everything in it.",
+  "server.files.editor.overwriteConfirm": "Replace file",
+  "server.files.uploadTooLarge": "{name} is {size}. This node accepts files up to {limit}.",
+  "server.files.pull.progressTitle": "Remote downloads",
+  "server.files.pull.waiting": "Starting\u2026",
+  "server.files.pull.finished": "Download finished.",
+  "server.files.pull.cancelled": "Download cancelled."
 }

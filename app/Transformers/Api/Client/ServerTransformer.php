@@ -73,6 +73,12 @@ class ServerTransformer extends Transformer
             'node_id' => $server->node_id,
             'is_node_under_maintenance' => $server->node->isUnderMaintenance(),
             'is_node_supercharged' => $server->node->isSupercharged(),
+            // The node's per-file upload ceiling, in MiB. This is the value the
+            // panel writes into the daemon's own api.upload_limit, so it lets
+            // the file manager refuse an oversized file before spending the
+            // transfer — the daemon otherwise aborts mid-stream and leaves a
+            // truncated partial file behind.
+            'node_upload_size' => (int) $server->node->upload_size,
             'sftp_details' => [
                 'ip' => $server->node->fqdn,
                 'port' => $server->node->public_port_sftp,

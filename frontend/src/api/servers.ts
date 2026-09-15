@@ -72,6 +72,8 @@ export interface ServerDetail extends ServerListItem {
     isTransferring: boolean;
     isSuspended: boolean;
     isNodeSupercharged: boolean;
+    /** The node's per-file upload ceiling in MiB (0 means unlimited). */
+    nodeUploadSize: number;
     isDeletionScheduled: boolean;
     permissions: string[];
     sftp: { ip: string; port: number };
@@ -124,6 +126,7 @@ export async function getServer(id: string): Promise<ServerDetail> {
         isTransferring: a.is_transferring ?? false,
         isSuspended: a.status === 'suspended',
         isNodeSupercharged: a.is_node_supercharged ?? false,
+        nodeUploadSize: Number(a.node_upload_size ?? 0),
         isDeletionScheduled: a.is_deletion_scheduled ?? false,
         isOwner,
         permissions,

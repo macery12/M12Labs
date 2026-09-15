@@ -17,11 +17,14 @@ export function PullModal({
     directory,
     open,
     onClose,
+    onStarted,
 }: {
     uuid: string;
     directory: string;
     open: boolean;
     onClose: () => void;
+    /** Called once the daemon has accepted the pull, so its progress can be followed. */
+    onStarted?: () => void;
 }) {
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
@@ -40,6 +43,9 @@ export function PullModal({
         mutationFn: () => pullFile(uuid, { url: url.trim(), directory, filename: filename.trim() }),
         onSuccess: async () => {
             push({ type: 'success', message: m['server.files.pull.started']() });
+            // The file is not there yet — the pull runs in the background. Hand
+            // off to the progress tray rather than pretending it has landed.
+            onStarted?.();
             await qc.invalidateQueries({ queryKey: ['server-files', uuid, directory] });
             reset();
         },

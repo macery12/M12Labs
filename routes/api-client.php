@@ -264,6 +264,13 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             Route::post('/create-folder', [Client\Servers\FileController::class, 'create']);
             Route::post('/chmod', [Client\Servers\FileController::class, 'chmod']);
             Route::post('/pull', [Client\Servers\FileController::class, 'pull'])->middleware(['throttle:10,5']);
+            // Polled while a background pull runs. Its own throttle: the write
+            // limiter above is deliberately tight, and a read-only progress
+            // check must not consume the budget for starting pulls.
+            Route::get('/pull', [Client\Servers\FileController::class, 'pullStatus'])->middleware(['throttle:120,1']);
+            Route::delete('/pull/{identifier}', [Client\Servers\FileController::class, 'cancelPull'])
+                ->where('identifier', '[0-9a-fA-F-]{36}')
+                ->middleware(['throttle:10,5']);
             Route::get('/upload', Client\Servers\FileUploadController::class);
         });
 
