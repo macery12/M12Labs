@@ -13,9 +13,12 @@ use Everest\Services\Queue\FailedJobRedactor;
  * one that catches people out: Laravel interpolates a query's bindings into the
  * QueryException message, so a failed write stores its column values verbatim.
  *
- * These cover the pass that always runs -- the AI module's privacy setting is
- * switched off throughout, because an admin page must not become more revealing
- * because somebody changed a setting in a different module.
+ * The AI module's privacy setting is switched off throughout, and that is now
+ * the assertion rather than the setup: redaction here used to run the fuzzy
+ * pass only when that setting was on, so an admin page got more revealing
+ * because somebody changed a setting in a different module. The engine is
+ * core's now and takes its categories as an argument, so both passes run
+ * whatever the AI module is configured to do -- or whether it is installed.
  */
 class FailedJobRedactorTest extends TestCase
 {
@@ -31,15 +34,30 @@ class FailedJobRedactorTest extends TestCase
         return $this->app->make(FailedJobRedactor::class);
     }
 
-    public function testCredentialKeysAreMaskedInAPayload(): void
+    /**
+     * Both passes, and the fact that they are distinguishable.
+     *
+     * A credential is masked structurally, by key name, to the flat `[redacted]`
+     * sentinel -- this class owns credentials and deliberately withholds the
+     * `secret` category from the engine. Personal data is masked by the engine
+     * into a typed token instead. An operator reading the page can therefore
+     * tell "this was a credential" from "this was somebody's address", which a
+     * single sentinel for both would lose.
+     */
+    public function testCredentialsAndPersonalDataAreMaskedByDifferentPasses(): void
     {
         $out = $this->redactor()->redact([
             'displayName' => 'Everest\\Jobs\\Email\\SendEmailJob',
             'data' => ['commandName' => 'SendEmailJob', 'api_key' => 'sk-live-abcdef', 'to' => 'ops@example.test'],
         ]);
 
-        $this->assertSame('[redacted]', $out['data']['api_key']);
-        $this->assertSame('ops@example.test', $out['data']['to'], 'Masking is for credentials, not for everything.');
+        $this->assertSame('[redacted]', $out['data']['api_key'], 'Credentials are the structural pass.');
+        $this->assertMatchesRegularExpression(
+            '/^\[email_[0-9a-f]{6,}]$/',
+            $out['data']['to'],
+            'Personal data is the engine, and it runs with the AI module switched off.'
+        );
+        $this->assertSame('SendEmailJob', $out['data']['commandName'], 'Masking is not for everything.');
     }
 
     /**

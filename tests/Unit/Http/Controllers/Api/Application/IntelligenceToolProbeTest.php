@@ -6,7 +6,7 @@ use Everest\Tests\TestCase;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Agent\ToolBudget;
 use Everest\Services\AI\Data\ProviderConfig;
-use Everest\Services\AI\Privacy\PiiRedactor;
+use Everest\Services\AI\Privacy\AiRedactionPolicy;
 use Everest\Services\AI\Providers\AbstractProvider;
 use Everest\Exceptions\Service\AI\AIServiceException;
 use Everest\Services\AI\Providers\OpenAiCompatibleProvider;
@@ -133,7 +133,7 @@ class IntelligenceToolProbeTest extends TestCase
     {
         return new IntelligenceController(
             $factory,
-            \Mockery::mock(PiiRedactor::class),
+            \Mockery::mock(AiRedactionPolicy::class),
             \Mockery::mock(ToolBudget::class),
             \Mockery::mock(\Everest\Services\Authorization\AdminAuthorizer::class),
         );

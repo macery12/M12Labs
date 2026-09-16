@@ -20,7 +20,7 @@ use Everest\Services\AI\Agent\AgentRunner;
 use Everest\Services\AI\Agent\AgentContext;
 use Everest\Services\AI\Agent\TurnRecorder;
 use Everest\Services\AI\Tools\ToolRegistry;
-use Everest\Services\AI\Privacy\RedactionMap;
+use Everest\Services\Privacy\RedactionMap;
 use Everest\Services\AI\Tools\ToolDefinition;
 use Everest\Services\AI\Inference\InferenceGate;
 use Everest\Services\AI\Support\AiBudgetService;

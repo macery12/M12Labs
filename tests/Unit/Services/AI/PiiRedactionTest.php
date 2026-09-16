@@ -6,10 +6,11 @@ use Everest\Models\User;
 use Everest\Models\Setting;
 use Everest\Tests\TestCase;
 use Everest\Services\AI\ProviderFactory;
+use Everest\Services\Privacy\PiiRedactor;
+use Everest\Services\Privacy\RedactionMap;
 use Everest\Services\AI\Agent\AgentContext;
 use Everest\Services\AI\Data\ProviderConfig;
-use Everest\Services\AI\Privacy\PiiRedactor;
-use Everest\Services\AI\Privacy\RedactionMap;
+use Everest\Services\AI\Privacy\AiRedactionPolicy;
 
 /**
  * Keeping customer data out of the request.
@@ -25,7 +26,17 @@ use Everest\Services\AI\Privacy\RedactionMap;
  */
 class PiiRedactionTest extends TestCase
 {
-    private PiiRedactor $redactor;
+    /**
+     * The AI module's gate over the core engine.
+     *
+     * These tests exercise redaction the way the AI module actually reaches it
+     * — through the operator settings — so they run against the policy rather
+     * than the engine underneath it. PiiRedactor is still imported, for the
+     * category constants it owns. The engine's own contract (that it obeys the
+     * categories it is handed and reads no settings at all) is asserted
+     * separately in tests/Unit/Services/Privacy.
+     */
+    private AiRedactionPolicy $redactor;
 
     public function setUp(): void
     {
@@ -38,7 +49,7 @@ class PiiRedactionTest extends TestCase
         Setting::forget('settings::modules:ai:privacy:categories');
         Setting::forget('settings::modules:ai:provider');
 
-        $this->redactor = app(PiiRedactor::class);
+        $this->redactor = app(AiRedactionPolicy::class);
     }
 
     public function testOpenRouterForcesEveryCategoryWithoutOverwritingStoredPreferences(): void
@@ -291,7 +302,7 @@ class PiiRedactionTest extends TestCase
     public function testNameAndAddressCategoriesDoNotPretendToDeidentifyFreeText(): void
     {
         Setting::set('settings::modules:ai:privacy:categories', json_encode(['name', 'address']));
-        $redactor = app(PiiRedactor::class);
+        $redactor = app(AiRedactionPolicy::class);
 
         $fixtures = [
             'ticket' => 'My name is Alice Smith; send it to 12 High Street, London.',
@@ -497,7 +508,7 @@ class PiiRedactionTest extends TestCase
         Setting::set('settings::modules:ai:privacy:enabled', '0');
 
         $map = new RedactionMap();
-        $out = app(PiiRedactor::class)->redact(['email' => 'jo@example.com'], $map);
+        $out = app(AiRedactionPolicy::class)->redact(['email' => 'jo@example.com'], $map);
 
         $this->assertSame('jo@example.com', $out['email']);
         $this->assertTrue($map->isEmpty());
@@ -515,7 +526,7 @@ class PiiRedactionTest extends TestCase
 
         Setting::set('settings::modules:ai:privacy:categories', json_encode(['email']));
 
-        $this->assertSame($token, app(PiiRedactor::class)->redactText($token, new RedactionMap()));
+        $this->assertSame($token, app(AiRedactionPolicy::class)->redactText($token, new RedactionMap()));
     }
 
     public function testCredentialLikeStartupVariablesAreStructurallyMasked(): void
@@ -565,7 +576,7 @@ class PiiRedactionTest extends TestCase
     {
         Setting::set('settings::modules:ai:privacy:categories', json_encode(['email', 'not_a_category']));
 
-        $this->assertSame(['email'], app(PiiRedactor::class)->activeKinds());
+        $this->assertSame(['email'], app(AiRedactionPolicy::class)->activeKinds());
     }
 
     public function testAnUnsetCategoryListMeansTheDefaultsNotNone(): void

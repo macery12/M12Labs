@@ -10,7 +10,7 @@ use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Agent\ToolBudget;
 use Everest\Services\Email\EmailRedactor;
 use Everest\Services\Mods\ModrinthService;
-use Everest\Services\AI\Privacy\PiiRedactor;
+use Everest\Services\AI\Privacy\AiRedactionPolicy;
 use Everest\Services\Authorization\AdminAuthorizer;
 use Everest\Http\Controllers\Api\Application\ModsController;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
@@ -36,7 +36,7 @@ class SensitiveSettingsLoggingTest extends TestCase
 
         $controller = new IntelligenceController(
             \Mockery::mock(ProviderFactory::class),
-            app(PiiRedactor::class),
+            app(AiRedactionPolicy::class),
             app(ToolBudget::class),
             app(AdminAuthorizer::class),
         );
@@ -73,7 +73,7 @@ class SensitiveSettingsLoggingTest extends TestCase
         $authorizer->shouldReceive('isInteractiveOwner')->once()->andReturn(false);
         $controller = new IntelligenceController(
             \Mockery::mock(ProviderFactory::class),
-            app(PiiRedactor::class),
+            app(AiRedactionPolicy::class),
             app(ToolBudget::class),
             $authorizer,
         );

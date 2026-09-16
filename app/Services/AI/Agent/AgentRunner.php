@@ -17,11 +17,11 @@ use Everest\Services\AI\Data\AiStreamEvent;
 use Everest\Services\AI\Tools\ToolExecutor;
 use Everest\Services\AI\Tools\ToolRegistry;
 use Everest\Services\Files\FileDiffService;
-use Everest\Services\AI\Privacy\PiiRedactor;
 use Everest\Services\AI\Tools\ToolDefinition;
 use Everest\Services\AI\Tools\ToolInvocation;
 use Everest\Services\AI\Inference\InferenceGate;
 use Everest\Services\AI\Support\ToolCallSalvager;
+use Everest\Services\AI\Privacy\AiRedactionPolicy;
 use Everest\Repositories\Wings\DaemonFileRepository;
 use Everest\Exceptions\Service\AI\AIServiceException;
 use Everest\Services\AI\Tools\Definitions\AdminTools;
@@ -48,7 +48,7 @@ class AgentRunner
         private RiskGate $riskGate,
         private ToolCallSalvager $salvager,
         private SystemPromptBuilder $promptBuilder,
-        private PiiRedactor $redactor,
+        private AiRedactionPolicy $redactor,
         private AssistAuthorizer $assist,
         private DaemonFileRepository $files,
         private FileDiffService $fileDiffs,

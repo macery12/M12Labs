@@ -6,7 +6,7 @@ use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Models\AiConversation;
 use Illuminate\Support\Facades\Log;
-use Everest\Services\AI\Privacy\RedactionMap;
+use Everest\Services\Privacy\RedactionMap;
 use Everest\Services\AI\Tools\ToolDefinition;
 use Everest\Models\AiMessage as MessageRecord;
 use Everest\Services\AI\Data\AiMessage as MessageData;

@@ -4,8 +4,8 @@ namespace Everest\Tests\Unit\Services\AI;
 
 use Everest\Tests\TestCase;
 use Symfony\Component\Process\Process;
-use Everest\Services\AI\Privacy\PiiRedactor;
-use Everest\Services\AI\Privacy\RedactionMap;
+use Everest\Services\Privacy\PiiRedactor;
+use Everest\Services\Privacy\RedactionMap;
 
 /**
  * The seam between the two redaction implementations.

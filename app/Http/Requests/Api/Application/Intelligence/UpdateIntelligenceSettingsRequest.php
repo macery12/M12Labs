@@ -4,9 +4,9 @@ namespace Everest\Http\Requests\Api\Application\Intelligence;
 
 use Everest\Models\AdminRole;
 use Everest\Services\AI\ProviderFactory;
+use Everest\Services\Privacy\PiiRedactor;
 use Everest\Services\AI\Agent\AgentRunner;
 use Everest\Services\AI\Data\ProviderConfig;
-use Everest\Services\AI\Privacy\PiiRedactor;
 use Everest\Services\AI\Providers\OpenRouterProvider;
 use Everest\Http\Requests\Api\Application\ApplicationApiRequest;
 

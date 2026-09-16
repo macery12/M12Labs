@@ -1,6 +1,6 @@
 <?php
 
-namespace Everest\Services\AI\Privacy;
+namespace Everest\Services\Privacy;
 
 use Illuminate\Support\Str;
 

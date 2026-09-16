@@ -12,8 +12,9 @@ use Illuminate\Support\Facades\Cache;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Agent\ToolBudget;
 use Everest\Services\Email\EmailRedactor;
+use Everest\Services\Privacy\PiiRedactor;
 use Everest\Services\AI\Data\ProviderConfig;
-use Everest\Services\AI\Privacy\PiiRedactor;
+use Everest\Services\AI\Privacy\AiRedactionPolicy;
 use Everest\Services\AI\Providers\AbstractProvider;
 use Everest\Services\Authorization\AdminAuthorizer;
 use Everest\Services\AI\Inference\ProviderReadiness;
@@ -29,7 +30,7 @@ class IntelligenceController extends ApplicationApiController
      */
     public function __construct(
         private ProviderFactory $factory,
-        private PiiRedactor $redactor,
+        private AiRedactionPolicy $redactor,
         private ToolBudget $budget,
         private AdminAuthorizer $adminAuthorizer,
     ) {
@@ -109,10 +110,11 @@ class IntelligenceController extends ApplicationApiController
                 'monthly_tokens' => (int) config('modules.ai.budget.monthly_tokens', 2000000),
             ],
 
-            // Read through the redactor rather than off config: the category
+            // Read through the policy rather than off config: the category
             // list is a JSON blob that is never hydrated into config, and it is
-            // the redactor that knows an unset value means "the defaults" rather
-            // than "none selected".
+            // the policy that knows an unset value means "the defaults" rather
+            // than "none selected". `available` comes off the core engine,
+            // which owns the category vocabulary.
             'privacy' => [
                 'enabled' => $this->redactor->enabled(),
                 'categories' => $this->redactor->activeKinds(),

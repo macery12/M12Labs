@@ -6,7 +6,7 @@ use Everest\Models\Server;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\AiConversation;
-use Everest\Services\AI\Privacy\RedactionMap;
+use Everest\Services\Privacy\RedactionMap;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 
 class AIConversationController extends ClientApiController

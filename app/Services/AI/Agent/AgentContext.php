@@ -6,7 +6,7 @@ use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Services\AI\Data\AiMessage;
 use Everest\Services\AI\Data\AiToolCall;
-use Everest\Services\AI\Privacy\RedactionMap;
+use Everest\Services\Privacy\RedactionMap;
 use Everest\Services\AI\Tools\ToolDefinition;
 
 /**

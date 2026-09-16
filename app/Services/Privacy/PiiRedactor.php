@@ -1,20 +1,23 @@
 <?php
 
-namespace Everest\Services\AI\Privacy;
-
-use Everest\Models\Setting;
-use Everest\Services\AI\ProviderFactory;
-use Everest\Services\AI\Data\ProviderConfig;
+namespace Everest\Services\Privacy;
 
 /**
- * Strips personal data out of everything on its way to the model. Exact
+ * Masks personal data in a decoded payload or a block of free text. Exact
  * structural masking plus conservative patterns — not de-identification, and
  * not a general named-entity detector.
  *
- * Runs on tool results and on context the panel attaches itself (a console
- * buffer, a file the model read). Does *not* run on what the administrator
- * types: "find the account for someone@example.com" needs that address to
- * reach the filter.
+ * A pure engine: it reads no settings, resolves nothing from the container, and
+ * decides nothing about when redaction should happen. The caller passes the
+ * categories to sweep, which is what lets two callers with unrelated policies
+ * share one implementation — the AI module gates on its own operator setting
+ * (see AiRedactionPolicy), while FailedJobRedactor sweeps unconditionally
+ * because an admin page rendering a failed job has no reason not to.
+ *
+ * It was the AI module's before it was core's, so the shape still reflects that
+ * origin: `restore()` exists because an agent turn has to put exact values back
+ * before a file write is approved. A caller that only needs one-way masking
+ * passes a throwaway RedactionMap and ignores it.
  *
  * Two mechanisms, since either alone is wrong. **Structural** redaction reads
  * the field name and is exact — an `email` key is an address whatever it
@@ -151,13 +154,14 @@ class PiiRedactor
      * to reason about the payload, and a tokenised key would break every
      * argument it later builds from one.
      */
-    public function redact(mixed $data, RedactionMap $map): mixed
+    /**
+     * @param string[] $kinds categories to sweep; pass self::KINDS for everything
+     */
+    public function redact(mixed $data, RedactionMap $map, array $kinds = self::KINDS): mixed
     {
-        if (!$this->enabled()) {
+        if ($kinds === []) {
             return $data;
         }
-
-        $kinds = $this->activeKinds();
 
         // Startup responses deliberately use a generic `value` field so the
         // model can feed a returned key into startup_set. Field-name redaction
@@ -174,13 +178,16 @@ class PiiRedactor
     /**
      * Redact a block of free text — a console buffer, a file the model read.
      */
-    public function redactText(string $text, RedactionMap $map): string
+    /**
+     * @param string[] $kinds categories to sweep; pass self::KINDS for everything
+     */
+    public function redactText(string $text, RedactionMap $map, array $kinds = self::KINDS): string
     {
-        if (!$this->enabled() || $text === '') {
+        if ($text === '' || $kinds === []) {
             return $text;
         }
 
-        return $this->sweep($text, $map, $this->activeKinds());
+        return $this->sweep($text, $map, $kinds);
     }
 
     /**
@@ -577,62 +584,5 @@ class PiiRedactor
         }
 
         return $sum % 10 === 0;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Operator settings
-    |--------------------------------------------------------------------------
-    */
-
-    public function enabled(): bool
-    {
-        if ($this->forced()) {
-            return true;
-        }
-
-        return (bool) Setting::get(
-            'settings::modules:ai:privacy:enabled',
-            config('modules.ai.privacy.enabled', true)
-        );
-    }
-
-    /**
-     * The categories in force, stored as a JSON list alongside the tool policy.
-     * An unset setting means the defaults, not "none" — an operator who never
-     * opened the privacy panel should still be protected.
-     *
-     * @return string[]
-     */
-    public function activeKinds(): array
-    {
-        if ($this->forced()) {
-            return self::KINDS;
-        }
-
-        $stored = Setting::get('settings::modules:ai:privacy:categories');
-
-        if (!is_string($stored) || $stored === '') {
-            return array_values(array_intersect(
-                self::KINDS,
-                (array) config('modules.ai.privacy.categories', self::DEFAULT_KINDS)
-            ));
-        }
-
-        $decoded = json_decode($stored, true);
-
-        if (!is_array($decoded)) {
-            return self::DEFAULT_KINDS;
-        }
-
-        // Intersected against the canonical list so the order is the declared
-        // one and an unknown category cannot reach the walker.
-        return array_values(array_intersect(self::KINDS, $decoded));
-    }
-
-    /** OpenRouter always receives fully redacted panel context and tool output. */
-    public function forced(): bool
-    {
-        return app(ProviderFactory::class)->provider() === ProviderConfig::PROVIDER_OPENROUTER;
     }
 }

@@ -6,7 +6,7 @@ use Everest\Models\Egg;
 use Everest\Services\AI\Data\AiTool;
 use Everest\Services\AI\Data\AiMessage;
 use Everest\Services\AI\ProviderFactory;
-use Everest\Services\AI\Privacy\PiiRedactor;
+use Everest\Services\AI\Privacy\AiRedactionPolicy;
 use Everest\Services\Authorization\AdminAuthorizer;
 use Everest\Services\AI\Tools\Definitions\SharedTools;
 
@@ -32,7 +32,7 @@ class SystemPromptBuilder
      */
     public const MAX_CONSOLE_CHARS = 4000;
 
-    public function __construct(private PiiRedactor $redactor)
+    public function __construct(private AiRedactionPolicy $redactor)
     {
     }
 
