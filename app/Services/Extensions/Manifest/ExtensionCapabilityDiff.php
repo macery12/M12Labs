@@ -49,11 +49,13 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         // Only surfaces that grant new reach need consent. Pages are executable
         // frontend entry points mounted into user/admin navigation, so adding
         // one is a privilege increase just like adding a route. A settings
-        // field is declarative metadata and remains review-only.
+        // field is declarative metadata and remains review-only. A privileged
+        // service is the plainest escalation of the lot — it is core handing
+        // authority back rather than mounting something the package wrote.
         $escalations = array_values(array_filter(
             $added,
             fn (string $capability): bool => (bool) preg_match(
-                '/^(routes|page|permission|hook|queue|secret|command|migrations|schedule|table)\b/',
+                '/^(routes|page|permission|hook|queue|secret|command|migrations|schedule|table|privileged)\b/',
                 $capability
             )
         ));
@@ -111,6 +113,9 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         }
         foreach ($set->settings as $setting) {
             $flat['setting:' . $setting->key] = true;
+        }
+        foreach ($set->privileged as $service) {
+            $flat['privileged:' . $service] = true;
         }
 
         return $flat;

@@ -38,7 +38,31 @@ final class ExtensionCapabilityVocabulary
         'commands',
         'secrets',
         'settings',
+        'privileged',
     ];
+
+    /**
+     * Privileged core services a package may be granted, as opposed to surfaces
+     * it declares. Everything else in this vocabulary describes something the
+     * package *contributes* — a route, a page, a queue — which core then runs.
+     * These are the other direction: core behaviour the package calls into,
+     * where the thing being handed over is authority rather than a slot.
+     *
+     * Each is off unless the manifest names it and an administrator approves it
+     * at install. Closed, and deliberately short — a name here is a decision
+     * that the capability is worth existing at all.
+     *
+     * - `delegated_access` — ask core to open an audited, read-only session on a
+     *   customer's server for an administrator who holds `servers.assist`. Core
+     *   owns the ability list and writes the customer-visible record; see
+     *   {@see \Everest\Services\Access\DelegatedAccess}.
+     * - `internal_dispatch` — run a request through the panel's own HTTP
+     *   pipeline as the acting user, without re-authenticating. Powerful and
+     *   deliberately so: it is what lets a package reuse every FormRequest gate
+     *   and middleware rather than growing a second authorization path. It is
+     *   also a confused-deputy generator, which is why it is named here.
+     */
+    public const PRIVILEGED = ['delegated_access', 'internal_dispatch'];
 
     /** Slugs, permission actions and queue names. */
     public const SLUG_PATTERN = '/^[a-z][a-z0-9-]{0,31}$/';

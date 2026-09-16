@@ -45,6 +45,7 @@ class ExtensionSignatureService
         'hooks',
         'queues',
         'permissions.admin',
+        'privileged',
     ];
 
     public function __construct(private ExtensionManifestCanonicalizer $canonicalizer)
@@ -306,6 +307,11 @@ class ExtensionSignatureService
         }
         if ($capabilities->adminPermissions !== []) {
             $held[] = 'permissions.admin';
+        }
+        // Authority core hands back to the package. Of everything on this list
+        // it is the one an unverified package has least business holding.
+        if ($capabilities->privileged !== []) {
+            $held[] = 'privileged';
         }
 
         return array_values(array_intersect(self::RESTRICTED_CAPABILITIES, $held));

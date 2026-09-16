@@ -611,6 +611,9 @@ class ExtensionCatalogService
             'permissions' => (int) ($summary['permissions'] ?? 0),
             'secrets' => (int) ($summary['secrets'] ?? 0),
             'settings' => (int) ($summary['settings'] ?? 0),
+            // Names rather than a count, as for hooks: "asks for 1 privileged
+            // service" tells an operator nothing they can act on.
+            'privileged' => array_values(array_filter((array) ($summary['privileged'] ?? []), 'is_string')),
         ];
     }
 

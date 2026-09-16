@@ -140,7 +140,49 @@ class ExtensionManifestParser
             commands: $this->parseCommands($capabilities['commands'] ?? [], $extensionId),
             secrets: $this->parseSecrets($capabilities['secrets'] ?? [], $extensionId),
             settings: $this->parseSettings($capabilities['settings'] ?? [], $extensionId),
+            privileged: $this->parsePrivileged($capabilities['privileged'] ?? [], $extensionId),
         );
+    }
+
+    /**
+     * The privileged core services this package is asking for.
+     *
+     * Sorted into the vocabulary's own order rather than the manifest's, so two
+     * manifests asking for the same things project identically and the
+     * capability hash does not depend on how the author happened to type the
+     * list. Unknown names are refused rather than dropped: a package asking for
+     * something this panel has never heard of is a package expecting behaviour
+     * it will not get, and installing it quietly would be worse than saying so.
+     *
+     * @return array<int, string>
+     */
+    private function parsePrivileged($privileged, string $extensionId): array
+    {
+        if ($privileged === [] || $privileged === null) {
+            return [];
+        }
+
+        if (!is_array($privileged) || !array_is_list($privileged)) {
+            throw new DisplayException('The manifest "capabilities.privileged" section must be a list.');
+        }
+
+        $asked = [];
+        foreach ($privileged as $index => $name) {
+            if (!is_string($name)) {
+                throw new DisplayException(sprintf('capabilities.privileged[%d] must be a string.', $index));
+            }
+
+            if (!in_array($name, ExtensionCapabilityVocabulary::PRIVILEGED, true)) {
+                throw new DisplayException(sprintf('Extension "%s" asks for the unknown privileged service "%s". This panel offers: %s.', $extensionId, $name, implode(', ', ExtensionCapabilityVocabulary::PRIVILEGED)));
+            }
+
+            $asked[$name] = true;
+        }
+
+        return array_values(array_filter(
+            ExtensionCapabilityVocabulary::PRIVILEGED,
+            fn (string $name): bool => isset($asked[$name]),
+        ));
     }
 
     /**

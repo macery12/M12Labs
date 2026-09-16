@@ -67,6 +67,10 @@ export interface ExtensionCapabilitySummary {
     permissions: number;
     secrets: number;
     settings: number;
+    // Names, not a count: "asks for 1 privileged service" tells an operator
+    // nothing they can act on. Absent on packages that ask for none, and on
+    // repositories that predate the field.
+    privileged?: string[];
 }
 
 export interface Extension {

@@ -11,6 +11,7 @@ use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilityVocabulary;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
 
 /**
@@ -141,7 +142,8 @@ class ExtensionRuntimePlanService
             'secrets' => $entry->capabilities->secrets !== [],
             'pages.server' => $entry->capabilities->hasServerPages(),
             'pages.admin' => $entry->capabilities->hasAdminPages(),
-            default => false,
+            default => str_starts_with($capability, 'privileged.')
+                && $entry->capabilities->grantsPrivilege(substr($capability, 11)),
         });
     }
 
@@ -469,6 +471,13 @@ class ExtensionRuntimePlanService
                 ),
                 (array) ($settings['fields'] ?? [])
             ),
+            // Absent on every package installed before privileged services
+            // existed, which is exactly why the projection omits the key when
+            // nothing was asked for — see ExtensionCapabilitySet::jsonSerialize.
+            privileged: array_values(array_intersect(
+                ExtensionCapabilityVocabulary::PRIVILEGED,
+                array_map('strval', (array) ($capabilities['privileged'] ?? [])),
+            )),
         );
     }
 

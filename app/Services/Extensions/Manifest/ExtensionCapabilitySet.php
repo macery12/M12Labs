@@ -29,6 +29,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
      * @param array<int, string> $commands
      * @param array<int, SecretDefinition> $secrets
      * @param array<int, SettingDefinition> $settings
+     * @param array<int, string> $privileged
      */
     public function __construct(
         public bool $clientRoutes = false,
@@ -44,7 +45,19 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         public array $commands = [],
         public array $secrets = [],
         public array $settings = [],
+        public array $privileged = [],
     ) {
+    }
+
+    /**
+     * Whether core has been asked for one of its privileged services, and an
+     * administrator approved it at install.
+     *
+     * @see ExtensionCapabilityVocabulary::PRIVILEGED
+     */
+    public function grantsPrivilege(string $name): bool
+    {
+        return in_array($name, $this->privileged, true);
     }
 
     public function hasPages(): bool
@@ -117,7 +130,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
     /** @return array<string, mixed> */
     public function jsonSerialize(): array
     {
-        return [
+        $projection = [
             'routes' => ['client' => $this->clientRoutes, 'admin' => $this->adminRoutes],
             'pages' => [
                 'server' => array_map(fn (PageDefinition $page): array => $page->jsonSerialize(), $this->serverPages),
@@ -134,6 +147,17 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
             'secrets' => array_map(fn (SecretDefinition $secret): array => $secret->jsonSerialize(), $this->secrets),
             'settings' => ['fields' => array_map(fn (SettingDefinition $s): array => $s->jsonSerialize(), $this->settings)],
         ];
+
+        // Only when something was asked for. This projection is what
+        // `capability_hash` hashes, and `ExtensionRuntimePlanService` re-hashes
+        // the *stored* copy on every plan build to catch a projection edited in
+        // the database. An unconditional key would therefore change the hash of
+        // every package installed before this existed, and take the lot inert.
+        if ($this->privileged !== []) {
+            $projection['privileged'] = $this->privileged;
+        }
+
+        return $projection;
     }
 
     /**
@@ -155,6 +179,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
             'schedule' => $this->schedule,
             'clientRoutes' => $this->clientRoutes,
             'adminRoutes' => $this->adminRoutes,
+            'privileged' => count($this->privileged),
         ];
     }
 }
