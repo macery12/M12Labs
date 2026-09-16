@@ -4,6 +4,7 @@ namespace Everest\Tests\Unit\Services\AI;
 
 use Everest\Tests\TestCase;
 use Everest\Services\AI\Tools\ToolExecutor;
+use Everest\Services\Access\InternalDispatch;
 
 /**
  * What a failed tool call tells the model.
@@ -16,7 +17,7 @@ class ToolErrorMappingTest extends TestCase
 {
     private function map(int $status, array $first): array
     {
-        $executor = new class (app(), app('db')) extends ToolExecutor {
+        $executor = new class (app(InternalDispatch::class)) extends ToolExecutor {
             public function code(int $status, array $first): string
             {
                 return $this->errorCode($status, $first);

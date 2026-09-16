@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Route;
 use Everest\Http\Middleware\TrimStrings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Everest\Http\Middleware\ApiDocsAccess;
-use Everest\Services\AI\Tools\ToolExecutor;
 use Illuminate\Support\Facades\RateLimiter;
+use Everest\Services\Access\InternalDispatch;
 use Everest\Http\Middleware\AdminAuthenticate;
 use Everest\Http\Middleware\RequireTwoFactorAuthentication;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
@@ -126,7 +126,7 @@ class RouteServiceProvider extends ServiceProvider
             // allowance their browser session is also spending. Agent traffic
             // gets its own bounded budget instead — bounded, not unlimited, so
             // internal amplification stays capped.
-            if (ToolExecutor::isInternal($request)) {
+            if (InternalDispatch::isInternal($request)) {
                 return Limit::perMinute(config('modules.ai.agent.tool_rate_limit', 240))
                     ->by('ai-tools:' . $key);
             }
@@ -140,7 +140,7 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api.application', function (Request $request) {
             $key = optional($request->user())->uuid ?: $request->ip();
 
-            if (ToolExecutor::isInternal($request)) {
+            if (InternalDispatch::isInternal($request)) {
                 return Limit::perMinute(config('modules.ai.agent.tool_rate_limit', 240))
                     ->by('ai-tools:' . $key);
             }

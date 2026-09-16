@@ -86,7 +86,7 @@ class WorkerRequestScope
 
     /**
      * The synthetic parent request. The URI matters more than it looks:
-     * `ToolExecutor` builds absolute sub-request URLs and signed node download
+     * `InternalDispatch` builds absolute sub-request URLs and signed node download
      * URLs from this host, and a wrong one produces signatures the daemon
      * rejects — so the origin is captured from the request that started the turn
      * rather than assumed from config.
@@ -102,7 +102,7 @@ class WorkerRequestScope
         $request->headers->set('Accept', 'application/json');
         $request->headers->set('X-Requested-With', 'XMLHttpRequest');
 
-        // Copied by `ToolExecutor::buildSubRequest()` onto every tool call.
+        // Copied by `InternalDispatch::buildSubRequest()` onto every tool call.
         $request->setUserResolver(fn () => $user);
 
         return $request;

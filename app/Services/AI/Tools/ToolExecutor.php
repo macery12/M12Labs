@@ -4,19 +4,10 @@ namespace Everest\Services\AI\Tools;
 
 use Everest\Models\Setting;
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use Everest\Facades\Activity;
-use Illuminate\Routing\Route;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Database\DatabaseManager;
+use Everest\Services\Access\InternalRequest;
+use Everest\Services\Access\InternalDispatch;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Contracts\Foundation\Application;
-use Everest\Exceptions\Service\AI\AIServiceException;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Illuminate\Support\Facades\Request as RequestFacade;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Everest\Services\Activity\ActivityLogTargetableService;
-use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
+use Everest\Exceptions\Service\Access\InternalDispatchException;
 
 /**
  * Runs a tool by dispatching an internal sub-request through the panel's real
@@ -27,69 +18,47 @@ use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
  * `ResourceBelongsToServer`, the endpoint's FormRequest `permission()` gate and
  * its validation — so there is no second authorization path to drift.
  *
- * Six constraints, each a real failure:
- *
- * 1. **Send no cookies.** Re-sending already-decrypted ones makes EncryptCookies
- *    fail, nulling the session cookie and regenerating the id on the *shared*
- *    store, which logs the user out mid-stream. Auth propagates anyway: the
- *    guard has already cached the user.
- * 2. **Clear the matched route's cached controller.** Routes are process-wide and
- *    `Route::getController()` memoises onto them, so Fractal's accumulating
- *    `parseIncludes()` would leak one tool's `?include=` into later calls.
- * 3. **Refuse streamed and binary responses.** Reading their bodies means sending
- *    them, straight into the live SSE stream.
- * 4. **Send `Accept: application/json`**, or a ValidationException becomes a 302
- *    and an HttpException renders HTML instead of a structured envelope.
- * 5. **Never dispatch inside a transaction.** The exception handler rolls back to
- *    level 0 when it renders, taking the caller's transaction with it.
- * 6. **Bound how long it may block.** Inherited node timeouts run to a quarter of
- *    an hour, against a turn budget of three minutes.
+ * The dispatch itself is core's ({@see InternalDispatch}), along with the six
+ * constraints that make it safe to do at all. What is here is the half that is
+ * genuinely about *the agent*: how long a tool call may take under this
+ * panel's AI settings, and how a response becomes something a model can read
+ * and act on. That second part is most of the file, and none of it is
+ * general-purpose — it is prose written for a model, and it leaks nothing.
  */
 class ToolExecutor
 {
-    public function __construct(
-        private Application $app,
-        private DatabaseManager $db,
-    ) {
+    public function __construct(private InternalDispatch $dispatch)
+    {
     }
 
     public function execute(
         ToolInvocation $invocation,
         ?int $maxSeconds = null,
     ): ToolResult {
-        // The exception handler calls rollBack(0) when it renders, so a failure
-        // inside the sub-request would silently discard the caller's work.
-        if ($this->db->transactionLevel() > 0) {
-            return ToolResult::internalError('Tool calls may not run inside a database transaction.');
-        }
-
-        $parentRequest = $this->app->make('request');
-        $parentRoute = $this->app->resolved(Route::class) ? $this->app->make(Route::class) : null;
-        $obLevel = ob_get_level();
-
-        $target = $this->app->make(ActivityLogTargetableService::class);
-        $snapshot = [$target->actor(), $target->subject(), $target->apiKeyId(), $target->isAdmin()];
-
-        $timeouts = $this->clampNodeTimeouts($maxSeconds);
-        $sub = $this->buildSubRequest($invocation, $parentRequest);
-        $matched = null;
-        $alarm = $this->startDeadlineAlarm($maxSeconds);
-
         try {
-            Activity::reset();
-
-            $response = $this->app->make(HttpKernelContract::class)->handle($sub);
-            $matched = $sub->route();
-
-            return $this->toResult($response);
-        } catch (AIServiceException $e) {
-            if ($e->getMessage() === 'The internal tool deadline elapsed.') {
-                return ToolResult::error('time_limit', 'The tool call exceeded the remaining turn time.');
-            }
-
-            report($e);
-
-            return ToolResult::internalError('The tool call could not be completed.');
+            return $this->toResult($this->dispatch->dispatch(
+                new InternalRequest(
+                    method: $invocation->method,
+                    uri: $invocation->uri,
+                    query: $invocation->query,
+                    body: $invocation->body,
+                    idempotencyKey: $invocation->idempotencyKey,
+                ),
+                deadlineSeconds: $maxSeconds,
+                nodeTimeoutSeconds: $this->nodeTimeout($maxSeconds),
+            ));
+        } catch (InternalDispatchException $e) {
+            return match ($e->reason) {
+                InternalDispatchException::REASON_DEADLINE => ToolResult::error(
+                    'time_limit',
+                    'The tool call exceeded the remaining turn time.',
+                ),
+                InternalDispatchException::REASON_UNREADABLE => ToolResult::error(
+                    'unsupported_response',
+                    'This endpoint streams its response and cannot be called as a tool.',
+                ),
+                default => ToolResult::internalError('Tool calls may not run inside a database transaction.'),
+            };
         } catch (\Throwable $e) {
             // Kernel::handle already renders most throwables; anything reaching
             // here is unexpected, so report it and give the model something
@@ -97,196 +66,29 @@ class ToolExecutor
             report($e);
 
             return ToolResult::internalError('The tool call could not be completed.');
-        } finally {
-            $this->restoreDeadlineAlarm($alarm);
-
-            if ($matched instanceof Route) {
-                $matched->controller = null;
-            }
-
-            config($timeouts);
-
-            Activity::reset();
-            $this->restoreLogTarget($target, $snapshot);
-
-            // Re-binding `request` fires the container rebound hooks, which is
-            // what restores the auth guards, the URL generator, and the user
-            // resolver — none of those need handling individually.
-            $this->app->instance('request', $parentRequest);
-            RequestFacade::clearResolvedInstance();
-
-            if ($parentRoute !== null) {
-                $this->app->instance(Route::class, $parentRoute);
-            } else {
-                $this->app->forgetInstance(Route::class);
-            }
-
-            while (ob_get_level() > $obLevel) {
-                ob_end_flush();
-            }
         }
     }
 
     /**
-     * Hold the node timeouts down for one tool call, returning what they were
-     * so the caller can restore them.
+     * How long one call out to a node may block.
      *
-     * Lowered, never raised — an operator who tightened `GUZZLE_TIMEOUT` meant
-     * it. The point is that the fifteen-minute archive timeout cannot be
-     * inherited by a model that will simply sit there; an overrun becomes a
-     * failed tool call the model can route around. Config rather than a
-     * parameter because the value must reach a repository several layers into
-     * the sub-request.
-     *
-     * @return array<string, int> the previous values, shaped for `config()`
+     * The point is that the fifteen-minute archive timeout cannot be inherited
+     * by a model that will simply sit there; an overrun becomes a failed tool
+     * call the model can route around. Bounded by whatever is left of the turn
+     * as well, so the last tool call of a turn does not get a fresh full budget.
      */
-    protected function clampNodeTimeouts(?int $remainingSeconds = null): array
+    protected function nodeTimeout(?int $remainingSeconds): int
     {
         $ceiling = max(5, (int) Setting::get(
             'settings::modules:ai:agent:max_tool_seconds',
             config('modules.ai.agent.max_tool_seconds', 90)
         ));
-        if ($remainingSeconds !== null) {
-            $ceiling = max(1, min($ceiling, $remainingSeconds));
-        }
 
-        $previous = [
-            'everest.guzzle.timeout' => (int) config('everest.guzzle.timeout'),
-            'everest.guzzle.archive_timeout' => (int) config('everest.guzzle.archive_timeout'),
-        ];
-
-        config([
-            'everest.guzzle.timeout' => min($previous['everest.guzzle.timeout'], $ceiling),
-            'everest.guzzle.archive_timeout' => min($previous['everest.guzzle.archive_timeout'], $ceiling),
-        ]);
-
-        return $previous;
-    }
-
-    /**
-     * Bound local controller and database work as well as node HTTP calls.
-     * PCNTL alarms interrupt the synchronous kernel dispatch; deployments
-     * without PCNTL retain their configured PHP execution limit because the
-     * stream no longer disables it.
-     *
-     * @return array{handler: mixed, async: bool}|null
-     */
-    protected function startDeadlineAlarm(?int $seconds): ?array
-    {
-        if (
-            $seconds === null
-            || $seconds < 1
-            || !function_exists('pcntl_alarm')
-            || !function_exists('pcntl_signal_get_handler')
-            || !function_exists('pcntl_async_signals')
-        ) {
-            return null;
-        }
-
-        $state = [
-            'handler' => pcntl_signal_get_handler(SIGALRM),
-            'async' => pcntl_async_signals(true),
-        ];
-
-        pcntl_signal(SIGALRM, static function (): void {
-            throw new AIServiceException('The internal tool deadline elapsed.');
-        });
-        pcntl_alarm($seconds);
-
-        return $state;
-    }
-
-    /** @param array{handler: mixed, async: bool}|null $state */
-    protected function restoreDeadlineAlarm(?array $state): void
-    {
-        if ($state === null) {
-            return;
-        }
-
-        pcntl_alarm(0);
-        pcntl_signal(SIGALRM, $state['handler']);
-        pcntl_async_signals($state['async']);
-    }
-
-    /**
-     * Build the sub-request. Carries no `Cookie`, `Authorization`, `Referer` or
-     * `Origin` header: without a session cookie the stateful path is skipped, so
-     * CSRF and session handling never run, while the guard's cached user keeps
-     * the identity and token instance identical. Fails closed — a cold cache
-     * 401s rather than escalating.
-     */
-    protected function buildSubRequest(ToolInvocation $invocation, Request $parent): Request
-    {
-        $isRead = $invocation->isRead();
-
-        $sub = Request::create(
-            // Absolute so the URL generator stays correct after the rebind —
-            // signed node URLs for downloads depend on it.
-            uri: $parent->getSchemeAndHttpHost() . $invocation->fullUri(),
-            method: strtoupper($invocation->method),
-            parameters: $isRead ? $invocation->query : [],
-            cookies: [],
-            files: [],
-            server: ['REMOTE_ADDR' => $parent->ip()],
-            content: $isRead ? null : json_encode($invocation->body ?: new \stdClass()),
-        );
-
-        // Mandatory: it is what makes the exception handler emit the JSON
-        // envelope instead of a redirect or an HTML error page.
-        $sub->headers->set('Accept', 'application/json');
-        $sub->headers->set('X-Requested-With', 'XMLHttpRequest');
-
-        if ($invocation->idempotencyKey !== null) {
-            $sub->headers->set('Idempotency-Key', $invocation->idempotencyKey);
-        }
-
-        if (!$isRead) {
-            $sub->headers->set('Content-Type', 'application/json');
-        }
-
-        foreach (['Cookie', 'Authorization', 'Referer', 'Origin', 'X-XSRF-TOKEN', 'X-CSRF-TOKEN'] as $header) {
-            $sub->headers->remove($header);
-        }
-
-        $sub->attributes->set(InternalToolCall::ATTRIBUTE, InternalToolCall::marker());
-        $sub->setUserResolver($parent->getUserResolver());
-
-        return $sub;
-    }
-
-    /**
-     * `setIsAdmin()` is write-only-true, so the flag can only be restored by
-     * resetting first and re-applying.
-     */
-    protected function restoreLogTarget(ActivityLogTargetableService $target, array $snapshot): void
-    {
-        [$actor, $subject, $apiKeyId, $isAdmin] = $snapshot;
-
-        $target->reset();
-
-        if ($actor !== null) {
-            $target->setActor($actor);
-        }
-        if ($subject !== null) {
-            $target->setSubject($subject);
-        }
-        $target->setApiKeyId($apiKeyId);
-        if ($isAdmin) {
-            $target->setIsAdmin();
-        }
+        return $remainingSeconds === null ? $ceiling : max(1, min($ceiling, $remainingSeconds));
     }
 
     protected function toResult(Response $response): ToolResult
     {
-        // getContent() returns false on these; the only way to read the body is
-        // to send it, which would write into the caller's live SSE stream.
-        if ($response instanceof StreamedResponse || $response instanceof BinaryFileResponse) {
-            return ToolResult::error(
-                'unsupported_response',
-                'This endpoint streams its response and cannot be called as a tool.'
-            );
-        }
-
         $status = $response->getStatusCode();
         $body = (string) $response->getContent();
         $decoded = json_decode($body, true);
@@ -407,14 +209,5 @@ class ToolExecutor
         $detail = preg_replace('/\s*\((?:code|request[ _]id):[^)]*\)/i', '', $detail) ?? $detail;
 
         return trim($detail);
-    }
-
-    /**
-     * Whether a request is agent traffic. Used by the rate limiters to give
-     * tool steps their own budget instead of consuming the human's.
-     */
-    public static function isInternal(Request $request): bool
-    {
-        return InternalToolCall::matches($request->attributes->get(InternalToolCall::ATTRIBUTE));
     }
 }

@@ -12,6 +12,7 @@ use Everest\Models\Billing\Category;
 use Everest\Services\AI\Tools\RiskGate;
 use Everest\Services\AI\Tools\ToolExecutor;
 use Everest\Services\AI\Tools\ToolRegistry;
+use Everest\Services\Access\InternalDispatch;
 use Everest\Services\AI\Tools\ToolInvocation;
 use Everest\Services\AI\Support\SchemaValidator;
 use Everest\Services\AI\Tools\ConsoleCommandGate;
@@ -533,14 +534,14 @@ class AdminAgentToolExecutorTest extends IntegrationTestCase
         $this->assertNotNull($limiter, 'The api.application limiter is not registered.');
 
         $plain = Request::create('/api/application/users', 'GET');
-        $this->assertFalse(ToolExecutor::isInternal($plain));
+        $this->assertFalse(InternalDispatch::isInternal($plain));
 
         // Unforgeable: the marker is an object identity in the server-side
         // attribute bag, which nothing on the wire can populate.
         $spoofed = Request::create('/api/application/users', 'GET', [
-            'everest.ai.internal_tool_call' => true,
+            'everest.internal_dispatch' => true,
         ]);
-        $spoofed->headers->set('everest.ai.internal_tool_call', '1');
-        $this->assertFalse(ToolExecutor::isInternal($spoofed));
+        $spoofed->headers->set('everest.internal_dispatch', '1');
+        $this->assertFalse(InternalDispatch::isInternal($spoofed));
     }
 }

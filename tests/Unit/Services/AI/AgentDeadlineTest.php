@@ -9,6 +9,7 @@ use Everest\Services\AI\Agent\AgentRunner;
 use Everest\Services\AI\Agent\AgentContext;
 use Everest\Services\AI\Tools\ToolExecutor;
 use Everest\Services\AI\Data\ProviderConfig;
+use Everest\Services\Access\InternalDispatch;
 
 class AgentDeadlineTest extends TestCase
 {
@@ -71,12 +72,29 @@ class AgentDeadlineTest extends TestCase
         config()->set('everest.guzzle.archive_timeout', 900);
         config()->set('modules.ai.agent.max_tool_seconds', 90);
 
-        $method = new \ReflectionMethod(ToolExecutor::class, 'clampNodeTimeouts');
-        $previous = $method->invoke(app(ToolExecutor::class), 2);
+        // The agent's half: a per-call ceiling from the AI settings, bounded
+        // again by whatever is left of the turn.
+        $ceiling = new \ReflectionMethod(ToolExecutor::class, 'nodeTimeout');
+        $this->assertSame(2, $ceiling->invoke(app(ToolExecutor::class), 2));
+        $this->assertSame(90, $ceiling->invoke(app(ToolExecutor::class), null));
+
+        // Core's half: the number reaches the node repositories, and only ever
+        // downward — an operator who tightened GUZZLE_TIMEOUT meant it.
+        $clamp = new \ReflectionMethod(InternalDispatch::class, 'clampNodeTimeouts');
+        $previous = $clamp->invoke(app(InternalDispatch::class), 2);
 
         try {
             $this->assertSame(2, config('everest.guzzle.timeout'));
             $this->assertSame(2, config('everest.guzzle.archive_timeout'));
+        } finally {
+            config($previous);
+        }
+
+        $previous = $clamp->invoke(app(InternalDispatch::class), 5000);
+
+        try {
+            $this->assertSame(60, config('everest.guzzle.timeout'));
+            $this->assertSame(900, config('everest.guzzle.archive_timeout'));
         } finally {
             config($previous);
         }

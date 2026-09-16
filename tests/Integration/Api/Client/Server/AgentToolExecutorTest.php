@@ -8,6 +8,7 @@ use Everest\Models\Permission;
 use Everest\Services\AI\Tools\RiskGate;
 use Everest\Services\AI\Tools\ToolExecutor;
 use Everest\Services\AI\Tools\ToolRegistry;
+use Everest\Services\Access\InternalDispatch;
 use Everest\Services\AI\Tools\ToolDefinition;
 use Everest\Services\AI\Tools\ToolInvocation;
 use Everest\Services\AI\Support\SchemaValidator;
@@ -350,14 +351,14 @@ class AgentToolExecutorTest extends ClientApiIntegrationTestCase
     public function testAgentTrafficIsIdentifiableForRateLimiting(): void
     {
         $plain = Request::create('/api/client/servers/x/activity', 'GET');
-        $this->assertFalse(ToolExecutor::isInternal($plain));
+        $this->assertFalse(InternalDispatch::isInternal($plain));
 
         // Unforgeable: the marker is an object identity in the server-side
         // attribute bag, which nothing on the wire can populate.
         $spoofed = Request::create('/api/client/servers/x/activity', 'GET', [
-            'everest.ai.internal_tool_call' => true,
+            'everest.internal_dispatch' => true,
         ]);
-        $spoofed->headers->set('everest.ai.internal_tool_call', '1');
-        $this->assertFalse(ToolExecutor::isInternal($spoofed));
+        $spoofed->headers->set('everest.internal_dispatch', '1');
+        $this->assertFalse(InternalDispatch::isInternal($spoofed));
     }
 }
