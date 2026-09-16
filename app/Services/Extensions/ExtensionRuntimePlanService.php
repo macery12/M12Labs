@@ -10,6 +10,7 @@ use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilityVocabulary;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
@@ -143,6 +144,7 @@ class ExtensionRuntimePlanService
             'pages.server' => $entry->capabilities->hasServerPages(),
             'pages.admin' => $entry->capabilities->hasAdminPages(),
             'bindings' => $entry->capabilities->bindings !== [],
+            'streams' => $entry->capabilities->streams !== [],
             default => str_starts_with($capability, 'privileged.')
                 && $entry->capabilities->grantsPrivilege(substr($capability, 11)),
         });
@@ -156,6 +158,21 @@ class ExtensionRuntimePlanService
      * that is disabled, unsigned, on the wrong manifest version, or whose
      * capability projection no longer matches its approved hash holds nothing.
      */
+    /**
+     * The declared limits for one stream kind, or null when the package is not
+     * enabled or never declared that name.
+     *
+     * Read from the live plan on every open rather than cached on the
+     * connection, so disabling a package stops it opening new streams even
+     * while an old worker is still serving one.
+     */
+    public function streamFor(string $extensionId, string $name): ?StreamDefinition
+    {
+        $entry = $this->plan()[$extensionId] ?? null;
+
+        return $entry?->capabilities->streamNamed($name);
+    }
+
     public function grantsPrivilege(string $extensionId, string $privilege): bool
     {
         $entry = $this->plan()[$extensionId] ?? null;
@@ -501,6 +518,20 @@ class ExtensionRuntimePlanService
                 array_map('strval', (array) ($capabilities['bindings'] ?? [])),
                 fn (string $path): bool => (bool) preg_match(ExtensionCapabilityVocabulary::BINDING_PATTERN, $path),
             )),
+            // Re-bounded on the way out for the same reason as the binding
+            // pattern above: these numbers decide how long a PHP worker is held,
+            // and the stored projection is the part of a package that someone
+            // with database access could edit. Clamped rather than dropped — a
+            // tampered ceiling becomes the honest one, not an absent limit.
+            streams: array_map(
+                fn (array $s): StreamDefinition => new StreamDefinition(
+                    name: (string) $s['name'],
+                    maxSeconds: max(1, min((int) ($s['maxSeconds'] ?? 300), ExtensionCapabilityVocabulary::STREAM_MAX_SECONDS)),
+                    keepAliveSeconds: max(1, min((int) ($s['keepAliveSeconds'] ?? 15), ExtensionCapabilityVocabulary::STREAM_MAX_KEEPALIVE_SECONDS)),
+                    maxConcurrentPerUser: max(1, min((int) ($s['maxConcurrentPerUser'] ?? 2), ExtensionCapabilityVocabulary::STREAM_MAX_CONCURRENT_PER_USER)),
+                ),
+                (array) ($capabilities['streams'] ?? [])
+            ),
         );
     }
 

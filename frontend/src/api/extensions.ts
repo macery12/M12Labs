@@ -74,6 +74,10 @@ export interface ExtensionCapabilitySummary {
     // Classes the package asks the container to build once per request. An
     // optimisation, not a privilege — a count is all an operator needs.
     bindings?: number;
+    // Long-lived connections the package may hold open. Counted rather than
+    // named here; the install dialog spells each one out with its limits,
+    // because how long a stream may run is the part worth reading.
+    streams?: number;
 }
 
 export interface Extension {

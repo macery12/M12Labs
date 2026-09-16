@@ -22,6 +22,13 @@ export {
     type ExtensionItemEnvelope,
 } from './client';
 
+export {
+    createExtensionStream,
+    type ExtensionStreamFrame,
+    type ExtensionStreamOptions,
+    type ExtensionStreamInfo,
+} from './stream';
+
 export { extensionQueryKey, useExtensionQueryKey } from './query';
 
 export { createTranslator } from './i18n';

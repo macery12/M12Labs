@@ -6,6 +6,7 @@ use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
 
@@ -31,6 +32,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
      * @param array<int, SettingDefinition> $settings
      * @param array<int, string> $privileged
      * @param array<int, string> $bindings
+     * @param array<int, StreamDefinition> $streams
      */
     public function __construct(
         public bool $clientRoutes = false,
@@ -48,7 +50,20 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         public array $settings = [],
         public array $privileged = [],
         public array $bindings = [],
+        public array $streams = [],
     ) {
+    }
+
+    /** The declared limits for one stream kind, or null when undeclared. */
+    public function streamNamed(string $name): ?StreamDefinition
+    {
+        foreach ($this->streams as $stream) {
+            if ($stream->name === $name) {
+                return $stream;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -161,6 +176,9 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         if ($this->bindings !== []) {
             $projection['bindings'] = $this->bindings;
         }
+        if ($this->streams !== []) {
+            $projection['streams'] = array_map(fn (StreamDefinition $s): array => $s->jsonSerialize(), $this->streams);
+        }
 
         return $projection;
     }
@@ -186,6 +204,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
             'adminRoutes' => $this->adminRoutes,
             'privileged' => count($this->privileged),
             'bindings' => count($this->bindings),
+            'streams' => count($this->streams),
         ];
     }
 }

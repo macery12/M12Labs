@@ -51,11 +51,15 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         // one is a privilege increase just like adding a route. A settings
         // field is declarative metadata and remains review-only. A privileged
         // service is the plainest escalation of the lot — it is core handing
-        // authority back rather than mounting something the package wrote.
+        // authority back rather than mounting something the package wrote. A
+        // stream is here for a different reason than the rest: it is the one
+        // surface whose cost is a held PHP worker rather than a request, so an
+        // operator needs to see it arrive even though the package could already
+        // serve the same data by polling.
         $escalations = array_values(array_filter(
             $added,
             fn (string $capability): bool => (bool) preg_match(
-                '/^(routes|page|permission|hook|queue|secret|command|migrations|schedule|table|privileged)\b/',
+                '/^(routes|page|permission|hook|queue|secret|command|migrations|schedule|table|privileged|stream)\b/',
                 $capability
             )
         ));
@@ -116,6 +120,11 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         }
         foreach ($set->privileged as $service) {
             $flat['privileged:' . $service] = true;
+        }
+        // The limits are part of the statement: a stream widened from thirty
+        // seconds to fifteen minutes is a different ask, and reads as one.
+        foreach ($set->streams as $stream) {
+            $flat[sprintf('stream:%s (%ds, %d per user)', $stream->name, $stream->maxSeconds, $stream->maxConcurrentPerUser)] = true;
         }
         // Informational, like a settings field: making one of a package's own
         // classes shared reaches nothing the package could not already reach,

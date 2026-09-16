@@ -615,6 +615,7 @@ class ExtensionCatalogService
             // service" tells an operator nothing they can act on.
             'privileged' => array_values(array_filter((array) ($summary['privileged'] ?? []), 'is_string')),
             'bindings' => (int) ($summary['bindings'] ?? 0),
+            'streams' => (int) ($summary['streams'] ?? 0),
         ];
     }
 

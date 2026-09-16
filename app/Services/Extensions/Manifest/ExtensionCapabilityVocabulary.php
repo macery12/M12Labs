@@ -40,6 +40,7 @@ final class ExtensionCapabilityVocabulary
         'settings',
         'privileged',
         'bindings',
+        'streams',
     ];
 
     /**
@@ -57,6 +58,20 @@ final class ExtensionCapabilityVocabulary
      * traverse.
      */
     public const BINDING_PATTERN = '/^[A-Z][A-Za-z0-9]*(\/[A-Z][A-Za-z0-9]*)*$/';
+
+    /**
+     * Ceilings on a declared stream, applied while parsing the manifest.
+     *
+     * These bound what an author may write down. They are not the operating
+     * limit: `config('extensions.streams')` clamps again at runtime, so an
+     * operator can tighten a deployment below what its installed packages
+     * asked for without reinstalling any of them.
+     */
+    public const STREAM_MAX_SECONDS = 3600;
+
+    public const STREAM_MAX_KEEPALIVE_SECONDS = 60;
+
+    public const STREAM_MAX_CONCURRENT_PER_USER = 20;
 
     /**
      * Privileged core services a package may be granted, as opposed to surfaces

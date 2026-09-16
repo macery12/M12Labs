@@ -46,6 +46,7 @@ class ExtensionSignatureService
         'queues',
         'permissions.admin',
         'privileged',
+        'streams',
     ];
 
     public function __construct(private ExtensionManifestCanonicalizer $canonicalizer)
@@ -312,6 +313,10 @@ class ExtensionSignatureService
         // it is the one an unverified package has least business holding.
         if ($capabilities->privileged !== []) {
             $held[] = 'privileged';
+        }
+        // A held worker for up to an hour, from a package nobody vouched for.
+        if ($capabilities->streams !== []) {
+            $held[] = 'streams';
         }
 
         return array_values(array_intersect(self::RESTRICTED_CAPABILITIES, $held));

@@ -9,6 +9,7 @@ use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
 
@@ -142,7 +143,79 @@ class ExtensionManifestParser
             settings: $this->parseSettings($capabilities['settings'] ?? [], $extensionId),
             privileged: $this->parsePrivileged($capabilities['privileged'] ?? [], $extensionId),
             bindings: $this->parseBindings($capabilities['bindings'] ?? []),
+            streams: $this->parseStreams($capabilities['streams'] ?? []),
         );
+    }
+
+    /**
+     * The long-lived event streams this package may open.
+     *
+     * Declared as named kinds rather than as routes, because the manifest never
+     * sees a URI — `capabilities.routes` says only which route *files* ship, and
+     * the file itself declares the paths. The controller names the kind when it
+     * opens one, which is what these limits attach to.
+     *
+     * The bounds here are on what an author may write down. Core clamps again at
+     * runtime from config, so tightening a deployment does not mean reinstalling
+     * its packages. Sorted by name so the projection an administrator approves
+     * does not depend on the order the author happened to use.
+     *
+     * @return array<int, StreamDefinition>
+     */
+    private function parseStreams($streams): array
+    {
+        if ($streams === [] || $streams === null) {
+            return [];
+        }
+
+        if (!is_array($streams) || !array_is_list($streams)) {
+            throw new DisplayException('The manifest "capabilities.streams" section must be a list.');
+        }
+
+        $definitions = [];
+        $seen = [];
+
+        foreach ($streams as $index => $stream) {
+            $where = sprintf('capabilities.streams[%d]', $index);
+
+            if (!is_array($stream)) {
+                throw new DisplayException(sprintf('%s must be an object.', $where));
+            }
+
+            $this->assertKnownKeys($stream, ['name', 'maxSeconds', 'keepAliveSeconds', 'maxConcurrentPerUser'], $where);
+
+            $name = $this->slug($stream['name'] ?? '', $where . '.name');
+            if (isset($seen[$name])) {
+                throw new DisplayException(sprintf('Duplicate stream name "%s".', $name));
+            }
+            $seen[$name] = true;
+
+            $definitions[] = new StreamDefinition(
+                name: $name,
+                maxSeconds: $this->boundedInt(
+                    $stream['maxSeconds'] ?? 300,
+                    1,
+                    ExtensionCapabilityVocabulary::STREAM_MAX_SECONDS,
+                    $where . '.maxSeconds'
+                ),
+                keepAliveSeconds: $this->boundedInt(
+                    $stream['keepAliveSeconds'] ?? 15,
+                    1,
+                    ExtensionCapabilityVocabulary::STREAM_MAX_KEEPALIVE_SECONDS,
+                    $where . '.keepAliveSeconds'
+                ),
+                maxConcurrentPerUser: $this->boundedInt(
+                    $stream['maxConcurrentPerUser'] ?? 2,
+                    1,
+                    ExtensionCapabilityVocabulary::STREAM_MAX_CONCURRENT_PER_USER,
+                    $where . '.maxConcurrentPerUser'
+                ),
+            );
+        }
+
+        usort($definitions, fn (StreamDefinition $a, StreamDefinition $b): int => strcmp($a->name, $b->name));
+
+        return $definitions;
     }
 
     /**

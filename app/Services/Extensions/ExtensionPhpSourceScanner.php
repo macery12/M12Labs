@@ -72,6 +72,11 @@ class ExtensionPhpSourceScanner
         // cannot describe any other.
         'Everest\\Services\\Access\\DelegatedGrant',
 
+        // The writer Sdk\Services\PackageStreams hands a stream's producer, so
+        // the callback can be type-hinted. It writes to whatever socket core
+        // opened and can name nothing else.
+        'Everest\\Services\\Streaming\\EventStreamWriter',
+
         // Handed to a package's schedule.php by the panel, which constructs it.
         'Everest\\Services\\Extensions\\ExtensionScheduleBuilder',
 

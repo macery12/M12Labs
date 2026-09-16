@@ -128,6 +128,32 @@ return [
         'allow_unsigned_local' => (bool) env('EXTENSIONS_ALLOW_UNSIGNED_LOCAL', false),
     ],
 
+    /*
+     * Long-lived event streams (SSE) opened by packages.
+     *
+     * An open stream holds a PHP-FPM child for its whole life, so unlike every
+     * other extension surface its cost is not bounded by how long a request
+     * takes. These are the deployment's ceilings, applied on top of whatever a
+     * manifest declared and approved at install: lowering one tightens every
+     * installed package at once, without reinstalling any of them.
+     *
+     * Size max_concurrent against the worker pool, not against the number of
+     * extensions. A deployment whose pool is 60 children and which sets this to
+     * 60 has no workers left for ordinary requests.
+     */
+    'streams' => [
+        // Ceiling on one connection, whatever its manifest asked for.
+        'max_seconds' => (int) env('EXTENSIONS_STREAM_MAX_SECONDS', 900),
+
+        // Total extension streams open at once, across every package and user.
+        'max_concurrent' => (int) env('EXTENSIONS_STREAM_MAX_CONCURRENT', 32),
+
+        // Total extension streams one user may hold, across every package —
+        // so a user with five streaming extensions installed cannot hold five
+        // times whatever each of them declared for itself.
+        'max_concurrent_per_user' => (int) env('EXTENSIONS_STREAM_MAX_CONCURRENT_PER_USER', 4),
+    ],
+
     'queues' => [
         // How long an update or uninstall waits for an extension's in-flight
         // jobs before giving up. Queued work is discarded immediately; this
