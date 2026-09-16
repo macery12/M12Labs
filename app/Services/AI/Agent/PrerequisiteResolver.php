@@ -15,7 +15,7 @@ use Everest\Services\AI\Tools\Definitions\AdminTools;
  * that the panel cannot read startup commands.
  *
  * **The cross-surface rule is derived, not declared.** A server-scoped tool on
- * an admin turn always needs an assist session, and `AssistBinding::WRITE_TOOLS`
+ * an admin turn always needs an assist session, and `AssistToolSets::WRITE`
  * decides whether it must be writable. That is a fact about the two surfaces,
  * and writing it onto fifty-odd definitions is how one missed rename would make
  * a write reachable from a read-only session. `ToolDiscovery::$prerequisites`
@@ -126,7 +126,7 @@ class PrerequisiteResolver
                 $required[] = Prerequisite::SELECTED_SERVER;
                 $required[] = Prerequisite::READ_ASSIST;
 
-                if (in_array($definition->name, AssistBinding::WRITE_TOOLS, true)) {
+                if (in_array($definition->name, AssistToolSets::WRITE, true)) {
                     $required[] = Prerequisite::WRITE_ASSIST;
                 }
             }

@@ -52,7 +52,7 @@ class WorkingSetPlanner
         // Server tools an approved session would reach. Bounded by the binding
         // constants rather than by scope, so discovery can never advertise a
         // server tool no session is allowed to grant in the first place.
-        $reachable = array_merge(AssistBinding::READ_TOOLS, AssistBinding::WRITE_TOOLS);
+        $reachable = array_merge(AssistToolSets::READ, AssistToolSets::WRITE);
 
         foreach ($this->registry->all() as $definition) {
             if (isset($callable[$definition->name])) {
@@ -107,9 +107,9 @@ class WorkingSetPlanner
         // to ask for and the tool that opens a session is noise while one is
         // already open on the server the turn is about.
         $companions = $binding->writable
-            ? AssistBinding::WRITABLE_COMPANION_TOOLS
+            ? AssistToolSets::WRITABLE_COMPANION
             : array_merge(
-                AssistBinding::COMPANION_TOOLS,
+                AssistToolSets::COMPANION,
                 [AdminTools::ASSIST_SERVER, AdminTools::ASSIST_ALLOW_WRITES],
             );
 
@@ -129,7 +129,7 @@ class WorkingSetPlanner
         );
 
         return $this->keyed(array_merge(
-            $this->registry->forAssist($binding->tools(), $binding->abilities),
+            $this->registry->forAssist(AssistToolSets::for($binding->writable), $binding->abilities),
             array_values($kept),
         ));
     }

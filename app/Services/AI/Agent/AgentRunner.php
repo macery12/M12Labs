@@ -13,10 +13,12 @@ use Everest\Services\AI\Data\AiRequest;
 use Everest\Services\AI\Tools\RiskGate;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Tools\ToolResult;
+use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\AI\Data\AiStreamEvent;
 use Everest\Services\AI\Tools\ToolExecutor;
 use Everest\Services\AI\Tools\ToolRegistry;
 use Everest\Services\Files\FileDiffService;
+use Everest\Services\Access\DelegatedAccess;
 use Everest\Services\AI\Tools\ToolDefinition;
 use Everest\Services\AI\Tools\ToolInvocation;
 use Everest\Services\AI\Inference\InferenceGate;
@@ -49,7 +51,7 @@ class AgentRunner
         private ToolCallSalvager $salvager,
         private SystemPromptBuilder $promptBuilder,
         private AiRedactionPolicy $redactor,
-        private AssistAuthorizer $assist,
+        private DelegatedAccess $access,
         private DaemonFileRepository $files,
         private FileDiffService $fileDiffs,
         private TurnCancellations $cancellations,
@@ -427,7 +429,7 @@ class AgentRunner
     protected function offerings(AgentContext $context): WorkingSet
     {
         // Recomputed rather than trusted. An assist session can be dropped
-        // between steps by `AssistAuthorizer::reauthorize()`, and a phase that
+        // between steps by `DelegatedAccess::reauthorize()`, and a phase that
         // outlived its binding would keep offering a customer's server tools.
         $context->phase = $context->resolvePhase();
 
@@ -1235,7 +1237,7 @@ class AgentRunner
                     'already_open' => true,
                     'server' => $activeServer->name,
                     'access' => $context->assist->writable ? 'read-write' : 'read-only',
-                    'tools' => $context->assist->tools(),
+                    'tools' => AssistToolSets::for($context->assist->writable),
                     'note' => 'This assist session is already open. Continue with the server tools; do not open it again.',
                 ]);
             }
@@ -1254,7 +1256,7 @@ class AgentRunner
             return ToolResult::error('invalid_authority', 'The approved assist grant could not be authenticated.');
         }
 
-        if (!$this->assist->permitted($context->user)) {
+        if (!$this->access->permitted($context->user)) {
             return ToolResult::error(
                 'forbidden',
                 'You do not have permission to open a session on a customer\'s server. That needs the '
@@ -1263,7 +1265,7 @@ class AgentRunner
         }
 
         $binding = $grant->after;
-        $server = $this->assist->resolveServer($binding->serverUuid);
+        $server = $this->access->resolveServer($binding->serverUuid);
 
         if ($server === null) {
             return ToolResult::error(
@@ -1273,9 +1275,11 @@ class AgentRunner
             );
         }
 
-        // The customer-visible audit is part of authorization, not best-effort
-        // telemetry. Do not activate the binding unless this succeeds.
-        $this->assist->record($context->user, $server, $binding);
+        // Core mints the authority and writes the customer-visible record in one
+        // step. The sealed grant said which server and why; what that is worth
+        // is core's decision, and the record is part of it — nothing comes back
+        // unless the customer can see that it happened.
+        $binding = $this->access->open($context->user, $server, $binding->reason, $binding->ticketId);
         $context->bindAssist($binding, $server);
 
         $emit(AgentEvent::assist($server->uuid, (string) $server->name, false, $binding->reason));
@@ -1283,7 +1287,7 @@ class AgentRunner
         return ToolResult::ok([
             'server' => $server->name,
             'access' => 'read-only',
-            'tools' => $binding->tools(),
+            'tools' => AssistToolSets::for($binding->writable),
             'note' => 'You can now read this server. Start with server_status, then look at the files '
                 . 'or startup variables the symptom points at. You cannot change anything yet.',
         ]);
@@ -1310,7 +1314,7 @@ class AgentRunner
             );
         }
 
-        if (!$this->assist->permitted($context->user)) {
+        if (!$this->access->permitted($context->user)) {
             return ToolResult::error(
                 'forbidden',
                 'You no longer have permission to act on this server.',
@@ -1322,11 +1326,12 @@ class AgentRunner
         }
 
         $reason = trim((string) ($arguments['reason'] ?? ''));
-        $binding = $grant->after;
 
-        // Keep the read-only binding in force until the escalation is visible
-        // in the customer's activity feed.
-        $this->assist->record($context->user, $server, $binding, escalation: true);
+        // Keep the read-only binding in force until the escalation is visible in
+        // the customer's activity feed. Widening is core's to do, from the grant
+        // already in force — which is why there is no way to spell "escalate
+        // onto something else".
+        $binding = $this->access->escalate($context->user, $server, $context->assist);
         $context->bindAssist($binding, $server);
 
         $emit(AgentEvent::assist($server->uuid, $binding->serverName, true, $reason ?: $binding->reason));
@@ -1334,7 +1339,7 @@ class AgentRunner
         return ToolResult::ok([
             'server' => $binding->serverName,
             'access' => 'read-write',
-            'tools' => $binding->tools(),
+            'tools' => AssistToolSets::for($binding->writable),
             'note' => 'You may now edit files, change startup variables, change the Docker image and restart this server. '
                 . 'Read a file before writing it, change the least you can, and say what you changed. '
                 . 'The panel tools you no longer have were for reading records you have already read.',
@@ -1738,7 +1743,7 @@ class AgentRunner
             return $context->targetServer() !== null
                 && $this->registry->assistPermits(
                     $definition,
-                    $context->assist->tools(),
+                    AssistToolSets::for($context->assist->writable),
                     $context->assist->abilities
                 );
         }
@@ -1928,7 +1933,7 @@ class AgentRunner
             && $definition->scope === ToolDefinition::SCOPE_SERVER;
 
         return $needsSession
-            ? $this->assist->during($context->user, $context->assist, $run)
+            ? $this->access->during($context->user, $context->assist, $run)
             : $run();
     }
 
@@ -2012,7 +2017,7 @@ class AgentRunner
 
         if ($definition->name === AdminTools::ASSIST_SERVER) {
             $reference = trim((string) ($arguments['server'] ?? ''));
-            $server = $this->assist->resolveServer($reference);
+            $server = $this->access->resolveServer($reference);
 
             if ($server === null) {
                 // A refusal, not a throw. The reference is model input, and a
@@ -2314,7 +2319,7 @@ class AgentRunner
                 'user_id' => $context->user->id,
                 // See `suspend()`: the server the pending call is against, not
                 // the surface's own binding.
-                'server_uuid' => $sealed['binding'] instanceof AssistBinding
+                'server_uuid' => $sealed['binding'] instanceof DelegatedGrant
                     ? $sealed['binding']->serverUuid
                     : $context->targetServer()?->uuid,
                 'scope' => $context->scope(),
@@ -2338,7 +2343,7 @@ class AgentRunner
      * Authenticate the exact assist authority a suspended action starts with
      * and, for an open/escalate card, the authority it is allowed to create.
      *
-     * @return array{grant: ?array, mac: ?string, binding: ?AssistBinding}
+     * @return array{grant: ?array, mac: ?string, binding: ?DelegatedGrant}
      */
     protected function sealPendingAssistGrant(AgentContext $context, string $toolName, array $arguments): array
     {
@@ -2351,14 +2356,14 @@ class AgentRunner
         $after = $before;
 
         if ($toolName === AdminTools::ASSIST_SERVER) {
-            $server = $this->assist->resolveServer((string) ($arguments['server'] ?? ''));
+            $server = $this->access->resolveServer((string) ($arguments['server'] ?? ''));
             if ($server === null) {
                 throw new \RuntimeException('The approved assist target no longer exists.');
             }
 
             $phase = AssistGrant::PHASE_OPEN;
             $before = null;
-            $after = new AssistBinding(
+            $after = DelegatedGrant::read(
                 serverUuid: $server->uuid,
                 serverName: (string) $server->name,
                 reason: trim((string) ($arguments['reason'] ?? '')),

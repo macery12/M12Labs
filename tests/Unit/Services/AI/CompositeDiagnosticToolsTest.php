@@ -7,9 +7,9 @@ use Everest\Models\Server;
 use Everest\Tests\TestCase;
 use Everest\Services\AI\Agent\WorkingSet;
 use Everest\Services\AI\Agent\AgentRunner;
+use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\AI\Agent\AgentContext;
 use Everest\Services\AI\Tools\ToolRegistry;
-use Everest\Services\AI\Agent\AssistBinding;
 use Everest\Services\AI\Tools\ToolDefinition;
 use Everest\Services\AI\Tools\Definitions\AdminTools;
 use Everest\Services\AI\Tools\Definitions\ServerTools;
@@ -41,7 +41,7 @@ class CompositeDiagnosticToolsTest extends TestCase
             'name' => 'Ticket boundary',
         ]);
         $context = new AgentContext($user, null, 'composite-boundary');
-        $context->bindAssist(new AssistBinding(
+        $context->bindAssist(DelegatedGrant::read(
             $server->uuid,
             $server->name,
             'Diagnose ticket 42',

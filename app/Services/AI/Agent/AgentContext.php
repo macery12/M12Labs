@@ -7,6 +7,7 @@ use Everest\Models\Server;
 use Everest\Services\AI\Data\AiMessage;
 use Everest\Services\AI\Data\AiToolCall;
 use Everest\Services\Privacy\RedactionMap;
+use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\AI\Tools\ToolDefinition;
 
 /**
@@ -60,7 +61,7 @@ class AgentContext
      * browsed billing then opened a customer session still carried the catalogue.
      *
      * Derived state, never authority: `enterPhase()` runs only *after*
-     * `AssistAuthorizer` approved the transition, and a restored turn recomputes
+     * `DelegatedAccess` approved the transition, and a restored turn recomputes
      * it from {@see resolvePhase()} rather than trusting what was stored.
      */
     public string $phase = WorkingSet::PHASE_ADMIN;
@@ -214,7 +215,7 @@ class AgentContext
      * been approved. Null on every server turn — the customer's own assistant
      * needs no such thing, it is already on their server.
      */
-    public ?AssistBinding $assist = null;
+    public ?DelegatedGrant $assist = null;
 
     /** Verified authority attached to the pending action being resumed. */
     public ?AssistGrant $pendingAssistGrant = null;
@@ -276,7 +277,7 @@ class AgentContext
         return $this->server ?? $this->assistServer;
     }
 
-    public function bindAssist(AssistBinding $binding, Server $server): void
+    public function bindAssist(DelegatedGrant $binding, Server $server): void
     {
         $this->assist = $binding;
         $this->assistServer = $server;
@@ -545,7 +546,7 @@ class AgentContext
         // Restored without its server, and therefore inert: `targetServer()`
         // still returns null and no server-scoped tool can resolve a URI until
         // the caller has re-read the server and re-checked the capability.
-        $context->assist = AssistBinding::fromArray($state['assist'] ?? null);
+        $context->assist = DelegatedGrant::fromArray($state['assist'] ?? null);
 
         // Derived from what is true right now, not from what was stored. With the
         // binding still inert this is the admin phase even for a turn that

@@ -6,7 +6,7 @@ namespace Everest\Services\AI\Tools;
  * The workflow conditions a tool needs before it can run. These name states the
  * *turn* is in, not permissions the user holds: a prerequisite makes a tool
  * discoverable and says what to do next, granting nothing. The gateway it names
- * still goes through the risk gate, the approval card and `AssistAuthorizer`.
+ * still goes through the risk gate, the approval card and `DelegatedAccess`.
  *
  * Explicit rather than left for the model to infer, since cross-scope
  * transitions are the part it gets wrong — no amount of prompt text reliably
@@ -28,7 +28,7 @@ class Prerequisite
      */
     public const SELECTED_SERVER = 'selected_server';
 
-    /** An approved read-only {@see \Everest\Services\AI\Agent\AssistBinding} exists. */
+    /** An approved read-only {@see \Everest\Services\Access\DelegatedGrant} exists. */
     public const READ_ASSIST = 'read_assist';
 
     /** An approved writable binding exists. Strictly stronger than READ_ASSIST. */

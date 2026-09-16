@@ -5,7 +5,7 @@ namespace Everest\Policies;
 use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Models\Permission;
-use Everest\Services\AI\Agent\AssistSession;
+use Everest\Services\Access\DelegatedSession;
 
 class ServerPolicy
 {
@@ -33,11 +33,11 @@ class ServerPolicy
             return true;
         }
 
-        // A delegated administrator running an approved AI assist session on
-        // this server, for the abilities that session was granted and no others.
-        // Open only for the duration of one dispatched tool call — outside it
-        // this returns false and the same administrator is refused as before.
-        if (app(AssistSession::class)->permits($user, $server, $ability)) {
+        // A delegated administrator with an approved, audited session on this
+        // server, for the abilities that session was granted and no others.
+        // Open only for the duration of one dispatched action — outside it this
+        // returns false and the same administrator is refused as before.
+        if (app(DelegatedSession::class)->permits($user, $server, $ability)) {
             return true;
         }
 

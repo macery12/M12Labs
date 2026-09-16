@@ -7,10 +7,10 @@ use Everest\Models\Server;
 use Everest\Tests\TestCase;
 use Everest\Services\AI\Tools\RiskGate;
 use Everest\Services\AI\Agent\WorkingSet;
+use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\AI\Agent\AgentContext;
 use Everest\Services\AI\Tools\Prerequisite;
 use Everest\Services\AI\Tools\ToolRegistry;
-use Everest\Services\AI\Agent\AssistBinding;
 use Everest\Services\AI\Tools\ToolDefinition;
 use Everest\Services\AI\Agent\WorkingSetPlanner;
 use Everest\Services\AI\Support\SchemaValidator;
@@ -28,7 +28,7 @@ use Everest\Services\Authorization\AdminAuthorizer;
  * report that the panel cannot read startup commands.
  *
  * The other half of what these check is that making a tool *discoverable* never
- * makes it *usable*. A declaration says what to do next; `AssistAuthorizer` and
+ * makes it *usable*. A declaration says what to do next; `DelegatedAccess` and
  * the approval card decide whether it happens.
  */
 class PrerequisiteChainTest extends TestCase
@@ -70,7 +70,7 @@ class PrerequisiteChainTest extends TestCase
         return $this->registry()->find($name);
     }
 
-    private function adminContext(?AssistBinding $binding = null): AgentContext
+    private function adminContext(?DelegatedGrant $binding = null): AgentContext
     {
         $context = new AgentContext($this->user(), null, 'turn-prereq');
 
@@ -81,18 +81,16 @@ class PrerequisiteChainTest extends TestCase
         return $context;
     }
 
-    private function binding(bool $writable = false, ?int $ticket = null): AssistBinding
+    private function binding(bool $writable = false, ?int $ticket = null): DelegatedGrant
     {
-        return new AssistBinding(
+        $grant = DelegatedGrant::read(
             serverUuid: $this->server()->uuid,
             serverName: $this->server()->name,
             reason: 'Ticket 12 says the server will not boot.',
-            abilities: $writable
-                ? array_merge(AssistBinding::READ_ABILITIES, AssistBinding::WRITE_ABILITIES)
-                : AssistBinding::READ_ABILITIES,
             ticketId: $ticket,
-            writable: $writable,
         );
+
+        return $writable ? $grant->escalated() : $grant;
     }
 
     /*

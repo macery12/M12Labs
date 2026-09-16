@@ -105,7 +105,7 @@ class AppServiceProvider extends ServiceProvider
         // consult it — AuthenticateServerAccess and ServerPolicy — are a
         // middleware and a policy, neither constructed anywhere the agent runner
         // could reach to pass it along.
-        $this->app->singleton(\Everest\Services\AI\Agent\AssistSession::class);
+        $this->app->singleton(\Everest\Services\Access\DelegatedSession::class);
 
         // The tool catalogue and its search index are per-deployment facts, and
         // both are now read several times per inference step rather than once

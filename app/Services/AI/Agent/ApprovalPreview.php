@@ -5,6 +5,7 @@ namespace Everest\Services\AI\Agent;
 use Everest\Models\Server;
 use Everest\Services\AI\Tools\RiskGate;
 use Everest\Services\AI\Tools\ToolRegistry;
+use Everest\Services\Access\DelegatedAccess;
 use Everest\Services\AI\Tools\ToolDefinition;
 use Everest\Services\AI\Tools\Definitions\AdminTools;
 use Everest\Services\AI\Tools\Definitions\SharedTools;
@@ -139,7 +140,7 @@ class ApprovalPreview
             return null;
         }
 
-        $server = app(AssistAuthorizer::class)->resolveServer($reference);
+        $server = app(DelegatedAccess::class)->resolveServer($reference);
 
         if ($server === null) {
             return null;

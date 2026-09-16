@@ -7,6 +7,7 @@ use Everest\Models\Server;
 use Everest\Models\AiConversation;
 use Illuminate\Support\Facades\Log;
 use Everest\Services\Privacy\RedactionMap;
+use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\AI\Tools\ToolDefinition;
 use Everest\Models\AiMessage as MessageRecord;
 use Everest\Services\AI\Data\AiMessage as MessageData;
@@ -242,9 +243,9 @@ class TurnRecorder
      * server. The caller re-reads the server and re-checks the capability before
      * it grants anything.
      */
-    public function loadAssist(?AiConversation $conversation): ?AssistBinding
+    public function loadAssist(?AiConversation $conversation): ?DelegatedGrant
     {
-        return AssistBinding::fromArray($conversation?->assist);
+        return DelegatedGrant::fromArray($conversation?->assist);
     }
 
     /**

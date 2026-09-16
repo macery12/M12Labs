@@ -5,9 +5,9 @@ namespace Everest\Tests\Unit\Services\AI;
 use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Tests\TestCase;
+use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\AI\Agent\AgentContext;
 use Everest\Services\AI\Tools\ToolRegistry;
-use Everest\Services\AI\Agent\AssistBinding;
 use Everest\Services\AI\Agent\SystemPromptBuilder;
 use Everest\Services\AI\Tools\Definitions\AdminTools;
 
@@ -65,7 +65,7 @@ class ObservedIncidentTrajectoryTest extends TestCase
         $admin->setRelation('adminRole', null);
         $assist = new AgentContext($admin, null, 'turn-read-only-missing-server-jar');
         $assist->bindAssist(
-            new AssistBinding($server->uuid, $server->name, 'Ticket 54 startup failure', ticketId: 54),
+            DelegatedGrant::read($server->uuid, $server->name, 'Ticket 54 startup failure', ticketId: 54),
             $server,
         );
         $assistPrompt = app(SystemPromptBuilder::class)->build($assist);

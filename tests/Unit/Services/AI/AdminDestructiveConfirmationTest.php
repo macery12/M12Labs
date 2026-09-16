@@ -6,8 +6,8 @@ use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Tests\TestCase;
 use Everest\Models\AiPendingAction;
+use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\AI\Agent\AgentContext;
-use Everest\Services\AI\Agent\AssistBinding;
 use Everest\Services\AI\Tools\ToolDefinition;
 use Everest\Services\AI\Agent\ApprovalPreview;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -55,14 +55,11 @@ class AdminDestructiveConfirmationTest extends TestCase
         $server = $this->server();
         $user = new User();
         $context = new AgentContext($user, null, 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee');
-        $context->bindAssist(new AssistBinding(
+        $context->bindAssist(DelegatedGrant::read(
             $server->uuid,
             'Old server name',
             'Support request',
-            AssistBinding::WRITE_ABILITIES,
-            null,
-            true,
-        ), $server);
+        )->escalated(), $server);
 
         $pending = (new AiPendingAction())->forceFill([
             'risk' => $risk,

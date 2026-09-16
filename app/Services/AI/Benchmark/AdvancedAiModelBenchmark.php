@@ -12,9 +12,9 @@ use Everest\Services\AI\Data\AiRequest;
 use Everest\Services\AI\Data\AiResponse;
 use Everest\Services\AI\Data\AiToolCall;
 use Everest\Services\AI\Tools\ToolResult;
+use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\AI\Agent\AgentContext;
 use Everest\Services\AI\Data\AiStreamEvent;
-use Everest\Services\AI\Agent\AssistBinding;
 use Everest\Services\AI\Agent\ProgressGuard;
 use Everest\Services\AI\Contracts\AiProvider;
 use Everest\Services\AI\Tools\ToolDefinition;
@@ -513,7 +513,7 @@ class AdvancedAiModelBenchmark
                     $server->name = 'Synthetic benchmark server';
                     $server->status = 'offline';
                     $server->setRelation('egg', null);
-                    $context->bindAssist(new AssistBinding(
+                    $context->bindAssist(DelegatedGrant::read(
                         $server->uuid,
                         $server->name,
                         (string) ($validatedArguments['reason'] ?? 'Synthetic benchmark diagnosis'),

@@ -2,6 +2,8 @@
 
 namespace Everest\Services\AI\Agent;
 
+use Everest\Services\Access\DelegatedGrant;
+
 /**
  * An authenticated assist grant attached to one suspended action.
  *
@@ -20,8 +22,8 @@ final class AssistGrant
 
     private function __construct(
         public readonly string $phase,
-        public readonly ?AssistBinding $before,
-        public readonly ?AssistBinding $after,
+        public readonly ?DelegatedGrant $before,
+        public readonly ?DelegatedGrant $after,
     ) {
     }
 
@@ -30,8 +32,8 @@ final class AssistGrant
      */
     public static function seal(
         string $phase,
-        ?AssistBinding $before,
-        ?AssistBinding $after,
+        ?DelegatedGrant $before,
+        ?DelegatedGrant $after,
         string $turnId,
         int $userId,
         string $toolName,
@@ -74,8 +76,8 @@ final class AssistGrant
         $phase = $stored['phase'] ?? null;
         $beforeRaw = $stored['before'] ?? null;
         $afterRaw = $stored['after'] ?? null;
-        $after = $afterRaw === null ? null : AssistBinding::fromArray($afterRaw);
-        $before = $beforeRaw === null ? null : AssistBinding::fromArray($beforeRaw);
+        $after = $afterRaw === null ? null : DelegatedGrant::fromArray($afterRaw);
+        $before = $beforeRaw === null ? null : DelegatedGrant::fromArray($beforeRaw);
 
         if (
             !in_array($phase, [self::PHASE_NONE, self::PHASE_OPEN, self::PHASE_ESCALATE, self::PHASE_ACTIVE], true)
@@ -105,7 +107,7 @@ final class AssistGrant
             return $stateAssist === null;
         }
 
-        $stored = AssistBinding::fromArray($stateAssist);
+        $stored = DelegatedGrant::fromArray($stateAssist);
 
         return $stored !== null && $stored->sameAuthorityAs($this->before);
     }

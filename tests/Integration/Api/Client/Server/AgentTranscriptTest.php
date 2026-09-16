@@ -6,9 +6,9 @@ use Everest\Models\AiMessage;
 use Everest\Models\AiConversation;
 use Everest\Models\AiPendingAction;
 use Everest\Services\AI\Tools\ToolResult;
+use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\AI\Agent\AgentContext;
 use Everest\Services\AI\Agent\TurnRecorder;
-use Everest\Services\AI\Agent\AssistBinding;
 use Everest\Services\AI\Agent\ApprovalPreview;
 use Everest\Services\AI\Data\AiMessage as MessageData;
 use Everest\Services\AI\Data\AiToolCall as ToolCallData;
@@ -240,7 +240,7 @@ class AgentTranscriptTest extends ClientApiIntegrationTestCase
         $conversation = $this->recorder->ensureConversation($admin, null, null, 'Investigate customer server');
 
         $opened = new AgentContext($admin, null, 'turn-open', $conversation->id);
-        $binding = new AssistBinding(
+        $binding = DelegatedGrant::read(
             serverUuid: $server->uuid,
             serverName: (string) $server->name,
             reason: 'Ticketed startup failure',
@@ -271,8 +271,8 @@ class AgentTranscriptTest extends ClientApiIntegrationTestCase
         $following = $this->recorder->loadAssist($conversation->fresh());
         $this->assertSame($server->uuid, $following?->serverUuid);
         $this->assertTrue($following?->writable);
-        $this->assertSame(AssistBinding::WRITE_ABILITIES, array_values(array_intersect(
-            AssistBinding::WRITE_ABILITIES,
+        $this->assertSame(DelegatedGrant::WRITE_ABILITIES, array_values(array_intersect(
+            DelegatedGrant::WRITE_ABILITIES,
             $following?->abilities ?? [],
         )));
     }

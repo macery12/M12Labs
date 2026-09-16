@@ -23,12 +23,12 @@ use Everest\Services\Privacy\RedactionMap;
 use Everest\Services\AI\Agent\AgentContext;
 use Everest\Services\AI\Agent\TurnRecorder;
 use Everest\Services\AI\Tools\ToolRegistry;
+use Everest\Services\Access\DelegatedAccess;
 use Everest\Services\AI\Agent\AgentEventLog;
 use Everest\Services\AI\Agent\TurnAuthority;
 use Everest\Services\AI\Inference\Admission;
 use Everest\Services\AI\Inference\TurnLease;
 use Everest\Services\AI\Agent\ApprovalPreview;
-use Everest\Services\AI\Agent\AssistAuthorizer;
 use Everest\Services\AI\Agent\TurnCancellations;
 use Everest\Services\AI\Inference\InferenceGate;
 use Everest\Services\AI\Inference\ProviderReadiness;
@@ -979,8 +979,8 @@ trait HandlesAgentTurns
 
             // Re-authorize against the approved target even for an opening
             // grant, but do not activate it until the audit row is durable.
-            $authorizer = app(AssistAuthorizer::class);
-            $server = $authorizer->reauthorize($context->user, $grant->after);
+            $access = app(DelegatedAccess::class);
+            $server = $access->reauthorize($context->user, $grant->after);
             if ($server === null) {
                 $context->assist = null;
                 $context->pendingAssistAuthorityInvalid = true;
@@ -1004,8 +1004,8 @@ trait HandlesAgentTurns
             return;
         }
 
-        $authorizer = app(AssistAuthorizer::class);
-        $server = $authorizer->reauthorize($context->user, $binding);
+        $access = app(DelegatedAccess::class);
+        $server = $access->reauthorize($context->user, $binding);
 
         if ($server === null) {
             $context->assist = null;

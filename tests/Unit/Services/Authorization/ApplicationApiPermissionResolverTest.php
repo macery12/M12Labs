@@ -32,7 +32,7 @@ class ApplicationApiPermissionResolverTest extends TestCase
      * The invariant below exists to catch a capability that can be granted in
      * the UI and then does nothing — an orphan. `servers.assist` is not one: it
      * gates whether the AI assistant may open an audited session inside a
-     * customer's server, which is enforced in `AssistAuthorizer` and consulted by
+     * customer's server, which is enforced in `DelegatedAccess` and consulted by
      * `AuthenticateServerAccess` and `ServerPolicy`. There is no endpoint behind
      * it because it does not add an endpoint; it decides whether the client API
      * routes that already exist will admit somebody who is neither the owner nor

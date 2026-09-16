@@ -13,12 +13,12 @@ use Everest\Services\AI\Agent\ToolBudget;
 use Everest\Services\AI\Agent\WorkingSet;
 use Everest\Services\AI\Agent\AgentRunner;
 use Everest\Services\AI\Agent\AssistGrant;
+use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\AI\Agent\AgentContext;
 use Everest\Services\AI\Tools\ToolRegistry;
-use Everest\Services\AI\Agent\AssistBinding;
-use Everest\Services\AI\Agent\AssistSession;
+use Everest\Services\Access\DelegatedAccess;
+use Everest\Services\AI\Agent\AssistToolSets;
 use Everest\Services\AI\Tools\ToolDefinition;
-use Everest\Services\AI\Agent\AssistAuthorizer;
 use Everest\Services\AI\Agent\WorkingSetPlanner;
 use Everest\Services\AI\Support\SchemaValidator;
 use Everest\Services\AI\Tools\ConsoleCommandGate;
@@ -28,14 +28,15 @@ use Everest\Services\Authorization\AdminAuthorizer;
 use Everest\Services\AI\Tools\Definitions\AdminTools;
 
 /**
- * An administrator's audited session inside a customer's server.
+ * The assistant's half of an administrator's audited session on a customer's
+ * server: which tools a session is offered, how the gateway behaves when the
+ * model names a server that does not exist, and how a suspended approval is
+ * authenticated on the way back in.
  *
- * This is the one place in the panel where somebody who is neither the server's
- * owner nor a panel Owner gets through `AuthenticateServerAccess` and
- * `ServerPolicy`, so the tests here are mostly about how narrow that gap is:
- * that it is shut unless a session is open, that it only ever admits the
- * abilities the session was granted, and that none of it can be widened by
- * editing the JSON a suspended turn was stored in.
+ * The authority itself is core's, and so are its tests — see
+ * {@see \Everest\Tests\Unit\Services\Access\DelegatedAccessTest} for whether
+ * the gap in `AuthenticateServerAccess` and `ServerPolicy` opens at all. What
+ * is left here is everything that would move with the AI module.
  */
 class AssistSessionTest extends TestCase
 {
@@ -68,9 +69,9 @@ class AssistSessionTest extends TestCase
         return $server;
     }
 
-    private function binding(bool $writable = false): AssistBinding
+    private function binding(bool $writable = false): DelegatedGrant
     {
-        $base = new AssistBinding(
+        $base = DelegatedGrant::read(
             serverUuid: $this->server()->uuid,
             serverName: 'Survival SMP',
             reason: 'Ticket #2 — server will not start',
@@ -102,10 +103,10 @@ class AssistSessionTest extends TestCase
      */
     public function testAnUnresolvableServerReferenceFailsTheCallRatherThanTheTurn(): void
     {
-        $authorizer = \Mockery::mock(AssistAuthorizer::class);
-        $authorizer->shouldReceive('resolveServer')->andReturn(null);
+        $access = \Mockery::mock(DelegatedAccess::class);
+        $access->shouldReceive('resolveServer')->andReturn(null);
 
-        $result = $this->attest($authorizer, ['server' => 'ticket 4', 'reason' => 'Diagnosing startup issues']);
+        $result = $this->attest($access, ['server' => 'ticket 4', 'reason' => 'Diagnosing startup issues']);
 
         $this->assertInstanceOf(\Everest\Services\AI\Tools\ToolResult::class, $result);
         $this->assertFalse($result->ok);
@@ -123,10 +124,10 @@ class AssistSessionTest extends TestCase
     public function testAResolvableReferenceIsAttestedToTheImmutableUuid(): void
     {
         $server = $this->server();
-        $authorizer = \Mockery::mock(AssistAuthorizer::class);
-        $authorizer->shouldReceive('resolveServer')->andReturn($server);
+        $access = \Mockery::mock(DelegatedAccess::class);
+        $access->shouldReceive('resolveServer')->andReturn($server);
 
-        $attested = $this->attest($authorizer, ['server' => '14', 'reason' => 'Ticket #4']);
+        $attested = $this->attest($access, ['server' => '14', 'reason' => 'Ticket #4']);
 
         $this->assertIsArray($attested);
 
@@ -138,10 +139,10 @@ class AssistSessionTest extends TestCase
     /**
      * @param array<string, mixed> $arguments
      */
-    private function attest(AssistAuthorizer $authorizer, array $arguments): mixed
+    private function attest(DelegatedAccess $access, array $arguments): mixed
     {
         $runner = (new \ReflectionClass(AgentRunner::class))->newInstanceWithoutConstructor();
-        (new \ReflectionProperty(AgentRunner::class, 'assist'))->setValue($runner, $authorizer);
+        (new \ReflectionProperty(AgentRunner::class, 'access'))->setValue($runner, $access);
 
         $context = new AgentContext(user: new User(), server: null, turnId: 'a-turn');
 
@@ -159,120 +160,6 @@ class AssistSessionTest extends TestCase
     |--------------------------------------------------------------------------
     */
 
-    public function testTheSessionIsShutOutsideTheCallItWraps(): void
-    {
-        $session = new AssistSession();
-        $admin = User::factory()->make(['id' => 7]);
-
-        // Nothing outside `during()` can open one, and this is the state every
-        // browser request sees.
-        $this->assertFalse($session->covers($admin, $this->server()));
-        $this->assertFalse($session->permits($admin, $this->server(), Permission::ACTION_FILE_READ));
-    }
-
-    public function testTheSessionIsOpenOnlyForTheDurationOfTheCall(): void
-    {
-        $session = new AssistSession();
-        $admin = User::factory()->make(['id' => 7]);
-        $server = $this->server();
-
-        $inside = $session->during($admin, $this->binding(), fn () => $session->covers($admin, $server));
-
-        $this->assertTrue($inside);
-        $this->assertFalse($session->covers($admin, $server));
-    }
-
-    public function testTheSessionClosesEvenWhenTheCallThrows(): void
-    {
-        $session = new AssistSession();
-        $admin = User::factory()->make(['id' => 7]);
-
-        try {
-            $session->during($admin, $this->binding(), function () {
-                throw new \RuntimeException('the node was unreachable');
-            });
-        } catch (\RuntimeException) {
-            // A tool call that blows up must not leave an administrator standing
-            // inside a customer's server for the rest of the request.
-        }
-
-        $this->assertFalse($session->covers($admin, $this->server()));
-    }
-
-    public function testASessionDoesNotCoverAnotherServer(): void
-    {
-        $session = new AssistSession();
-        $admin = User::factory()->make(['id' => 7]);
-
-        $other = new Server();
-        $other->uuid = '11111111-2222-3333-4444-555555555555';
-
-        $seen = $session->during($admin, $this->binding(), fn () => $session->covers($admin, $other));
-
-        $this->assertFalse($seen);
-    }
-
-    public function testASessionDoesNotCoverAnotherAdministrator(): void
-    {
-        $session = new AssistSession();
-        $admin = User::factory()->make(['id' => 7]);
-        $colleague = User::factory()->make(['id' => 8]);
-
-        $seen = $session->during($admin, $this->binding(), fn () => $session->covers($colleague, $this->server()));
-
-        $this->assertFalse($seen);
-    }
-
-    public function testARestrictedSessionRefusesAbilitiesItWasNotGranted(): void
-    {
-        $session = new AssistSession();
-        $admin = User::factory()->make(['id' => 7]);
-        $server = $this->server();
-
-        [$read, $write, $delete] = $session->during($admin, $this->binding(), fn () => [
-            $session->permits($admin, $server, Permission::ACTION_FILE_READ),
-            $session->permits($admin, $server, Permission::ACTION_FILE_UPDATE),
-            $session->permits($admin, $server, Permission::ACTION_FILE_DELETE),
-        ]);
-
-        $this->assertTrue($read);
-        // Read-only until an administrator approves the widening separately.
-        $this->assertFalse($write);
-        // Never, at any tier: fixing a server does not require destroying part
-        // of it, and the customer owns the files.
-        $this->assertFalse($delete);
-    }
-
-    public function testEscalationGrantsWritesButStillNotDeletion(): void
-    {
-        $session = new AssistSession();
-        $admin = User::factory()->make(['id' => 7]);
-        $server = $this->server();
-
-        [$write, $restart, $delete] = $session->during($admin, $this->binding(writable: true), fn () => [
-            $session->permits($admin, $server, Permission::ACTION_FILE_UPDATE),
-            $session->permits($admin, $server, Permission::ACTION_CONTROL_RESTART),
-            $session->permits($admin, $server, Permission::ACTION_FILE_DELETE),
-        ]);
-
-        $this->assertTrue($write);
-        $this->assertTrue($restart);
-        $this->assertFalse($delete);
-    }
-
-    public function testSessionsCannotNest(): void
-    {
-        $session = new AssistSession();
-        $admin = User::factory()->make(['id' => 7]);
-
-        $this->expectException(\LogicException::class);
-
-        $session->during($admin, $this->binding(), function () use ($session, $admin) {
-            // A nested open would restore the *wider* binding on its way out.
-            $session->during($admin, $this->binding(writable: true), fn () => null);
-        });
-    }
-
     /*
     |--------------------------------------------------------------------------
     | What a session may reach
@@ -286,7 +173,7 @@ class AssistSessionTest extends TestCase
 
         $names = array_map(
             fn (ToolDefinition $d) => $d->name,
-            $registry->forAssist($binding->tools(), $binding->abilities)
+            $registry->forAssist(AssistToolSets::for($binding->writable), $binding->abilities)
         );
 
         $this->assertContains('files_read', $names);
@@ -306,7 +193,7 @@ class AssistSessionTest extends TestCase
 
         $names = array_map(
             fn (ToolDefinition $d) => $d->name,
-            $registry->forAssist($binding->tools(), $binding->abilities)
+            $registry->forAssist(AssistToolSets::for($binding->writable), $binding->abilities)
         );
 
         $this->assertContains('files_write', $names);
@@ -320,7 +207,7 @@ class AssistSessionTest extends TestCase
      *
      * @return string[]
      */
-    private function offerings(ToolRegistry $registry, AssistBinding $binding): array
+    private function offerings(ToolRegistry $registry, DelegatedGrant $binding): array
     {
         $context = new AgentContext(User::factory()->make(['id' => 3]), null, 'turn-1');
         $context->bindAssist($binding, $this->server());
@@ -457,7 +344,7 @@ class AssistSessionTest extends TestCase
     public function testAssistWithoutATicketDoesNotOfferPanelWideTicketReaders(): void
     {
         $registry = $this->registry($this->authorizer([], owner: true));
-        $binding = new AssistBinding(
+        $binding = DelegatedGrant::read(
             serverUuid: $this->server()->uuid,
             serverName: 'Survival SMP',
             reason: 'Server will not start',
@@ -513,7 +400,7 @@ class AssistSessionTest extends TestCase
         // advertised, the abilities decide what will run. Naming a tool without
         // granting its ability must not open it.
         $this->assertFalse(
-            $registry->assistPermits($definition, ['files_write'], AssistBinding::READ_ABILITIES)
+            $registry->assistPermits($definition, ['files_write'], DelegatedGrant::READ_ABILITIES)
         );
     }
 
@@ -607,22 +494,6 @@ class AssistSessionTest extends TestCase
         $this->assertSame($this->server()->uuid, $restored->pendingAssistUuid());
     }
 
-    public function testStoredAbilitiesOutsideTheDeclaredListsAreDiscarded(): void
-    {
-        $tampered = AssistBinding::fromArray([
-            'server_uuid' => $this->server()->uuid,
-            'server_name' => 'Survival SMP',
-            'reason' => 'x',
-            'abilities' => [Permission::ACTION_FILE_READ, Permission::ACTION_FILE_DELETE, 'settings.reinstall'],
-            'writable' => true,
-        ]);
-
-        // A grant is authority, not preferences. A non-canonical ability set is
-        // rejected whole rather than repaired into something the user did not
-        // approve.
-        $this->assertNull($tampered);
-    }
-
     public function testAuthenticatedPendingGrantRejectsEveryStateWideningAndRetarget(): void
     {
         $before = $this->binding();
@@ -653,15 +524,15 @@ class AssistSessionTest extends TestCase
         $writable = $before->toArray();
         $writable['writable'] = true;
         $writable['abilities'] = array_values(array_unique(array_merge(
-            AssistBinding::READ_ABILITIES,
-            AssistBinding::WRITE_ABILITIES,
+            DelegatedGrant::READ_ABILITIES,
+            DelegatedGrant::WRITE_ABILITIES,
         )));
 
         $abilities = $before->toArray();
         $abilities['abilities'][] = Permission::ACTION_FILE_UPDATE;
 
         $tools = $before->toArray();
-        $tools['tools'] = array_merge(AssistBinding::READ_TOOLS, AssistBinding::WRITE_TOOLS);
+        $tools['tools'] = array_merge(AssistToolSets::READ, AssistToolSets::WRITE);
 
         foreach ([$server, $writable, $abilities, $tools] as $state) {
             $this->assertFalse($grant->matchesState($state));
@@ -710,13 +581,13 @@ class AssistSessionTest extends TestCase
             $arguments,
         );
 
-        $authorizer = \Mockery::mock(AssistAuthorizer::class);
-        $authorizer->shouldReceive('permitted')->once()->with($admin)->andReturnTrue();
-        $authorizer->shouldReceive('resolveServer')->once()->with($server->uuid)->andReturn($server);
-        $authorizer->shouldReceive('record')->once()->andThrow(new \RuntimeException('activity unavailable'));
+        $access = \Mockery::mock(DelegatedAccess::class);
+        $access->shouldReceive('permitted')->once()->with($admin)->andReturnTrue();
+        $access->shouldReceive('resolveServer')->once()->with($server->uuid)->andReturn($server);
+        $access->shouldReceive('open')->once()->andThrow(new \RuntimeException('activity unavailable'));
 
         $runner = (new \ReflectionClass(AgentRunner::class))->newInstanceWithoutConstructor();
-        (new \ReflectionProperty(AgentRunner::class, 'assist'))->setValue($runner, $authorizer);
+        (new \ReflectionProperty(AgentRunner::class, 'access'))->setValue($runner, $access);
 
         try {
             (new \ReflectionMethod(AgentRunner::class, 'openAssist'))->invoke($runner, $context, $arguments, fn () => null);
@@ -769,12 +640,12 @@ class AssistSessionTest extends TestCase
             $arguments,
         );
 
-        $authorizer = \Mockery::mock(AssistAuthorizer::class);
-        $authorizer->shouldReceive('permitted')->once()->with($admin)->andReturnTrue();
-        $authorizer->shouldReceive('record')->once()->andThrow(new \RuntimeException('activity unavailable'));
+        $access = \Mockery::mock(DelegatedAccess::class);
+        $access->shouldReceive('permitted')->once()->with($admin)->andReturnTrue();
+        $access->shouldReceive('escalate')->once()->andThrow(new \RuntimeException('activity unavailable'));
 
         $runner = (new \ReflectionClass(AgentRunner::class))->newInstanceWithoutConstructor();
-        (new \ReflectionProperty(AgentRunner::class, 'assist'))->setValue($runner, $authorizer);
+        (new \ReflectionProperty(AgentRunner::class, 'access'))->setValue($runner, $access);
 
         try {
             (new \ReflectionMethod(AgentRunner::class, 'escalateAssist'))->invoke($runner, $context, $arguments, fn () => null);
@@ -786,12 +657,6 @@ class AssistSessionTest extends TestCase
         $this->assertNotNull($context->assist);
         $this->assertFalse($context->assist->writable);
         $this->assertFalse($context->assist->permits(Permission::ACTION_FILE_UPDATE));
-    }
-
-    public function testABindingWithoutAServerUuidIsRejectedOutright(): void
-    {
-        $this->assertNull(AssistBinding::fromArray(['reason' => 'x', 'abilities' => ['file.read']]));
-        $this->assertNull(AssistBinding::fromArray('not an array'));
     }
 
     public function testAnAssistTurnStaysOnTheAdminScope(): void

@@ -338,7 +338,7 @@ class ToolOfferingTest extends TestCase
     /**
      * A server tool no session could ever grant is not advertised either.
      *
-     * The catalogue is bounded by `AssistBinding`'s own lists rather than by
+     * The catalogue is bounded by `AssistToolSets`' own lists rather than by
      * scope, so a tool outside every grant — deletion, which is deliberately
      * absent from both — cannot be surfaced as though an approval would reach it.
      */
