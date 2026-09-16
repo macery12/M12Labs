@@ -94,6 +94,19 @@ class ExtensionCapabilityFileValidator
             }
         }
 
+        // One-directional, unlike the rules above. A declared binding must ship
+        // its class, or the container would be told to share something that does
+        // not exist. The reverse is not a fault: a package ships plenty of
+        // classes it has no reason to make shared, and requiring a declaration
+        // for each would turn an optimisation into paperwork.
+        foreach ($capabilities->bindings as $binding) {
+            $expected = sprintf('%s%s.php', $backend, $binding);
+
+            if (!isset($paths[$expected])) {
+                throw new DisplayException(sprintf('The manifest declares the binding "%s" but the package does not ship %s.', $binding, $expected));
+            }
+        }
+
         foreach (['server' => $capabilities->serverPages, 'admin' => $capabilities->adminPages] as $surface => $pages) {
             foreach ($pages as $page) {
                 /** @var PageDefinition $page */

@@ -39,7 +39,24 @@ final class ExtensionCapabilityVocabulary
         'secrets',
         'settings',
         'privileged',
+        'bindings',
     ];
+
+    /**
+     * A class a package asks the container to build once per request, written
+     * as its path inside the package: `Tools/ToolCatalogue` becomes
+     * `app/Extensions/Packages/<id>/Tools/ToolCatalogue.php` and the class
+     * `Everest\Extensions\Packages\<id>\Tools\ToolCatalogue`.
+     *
+     * Deriving both from the declaration is what keeps a package binding only
+     * its own classes — the same rule the rest of the manifest follows, where a
+     * package never names a file itself. There is no spelling of this that
+     * reaches a core service or another extension's, so nothing has to check.
+     *
+     * StudlyCase segments only: no dots, no leading slash, nothing that could
+     * traverse.
+     */
+    public const BINDING_PATTERN = '/^[A-Z][A-Za-z0-9]*(\/[A-Z][A-Za-z0-9]*)*$/';
 
     /**
      * Privileged core services a package may be granted, as opposed to surfaces

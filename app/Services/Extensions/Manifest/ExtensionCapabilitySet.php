@@ -30,6 +30,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
      * @param array<int, SecretDefinition> $secrets
      * @param array<int, SettingDefinition> $settings
      * @param array<int, string> $privileged
+     * @param array<int, string> $bindings
      */
     public function __construct(
         public bool $clientRoutes = false,
@@ -46,6 +47,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         public array $secrets = [],
         public array $settings = [],
         public array $privileged = [],
+        public array $bindings = [],
     ) {
     }
 
@@ -156,6 +158,9 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         if ($this->privileged !== []) {
             $projection['privileged'] = $this->privileged;
         }
+        if ($this->bindings !== []) {
+            $projection['bindings'] = $this->bindings;
+        }
 
         return $projection;
     }
@@ -180,6 +185,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
             'clientRoutes' => $this->clientRoutes,
             'adminRoutes' => $this->adminRoutes,
             'privileged' => count($this->privileged),
+            'bindings' => count($this->bindings),
         ];
     }
 }

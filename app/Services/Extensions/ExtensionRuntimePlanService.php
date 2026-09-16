@@ -142,6 +142,7 @@ class ExtensionRuntimePlanService
             'secrets' => $entry->capabilities->secrets !== [],
             'pages.server' => $entry->capabilities->hasServerPages(),
             'pages.admin' => $entry->capabilities->hasAdminPages(),
+            'bindings' => $entry->capabilities->bindings !== [],
             default => str_starts_with($capability, 'privileged.')
                 && $entry->capabilities->grantsPrivilege(substr($capability, 11)),
         });
@@ -492,6 +493,13 @@ class ExtensionRuntimePlanService
             privileged: array_values(array_intersect(
                 ExtensionCapabilityVocabulary::PRIVILEGED,
                 array_map('strval', (array) ($capabilities['privileged'] ?? [])),
+            )),
+            // Re-validated on the way out of storage as well as on the way in:
+            // this is read to build a class name, and the projection is the one
+            // part of a package an attacker with database access could edit.
+            bindings: array_values(array_filter(
+                array_map('strval', (array) ($capabilities['bindings'] ?? [])),
+                fn (string $path): bool => (bool) preg_match(ExtensionCapabilityVocabulary::BINDING_PATTERN, $path),
             )),
         );
     }

@@ -117,6 +117,12 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         foreach ($set->privileged as $service) {
             $flat['privileged:' . $service] = true;
         }
+        // Informational, like a settings field: making one of a package's own
+        // classes shared reaches nothing the package could not already reach,
+        // and is inert unless something that runs resolves it.
+        foreach ($set->bindings as $binding) {
+            $flat['binding:' . $binding] = true;
+        }
 
         return $flat;
     }

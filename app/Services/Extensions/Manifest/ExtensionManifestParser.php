@@ -141,7 +141,45 @@ class ExtensionManifestParser
             secrets: $this->parseSecrets($capabilities['secrets'] ?? [], $extensionId),
             settings: $this->parseSettings($capabilities['settings'] ?? [], $extensionId),
             privileged: $this->parsePrivileged($capabilities['privileged'] ?? [], $extensionId),
+            bindings: $this->parseBindings($capabilities['bindings'] ?? []),
         );
+    }
+
+    /**
+     * Classes the container should build once per request rather than on every
+     * resolution.
+     *
+     * Declared as a path inside the package, never as a fully-qualified name,
+     * so there is no spelling that reaches a core service or another
+     * extension's — the same rule the rest of the manifest follows. Sorted and
+     * de-duplicated so the projection, and the hash an administrator approves,
+     * do not depend on how the author ordered the list.
+     *
+     * @return array<int, string>
+     */
+    private function parseBindings($bindings): array
+    {
+        if ($bindings === [] || $bindings === null) {
+            return [];
+        }
+
+        if (!is_array($bindings) || !array_is_list($bindings)) {
+            throw new DisplayException('The manifest "capabilities.bindings" section must be a list.');
+        }
+
+        $paths = [];
+        foreach ($bindings as $index => $path) {
+            if (!is_string($path) || !preg_match(ExtensionCapabilityVocabulary::BINDING_PATTERN, $path)) {
+                throw new DisplayException(sprintf('capabilities.bindings[%d] must be a class path inside the package, such as "Tools/ToolCatalogue".', $index));
+            }
+
+            $paths[$path] = true;
+        }
+
+        $paths = array_keys($paths);
+        sort($paths, SORT_STRING);
+
+        return $paths;
     }
 
     /**

@@ -71,6 +71,9 @@ export interface ExtensionCapabilitySummary {
     // nothing they can act on. Absent on packages that ask for none, and on
     // repositories that predate the field.
     privileged?: string[];
+    // Classes the package asks the container to build once per request. An
+    // optimisation, not a privilege — a count is all an operator needs.
+    bindings?: number;
 }
 
 export interface Extension {

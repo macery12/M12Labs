@@ -15,11 +15,19 @@ use Everest\Services\Extensions\ExtensionQueueJournal;
 use Everest\Services\Extensions\ExtensionQueueRegistry;
 use Everest\Services\Extensions\ExtensionHookDispatcher;
 use Everest\Services\Extensions\ExtensionJobDrainService;
+use Everest\Services\Extensions\ExtensionBindingRegistrar;
 use Everest\Services\Extensions\ExtensionPermissionRegistry;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 
 /**
  * Boot-time wiring for the extension platform.
+ *
+ * Deliberately not a place packages can extend. There is no per-package
+ * `register()`/`boot()` hook and there is not meant to be: a service provider
+ * runs package code on every request, including the overwhelming majority with
+ * nothing to do with that extension, where a route or a job runs only when
+ * something reaches it. What packages can do instead is declare container
+ * bindings as data — see {@see ExtensionBindingRegistrar}.
  *
  * Deliberately not the owner of extension routes. ExtensionRouteGuardService
  * audits contributed routes by reading RouteFacade::getGroupStack() to work out
@@ -53,11 +61,16 @@ class ExtensionServiceProvider extends ServiceProvider
         Event::listen(JobFailed::class, fn (JobFailed $event) => $journal->failed($event));
 
         // Deferred to booted() for the same reason QueueServiceProvider defers
-        // its supervisor sizing: this reads the runtime plan, which needs the
-        // database and the settings the SettingsServiceProvider writes into
-        // config during its own boot.
+        // its supervisor sizing: both of these read the runtime plan, which
+        // needs the database and the settings the SettingsServiceProvider
+        // writes into config during its own boot.
+        //
+        // Late enough is still early enough. Nothing resolves a package's
+        // classes before the router dispatches, and `singleton()` only records
+        // a name — the class is not autoloaded until something asks for it.
         $this->app->booted(function (): void {
             $this->registerQueueLimiters();
+            $this->app->make(ExtensionBindingRegistrar::class)->register();
         });
     }
 
