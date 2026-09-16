@@ -206,6 +206,21 @@ class ExtensionPhpSourceScanner
             }
         }
 
+        // A `use` statement is the polite way to reach a class; it is not the
+        // only way. `\Everest\Models\ExtensionConfig::get(...)` written inline
+        // reaches exactly as far and imports nothing, so checking imports alone
+        // leaves the boundary open to anyone who does not use one.
+        foreach ($this->qualifiedReferencesIn($bare) as $line => $symbol) {
+            if (!$this->importAllowed($extensionId, $symbol)) {
+                $findings[] = ['block', sprintf(
+                    '%s:%d refers to %s, which is not part of the extension SDK.',
+                    $path,
+                    $line,
+                    $symbol
+                )];
+            }
+        }
+
         if (preg_match_all(self::DANGEROUS_CALLS, $bare, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 $findings[] = ['block', sprintf('%s calls %s(), which executes code or shell commands.', $path, $match[1])];
@@ -375,6 +390,34 @@ class ExtensionPhpSourceScanner
         }
 
         return $imports;
+    }
+
+    /**
+     * Fully-qualified `\Everest\...` references written inline.
+     *
+     * Read from the strings-blanked view so a class name quoted in a message or
+     * a docblock is not mistaken for a reference. Leading-backslash only: a
+     * `namespace` or `use` line carries no leading separator, so this sees
+     * exactly the inline form and the import rule keeps the other.
+     *
+     * @return array<int, string>
+     */
+    private function qualifiedReferencesIn(string $bare): array
+    {
+        $references = [];
+
+        foreach (explode("\n", $bare) as $index => $line) {
+            if (preg_match_all('~\\\\(Everest\\\\[A-Za-z0-9_\\\\]+)~', $line, $matches)) {
+                foreach ($matches[1] as $symbol) {
+                    // A trailing separator means the capture ran into a
+                    // `::class` or a nested call; the class path is what
+                    // precedes it.
+                    $references[$index + 1] = rtrim($symbol, '\\');
+                }
+            }
+        }
+
+        return $references;
     }
 
     private function importAllowed(string $extensionId, string $symbol): bool

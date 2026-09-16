@@ -9,7 +9,7 @@ use Everest\Repositories\Wings\DaemonFileRepository;
 /**
  * Reading and writing a server's files through its daemon.
  *
- * Four verbs, which is every file operation the shipped packages perform. The
+ * Five verbs, which is every file operation the shipped packages perform. The
  * underlying DaemonFileRepository carries a wider surface — deletes, renames,
  * compression, chmod, pulls from arbitrary URLs — and a package that needs one
  * of those should be a conversation about adding it here, not a reason to
@@ -43,6 +43,22 @@ final class ServerFiles
     public function write(string $path, string $content): ResponseInterface
     {
         return $this->repository->putContent($path, $content);
+    }
+
+    /**
+     * Stream a local file to the server without holding it in memory.
+     *
+     * For anything a package downloaded before writing — a plugin jar, an
+     * archive. The daemon is handed bytes the panel has already fetched and
+     * checked, never a URL, which is what keeps it from resolving a host or
+     * following a redirect on a caller's behalf.
+     *
+     * @param string $temporaryPath a local path the panel controls; never a
+     *                              path derived from request input
+     */
+    public function writeFrom(string $path, string $temporaryPath): ResponseInterface
+    {
+        return $this->repository->putFile($path, $temporaryPath);
     }
 
     /** @return array<int, array<string, mixed>> */

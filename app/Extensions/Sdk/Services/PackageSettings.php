@@ -2,6 +2,7 @@
 
 namespace Everest\Extensions\Sdk\Services;
 
+use Everest\Models\Server;
 use Everest\Models\ExtensionConfig;
 
 /**
@@ -21,15 +22,52 @@ use Everest\Models\ExtensionConfig;
 final class PackageSettings
 {
     /** @param array<string, mixed> $values */
-    private function __construct(private array $values)
-    {
+    private function __construct(
+        private array $values,
+        private bool $enabled,
+        private ?ExtensionConfig $config,
+    ) {
     }
 
     public static function for(string $extensionId): self
     {
-        $settings = ExtensionConfig::getByExtensionId($extensionId)?->settings;
+        $config = ExtensionConfig::getByExtensionId($extensionId);
+        $settings = $config?->settings;
 
-        return new self(is_array($settings) ? $settings : []);
+        return new self(
+            is_array($settings) ? $settings : [],
+            $config !== null && (bool) $config->enabled,
+            $config,
+        );
+    }
+
+    /**
+     * Whether an administrator has this extension switched on.
+     *
+     * The same row as the settings, which is why it lives here rather than in a
+     * class of its own. Routes, pages, hooks and scheduled tasks are already
+     * gated on this by the panel, so most code never needs it — an artisan
+     * command is the exception, because it can be run by hand at any time and
+     * the scheduler's own gate does not apply then.
+     */
+    public function enabled(): bool
+    {
+        return $this->enabled;
+    }
+
+    /**
+     * Whether this extension is available for one particular server.
+     *
+     * Enabled, and the server's egg or nest within whatever the operator scoped
+     * the extension to. The panel's `extensions.access` middleware already
+     * applies this to every client route, so a controller reached through one
+     * does not need to ask again — this is for the paths that middleware does
+     * not cover, such as a queued job acting on a server some time after the
+     * request that scheduled it.
+     */
+    public function allowsServer(Server $server): bool
+    {
+        return $this->config !== null && $this->config->isServerEligible($server);
     }
 
     public function has(string $key): bool

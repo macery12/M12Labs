@@ -169,6 +169,66 @@ class ExtensionPhpSourceScannerTest extends TestCase
         ], 'Everest\Extensions\Packages\demo_other\Services\Secrets');
     }
 
+    /**
+     * The hole the import rule leaves on its own.
+     *
+     * A `use` statement is the polite way to reach a class, not the only way.
+     * This was found by a real package: node_health_history's schedule.php
+     * reached ExtensionConfig inline, imported nothing, and sailed past an
+     * import-only scan.
+     */
+    public function testFullyQualifiedReferencesCannotBypassTheImportRule(): void
+    {
+        $this->assertBlocked([
+            'app/Extensions/Packages/demo/schedule.php' => <<<'PHP'
+                <?php
+                return function ($schedule) {
+                    $config = \Everest\Models\ExtensionConfig::getByExtensionId('demo');
+                };
+                PHP,
+        ], 'refers to Everest\Models\ExtensionConfig');
+    }
+
+    /** …and the same form is fine when it names something allowed. */
+    public function testAllowedSymbolsMayBeReferencedInline(): void
+    {
+        $this->scan([
+            self::SERVICE => <<<'PHP'
+                <?php
+                namespace Everest\Extensions\Packages\demo\Services;
+
+                class DemoService
+                {
+                    public function relation(): string
+                    {
+                        return \Everest\Models\Server::class;
+                    }
+                }
+                PHP,
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /** A class name inside a string or docblock is not a reference. */
+    public function testQuotedClassNamesAreNotReferences(): void
+    {
+        $this->scan([
+            self::SERVICE => <<<'PHP'
+                <?php
+                namespace Everest\Extensions\Packages\demo\Services;
+
+                /** Never reach \Everest\Services\Servers\ServerDeletionService from here. */
+                class DemoService
+                {
+                    public const NOTE = '\Everest\Models\Setting is off limits';
+                }
+                PHP,
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
     public function testNonEverestImportsAreNotTheScannersBusiness(): void
     {
         $this->scan([
