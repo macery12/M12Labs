@@ -15,7 +15,6 @@ class InternalDispatchException extends \RuntimeException
     public const REASON_DEADLINE = 'deadline';
     public const REASON_TRANSACTION = 'transaction';
     public const REASON_UNREADABLE = 'unreadable';
-    public const REASON_FORBIDDEN = 'forbidden';
 
     public function __construct(public readonly string $reason, string $message)
     {
@@ -50,13 +49,5 @@ class InternalDispatchException extends \RuntimeException
             self::REASON_UNREADABLE,
             'That endpoint streams its response and cannot be dispatched internally.',
         );
-    }
-
-    public static function notGranted(string $extensionId): self
-    {
-        return new self(self::REASON_FORBIDDEN, sprintf(
-            'Extension "%s" does not hold the "internal_dispatch" privileged capability.',
-            $extensionId,
-        ));
     }
 }

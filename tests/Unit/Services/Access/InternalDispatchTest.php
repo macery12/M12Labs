@@ -23,12 +23,12 @@ use Everest\Exceptions\Service\Access\InternalDispatchException;
  */
 class InternalDispatchTest extends TestCase
 {
-    private function build(InternalRequest $request, ?Request $parent = null): Request
+    private function build(InternalRequest $request, ?Request $parent = null, ?string $onBehalfOf = null): Request
     {
         $parent ??= Request::create('https://panel.test/api/client', 'GET');
 
         return (new \ReflectionMethod(InternalDispatch::class, 'buildSubRequest'))
-            ->invoke(app(InternalDispatch::class), $request, $parent);
+            ->invoke(app(InternalDispatch::class), $request, $parent, $onBehalfOf);
     }
 
     /*
@@ -62,6 +62,30 @@ class InternalDispatchTest extends TestCase
         $this->assertTrue(InternalDispatch::isInternal(
             $this->build(new InternalRequest('GET', '/api/client/servers/x/activity')),
         ));
+    }
+
+    /**
+     * The rate limiters split internal traffic per extension, so a chatty
+     * package cannot spend the budget another package — or core's own agent —
+     * is also spending. That only works if the origin travels beside the
+     * marker, and only counts as internal when the marker is genuine.
+     */
+    public function testTheCallingExtensionTravelsWithTheMarker(): void
+    {
+        $sub = $this->build(new InternalRequest('GET', '/api/client'), onBehalfOf: 'my_extension');
+        $this->assertSame('my_extension', InternalDispatch::originOf($sub));
+
+        // Core's own traffic has no origin, and gets its own bucket by
+        // exclusion rather than by naming itself.
+        $core = $this->build(new InternalRequest('GET', '/api/client'));
+        $this->assertNull(InternalDispatch::originOf($core));
+
+        $spoofed = Request::create('/api/client', 'GET');
+        $spoofed->attributes->set('everest.internal_dispatch.origin', 'my_extension');
+        $this->assertNull(
+            InternalDispatch::originOf($spoofed),
+            'An origin without the marker must not be believed.',
+        );
     }
 
     /*
@@ -169,12 +193,11 @@ class InternalDispatchTest extends TestCase
     public function testEachRefusalIsDistinguishable(): void
     {
         $this->assertSame(
-            ['deadline', 'transaction', 'unreadable', 'forbidden'],
+            ['deadline', 'transaction', 'unreadable'],
             [
                 InternalDispatchException::deadlineElapsed()->reason,
                 InternalDispatchException::insideTransaction()->reason,
                 InternalDispatchException::unreadableResponse()->reason,
-                InternalDispatchException::notGranted('demo')->reason,
             ],
         );
     }

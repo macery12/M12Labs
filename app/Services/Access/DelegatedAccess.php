@@ -87,13 +87,18 @@ class DelegatedAccess
      *
      * @throws AuthorizationException
      */
-    public function open(User $admin, Server $server, string $reason, ?int $ticketId = null): DelegatedGrant
-    {
+    public function open(
+        User $admin,
+        Server $server,
+        string $reason,
+        ?int $ticketId = null,
+        ?string $onBehalfOf = null,
+    ): DelegatedGrant {
         $this->assertPermitted($admin);
 
         $grant = DelegatedGrant::read($server->uuid, (string) $server->name, $reason, $ticketId);
 
-        $this->record($admin, $server, $grant);
+        $this->record($admin, $server, $grant, onBehalfOf: $onBehalfOf);
 
         return $grant;
     }
@@ -107,8 +112,12 @@ class DelegatedAccess
      *
      * @throws AuthorizationException
      */
-    public function escalate(User $admin, Server $server, DelegatedGrant $current): DelegatedGrant
-    {
+    public function escalate(
+        User $admin,
+        Server $server,
+        DelegatedGrant $current,
+        ?string $onBehalfOf = null,
+    ): DelegatedGrant {
         $this->assertPermitted($admin);
 
         if ($current->serverUuid !== $server->uuid) {
@@ -117,7 +126,7 @@ class DelegatedAccess
 
         $escalated = $current->escalated();
 
-        $this->record($admin, $server, $escalated, escalation: true);
+        $this->record($admin, $server, $escalated, escalation: true, onBehalfOf: $onBehalfOf);
 
         return $escalated;
     }
@@ -169,17 +178,29 @@ class DelegatedAccess
      * Failure here is authorization failure, which is why callers of `open()`
      * and `escalate()` get an exception rather than a grant.
      */
-    private function record(User $admin, Server $server, DelegatedGrant $grant, bool $escalation = false): void
-    {
+    private function record(
+        User $admin,
+        Server $server,
+        DelegatedGrant $grant,
+        bool $escalation = false,
+        ?string $onBehalfOf = null,
+    ): void {
         Activity::event($escalation ? 'server:access.delegated.escalate' : 'server:access.delegated.start')
             ->actor($admin)
             ->subject($server)
-            ->property([
+            ->property(array_merge([
                 'administrator' => $admin->username,
                 'reason' => $grant->reason,
                 'ticket_id' => $grant->ticketId,
                 'abilities' => $grant->abilities,
-            ])
+            ], $onBehalfOf === null ? [] : [
+                // Which software opened it. Without this a customer reading
+                // their own feed, or an operator reading all of them, cannot
+                // tell one extension's support session from another's. Absent
+                // rather than null when core itself asked, so the rows that
+                // already exist keep their exact shape.
+                'via' => $onBehalfOf,
+            ]))
             ->log();
     }
 

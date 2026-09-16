@@ -66,6 +66,12 @@ class ExtensionPhpSourceScanner
         'Everest\\Models\\ActivityLog',
         'Everest\\Models\\ExtensionFileSnapshot',
 
+        // Returned by Sdk\Services\DelegatedAccess and passed back to it.
+        // Inert on its own: holding one confers nothing, and it has no public
+        // constructor, so a package can carry the authority core issued and
+        // cannot describe any other.
+        'Everest\\Services\\Access\\DelegatedGrant',
+
         // Handed to a package's schedule.php by the panel, which constructs it.
         'Everest\\Services\\Extensions\\ExtensionScheduleBuilder',
 

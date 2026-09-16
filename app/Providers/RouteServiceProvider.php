@@ -121,14 +121,12 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api.client', function (Request $request) {
             $key = optional($request->user())->uuid ?: $request->ip();
 
-            // A single agent turn fans out into many sub-requests. Charging
-            // them to the human's budget would let one AI question exhaust the
-            // allowance their browser session is also spending. Agent traffic
-            // gets its own bounded budget instead — bounded, not unlimited, so
-            // internal amplification stays capped.
+            // Internal sub-requests spend from their own bucket rather than
+            // the human's — see internalRateLimitKey() for why, and for how it
+            // is split per extension.
             if (InternalDispatch::isInternal($request)) {
                 return Limit::perMinute(config('modules.ai.agent.tool_rate_limit', 240))
-                    ->by('ai-tools:' . $key);
+                    ->by($this->internalRateLimitKey($request, $key));
             }
 
             return Limit::perMinutes(
@@ -142,7 +140,7 @@ class RouteServiceProvider extends ServiceProvider
 
             if (InternalDispatch::isInternal($request)) {
                 return Limit::perMinute(config('modules.ai.agent.tool_rate_limit', 240))
-                    ->by('ai-tools:' . $key);
+                    ->by($this->internalRateLimitKey($request, $key));
             }
 
             return Limit::perMinutes(
@@ -354,6 +352,23 @@ class RouteServiceProvider extends ServiceProvider
                 ], 429);
             });
         });
+    }
+
+    /**
+     * The bucket an internal sub-request spends from.
+     *
+     * Internal traffic gets its own bounded budget — bounded, not unlimited, so
+     * internal amplification stays capped — because a single agent turn fans
+     * out into many sub-requests, and charging those to the human would let one
+     * AI question exhaust the allowance their browser session is also spending.
+     *
+     * Split per extension for the same reason `api.ext-admin` is: a package
+     * dispatching internally is spending somebody's budget, and one package
+     * hitting its limit must not 429 another, or core's own agent.
+     */
+    protected function internalRateLimitKey(Request $request, string $key): string
+    {
+        return 'internal:' . (InternalDispatch::originOf($request) ?? 'core') . ':' . $key;
     }
 
     private function apiDocsMiddleware(): array

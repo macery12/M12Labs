@@ -148,6 +148,21 @@ class ExtensionRuntimePlanService
     }
 
     /**
+     * Whether an installed, loadable package holds one of core's privileged
+     * services — see {@see ExtensionCapabilityVocabulary::PRIVILEGED}.
+     *
+     * Reads the runtime plan rather than the manifest on disk, so a package
+     * that is disabled, unsigned, on the wrong manifest version, or whose
+     * capability projection no longer matches its approved hash holds nothing.
+     */
+    public function grantsPrivilege(string $extensionId, string $privilege): bool
+    {
+        $entry = $this->plan()[$extensionId] ?? null;
+
+        return $entry !== null && $entry->capabilities->grantsPrivilege($privilege);
+    }
+
+    /**
      * Ids that may load package code. Excludes core extensions, which ship none.
      *
      * @return array<int, string>

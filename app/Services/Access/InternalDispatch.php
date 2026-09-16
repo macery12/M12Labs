@@ -66,6 +66,13 @@ class InternalDispatch
      */
     private const ATTRIBUTE = 'everest.internal_dispatch';
 
+    /**
+     * Which extension asked, when one did. Read by the rate limiters so a
+     * chatty package cannot spend the budget another package — or core's own
+     * agent — is also spending.
+     */
+    private const ORIGIN = 'everest.internal_dispatch.origin';
+
     private static ?\stdClass $marker = null;
 
     public function __construct(
@@ -88,6 +95,22 @@ class InternalDispatch
     }
 
     /**
+     * The extension an internal request was dispatched on behalf of, or null
+     * for core's own traffic. Meaningless unless {@see isInternal()} — the
+     * attribute only ever arrives beside the marker.
+     */
+    public static function originOf(Request $request): ?string
+    {
+        if (!self::isInternal($request)) {
+            return null;
+        }
+
+        $origin = $request->attributes->get(self::ORIGIN);
+
+        return is_string($origin) && $origin !== '' ? $origin : null;
+    }
+
+    /**
      * Dispatch one internal request and hand back the response.
      *
      * Two bounds, because they answer different questions. `$deadlineSeconds`
@@ -105,6 +128,7 @@ class InternalDispatch
         InternalRequest $request,
         ?int $deadlineSeconds = null,
         ?int $nodeTimeoutSeconds = null,
+        ?string $onBehalfOf = null,
     ): Response {
         if ($this->db->transactionLevel() > 0) {
             throw InternalDispatchException::insideTransaction();
@@ -118,7 +142,7 @@ class InternalDispatch
         $snapshot = [$target->actor(), $target->subject(), $target->apiKeyId(), $target->isAdmin()];
 
         $timeouts = $this->clampNodeTimeouts($nodeTimeoutSeconds ?? $deadlineSeconds);
-        $sub = $this->buildSubRequest($request, $parentRequest);
+        $sub = $this->buildSubRequest($request, $parentRequest, $onBehalfOf);
         $matched = null;
         $alarm = $this->startDeadlineAlarm($deadlineSeconds);
 
@@ -259,7 +283,7 @@ class InternalDispatch
      * the identity and token instance identical. Fails closed — a cold cache
      * 401s rather than escalating.
      */
-    private function buildSubRequest(InternalRequest $request, Request $parent): Request
+    private function buildSubRequest(InternalRequest $request, Request $parent, ?string $onBehalfOf = null): Request
     {
         $isRead = $request->isRead();
 
@@ -293,6 +317,9 @@ class InternalDispatch
         }
 
         $sub->attributes->set(self::ATTRIBUTE, self::$marker ??= new \stdClass());
+        if ($onBehalfOf !== null) {
+            $sub->attributes->set(self::ORIGIN, $onBehalfOf);
+        }
         $sub->setUserResolver($parent->getUserResolver());
 
         return $sub;
