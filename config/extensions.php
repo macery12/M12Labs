@@ -155,6 +155,17 @@ return [
     ],
 
     'queues' => [
+        /*
+         * Whether some enabled package declares a `longRunning` queue group.
+         *
+         * Not an operator setting, and not read from env: ExtensionServiceProvider
+         * writes it during boot from the runtime plan, and config/queue.php's
+         * `lane_requires` reads it back. It exists so the admin queue page can
+         * tell "no worker on the long extension lane" apart from "no worker is
+         * needed there", which are the same picture and opposite problems.
+         */
+        'long_lane_in_use' => false,
+
         // How long an update or uninstall waits for an extension's in-flight
         // jobs before giving up. Queued work is discarded immediately; this
         // budget covers jobs already executing, which cannot be interrupted.

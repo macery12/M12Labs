@@ -69,31 +69,42 @@ class ExtensionServiceProvider extends ServiceProvider
         // classes before the router dispatches, and `singleton()` only records
         // a name — the class is not autoloaded until something asks for it.
         $this->app->booted(function (): void {
-            $this->registerQueueLimiters();
+            $this->configureExtensionQueues();
             $this->app->make(ExtensionBindingRegistrar::class)->register();
         });
     }
 
     /**
-     * One named limiter per declared queue group, consumed by the RateLimited
-     * middleware ExtensionJob attaches.
+     * Everything the queue needs to know about the currently enabled packages:
+     * one named limiter per declared queue group, and whether the long lane has
+     * anything that could reach it.
      *
-     * Registered only for extensions in the runtime plan: a limiter for a
+     * One pass over the runtime plan for both. The plan is a live database read
+     * by design — it is never cached, so that disabling an extension takes
+     * effect in every process at once — which is reason enough not to walk it
+     * twice per request.
+     *
+     * Limiters are registered only for extensions in the plan: one for a
      * disabled extension would never be consulted, and the enabled gate
      * discards its jobs before the limiter would matter anyway.
      */
-    private function registerQueueLimiters(): void
+    private function configureExtensionQueues(): void
     {
         try {
             $queues = $this->app->make(ExtensionQueueRegistry::class)->all();
         } catch (\Throwable) {
             // Console commands run before migrations exist; an install that
-            // cannot read the plan simply registers no extension limiters.
+            // cannot read the plan registers no limiters and staffs no long
+            // worker, which is the correct answer to "we cannot tell".
             return;
         }
 
+        $long = false;
+
         foreach ($queues as ['id' => $extensionId, 'queue' => $queue]) {
             /** @var QueueDefinition $queue */
+            $long = $long || $queue->longRunning;
+
             $parsed = $queue->parsedRateLimit();
 
             if ($parsed === null) {
@@ -107,5 +118,16 @@ class ExtensionServiceProvider extends ServiceProvider
                 fn () => Limit::perSecond($count, max(1, (int) ceil($perSeconds)))
             );
         }
+
+        // Staff the long lane only while something can reach it. Sized here
+        // rather than in QueueServiceProvider because this is where the plan
+        // has already been read; Horizon takes its provisioning plan when the
+        // command runs, so a `booted` callback is in time. Installing the first
+        // long-running package therefore needs a Horizon restart — the same
+        // restart config/queue.php already documents for the extensions lane.
+        config([
+            'extensions.queues.long_lane_in_use' => $long,
+            'horizon.defaults.supervisor-extensions-long.processes' => $long ? 1 : 0,
+        ]);
     }
 }

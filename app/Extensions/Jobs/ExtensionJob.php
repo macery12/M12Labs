@@ -17,6 +17,7 @@ use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Everest\Services\Extensions\ExtensionQueueRegistry;
 use Everest\Extensions\Jobs\Middleware\ExtensionEnabledGate;
 use Everest\Extensions\Jobs\Middleware\ExtensionConcurrencyLimit;
+use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 
 /**
  * The base class every extension job extends. Part of the SDK surface, so its
@@ -28,7 +29,9 @@ use Everest\Extensions\Jobs\Middleware\ExtensionConcurrencyLimit;
  *  - The **queue** is pinned here rather than routed through config/queue.php,
  *    which is the one deliberate exception to that file's rule. Package job
  *    classes are not knowable in advance and must not become routable by
- *    editing core config.
+ *    editing core config. Which of the two extension lanes comes from the
+ *    manifest's `longRunning`, not from the job: a class that could put itself
+ *    on the long lane could hold a dedicated worker for an hour.
  *  - The **extension id** is derived from the class namespace, so a job cannot
  *    claim to belong to a different extension and inherit its quota, limiter or
  *    enabled state.
@@ -54,8 +57,38 @@ abstract class ExtensionJob implements ShouldQueue
 
     public function __construct()
     {
-        $this->onQueue(app(QueueTopology::class)->queueFor('extensions'));
-        $this->onConnection(app(QueueTopology::class)->connectionFor('extensions'));
+        $topology = app(QueueTopology::class);
+        $lane = $this->lane();
+
+        $this->onQueue($topology->queueFor($lane));
+        $this->onConnection($topology->connectionFor($lane));
+    }
+
+    /**
+     * Which lane this job rides: `extensions`, or `extensions-long` when the
+     * manifest declared its queue group long-running.
+     *
+     * It has to be decided here, at construction, because Laravel reads
+     * `$this->queue` and `$this->connection` when the job is pushed and the
+     * JobQueueing event fires inside push(), too late to redirect. That makes
+     * queueGroup() part of a job's construction contract: it must answer from
+     * the class, not from state a subclass assigns after calling
+     * parent::__construct().
+     *
+     * An undeclared group falls to the short lane and is discarded by the
+     * enabled gate a moment later. The short lane is the right guess for
+     * something about to be thrown away — the long one would hold a dedicated
+     * worker to do it.
+     */
+    private function lane(): string
+    {
+        try {
+            $definition = $this->definition();
+        } catch (\Error $error) {
+            throw new \LogicException(sprintf('%s::queueGroup() could not be answered while the job was being constructed. It must return a name the manifest declares without reading state the subclass assigns after parent::__construct() — the queue is chosen at construction and cannot be changed later.', static::class), 0, $error);
+        }
+
+        return $definition?->lane() ?? QueueDefinition::LANE;
     }
 
     /**
@@ -231,7 +264,7 @@ abstract class ExtensionJob implements ShouldQueue
         }
     }
 
-    private function definition(): ?\Everest\Services\Extensions\Manifest\Definitions\QueueDefinition
+    private function definition(): ?QueueDefinition
     {
         return app(ExtensionQueueRegistry::class)->definition($this->extensionId(), $this->queueGroup());
     }

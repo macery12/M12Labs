@@ -191,6 +191,43 @@ return [
             'timeout' => 1020,
             'nice' => 0,
         ],
+
+        /*
+        | Extension work a manifest declared long-running.
+        |
+        | Isolated for the reason the other two are: a package's hour-long
+        | import cannot share a queue with its own thirty-second webhook, and
+        | the extensions lane is already last in the interactive supervisor's
+        | strict priority order -- so a long job there would block every other
+        | package's short work behind it while never blocking a core lane.
+        |
+        | `timeout` is the ceiling the manifest parser clamps declared
+        | timeoutSeconds against, so it must not be lowered without lowering
+        | ExtensionCapabilityVocabulary::QUEUE_MAX_TIMEOUT_SECONDS with it.
+        | Below the long connection's retry_after (3900), above the longest job
+        | the lane can carry (3600).
+        |
+        | Sized to zero here and set for real by ExtensionServiceProvider once
+        | the runtime plan is readable: a panel where no enabled package
+        | declares a long-running group spends no process on a lane nothing can
+        | reach. Installing one is a Horizon restart, the same as adding any
+        | lane -- Horizon reads its provisioning plan when the command runs.
+        |
+        | `tries => 3` is only a fallback. Every extension job answers tries()
+        | from its verified manifest, which is what actually applies.
+        */
+        'supervisor-extensions-long' => [
+            'connection' => 'redis-long',
+            'queue' => ['extensions-long'],
+            'balance' => 'simple',
+            'processes' => 0,
+            'maxTime' => 3600,
+            'maxJobs' => 0,
+            'memory' => 512,
+            'tries' => 3,
+            'timeout' => 3600,
+            'nice' => 5,
+        ],
     ],
 
     'environments' => [
@@ -198,12 +235,14 @@ return [
             'supervisor-interactive' => ['maxProcesses' => 6],
             'supervisor-mods' => [],
             'supervisor-agent' => [],
+            'supervisor-extensions-long' => [],
         ],
 
         'local' => [
             'supervisor-interactive' => ['maxProcesses' => 3],
             'supervisor-mods' => [],
             'supervisor-agent' => [],
+            'supervisor-extensions-long' => [],
         ],
 
         // Staging and any custom APP_ENV, so an unexpected environment gets
@@ -212,6 +251,7 @@ return [
             'supervisor-interactive' => ['maxProcesses' => 3],
             'supervisor-mods' => [],
             'supervisor-agent' => [],
+            'supervisor-extensions-long' => [],
         ],
     ],
 ];

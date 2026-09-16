@@ -150,6 +150,14 @@ return [
         // the old list, so it must be restarted on deploy or extension jobs
         // queue up with no consumer.
         'extensions' => env('QUEUE_EXTENSIONS', 'extensions'),
+
+        // The same work, for the groups a manifest declared `longRunning`. It
+        // is a separate lane for the same reason `mods` is: a job allowed to
+        // run for the best part of an hour cannot share a queue with work
+        // measured in seconds, or the short work waits behind it. It rides the
+        // long connection, which is the only place a timeout above the short
+        // `retry_after` is safe -- see `long_lanes` below.
+        'extensions-long' => env('QUEUE_EXTENSIONS_LONG', 'extensions-long'),
     ],
 
     /*
@@ -159,7 +167,7 @@ return [
     | short `retry_after` and hand a still-running job to a second worker.
     */
 
-    'long_lanes' => ['mods', 'agent'],
+    'long_lanes' => ['mods', 'agent', 'extensions-long'],
 
     /*
     | Lanes that only need a worker when a module is switched on. The mods
@@ -178,6 +186,12 @@ return [
         // dispatched here and an unstaffed lane is the correct state rather
         // than a fault to report.
         'agent' => 'modules.ai.agent.durable',
+
+        // Not an operator setting: ExtensionServiceProvider writes this during
+        // boot, true only while some enabled package declares a long-running
+        // queue group. Nothing can reach the lane otherwise, so an unstaffed
+        // one is the correct state rather than a fault worth reporting.
+        'extensions-long' => 'extensions.queues.long_lane_in_use',
     ],
 
     /*
@@ -260,6 +274,10 @@ return [
             'title' => 'Extension jobs',
             'summary' => 'Background work dispatched by installed extensions. Drained after every core lane.',
         ],
+        'extensions-long' => [
+            'title' => 'Long extension jobs',
+            'summary' => 'Extension work declared long-running. A job here may legitimately run for the better part of an hour.',
+        ],
     ],
 
     /*
@@ -288,6 +306,10 @@ return [
         'supervisor-agent' => [
             'title' => 'AI assistant turns',
             'summary' => 'Sized to the inference concurrency the AI gate already enforces.',
+        ],
+        'supervisor-extensions-long' => [
+            'title' => 'Long extension jobs',
+            'summary' => 'Staffed only while an enabled package declares a long-running queue group.',
         ],
     ],
 

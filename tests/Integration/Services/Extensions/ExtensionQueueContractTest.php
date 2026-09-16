@@ -99,6 +99,40 @@ class ExtensionQueueContractTest extends IntegrationTestCase
         $this->assertSame(app(QueueTopology::class)->queueFor('extensions'), $job->queue);
     }
 
+    /**
+     * The second lane, and the reason it exists. A group the manifest declared
+     * long-running rides its own queue *and* its own connection — the queue so
+     * an hour-long import does not sit in front of the same package's
+     * thirty-second webhook, the connection because `retry_after` belongs to a
+     * connection and a job that outlives it is handed to a second worker while
+     * the first is still running it.
+     */
+    public function testADeclaredLongRunningGroupLandsOnTheLongLane(): void
+    {
+        $this->installFixture(new QueueDefinition(name: 'slow', timeoutSeconds: 120, longRunning: true));
+
+        $job = new SlowFixtureJob();
+        $topology = app(QueueTopology::class);
+
+        $this->assertSame($topology->queueFor(QueueDefinition::LONG_LANE), $job->queue);
+        $this->assertSame($topology->connectionFor(QueueDefinition::LONG_LANE), $job->connection);
+        $this->assertNotNull($job->connection, 'The long lane inherited the short connection, which defeats the point of it.');
+    }
+
+    /**
+     * A group nobody declared is about to be discarded by the enabled gate. The
+     * short lane is the right place to throw something away; the long one would
+     * hold a dedicated worker to do it.
+     */
+    public function testAnUndeclaredGroupFallsToTheShortLane(): void
+    {
+        $this->installFixture(new QueueDefinition(name: 'something-else', longRunning: true));
+
+        $job = new SlowFixtureJob();
+
+        $this->assertSame(app(QueueTopology::class)->queueFor(QueueDefinition::LANE), $job->queue);
+    }
+
     /** The owning extension comes from the namespace, not from a property. */
     public function testTheExtensionIdIsDerivedFromTheClassNamespace(): void
     {

@@ -7,6 +7,8 @@ use Illuminate\Support\Str;
 use Illuminate\Queue\Attributes\Timeout;
 use Everest\Services\Queue\QueueTopology;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilityVocabulary;
 
 /**
  * Guards the queue topology as a whole rather than any one job.
@@ -146,15 +148,53 @@ class QueueTopologyTest extends TestCase
         $source = (string) file_get_contents(base_path('app/Extensions/Jobs/ExtensionJob.php'));
 
         $this->assertMatchesRegularExpression(
-            "/onQueue\(.*queueFor\('extensions'\)\)/",
+            '/onQueue\(\$topology->queueFor\(\$lane\)\)/',
             $source,
-            'ExtensionJob must pin the extensions lane itself; Queue::route() cannot name package job classes.'
+            'ExtensionJob must pin its lane itself; Queue::route() cannot name package job classes.'
         );
 
-        $this->assertArrayHasKey(
-            'extensions',
-            $this->topology()->lanes(),
-            'ExtensionJob pins a lane that config/queue.php no longer declares, so its jobs would land on a queue no supervisor drains.'
+        $this->assertMatchesRegularExpression(
+            '/onConnection\(\$topology->connectionFor\(\$lane\)\)/',
+            $source,
+            'ExtensionJob must pin the connection too. The long lane is only safe on the long connection.'
+        );
+
+        foreach ([QueueDefinition::LANE, QueueDefinition::LONG_LANE] as $lane) {
+            $this->assertArrayHasKey(
+                $lane,
+                $this->topology()->lanes(),
+                "ExtensionJob can pin [{$lane}], which config/queue.php no longer declares, so its jobs would land on a queue no supervisor drains."
+            );
+        }
+    }
+
+    /**
+     * The whole point of the second lane: a package's hour-long import must be
+     * allowed to outlive the short connection's retry_after, and the only place
+     * that is true is the long connection.
+     */
+    public function testTheLongExtensionLaneOutlivesWhatItsJobsMayDeclare(): void
+    {
+        config([
+            'queue.default' => 'redis',
+            'queue.long_connection' => 'redis-long',
+        ]);
+
+        $this->assertTrue(
+            $this->topology()->isLong(QueueDefinition::LONG_LANE),
+            'The long extension lane is not listed in queue.long_lanes, so it rides the short connection and its jobs are re-reserved mid-run.'
+        );
+
+        $this->assertGreaterThanOrEqual(
+            ExtensionCapabilityVocabulary::QUEUE_MAX_TIMEOUT_SECONDS,
+            (int) $this->topology()->maxJobTimeoutFor(QueueDefinition::LONG_LANE),
+            'A manifest may declare a longer timeout than the long extension lane can carry.'
+        );
+
+        $this->assertLessThan(
+            ExtensionCapabilityVocabulary::QUEUE_MAX_TIMEOUT_SECONDS,
+            (int) $this->topology()->maxJobTimeoutFor(QueueDefinition::LANE),
+            'The short extension lane would carry the longest declarable job, which makes the long lane pointless.'
         );
     }
 

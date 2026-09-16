@@ -4,6 +4,7 @@ namespace Everest\Services\Extensions;
 
 use Everest\Models\ExtensionConfig;
 use Everest\Models\ExtensionPackage;
+use Everest\Services\Queue\QueueTopology;
 use Everest\Services\Extensions\Manifest\ExtensionManifest;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
@@ -460,11 +461,23 @@ class ExtensionRuntimePlanService
                 ),
                 (array) ($capabilities['hooks'] ?? [])
             ),
+            // Re-bounded on the way out of storage, for the same reason the
+            // streams below are: this number decides how long a queue worker is
+            // held, and the stored projection is the part of a package someone
+            // with database access could edit. It also moves on its own — an
+            // operator who lowers QUEUE_RETRY_AFTER after install tightens every
+            // installed package here, without reinstalling any of them. The
+            // parser refuses an over-budget timeout at install; by the time it
+            // is in storage there is nobody left to tell, so this clamps.
             queues: array_map(
                 fn (array $q): QueueDefinition => new QueueDefinition(
                     name: (string) $q['name'],
                     maxAttempts: (int) ($q['maxAttempts'] ?? 3),
-                    timeoutSeconds: (int) ($q['timeoutSeconds'] ?? 60),
+                    timeoutSeconds: max(1, min(
+                        (int) ($q['timeoutSeconds'] ?? 60),
+                        $this->queueTimeoutCeiling((bool) ($q['longRunning'] ?? false)),
+                    )),
+                    longRunning: (bool) ($q['longRunning'] ?? false),
                     backoffSeconds: array_map('intval', (array) ($q['backoffSeconds'] ?? [10, 60, 300])),
                     rateLimit: isset($q['rateLimit']) ? (string) $q['rateLimit'] : null,
                     maxConcurrent: isset($q['maxConcurrent']) ? (int) $q['maxConcurrent'] : null,
@@ -532,6 +545,24 @@ class ExtensionRuntimePlanService
                 ),
                 (array) ($capabilities['streams'] ?? [])
             ),
+        );
+    }
+
+    /**
+     * The longest a stored queue definition may claim, for the lane it rides.
+     *
+     * The absolute ceiling and this deployment's `retry_after`, lower wins. On
+     * a driver with no `retry_after` (`sync`, `sqs`) only the absolute one
+     * applies.
+     */
+    private function queueTimeoutCeiling(bool $longRunning): int
+    {
+        $lane = $longRunning ? QueueDefinition::LONG_LANE : QueueDefinition::LANE;
+        $lanes = app(QueueTopology::class)->maxJobTimeoutFor($lane);
+
+        return min(
+            ExtensionCapabilityVocabulary::QUEUE_MAX_TIMEOUT_SECONDS,
+            $lanes ?? ExtensionCapabilityVocabulary::QUEUE_MAX_TIMEOUT_SECONDS,
         );
     }
 

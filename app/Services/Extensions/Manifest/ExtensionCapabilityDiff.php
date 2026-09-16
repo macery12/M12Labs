@@ -100,8 +100,17 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         foreach ($set->hooks as $hook) {
             $flat['hook:' . $hook->event . ' -> ' . $hook->handler . ' (' . $hook->mode . ')'] = true;
         }
+        // For the same reason streams carry theirs below: the timeout is how
+        // long one job holds a worker, and `longRunning` is which lane holds
+        // it. A group moved onto the long lane, or widened from a minute to an
+        // hour, is a different ask and has to read as one.
         foreach ($set->queues as $queue) {
-            $flat['queue:' . $queue->name] = true;
+            $flat[sprintf(
+                'queue:%s (%ds%s)',
+                $queue->name,
+                $queue->timeoutSeconds,
+                $queue->longRunning ? ', long-running' : '',
+            )] = true;
         }
         foreach ($set->secrets as $secret) {
             $flat['secret:' . $secret->key] = true;

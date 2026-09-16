@@ -4,6 +4,7 @@ namespace Everest\Services\Extensions\Manifest;
 
 use Illuminate\Support\Str;
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Queue\QueueTopology;
 use Everest\Services\Extensions\ExtensionPageManifestService;
 use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
@@ -32,6 +33,17 @@ use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
  */
 class ExtensionManifestParser
 {
+    /**
+     * The queue topology is the only thing here that depends on how this
+     * particular panel is configured: how long a job may be declared to run is
+     * a property of the connection its lane rides, not of the manifest format.
+     * Optional so the parser stays `new`-able in a test, which is how every
+     * other rule in this file is exercised.
+     */
+    public function __construct(private ?QueueTopology $topology = null)
+    {
+    }
+
     /**
      * @param array<string, mixed> $manifest
      *
@@ -537,7 +549,7 @@ class ExtensionManifestParser
             }
 
             $this->assertKnownKeys($queue, [
-                'name', 'maxAttempts', 'timeoutSeconds', 'backoffSeconds',
+                'name', 'maxAttempts', 'timeoutSeconds', 'longRunning', 'backoffSeconds',
                 'rateLimit', 'maxConcurrent', 'maxOutstanding', 'uniqueForSeconds',
             ], $where);
 
@@ -557,10 +569,13 @@ class ExtensionManifestParser
                 throw new DisplayException(sprintf('%s.backoffSeconds must be a non-empty list of seconds.', $where));
             }
 
+            $longRunning = $this->bool($queue['longRunning'] ?? false, $where . '.longRunning');
+
             $definitions[] = new QueueDefinition(
                 name: $name,
                 maxAttempts: $this->boundedInt($queue['maxAttempts'] ?? 3, 1, 25, $where . '.maxAttempts'),
-                timeoutSeconds: $this->boundedInt($queue['timeoutSeconds'] ?? 60, 1, 3600, $where . '.timeoutSeconds'),
+                timeoutSeconds: $this->queueTimeout($queue['timeoutSeconds'] ?? 60, $longRunning, $where . '.timeoutSeconds'),
+                longRunning: $longRunning,
                 backoffSeconds: array_map(fn ($seconds): int => $this->boundedInt($seconds, 0, 86400, $where . '.backoffSeconds'), $backoff),
                 rateLimit: $rateLimit,
                 maxConcurrent: isset($queue['maxConcurrent']) ? $this->boundedInt($queue['maxConcurrent'], 1, 100, $where . '.maxConcurrent') : null,
@@ -570,6 +585,42 @@ class ExtensionManifestParser
         }
 
         return $definitions;
+    }
+
+    /**
+     * How long this group's jobs may be declared to run.
+     *
+     * Two ceilings, and the lower wins. The absolute one is a property of the
+     * manifest format; the other is a property of this deployment — a job may
+     * not outlive the `retry_after` of the connection its lane rides, or the
+     * reservation is migrated and a second worker starts the same job while the
+     * first is still inside handle(). That is a silent double-execution, which
+     * is why this refuses rather than quietly clamping: a package author can
+     * fix a rejected install, and cannot fix a number they were never shown.
+     *
+     * Deployments whose driver has no `retry_after` (`sync` under test, `sqs`)
+     * have no second ceiling to derive, and the absolute one stands alone.
+     */
+    private function queueTimeout(mixed $value, bool $longRunning, string $where): int
+    {
+        $seconds = $this->boundedInt($value, 1, ExtensionCapabilityVocabulary::QUEUE_MAX_TIMEOUT_SECONDS, $where);
+
+        $lane = $longRunning ? QueueDefinition::LONG_LANE : QueueDefinition::LANE;
+        $ceiling = $this->topology()->maxJobTimeoutFor($lane);
+
+        if ($ceiling === null || $seconds <= $ceiling) {
+            return $seconds;
+        }
+
+        // The escalation path exists only from the short lane. A group already
+        // on the long one has nowhere further to go, so saying "declare
+        // longRunning" there would be advice that cannot be taken.
+        throw new DisplayException(sprintf($longRunning ? '%s declares a %ds timeout, but this panel re-reserves a job on the long extension lane after %ds. Lower it to %d or less.' : '%s declares a %ds timeout, but this panel re-reserves a job on the extension lane after %ds. Declare "longRunning": true for this queue group, or lower the timeout to %d or less.', $where, $seconds, $ceiling + 1, $ceiling));
+    }
+
+    private function topology(): QueueTopology
+    {
+        return $this->topology ??= app(QueueTopology::class);
     }
 
     /**
@@ -1051,6 +1102,20 @@ class ExtensionManifestParser
         }
 
         return $key;
+    }
+
+    /**
+     * A declared flag, strictly. Casting would make `"false"` true and `0`
+     * false, and this one decides which lane a job rides — a typo that quietly
+     * resolves either way is worse than an install that refuses.
+     */
+    private function bool(mixed $value, string $where): bool
+    {
+        if (!is_bool($value)) {
+            throw new DisplayException(sprintf('%s must be true or false.', $where));
+        }
+
+        return $value;
     }
 
     private function boundedInt(mixed $value, int $min, int $max, string $where): int

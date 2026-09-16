@@ -74,6 +74,21 @@ final class ExtensionCapabilityVocabulary
     public const STREAM_MAX_CONCURRENT_PER_USER = 20;
 
     /**
+     * Absolute ceiling on a declared job timeout, before the lane's own limit
+     * is applied on top.
+     *
+     * It matches `supervisor-extensions-long`'s Horizon timeout rather than the
+     * long connection's `retry_after` (3900): Horizon force-kills a worker it
+     * considers hung, so a job allowed past the supervisor's timeout would be
+     * killed mid-run on every attempt instead of finishing.
+     *
+     * The operating limit is lower than this on the short lane. `retry_after`
+     * there is 300, and the parser refuses anything that would outlive it —
+     * see ExtensionManifestParser::parseQueues().
+     */
+    public const QUEUE_MAX_TIMEOUT_SECONDS = 3600;
+
+    /**
      * Privileged core services a package may be granted, as opposed to surfaces
      * it declares. Everything else in this vocabulary describes something the
      * package *contributes* — a route, a page, a queue — which core then runs.
