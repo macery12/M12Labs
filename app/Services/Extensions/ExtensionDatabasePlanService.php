@@ -16,8 +16,14 @@ use Everest\Exceptions\DisplayException;
  *   owned tables (ext_<id>_ prefix) and ran migrations are read directly.
  * - install / update: the migration files aren't local yet, so the package
  *   archive is downloaded and extracted to a temp dir and its migration
- *   sources are parsed for Schema::create() table names. The temp dir is
- *   always cleaned up.
+ *   sources are parsed. The temp dir is always cleaned up.
+ *
+ * The parse reads every schema verb, not just `Schema::create`. It used to read
+ * only that one, which meant an update whose migration dropped a table showed
+ * the operator a list of tables to add and nothing else — the preview was
+ * reassuring about precisely the operation that loses data. Anything the parse
+ * cannot account for is counted and reported as such, so an incomplete list
+ * does not read as an exhaustive one.
  */
 class ExtensionDatabasePlanService
 {
@@ -112,17 +118,37 @@ class ExtensionDatabasePlanService
                 fn (string $file) => !in_array(basename($file, '.php'), $ranMigrations, true)
             ));
 
+            $changes = $this->migrationService->parseSchemaChanges($pendingFiles);
+
+            // Only tables that survive the operation are "unchanged". One this
+            // update drops or renames away is listed under its own heading, and
+            // showing it in both places would let an operator read the calmer
+            // one and stop.
+            $touched = array_merge($changes['drop'], array_column($changes['rename'], 'from'));
+            $unchanged = $operation === 'update'
+                ? array_values(array_diff($this->migrationService->listExtensionTables($extensionId), $touched))
+                : [];
+
             return [
                 'operation' => $operation,
                 'extensionId' => $extensionId,
                 'tablePrefix' => $this->migrationService->tablePrefix($extensionId),
                 'hasDatabase' => $pendingFiles !== [],
                 'version' => $release['version'] ?? $version,
-                'tablesToCreate' => $this->migrationService->parseCreatedTables($pendingFiles),
+                'tablesToCreate' => $changes['create'],
+                'tablesToAlter' => $changes['alter'],
+                'tablesToDrop' => $changes['drop'],
+                'tablesToRename' => $changes['rename'],
+                // What a drop would actually cost, for the tables that exist
+                // right now. An install's migration cannot drop anything that
+                // is already there, so this is empty for one.
+                'rowCounts' => $this->migrationService->rowCountsFor(
+                    $extensionId,
+                    array_merge($changes['drop'], $changes['alter'], array_column($changes['rename'], 'from')),
+                ),
+                'unanalysedStatements' => $changes['rawStatements'],
                 'migrations' => array_map(fn (string $file) => basename($file, '.php'), $pendingFiles),
-                'unchangedTables' => $operation === 'update'
-                    ? $this->migrationService->listExtensionTables($extensionId)
-                    : [],
+                'unchangedTables' => $unchanged,
             ];
         } catch (\Throwable $exception) {
             if ($exception instanceof DisplayException) {

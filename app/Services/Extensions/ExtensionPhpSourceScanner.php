@@ -33,6 +33,10 @@ use Everest\Exceptions\DisplayException;
  */
 class ExtensionPhpSourceScanner
 {
+    public function __construct(private ExtensionMigrationSourceParser $migrations = new ExtensionMigrationSourceParser())
+    {
+    }
+
     /**
      * Core symbols a package may still name directly.
      *
@@ -121,26 +125,6 @@ class ExtensionPhpSourceScanner
     private const BARE_REQUEST = '~function\s+\w+\s*\([^)]*(?<![\w\\\\])(Illuminate\\\\Http\\\\)?Request\s+\$~';
 
     /**
-     * Schema verbs that name a table.
-     *
-     * `Schema::create` alone was the old rule, which left `Schema::table`,
-     * `Schema::drop`, `Schema::rename` and raw statements able to alter or drop
-     * a core table with neither the install gate nor the operator's database
-     * plan mentioning it. Dropping a column from `users` was not evasion of the
-     * prefix rule; it was an operation the rule never looked at.
-     *
-     * Matched in two passes over two views of the same bytes. The call site is
-     * located in the strings-blanked view, so a table name quoted inside a
-     * message string is not mistaken for a schema change; the table name is
-     * then read from the strings-intact view at that exact offset, because the
-     * blanked view no longer contains it. Both strippers preserve length
-     * exactly, which is what makes the offsets interchangeable.
-     */
-    private const SCHEMA_VERBS = '~Schema::\s*(create|table|drop|dropIfExists|rename)\s*\(\s*[\'"]([^\'"]+)[\'"]~';
-
-    private const SCHEMA_VERBS_AT = '~\GSchema::\s*(create|table|drop|dropIfExists|rename)\s*\(\s*[\'"]([^\'"]*)[\'"]~';
-
-    /**
      * Scan a package's PHP and refuse the install if anything blocking is found.
      *
      * @param array<int, array{path: string, sourcePath: string}> $filePlans
@@ -186,20 +170,11 @@ class ExtensionPhpSourceScanner
     {
         $findings = [];
 
-        // Two views of the source, because the rules need different things.
-        //
-        // `$code` has comments blanked and string bodies intact: rules that
-        // read a literal out of the source — the table a Schema verb names, the
-        // host a request is sent to, an interpolated variable inside a SQL
-        // string — cannot work on anything else.
-        //
-        // `$bare` additionally blanks string bodies, for rules that look for a
-        // construct rather than a value. Without it a docblock explaining that
-        // a package never calls eval(), or a message string containing the word
-        // withoutMiddleware, is itself a blocking finding — and a blocking
-        // finding has no override.
-        $code = $this->stripComments($source);
-        $bare = $this->blankStrings($code);
+        // Two views of the same bytes, because the rules need different things
+        // and the difference matters: see ExtensionPhpSourceView.
+        $view = ExtensionPhpSourceView::of($source);
+        $code = $view->code;
+        $bare = $view->bare;
 
         $isRouteFile = str_contains($path, sprintf('Extensions/Packages/%s/routes/', $extensionId));
         $isMigration = str_contains($path, sprintf('Extensions/Packages/%s/database/migrations/', $extensionId));
@@ -270,7 +245,7 @@ class ExtensionPhpSourceScanner
             $findings[] = ['block', sprintf('%s is an admin FormRequest with no permission(), so the endpoint has no admin-permission gate.', $path)];
         }
 
-        $findings = array_merge($findings, $this->scanSchema($extensionId, $path, $code, $bare, $isMigration));
+        $findings = array_merge($findings, $this->scanSchema($extensionId, $path, $source, $isMigration));
 
         // A raw statement can say anything, and this cannot read SQL. Migrations
         // are where schema changes belong, so a raw statement there is the
@@ -341,40 +316,32 @@ class ExtensionPhpSourceScanner
     /**
      * @return array<int, array{0: string, 1: string}>
      */
-    private function scanSchema(string $extensionId, string $path, string $code, string $bare, bool $isMigration): array
+    private function scanSchema(string $extensionId, string $path, string $source, bool $isMigration): array
     {
         $findings = [];
         $prefix = sprintf('ext_%s_', $extensionId);
 
-        if (preg_match_all(self::SCHEMA_VERBS, $bare, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
-            foreach ($matches as $match) {
-                $offset = $match[0][1];
-
-                if (!preg_match(self::SCHEMA_VERBS_AT, $code, $real, 0, $offset)) {
-                    // The views disagree, which should be impossible while both
-                    // strippers preserve length. Skipping is the safe read:
-                    // a rule that cannot name its table cannot refuse an install.
-                    continue;
-                }
-
-                [$verb, $table] = [$real[1], $real[2]];
-
-                if ($table !== '' && !str_starts_with($table, $prefix)) {
+        foreach ($this->migrations->operations($source) as $operation) {
+            // Both names, because a rename is the one verb that can move a
+            // table *out* of the namespace: `rename('ext_foo_a', 'users_old')`
+            // starts legally and does not end that way.
+            foreach ($this->migrations->tablesTouchedBy($operation) as $table) {
+                if (!str_starts_with($table, $prefix)) {
                     $findings[] = ['block', sprintf(
                         '%s calls Schema::%s("%s"), which is outside this extension\'s "%s" table namespace.',
                         $path,
-                        $verb,
+                        $operation['verb'],
                         $table,
                         $prefix
                     )];
                 }
+            }
 
-                if (!$isMigration) {
-                    $findings[] = ['advisory', sprintf(
-                        '%s changes schema outside database/migrations/, so install and uninstall cannot track it.',
-                        $path
-                    )];
-                }
+            if (!$isMigration) {
+                $findings[] = ['advisory', sprintf(
+                    '%s changes schema outside database/migrations/, so install and uninstall cannot track it.',
+                    $path
+                )];
             }
         }
 
@@ -455,148 +422,5 @@ class ExtensionPhpSourceScanner
     {
         return str_starts_with($path, sprintf('app/Extensions/Packages/%s/', $extensionId))
             && str_ends_with(strtolower($path), '.php');
-    }
-
-    /**
-     * Blank comment bodies, preserving newlines and byte offsets.
-     *
-     * A comment must not be able to produce a finding — a docblock explaining
-     * that a package deliberately avoids exec() would otherwise be the reason
-     * it cannot be installed — and it must not be able to hide one either,
-     * which is why the scan is done on a blanked copy rather than by skipping
-     * lines that look like comments.
-     */
-    private function stripComments(string $source): string
-    {
-        $out = '';
-        $length = strlen($source);
-        $quote = null;
-        $escaped = false;
-
-        for ($i = 0; $i < $length; ++$i) {
-            $char = $source[$i];
-            $next = $i + 1 < $length ? $source[$i + 1] : null;
-
-            if ($quote !== null) {
-                $out .= $char;
-
-                if ($escaped) {
-                    $escaped = false;
-                } elseif ($char === '\\') {
-                    $escaped = true;
-                } elseif ($char === $quote) {
-                    $quote = null;
-                }
-
-                continue;
-            }
-
-            if ($char === "'" || $char === '"') {
-                $quote = $char;
-                $out .= $char;
-
-                continue;
-            }
-
-            if (($char === '/' && ($next === '/' || $next === '*')) || $char === '#') {
-                $i = $this->blankComment($source, $i, $char === '/' && $next === '*', $out);
-
-                continue;
-            }
-
-            $out .= $char;
-        }
-
-        return $out;
-    }
-
-    /**
-     * Additionally blank string bodies, for rules that look for a construct
-     * rather than for a value inside one.
-     *
-     * The quotes themselves are kept so the surrounding syntax still reads as
-     * a call with a string argument; only the contents go.
-     */
-    private function blankStrings(string $source): string
-    {
-        $out = '';
-        $length = strlen($source);
-        $quote = null;
-        $escaped = false;
-
-        for ($i = 0; $i < $length; ++$i) {
-            $char = $source[$i];
-
-            if ($quote !== null) {
-                if ($escaped) {
-                    $escaped = false;
-                    $out .= ' ';
-
-                    continue;
-                }
-
-                if ($char === '\\') {
-                    $escaped = true;
-                    $out .= ' ';
-
-                    continue;
-                }
-
-                if ($char === $quote) {
-                    $quote = null;
-                    $out .= $char;
-
-                    continue;
-                }
-
-                $out .= $char === "\n" ? "\n" : ' ';
-
-                continue;
-            }
-
-            if ($char === "'" || $char === '"') {
-                $quote = $char;
-                $out .= $char;
-
-                continue;
-            }
-
-            $out .= $char;
-        }
-
-        return $out;
-    }
-
-    /**
-     * Blank a comment in place, preserving newlines, and return the index of
-     * its last consumed byte.
-     */
-    private function blankComment(string $source, int $start, bool $block, string &$out): int
-    {
-        $length = strlen($source);
-        $i = $start;
-
-        if ($block) {
-            $out .= '  ';
-            $i += 2;
-            while ($i < $length) {
-                if ($source[$i] === '*' && $i + 1 < $length && $source[$i + 1] === '/') {
-                    $out .= '  ';
-
-                    return $i + 1;
-                }
-                $out .= $source[$i] === "\n" ? "\n" : ' ';
-                ++$i;
-            }
-
-            return $i;
-        }
-
-        while ($i < $length && $source[$i] !== "\n") {
-            $out .= ' ';
-            ++$i;
-        }
-
-        return $i - 1;
     }
 }

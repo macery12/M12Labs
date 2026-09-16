@@ -4612,5 +4612,11 @@
   "server.files.pull.progressTitle": "Remote downloads",
   "server.files.pull.waiting": "Starting\u2026",
   "server.files.pull.finished": "Download finished.",
-  "server.files.pull.cancelled": "Download cancelled."
+  "server.files.pull.cancelled": "Download cancelled.",
+  "extensions.dbchanges.willAlter": "Tables to be changed",
+  "extensions.dbchanges.willDropOnUpdate": "Tables to be deleted by this update",
+  "extensions.dbchanges.willRename": "Tables to be renamed",
+  "extensions.dbchanges.dropsData": "This permanently deletes the rows in these tables. Nothing restores them.",
+  "extensions.dbchanges.rows": "{count} row(s)",
+  "extensions.dbchanges.unanalysed": "{count} statement(s) in these migrations could not be read, so this list may be incomplete."
 }

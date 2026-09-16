@@ -384,10 +384,23 @@ export interface DatabasePlan {
     tablePrefix: string;
     hasDatabase: boolean;
     version?: string;
-    // install / update — tables that will be created and the migrations to run.
+    // install / update — what the archive's pending migrations say they will do.
+    // Every schema verb is read, not just Schema::create: an update whose
+    // migration drops a table used to produce a plan listing only what it added.
     tablesToCreate?: string[];
+    tablesToAlter?: string[];
+    tablesToDrop?: string[];
+    tablesToRename?: { from: string; to: string }[];
+    // Row counts for the tables above that exist right now, so a drop can be
+    // shown as what it costs. Absent for a table this panel has never seen,
+    // which is deliberately not the same as zero.
+    rowCounts?: Record<string, number>;
+    // Statements (raw SQL) whose effect could not be read from the source. Shown
+    // so an incomplete list is not read as an exhaustive one.
+    unanalysedStatements?: number;
     migrations?: string[];
-    // update — tables the extension already owns that stay in place.
+    // update — tables the extension already owns that stay in place. Excludes
+    // any this update drops or renames away; those have their own heading.
     unchangedTables?: string[];
     // uninstall — tables/migrations the extension currently owns (dropped when
     // drop-data is confirmed, otherwise preserved) + manual cleanup SQL.
