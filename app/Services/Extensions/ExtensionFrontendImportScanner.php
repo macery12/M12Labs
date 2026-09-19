@@ -3,6 +3,7 @@
 namespace Everest\Services\Extensions;
 
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilityVocabulary;
 
 /**
  * Refuses a package whose frontend reaches past the SDK.
@@ -25,6 +26,11 @@ use Everest\Exceptions\DisplayException;
  * (find every panel-alias import, allow the SDK ones) rather than a search for
  * known-bad names, so a panel module invented next week is caught without this
  * file being touched.
+ *
+ * Bare npm imports are a second positive check: they must resolve to a direct
+ * dependency pinned by the panel or to a manifest declaration that the
+ * requirement preflight already verified. A transitive package is deliberately
+ * not part of that surface, even when it happens to appear in pnpm-lock.yaml.
  */
 class ExtensionFrontendImportScanner
 {
@@ -42,14 +48,21 @@ class ExtensionFrontendImportScanner
         ~(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)(['"`])([^'"`\r\n]*)\1~
         REGEX;
 
+    public function __construct(private ExtensionRequirementService $requirementService)
+    {
+    }
+
     /**
      * @param array<int, array{path: string, sourcePath: string}> $filePlans
+     * @param array<string, string> $declaredNpmPackages
      *
      * @throws DisplayException
      */
-    public function assertOnlySdkImports(array $filePlans): void
+    public function assertOnlySdkImports(array $filePlans, array $declaredNpmPackages = []): void
     {
-        $violations = [];
+        $boundaryViolations = [];
+        $dependencyViolations = [];
+        $providedNpmPackages = $this->requirementService->providedNpmPackages();
 
         foreach ($filePlans as $plan) {
             if (!$this->isFrontendSource($plan['path'])) {
@@ -57,21 +70,37 @@ class ExtensionFrontendImportScanner
             }
 
             foreach ($this->moduleImportsIn((string) file_get_contents($plan['sourcePath'])) as $specifier) {
-                if ($this->isAllowed($plan['path'], $specifier)) {
+                if ($this->isAllowed($plan['path'], $specifier, $providedNpmPackages, $declaredNpmPackages)) {
                     continue;
                 }
 
-                $violations[] = sprintf('%s imports %s', $plan['path'], $specifier);
+                $violation = sprintf('%s imports %s', $plan['path'], $specifier);
+                if ($this->isBareSpecifier($specifier)) {
+                    $package = $this->npmPackageName($specifier);
+                    $dependencyViolations[] = $package === null
+                        ? $violation . ' (invalid bare package specifier)'
+                        : $violation . sprintf(' (package "%s")', $package);
+                } else {
+                    $boundaryViolations[] = $violation;
+                }
             }
         }
 
-        if ($violations === []) {
+        if ($boundaryViolations === [] && $dependencyViolations === []) {
             return;
         }
 
         // Every violation at once: fixing them one install attempt at a time is
         // a miserable way to learn what the surface is.
-        throw new DisplayException(sprintf("This package's frontend imports panel internals, which are not a supported surface and may change in any release. Import from '%s' instead.\n\n%s", self::ALLOWED_PREFIX, implode("\n", array_map(fn (string $line): string => '  - ' . $line, $violations))));
+        $sections = [];
+        if ($boundaryViolations !== []) {
+            $sections[] = sprintf("This package's frontend imports panel internals, which are not a supported surface and may change in any release. Import from '%s' instead.\n\n%s", self::ALLOWED_PREFIX, $this->formatViolations($boundaryViolations));
+        }
+        if ($dependencyViolations !== []) {
+            $sections[] = sprintf("This package's frontend imports bare npm packages that the panel does not provide and the manifest does not declare under requirements.npmPackages. Fix a typo, vendor the dependency into the package, or declare a panel-provided package with a compatible semver range.\n\n%s", $this->formatViolations($dependencyViolations));
+        }
+
+        throw new DisplayException(implode("\n\n", $sections));
     }
 
     /**
@@ -167,7 +196,7 @@ class ExtensionFrontendImportScanner
      * boundary so a sibling directory whose name merely starts the same way —
      * `@/extensions-sdk-internal` — is not admitted.
      */
-    private function isAllowed(string $sourcePath, string $specifier): bool
+    private function isAllowed(string $sourcePath, string $specifier, array $providedNpmPackages, array $declaredNpmPackages): bool
     {
         if (str_contains($specifier, '\\')) {
             // JavaScript string escapes can spell a forbidden alias without
@@ -193,9 +222,14 @@ class ExtensionFrontendImportScanner
         }
 
         if (!str_starts_with($specifier, '.')) {
-            // Bare imports are resolved from the panel's pinned dependency
-            // graph. Packages cannot install their own npm dependencies.
-            return true;
+            $package = $this->npmPackageName($specifier);
+
+            // Existing packages may use the panel's direct, pinned dependency
+            // graph without a declaration. A declaration adds a versioned
+            // preflight contract; ExtensionRequirementService has already
+            // proved that declared package exists before this scan runs.
+            return $package !== null
+                && (isset($providedNpmPackages[$package]) || array_key_exists($package, $declaredNpmPackages));
         }
 
         if (preg_match('~^(frontend/src/extensions/packages/[^/]+)(?:/|$)~', $sourcePath, $matches) !== 1) {
@@ -206,6 +240,40 @@ class ExtensionFrontendImportScanner
         $resolved = $this->normalizePath(dirname($sourcePath) . '/' . $specifier);
 
         return $resolved === $packageRoot || str_starts_with($resolved, $packageRoot . '/');
+    }
+
+    private function isBareSpecifier(string $specifier): bool
+    {
+        return !str_contains($specifier, '\\')
+            && !str_starts_with($specifier, '.')
+            && !str_starts_with($specifier, '/')
+            && !str_starts_with($specifier, '@/');
+    }
+
+    private function npmPackageName(string $specifier): ?string
+    {
+        if (!$this->isBareSpecifier($specifier)) {
+            return null;
+        }
+
+        $segments = explode('/', $specifier);
+        $package = str_starts_with($specifier, '@')
+            ? (isset($segments[1]) ? $segments[0] . '/' . $segments[1] : '')
+            : $segments[0];
+
+        if (strlen($package) > ExtensionCapabilityVocabulary::NPM_PACKAGE_MAX_LENGTH
+            || preg_match(ExtensionCapabilityVocabulary::NPM_PACKAGE_PATTERN, $package) !== 1
+        ) {
+            return null;
+        }
+
+        return $package;
+    }
+
+    /** @param array<int, string> $violations */
+    private function formatViolations(array $violations): string
+    {
+        return implode("\n", array_map(fn (string $line): string => '  - ' . $line, $violations));
     }
 
     private function normalizePath(string $path): string

@@ -324,6 +324,11 @@ class ExtensionsController extends ApplicationApiController
                 'data_dropped' => $result['dataDropped'],
                 'preserved_tables' => $result['preservedTables'],
                 'manual_cleanup' => $result['manualCleanup'],
+                'possibly_unused_packages' => [
+                    'npm_packages' => $result['possiblyUnusedPackages']['npmPackages'] ?? [],
+                    'composer_packages' => $result['possiblyUnusedPackages']['composerPackages'] ?? [],
+                    'commands' => $result['possiblyUnusedPackages']['commands'] ?? [],
+                ],
             ],
         ]);
     }
@@ -679,6 +684,13 @@ class ExtensionsController extends ApplicationApiController
         return new JsonResponse([
             'object' => 'list',
             'data'   => $this->catalogService->getCatalog()['extensions'],
+            'meta' => [
+                'possibly_unused_packages' => [
+                    'npm_packages' => $results[0]['possiblyUnusedPackages']['npmPackages'] ?? [],
+                    'composer_packages' => $results[0]['possiblyUnusedPackages']['composerPackages'] ?? [],
+                    'commands' => $results[0]['possiblyUnusedPackages']['commands'] ?? [],
+                ],
+            ],
         ]);
     }
 

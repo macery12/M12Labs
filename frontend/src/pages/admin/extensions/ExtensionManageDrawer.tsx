@@ -10,8 +10,11 @@ import {
     updateExtension,
     installExtension,
     CapabilityApprovalRequired,
+    PackageRequirementsNotSatisfied,
     ModifiedFilesRequireAcknowledgement,
     type CapabilityDiff,
+    type PackageRequirementFailure,
+    type PossiblyUnusedPackages,
     updateExtensionPackage,
     uninstallExtension,
 } from '@/api/extensions';
@@ -25,6 +28,8 @@ import { resolveExtensionIcon, extensionTone, toneVar, toneLabelKey } from './ex
 import { ExtensionTypeBadge } from './ExtensionTypeBadge';
 import { CapabilityApprovalModal } from './CapabilityApprovalModal';
 import { ModifiedFilesModal } from './ModifiedFilesModal';
+import { PackageRequirementsModal } from './PackageRequirementsModal';
+import { UnusedPackagesModal, hasPossiblyUnusedPackages } from './UnusedPackagesModal';
 import { ExtensionSecretsPanel } from './ExtensionSecretsPanel';
 import { ExtensionHealthPanel, ExtensionHealthIcon } from './ExtensionHealthPanel';
 import { DatabaseChangesModal } from './DatabaseChangesModal';
@@ -72,6 +77,19 @@ export function ExtensionManageDrawer({
     // update, and uninstall actions all route through it before committing.
     const [dbModal, setDbModal] = useState<DatabasePlanOperation | null>(null);
 
+    // Each refusal keeps the exact operation and consent needed to retry after
+    // the operator resolves it.
+    const [pendingApproval, setPendingApproval] = useState<{ operation: 'install' | 'update'; diff: CapabilityDiff } | null>(
+        null,
+    );
+    const [pendingModifiedFiles, setPendingModifiedFiles] = useState<
+        { operation: 'update' | 'uninstall'; verb: string; paths: string[]; consent: Consent } | null
+    >(null);
+    const [pendingRequirements, setPendingRequirements] = useState<
+        { operation: 'install' | 'update'; requirements: PackageRequirementFailure; consent: Consent } | null
+    >(null);
+    const [possiblyUnused, setPossiblyUnused] = useState<PossiblyUnusedPackages | null>(null);
+
     // Re-seed local form state whenever a different extension is opened.
     useEffect(() => {
         if (!ext) return;
@@ -81,6 +99,10 @@ export function ExtensionManageDrawer({
         setAllowedNests([...ext.allowedNests]);
         setAllowedEggs([...ext.allowedEggs]);
         setDbModal(null);
+        setPendingApproval(null);
+        setPendingModifiedFiles(null);
+        setPendingRequirements(null);
+        setPossiblyUnused(null);
     }, [ext]);
 
     const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
@@ -96,26 +118,15 @@ export function ExtensionManageDrawer({
         onError: fail,
     });
 
-    // An install or update whose privileges have not been approved comes back
-    // as a refusal carrying the diff, computed from the verified manifest.
-    // Records which operation raised it, so consenting retries that one rather
-    // than guessing from mutation state.
-    const [pendingApproval, setPendingApproval] = useState<{ operation: 'install' | 'update'; diff: CapabilityDiff } | null>(
-        null,
-    );
-
-    // A second conflict can follow the first: consenting to the new privileges
-    // gets the update as far as the file check, which then refuses because the
-    // installed files drifted. The approved hash is carried into that retry, so
-    // the operator is not sent back through the privileges dialog.
-    const [pendingModifiedFiles, setPendingModifiedFiles] = useState<
-        { operation: 'update' | 'uninstall'; verb: string; paths: string[]; consent: Consent } | null
-    >(null);
-
     const conflictAware =
         (operation: 'install' | 'update' | 'uninstall', consent: Consent, onOther: (error: unknown) => void) =>
         (error: unknown) => {
+            if (error instanceof PackageRequirementsNotSatisfied && operation !== 'uninstall') {
+                setPendingRequirements({ operation, requirements: error.requirements, consent });
+                return;
+            }
             if (error instanceof CapabilityApprovalRequired && operation !== 'uninstall') {
+                setPendingRequirements(null);
                 setPendingApproval({ operation, diff: error.diff });
                 return;
             }
@@ -131,6 +142,7 @@ export function ExtensionManageDrawer({
             installExtension(ext!.id, ext!.source.repositoryId!, ext!.latestVersion, vars.approvedCapabilityHash),
         onSuccess: e => {
             setPendingApproval(null);
+            setPendingRequirements(null);
             push({ type: 'success', message: m['extensions.toast.installed']({ name: e.name }) });
             invalidate();
             onClose();
@@ -149,6 +161,7 @@ export function ExtensionManageDrawer({
             ),
         onSuccess: e => {
             setPendingApproval(null);
+            setPendingRequirements(null);
             push({ type: 'success', message: m['extensions.toast.updated']({ name: e.name }) });
             invalidate();
             onClose();
@@ -160,6 +173,7 @@ export function ExtensionManageDrawer({
         mutationFn: (vars: { dropData: boolean; confirm?: string; acknowledgeModifiedFiles?: boolean }) =>
             uninstallExtension(ext!.id, vars.dropData, vars.confirm, vars.acknowledgeModifiedFiles),
         onSuccess: res => {
+            setDbModal(null);
             push({ type: 'success', message: m['extensions.toast.uninstalled']({ name: res.extension.name ?? ext!.id }) });
             if (res.dataDropped) {
                 push({ type: 'success', message: m['extensions.toast.dataDropped']() });
@@ -167,7 +181,11 @@ export function ExtensionManageDrawer({
                 push({ type: 'info', message: m['extensions.toast.dataPreserved']({ tables: res.preservedTables.join(', ') }) });
             }
             invalidate();
-            onClose();
+            if (hasPossiblyUnusedPackages(res.possiblyUnusedPackages)) {
+                setPossiblyUnused(res.possiblyUnusedPackages);
+            } else {
+                onClose();
+            }
         },
         onError: (error, vars) =>
             conflictAware('uninstall', { dropData: vars.dropData, confirm: vars.confirm }, fail)(error),
@@ -545,6 +563,34 @@ export function ExtensionManageDrawer({
                             const consent = { approvedCapabilityHash: hash };
                             if (pendingApproval.operation === 'install') install.mutate(consent);
                             else updatePkg.mutate(consent);
+                        }}
+                    />
+                )}
+
+                {pendingRequirements && (
+                    <PackageRequirementsModal
+                        open
+                        extensionName={e.name}
+                        requirements={pendingRequirements.requirements}
+                        operation={pendingRequirements.operation}
+                        busy={install.isPending || updatePkg.isPending}
+                        onClose={() => setPendingRequirements(null)}
+                        onRetry={() => {
+                            const pending = pendingRequirements;
+                            setPendingRequirements(null);
+                            if (pending.operation === 'install') install.mutate(pending.consent);
+                            else updatePkg.mutate(pending.consent);
+                        }}
+                    />
+                )}
+
+                {possiblyUnused && (
+                    <UnusedPackagesModal
+                        open
+                        packages={possiblyUnused}
+                        onClose={() => {
+                            setPossiblyUnused(null);
+                            onClose();
                         }}
                     />
                 )}

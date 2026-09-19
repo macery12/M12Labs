@@ -133,6 +133,18 @@ final class ExtensionCapabilityVocabulary
     /** Extension ids: snake_case, matching the install directory name. */
     public const EXTENSION_ID_PATTERN = '/^[a-z][a-z0-9_]{1,63}$/';
 
+    /** npm package roots, including the optional `@scope/` prefix. */
+    public const NPM_PACKAGE_PATTERN = '~^(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$~D';
+
+    /** npm's package-name limit, including scope and slash. */
+    public const NPM_PACKAGE_MAX_LENGTH = 214;
+
+    /** Canonical Composer package names are lowercase vendor/package pairs. */
+    public const COMPOSER_PACKAGE_PATTERN = '~^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$~D';
+
+    /** Keep manifest keys within Composer's practical package-name ceiling. */
+    public const COMPOSER_PACKAGE_MAX_LENGTH = 255;
+
     /**
      * Declared page categories.
      *

@@ -781,7 +781,7 @@ class ExtensionPackageUpdateService
         // Checked on update as well as install: a package that shipped a clean
         // release once can reach into panel internals in the next one, and an
         // update is the path that would carry it in.
-        $this->importScanner->assertOnlySdkImports($plans);
+        $this->importScanner->assertOnlySdkImports($plans, (array) ($manifest->requirements['npmPackages'] ?? []));
 
         return $plans;
     }

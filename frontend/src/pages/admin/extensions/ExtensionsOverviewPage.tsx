@@ -14,8 +14,11 @@ import {
     toggleExtension,
     installExtension,
     CapabilityApprovalRequired,
+    PackageRequirementsNotSatisfied,
     ModifiedFilesRequireAcknowledgement,
     type CapabilityDiff,
+    type PackageRequirementFailure,
+    type PossiblyUnusedPackages,
     batchInstallExtensions,
     batchUninstallExtensions,
     batchUpdateExtensions,
@@ -24,6 +27,8 @@ import { BatchActionBar } from './BatchActionBar';
 import { DatabaseChangesModal, type DbModalExtension } from './DatabaseChangesModal';
 import { CapabilityApprovalModal } from './CapabilityApprovalModal';
 import { ModifiedFilesModal } from './ModifiedFilesModal';
+import { PackageRequirementsModal } from './PackageRequirementsModal';
+import { UnusedPackagesModal, hasPossiblyUnusedPackages } from './UnusedPackagesModal';
 import { Spinner } from '@/components/ui/Spinner';
 import { Input } from '@/components/ui/Input';
 import { useFlashes } from '@/state/flashes';
@@ -169,17 +174,39 @@ export default function ExtensionsOverviewPage() {
         paths: string[];
         consents: BatchConsentMap;
     } | null>(null);
+    const [pendingRequirements, setPendingRequirements] = useState<{
+        ext: Extension;
+        requirements: PackageRequirementFailure;
+        approvedCapabilityHash?: string;
+    } | null>(null);
+    const [pendingBatchRequirements, setPendingBatchRequirements] = useState<{
+        operation: BatchOperation;
+        ext: Extension;
+        requirements: PackageRequirementFailure;
+        consents: BatchConsentMap;
+    } | null>(null);
+    const [possiblyUnused, setPossiblyUnused] = useState<PossiblyUnusedPackages | null>(null);
 
     const install = useMutation({
         mutationFn: ({ ext, approvedCapabilityHash }: { ext: Extension; approvedCapabilityHash?: string }) =>
             installExtension(ext.id, ext.source.repositoryId!, ext.latestVersion, approvedCapabilityHash),
         onSuccess: e => {
             setPendingApproval(null);
+            setPendingRequirements(null);
             push({ type: 'success', message: m['extensions.toast.installed']({ name: e.name }) });
             qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
         },
         onError: (error, variables) => {
+            if (error instanceof PackageRequirementsNotSatisfied) {
+                setPendingRequirements({
+                    ext: variables.ext,
+                    requirements: error.requirements,
+                    approvedCapabilityHash: variables.approvedCapabilityHash,
+                });
+                return;
+            }
             if (error instanceof CapabilityApprovalRequired) {
+                setPendingRequirements(null);
                 setPendingApproval({ ext: variables.ext, diff: error.diff });
                 return;
             }
@@ -218,6 +245,7 @@ export default function ExtensionsOverviewPage() {
     const forDisable = selectedExts.filter(e => isManageable(e) && e.enabled);
 
     const onBatchSuccess = (data: Extension[], messageFn: () => string) => {
+        setPendingBatchRequirements(null);
         qc.setQueryData(['admin', 'extensions'], data);
         qc.invalidateQueries({ queryKey: ['admin', 'extension-repositories'] });
         clearSelection();
@@ -236,7 +264,15 @@ export default function ExtensionsOverviewPage() {
             ),
         onSuccess: data => onBatchSuccess(data, () => m['extensions.toast.batchInstalled']({ count: forInstall.length })),
         onError: (error, consents) => {
+            if (error instanceof PackageRequirementsNotSatisfied) {
+                const ext = forInstall.find(item => item.id === error.extensionId);
+                if (ext) {
+                    setPendingBatchRequirements({ operation: 'install', ext, requirements: error.requirements, consents });
+                    return;
+                }
+            }
             if (error instanceof CapabilityApprovalRequired) {
+                setPendingBatchRequirements(null);
                 const ext = forInstall.find(item => item.id === error.extensionId);
                 if (ext) {
                     setPendingBatchApproval({ operation: 'install', ext, diff: error.diff, consents });
@@ -249,7 +285,10 @@ export default function ExtensionsOverviewPage() {
 
     const batchUninstall = useMutation({
         mutationFn: (drops: BatchDropDataItem[]) => batchUninstallExtensions(forUninstall.map(e => e.id), drops),
-        onSuccess: data => onBatchSuccess(data, () => m['extensions.toast.batchUninstalled']({ count: forUninstall.length })),
+        onSuccess: result => {
+            onBatchSuccess(result.extensions, () => m['extensions.toast.batchUninstalled']({ count: forUninstall.length }));
+            if (hasPossiblyUnusedPackages(result.possiblyUnusedPackages)) setPossiblyUnused(result.possiblyUnusedPackages);
+        },
         onError: reportError,
     });
 
@@ -266,7 +305,15 @@ export default function ExtensionsOverviewPage() {
             ),
         onSuccess: data => onBatchSuccess(data, () => m['extensions.toast.batchUpdated']({ count: forUpdate.length })),
         onError: (error, consents) => {
+            if (error instanceof PackageRequirementsNotSatisfied) {
+                const ext = forUpdate.find(item => item.id === error.extensionId);
+                if (ext) {
+                    setPendingBatchRequirements({ operation: 'update', ext, requirements: error.requirements, consents });
+                    return;
+                }
+            }
             if (error instanceof CapabilityApprovalRequired) {
+                setPendingBatchRequirements(null);
                 const ext = forUpdate.find(item => item.id === error.extensionId);
                 if (ext) {
                     setPendingBatchApproval({ operation: 'update', ext, diff: error.diff, consents });
@@ -611,6 +658,25 @@ export default function ExtensionsOverviewPage() {
                 />
             )}
 
+            {pendingRequirements && (
+                <PackageRequirementsModal
+                    open
+                    extensionName={pendingRequirements.ext.name}
+                    requirements={pendingRequirements.requirements}
+                    operation="install"
+                    busy={install.isPending}
+                    onClose={() => setPendingRequirements(null)}
+                    onRetry={() => {
+                        const pending = pendingRequirements;
+                        setPendingRequirements(null);
+                        install.mutate({
+                            ext: pending.ext,
+                            approvedCapabilityHash: pending.approvedCapabilityHash,
+                        });
+                    }}
+                />
+            )}
+
             {batchModal && (
                 <DatabaseChangesModal
                     open
@@ -671,6 +737,27 @@ export default function ExtensionsOverviewPage() {
                         batchUpdate.mutate(consents);
                     }}
                 />
+            )}
+
+            {pendingBatchRequirements && (
+                <PackageRequirementsModal
+                    open
+                    extensionName={pendingBatchRequirements.ext.name}
+                    requirements={pendingBatchRequirements.requirements}
+                    operation={pendingBatchRequirements.operation}
+                    busy={pendingBatchRequirements.operation === 'install' ? batchInstall.isPending : batchUpdate.isPending}
+                    onClose={() => setPendingBatchRequirements(null)}
+                    onRetry={() => {
+                        const pending = pendingBatchRequirements;
+                        setPendingBatchRequirements(null);
+                        if (pending.operation === 'install') batchInstall.mutate(pending.consents);
+                        else batchUpdate.mutate(pending.consents);
+                    }}
+                />
+            )}
+
+            {possiblyUnused && (
+                <UnusedPackagesModal open packages={possiblyUnused} onClose={() => setPossiblyUnused(null)} />
             )}
 
             {/* The table's one-click Install gets the same database review the

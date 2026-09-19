@@ -21,7 +21,7 @@ class ExtensionFrontendImportScannerTest extends TestCase
     {
         parent::setUp();
 
-        $this->scanner = new ExtensionFrontendImportScanner();
+        $this->scanner = app(ExtensionFrontendImportScanner::class);
         $this->root = sys_get_temp_dir() . '/import-scan-' . uniqid();
         File::ensureDirectoryExists($this->root);
     }
@@ -66,6 +66,39 @@ class ExtensionFrontendImportScannerTest extends TestCase
         ]));
 
         $this->assertTrue(true, 'A package using only the SDK installs.');
+    }
+
+    public function testUnknownBareImportIsRefusedBeforeTheBuild(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('requirements.npmPackages');
+        $this->expectExceptionMessage('lucide-recat');
+
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => "import { Cat } from 'lucide-recat';\n",
+        ]));
+    }
+
+    public function testTransitiveLockfilePackageIsNotTreatedAsPanelProvided(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('micromark');
+
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => "import { parse } from 'micromark';\n",
+        ]));
+    }
+
+    public function testDeclaredBarePackageAndPanelProvidedSubpathAreAllowed(): void
+    {
+        $this->scanner->assertOnlySdkImports($this->plans([
+            self::FRONTEND => <<<'TSX'
+                import jsx from 'react/jsx-runtime';
+                import thing from '@example/future-package/subpath';
+                TSX,
+        ]), ['@example/future-package' => '^1.0']);
+
+        $this->assertTrue(true);
     }
 
     public function testAPanelInternalImportIsRefused(): void
@@ -244,25 +277,45 @@ class ExtensionFrontendImportScannerTest extends TestCase
     }
 
     /**
-     * The package B2 shipped, read from the published source tree. If the gate
-     * and the pilot package ever disagree, one of them is wrong.
+     * Read the published source tree when it is available locally. Tightening
+     * the bare-import gate must not quietly strand an existing v3 package.
      */
-    public function testTheShippedCustomDomainsPackagePasses(): void
+    public function testTheShippedExtensionPackagesPass(): void
     {
-        $files = '/var/www/M12Labs-Extensions/extensions/custom_domains/files';
-        if (!is_dir($files)) {
+        $extensionsRoot = '/var/www/M12Labs-Extensions/extensions';
+        if (!is_dir($extensionsRoot)) {
             $this->markTestSkipped('The extensions repository is not present on this machine.');
         }
 
-        $plans = [];
-        foreach (File::allFiles($files . '/frontend') as $file) {
-            $plans[] = [
-                'path' => 'frontend/' . ltrim(str_replace($files . '/frontend', '', $file->getPathname()), '/'),
-                'sourcePath' => $file->getPathname(),
-            ];
+        $checked = [];
+        foreach (File::directories($extensionsRoot) as $extensionRoot) {
+            $filesRoot = $extensionRoot . '/files';
+            $frontendRoot = $filesRoot . '/frontend';
+            if (!is_dir($frontendRoot)) {
+                continue;
+            }
+
+            $plans = [];
+            foreach (File::allFiles($frontendRoot) as $file) {
+                $plans[] = [
+                    'path' => ltrim(str_replace($filesRoot, '', $file->getPathname()), '/'),
+                    'sourcePath' => $file->getPathname(),
+                ];
+            }
+
+            $manifest = json_decode((string) File::get($extensionRoot . '/extension.json'), true, 512, JSON_THROW_ON_ERROR);
+            $declared = (array) ($manifest['requirements']['npmPackages'] ?? []);
+            $extension = basename($extensionRoot);
+
+            try {
+                $this->scanner->assertOnlySdkImports($plans, $declared);
+            } catch (DisplayException $exception) {
+                $this->fail(sprintf('Published extension "%s" failed its frontend import scan: %s', $extension, $exception->getMessage()));
+            }
+
+            $checked[] = $extension;
         }
 
-        $this->assertNotEmpty($plans, 'Expected the package to ship frontend files.');
-        $this->scanner->assertOnlySdkImports($plans);
+        $this->assertNotEmpty($checked, 'Expected at least one published package to ship frontend files.');
     }
 }

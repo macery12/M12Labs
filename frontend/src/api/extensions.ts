@@ -270,6 +270,36 @@ export class ModifiedFilesRequireAcknowledgement extends Error {
     }
 }
 
+export interface PackageRequirementProblem {
+    type: 'frontend' | 'backend';
+    manager: 'npm' | 'composer';
+    package: string;
+    required: string;
+    installed: string | null;
+    status: 'missing' | 'incompatible';
+}
+
+export interface PackageRequirementFailure {
+    problems: PackageRequirementProblem[];
+    commands: Partial<Record<'npm' | 'composer', string>>;
+}
+
+/**
+ * The verified extension manifest asks for panel dependencies that are not
+ * available at a compatible locked version. The UI explains how to install
+ * them manually; extension lifecycle code never executes these commands.
+ */
+export class PackageRequirementsNotSatisfied extends Error {
+    constructor(
+        public readonly extensionId: string,
+        public readonly requirements: PackageRequirementFailure,
+        message: string,
+    ) {
+        super(message);
+        this.name = 'PackageRequirementsNotSatisfied';
+    }
+}
+
 // The panel computes the diff from the VERIFIED manifest, so it can only answer
 // after downloading and checking the archive — which is why approval is a 409
 // on the real request rather than a separate preflight endpoint.
@@ -294,6 +324,14 @@ function rethrowExtensionConflicts(error: unknown): never {
             modified.verb,
             modified.paths ?? [],
             String(response.data.error ?? 'Files were modified after installation.'),
+        );
+    }
+
+    if (response?.data?.package_requirements) {
+        throw new PackageRequirementsNotSatisfied(
+            String(response.data.extension_id ?? ''),
+            response.data.package_requirements as unknown as PackageRequirementFailure,
+            String(response.data.error ?? 'This extension requires packages that are missing or incompatible.'),
         );
     }
 
@@ -347,6 +385,27 @@ export interface UninstallResult {
     dataDropped: boolean;
     preservedTables: string[];
     manualCleanup: string[];
+    possiblyUnusedPackages: PossiblyUnusedPackages;
+}
+
+export interface PossiblyUnusedPackages {
+    npmPackages: string[];
+    composerPackages: string[];
+    commands: Partial<Record<'npm' | 'composer', string>>;
+}
+
+function possiblyUnusedPackages(data: unknown): PossiblyUnusedPackages {
+    const value = (data ?? {}) as {
+        npm_packages?: string[];
+        composer_packages?: string[];
+        commands?: Partial<Record<'npm' | 'composer', string>>;
+    };
+
+    return {
+        npmPackages: value.npm_packages ?? [],
+        composerPackages: value.composer_packages ?? [],
+        commands: value.commands ?? {},
+    };
 }
 
 // POST /extensions/{id}/uninstall — remove an installed package. Pass dropData
@@ -372,6 +431,7 @@ export async function uninstallExtension(
         dataDropped: Boolean(data.meta?.data_dropped),
         preservedTables: (data.meta?.preserved_tables ?? []) as string[],
         manualCleanup: (data.meta?.manual_cleanup ?? []) as string[],
+        possiblyUnusedPackages: possiblyUnusedPackages(data.meta?.possibly_unused_packages),
     };
 }
 
@@ -601,12 +661,15 @@ export interface BatchDropDataItem {
 export async function batchUninstallExtensions(
     extensionIds: string[],
     dropData?: BatchDropDataItem[],
-): Promise<Extension[]> {
+): Promise<{ extensions: Extension[]; possiblyUnusedPackages: PossiblyUnusedPackages }> {
     const { data } = await http.post(`${BASE}/batch-uninstall`, {
         extension_ids: extensionIds,
         ...(dropData && dropData.length ? { drop_data: dropData } : {}),
     });
-    return (data.data ?? []) as Extension[];
+    return {
+        extensions: (data.data ?? []) as Extension[],
+        possiblyUnusedPackages: possiblyUnusedPackages(data.meta?.possibly_unused_packages),
+    };
 }
 
 // POST /extensions/batch-update — update several packages in one rebuild.

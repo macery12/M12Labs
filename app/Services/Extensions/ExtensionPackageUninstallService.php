@@ -23,6 +23,7 @@ class ExtensionPackageUninstallService
         private ExtensionPermissionRegistry $permissionRegistry,
         private ExtensionJobDrainService $drainService,
         private ExtensionSecretStore $secretStore,
+        private ExtensionRequirementService $requirementService,
     ) {
     }
 
@@ -31,13 +32,14 @@ class ExtensionPackageUninstallService
      * are PRESERVED by default; passing $dropData = true rolls back its
      * migrations (dropping the tables) as a closely audited operation.
      *
-     * @return array{dataDropped: bool, preservedTables: array<int, string>, manualCleanup: array<int, string>, migrationLog: ?string}
+     * @return array{dataDropped: bool, preservedTables: array<int, string>, manualCleanup: array<int, string>, migrationLog: ?string, possiblyUnusedPackages: array<string, mixed>}
      */
     public function uninstall(string $extensionId, bool $dropData = false, ?string $initiator = null, bool $acknowledgeModified = false): array
     {
         return $this->operationLockService->withinLock('uninstall', $extensionId, function () use ($extensionId, $dropData, $initiator, $acknowledgeModified) {
             $prepared = null;
             $committed = false;
+            $possiblyUnusedPackages = ['npmPackages' => [], 'composerPackages' => [], 'commands' => []];
             try {
                 $prepared = $this->prepareUninstall($extensionId, $dropData, $initiator, $acknowledgeModified);
 
@@ -55,6 +57,14 @@ class ExtensionPackageUninstallService
                 $this->progressService->report('uninstall', $extensionId, 'registering');
                 $this->finalizeUninstall($prepared);
                 $committed = true;
+                try {
+                    $possiblyUnusedPackages = $this->possiblyUnusedPackages([$prepared['package']]);
+                } catch (\Throwable $exception) {
+                    // Dependency cleanup is optional advice. A reporting
+                    // failure must not strand recovery backups after the
+                    // uninstall itself has committed successfully.
+                    report($exception);
+                }
                 $this->completeUninstall($prepared);
                 $this->progressService->report('uninstall', $extensionId, 'completed');
 
@@ -63,6 +73,7 @@ class ExtensionPackageUninstallService
                     'preservedTables' => $prepared['preservedTables'] ?? [],
                     'manualCleanup' => $prepared['manualCleanup'] ?? [],
                     'migrationLog' => $prepared['migrationLog'] ?? null,
+                    'possiblyUnusedPackages' => $possiblyUnusedPackages,
                 ];
             } catch (\Throwable $exception) {
                 if ($committed) {
@@ -73,6 +84,7 @@ class ExtensionPackageUninstallService
                         'preservedTables' => $prepared['preservedTables'] ?? [],
                         'manualCleanup' => $prepared['manualCleanup'] ?? [],
                         'migrationLog' => $prepared['migrationLog'] ?? null,
+                        'possiblyUnusedPackages' => $possiblyUnusedPackages,
                     ];
                 }
 
@@ -98,6 +110,16 @@ class ExtensionPackageUninstallService
                 }
             }
         });
+    }
+
+    /**
+     * @param iterable<int, ExtensionPackage> $removedPackages
+     *
+     * @return array{npmPackages: array<int, string>, composerPackages: array<int, string>, commands: array<string, string>}
+     */
+    public function possiblyUnusedPackages(iterable $removedPackages): array
+    {
+        return $this->requirementService->possiblyUnusedPackages($removedPackages);
     }
 
     /**

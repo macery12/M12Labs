@@ -613,7 +613,7 @@ class ExtensionPackageInstallService
         // Every shipped file is on disk and checksum-verified by now, so this is
         // the first point at which what will actually be installed can be read.
         // Before applying any of it.
-        $this->importScanner->assertOnlySdkImports($plans);
+        $this->importScanner->assertOnlySdkImports($plans, (array) ($manifest->requirements['npmPackages'] ?? []));
 
         // The PHP counterpart. Blocking findings throw; advisory ones are
         // judgement calls a reviewer owns, so they are recorded rather than

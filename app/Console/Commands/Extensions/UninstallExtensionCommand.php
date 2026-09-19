@@ -93,6 +93,23 @@ class UninstallExtensionCommand extends Command
             }
         }
 
+        $unused = $result['possiblyUnusedPackages'];
+        if (($unused['npmPackages'] ?? []) !== [] || ($unused['composerPackages'] ?? []) !== []) {
+            $this->newLine();
+            $this->components->warn('These manually managed packages are no longer declared by an installed extension. They were not removed automatically.');
+
+            if (($unused['npmPackages'] ?? []) !== []) {
+                $this->line('Frontend: ' . implode(', ', $unused['npmPackages']));
+            }
+            if (($unused['composerPackages'] ?? []) !== []) {
+                $this->line('Backend: ' . implode(', ', $unused['composerPackages']));
+            }
+
+            foreach ($unused['commands'] ?? [] as $command) {
+                $this->line('  ' . $command);
+            }
+        }
+
         return self::SUCCESS;
     }
 }

@@ -138,7 +138,12 @@ class ExtensionPackageBatchService
      *
      * @param array<int, array{extensionId: string, dropData?: bool}> $items
      *
-     * @return array<int, array{extensionId: string, dataDropped: bool, migrationLog: ?string}>
+     * @return array<int, array{
+     *     extensionId: string,
+     *     dataDropped: bool,
+     *     migrationLog: ?string,
+     *     possiblyUnusedPackages: array{npmPackages: array<int, string>, composerPackages: array<int, string>, commands: array<string, string>}
+     * }>
      */
     public function batchUninstall(array $items, ?string $initiator = null): array
     {
@@ -152,6 +157,7 @@ class ExtensionPackageBatchService
         return $this->operationLockService->withinLock('uninstall', 'batch', function () use ($items, $initiator) {
             $preparedList = [];
             $committed = false;
+            $possiblyUnusedPackages = ['npmPackages' => [], 'composerPackages' => [], 'commands' => []];
             $total = count($items);
             $allExtensionIds = array_column($items, 'extensionId');
 
@@ -193,6 +199,17 @@ class ExtensionPackageBatchService
                 });
                 $committed = true;
 
+                try {
+                    $possiblyUnusedPackages = $this->uninstallService->possiblyUnusedPackages(array_map(
+                        static fn (array $prepared): ExtensionPackage => $prepared['package'],
+                        $preparedList
+                    ));
+                } catch (\Throwable $exception) {
+                    // Optional cleanup advice must never interrupt post-commit
+                    // backup cleanup or make a completed batch look failed.
+                    report($exception);
+                }
+
                 // Recovery backups are filesystem state and cannot participate
                 // in the database transaction. Keep them until every package
                 // deletion has committed, then remove them best-effort.
@@ -206,6 +223,7 @@ class ExtensionPackageBatchService
                     'extensionId' => $prepared['extensionId'],
                     'dataDropped' => (bool) ($prepared['resetMigrations'] ?? false),
                     'migrationLog' => $prepared['migrationLog'] ?? null,
+                    'possiblyUnusedPackages' => $possiblyUnusedPackages,
                 ], $preparedList);
             } catch (\Throwable $exception) {
                 if ($committed) {
@@ -215,6 +233,7 @@ class ExtensionPackageBatchService
                         'extensionId' => $prepared['extensionId'],
                         'dataDropped' => (bool) ($prepared['resetMigrations'] ?? false),
                         'migrationLog' => $prepared['migrationLog'] ?? null,
+                        'possiblyUnusedPackages' => $possiblyUnusedPackages,
                     ], $preparedList);
                 }
 

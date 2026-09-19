@@ -3,6 +3,7 @@
 namespace Everest\Services\Extensions\Manifest;
 
 use Illuminate\Support\Str;
+use Composer\Semver\VersionParser;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Queue\QueueTopology;
 use Everest\Services\Extensions\ExtensionPageManifestService;
@@ -925,14 +926,14 @@ class ExtensionManifestParser
     private function parseRequirements($requirements): array
     {
         if ($requirements === [] || $requirements === null) {
-            return ['phpExtensions' => [], 'panelServices' => [], 'extensions' => []];
+            return ['phpExtensions' => [], 'panelServices' => [], 'npmPackages' => [], 'composerPackages' => [], 'extensions' => []];
         }
 
         if (!is_array($requirements)) {
             throw new DisplayException('The manifest "requirements" section must be an object.');
         }
 
-        $this->assertKnownKeys($requirements, ['phpExtensions', 'panelServices', 'extensions'], 'requirements');
+        $this->assertKnownKeys($requirements, ['phpExtensions', 'panelServices', 'npmPackages', 'composerPackages', 'extensions'], 'requirements');
 
         // Cross-extension dependencies need a resolution graph, cycle detection
         // and coordinated updates, none of which exist yet. Packages coordinate
@@ -949,9 +950,73 @@ class ExtensionManifestParser
             }
         }
 
+        $npmPackages = $requirements['npmPackages'] ?? [];
+        if (!is_array($npmPackages) || ($npmPackages !== [] && array_is_list($npmPackages))) {
+            throw new DisplayException('requirements.npmPackages must be an object mapping npm package names to semver constraints.');
+        }
+
+        $parsedNpmPackages = [];
+        $versionParser = new VersionParser();
+
+        foreach ($npmPackages as $package => $constraint) {
+            $package = (string) $package;
+            if (strlen($package) > ExtensionCapabilityVocabulary::NPM_PACKAGE_MAX_LENGTH
+                || preg_match(ExtensionCapabilityVocabulary::NPM_PACKAGE_PATTERN, $package) !== 1
+            ) {
+                throw new DisplayException(sprintf('requirements.npmPackages names invalid npm package "%s".', $package));
+            }
+
+            if (!is_string($constraint) || trim($constraint) === '') {
+                throw new DisplayException(sprintf('requirements.npmPackages.%s must be a non-empty semver constraint.', $package));
+            }
+
+            $constraint = trim($constraint);
+            try {
+                $versionParser->parseConstraints($constraint);
+            } catch (\UnexpectedValueException) {
+                throw new DisplayException(sprintf('requirements.npmPackages.%s declares invalid semver constraint "%s".', $package, $constraint));
+            }
+
+            $parsedNpmPackages[$package] = $constraint;
+        }
+
+        ksort($parsedNpmPackages, SORT_STRING);
+
+        $composerPackages = $requirements['composerPackages'] ?? [];
+        if (!is_array($composerPackages) || ($composerPackages !== [] && array_is_list($composerPackages))) {
+            throw new DisplayException('requirements.composerPackages must be an object mapping Composer package names to version constraints.');
+        }
+
+        $parsedComposerPackages = [];
+        foreach ($composerPackages as $package => $constraint) {
+            $package = (string) $package;
+            if (strlen($package) > ExtensionCapabilityVocabulary::COMPOSER_PACKAGE_MAX_LENGTH
+                || preg_match(ExtensionCapabilityVocabulary::COMPOSER_PACKAGE_PATTERN, $package) !== 1
+            ) {
+                throw new DisplayException(sprintf('requirements.composerPackages names invalid Composer package "%s". Use its exact lowercase vendor/package name.', $package));
+            }
+
+            if (!is_string($constraint) || trim($constraint) === '') {
+                throw new DisplayException(sprintf('requirements.composerPackages.%s must be a non-empty version constraint.', $package));
+            }
+
+            $constraint = trim($constraint);
+            try {
+                $versionParser->parseConstraints($constraint);
+            } catch (\UnexpectedValueException) {
+                throw new DisplayException(sprintf('requirements.composerPackages.%s declares invalid version constraint "%s".', $package, $constraint));
+            }
+
+            $parsedComposerPackages[$package] = $constraint;
+        }
+
+        ksort($parsedComposerPackages, SORT_STRING);
+
         return [
             'phpExtensions' => array_values(array_map('strval', (array) ($requirements['phpExtensions'] ?? []))),
             'panelServices' => $services,
+            'npmPackages' => $parsedNpmPackages,
+            'composerPackages' => $parsedComposerPackages,
             'extensions' => [],
         ];
     }

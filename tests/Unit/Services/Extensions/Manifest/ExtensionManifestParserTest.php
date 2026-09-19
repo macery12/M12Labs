@@ -359,6 +359,96 @@ class ExtensionManifestParserTest extends TestCase
         ]));
     }
 
+    public function testParsesAndSortsVersionedNpmPackageRequirements(): void
+    {
+        $manifest = $this->parser->parse($this->manifest([
+            'requirements' => ['npmPackages' => [
+                'react-router-dom' => '^7.18',
+                '@tanstack/react-query' => '>=5.100 <6.0',
+            ]],
+        ]));
+
+        $this->assertSame([
+            '@tanstack/react-query' => '>=5.100 <6.0',
+            'react-router-dom' => '^7.18',
+        ], $manifest->requirements['npmPackages']);
+    }
+
+    public function testRejectsNpmPackageRequirementsWrittenAsAList(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('must be an object mapping npm package names to semver constraints');
+
+        $this->parser->parse($this->manifest([
+            'requirements' => ['npmPackages' => ['react']],
+        ]));
+    }
+
+    public function testRejectsAnInvalidNpmPackageName(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('invalid npm package');
+
+        $this->parser->parse($this->manifest([
+            'requirements' => ['npmPackages' => ['React Package' => '^19']],
+        ]));
+    }
+
+    public function testRejectsAnInvalidNpmSemverConstraint(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('invalid semver constraint');
+
+        $this->parser->parse($this->manifest([
+            'requirements' => ['npmPackages' => ['react' => 'definitely-not-semver']],
+        ]));
+    }
+
+    public function testParsesAndSortsVersionedComposerPackageRequirements(): void
+    {
+        $manifest = $this->parser->parse($this->manifest([
+            'requirements' => ['composerPackages' => [
+                'league/commonmark' => '^2.6',
+                'guzzlehttp/guzzle' => '^8.1',
+            ]],
+        ]));
+
+        $this->assertSame([
+            'guzzlehttp/guzzle' => '^8.1',
+            'league/commonmark' => '^2.6',
+        ], $manifest->requirements['composerPackages']);
+    }
+
+    public function testRejectsComposerPackageRequirementsWrittenAsAList(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('must be an object mapping Composer package names to version constraints');
+
+        $this->parser->parse($this->manifest([
+            'requirements' => ['composerPackages' => ['league/commonmark']],
+        ]));
+    }
+
+    public function testRejectsAnInvalidOrNonCanonicalComposerPackageName(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('invalid Composer package');
+
+        $this->parser->parse($this->manifest([
+            'requirements' => ['composerPackages' => ['League/CommonMark' => '^2.6']],
+        ]));
+    }
+
+    public function testRejectsAnInvalidComposerVersionConstraint(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('invalid version constraint');
+
+        $this->parser->parse($this->manifest([
+            'requirements' => ['composerPackages' => ['league/commonmark' => 'definitely-not-semver']],
+        ]));
+    }
+
     // ------------------------------------------------------------------- files
 
     public function testRejectsAManifestWithoutACompatibilityDeclaration(): void
