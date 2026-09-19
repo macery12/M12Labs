@@ -10,6 +10,7 @@ use Everest\Services\Extensions\Manifest\ExtensionCapabilityDiff;
 use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
 use Everest\Tests\Integration\Api\Application\ApplicationApiIntegrationTestCase;
 
 /**
@@ -68,6 +69,7 @@ class ExtensionCapabilityApprovalTest extends ApplicationApiIntegrationTestCase
             adminPages: [new PageDefinition('main', 'ext.demo.nav', 'globe', 'modules', 10, null, 'read')],
             adminPermissions: [new PermissionDefinition('read', 'ext.demo.permission.read')],
             hooks: [new HookDefinition('server.pre_delete', 'Cleanup', 'synchronous_best_effort', 2500)],
+            slots: [new FrontendSlotDefinition('server-layout.overlay', 'assistant-drawer', 20, 'control.console')],
         );
 
         $package = $this->installed($capabilities);

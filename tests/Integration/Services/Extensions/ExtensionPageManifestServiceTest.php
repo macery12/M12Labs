@@ -131,6 +131,28 @@ class ExtensionPageManifestServiceTest extends IntegrationTestCase
         $this->assertSame('modules', $written['admin'][0]['category']);
     }
 
+    public function testItWritesVerifiedFrontendSlotsForTheLazyRegistry(): void
+    {
+        $manifest = $this->manifest(
+            ['slots' => [[
+                'name' => 'server-layout.overlay',
+                'entry' => 'assistant-drawer',
+                'order' => 25,
+                'requiredServerPermission' => 'control.console',
+            ]]],
+            ['frontend/src/extensions/packages/pagedemo/slots/assistant-drawer.tsx']
+        );
+
+        $written = json_decode((string) file_get_contents($this->service->write($manifest, $this->workspace . '/backups')['targetPath']), true);
+
+        $this->assertSame([[
+            'name' => 'server-layout.overlay',
+            'entry' => 'assistant-drawer',
+            'order' => 25,
+            'requiredServerPermission' => 'control.console',
+        ]], $written['slots']);
+    }
+
     /** The checksum in the plan matches what actually landed on disk. */
     public function testTheGeneratedPlanChecksumMatchesTheFile(): void
     {

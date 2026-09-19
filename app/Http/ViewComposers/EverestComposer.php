@@ -4,13 +4,13 @@ namespace Everest\Http\ViewComposers;
 
 use Illuminate\View\View;
 use Everest\Models\Setting;
-use Everest\Models\ExtensionConfig;
 use Everest\Services\Email\EmailManager;
 use Everest\Services\Billing\StoreConfigService;
 use Everest\Services\Email\EmailVerificationGate;
 use Everest\Services\Billing\InvoiceSettingsService;
 use Everest\Services\Billing\PaymentWebhookRegistry;
 use Everest\Services\Billing\PaymentProcessorConfigService;
+use Everest\Services\Extensions\ExtensionRuntimePlanService;
 
 class EverestComposer
 {
@@ -20,6 +20,7 @@ class EverestComposer
         private InvoiceSettingsService $invoiceSettingsService,
         private StoreConfigService $storeConfigService,
         private PaymentWebhookRegistry $paymentWebhookRegistry,
+        private ExtensionRuntimePlanService $extensionRuntimePlan,
     ) {
     }
 
@@ -148,6 +149,14 @@ class EverestComposer
 
         // Merge admin-only configuration if user is authenticated admin
         $user = auth()->user();
+        if ($user) {
+            // Pages and global slots must use the same evaluated state as the
+            // backend loaders: enabled alone is insufficient when a package is
+            // quarantined, unsigned, incompatible or has a capability-hash
+            // mismatch. This list is safe for every authenticated user and is
+            // needed by server-scoped slots, not only by administrators.
+            $configuration['extensions']['active'] = $this->enabledExtensionIds();
+        }
         if ($user && $user->isAdministrator()) {
             $configuration = array_merge_recursive($configuration, $this->getAdminConfiguration());
         }
@@ -195,12 +204,6 @@ class EverestComposer
                 'plan_change_cooldown_hours' => config('modules.billing.plan_change_cooldown_hours', 72),
                 'require_billing_address' => (bool) $invoiceSettings->require_billing_address,
             ],
-            // Enabled extension ids gate extension-contributed admin nav/routes;
-            // non-admins never receive the list. The extensions.admin middleware
-            // enforces the same state server-side regardless.
-            'extensions' => [
-                'active' => $this->enabledExtensionIds(),
-            ],
         ];
     }
 
@@ -209,12 +212,7 @@ class EverestComposer
      */
     private function enabledExtensionIds(): array
     {
-        try {
-            return ExtensionConfig::query()->where('enabled', true)->pluck('extension_id')->all();
-        } catch (\Throwable) {
-            // Fresh installs may render views before migrations exist.
-            return [];
-        }
+        return $this->extensionRuntimePlan->enabledIds();
     }
 
     private function emailEnabled(): bool

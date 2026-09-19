@@ -78,6 +78,8 @@ export interface ExtensionCapabilitySummary {
     // named here; the install dialog spells each one out with its limits,
     // because how long a stream may run is the part worth reading.
     streams?: number;
+    // Components mounted into panel-owned global layout locations.
+    slots?: number;
 }
 
 export interface Extension {

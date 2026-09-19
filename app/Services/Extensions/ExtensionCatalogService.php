@@ -616,6 +616,7 @@ class ExtensionCatalogService
             'privileged' => array_values(array_filter((array) ($summary['privileged'] ?? []), 'is_string')),
             'bindings' => (int) ($summary['bindings'] ?? 0),
             'streams' => (int) ($summary['streams'] ?? 0),
+            'slots' => (int) ($summary['slots'] ?? 0),
         ];
     }
 

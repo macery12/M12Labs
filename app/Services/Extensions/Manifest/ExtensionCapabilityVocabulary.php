@@ -41,6 +41,22 @@ final class ExtensionCapabilityVocabulary
         'privileged',
         'bindings',
         'streams',
+        'slots',
+    ];
+
+    /**
+     * Panel-owned frontend locations a package may contribute to.
+     *
+     * This starts deliberately small. Both locations are inside the loaded
+     * server context: banners render immediately before routed server content;
+     * overlays render beside the shell and may use fixed positioning for
+     * drawers, launchers and other companions that must survive navigation.
+     * Checkout, auth and public surfaces need separate threat models and are
+     * not expressible here.
+     */
+    public const FRONTEND_SLOTS = [
+        'server-layout.banner',
+        'server-layout.overlay',
     ];
 
     /**

@@ -554,9 +554,9 @@ class ExtensionPackageUpdateService
                 File::copy($plan['sourcePath'], $plan['targetPath']);
             }
 
-            // Regenerated from the new manifest, so a version that adds,
-            // removes or re-categorises a page takes effect on this rebuild
-            // rather than at the next install.
+            // Regenerated from the new manifest, so a version that changes a
+            // page or named frontend slot takes effect on this rebuild rather
+            // than at the next install.
             /** @var ExtensionPackageFile|null $previousGeneratedFile */
             $previousGeneratedFile = $existingPackage->files->firstWhere('path', $generatedPath);
             $newFilePlans[] = $this->pageManifestService->write(

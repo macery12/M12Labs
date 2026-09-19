@@ -42,6 +42,12 @@ export {
 
 export { ExtensionErrorBoundary, ExtensionSuspense, withExtensionIsolation } from './ExtensionErrorBoundary';
 
+export {
+    EXTENSION_SLOT_NAMES,
+    type ExtensionSlotName,
+    type ExtensionSlotProps,
+} from './slots';
+
 export { notify, extensionErrorMessage, type NotifyTone } from './notify';
 
 // Approved UI primitives. Packages must use these (and the theme CSS variables)

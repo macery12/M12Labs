@@ -15,6 +15,7 @@ use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilityVocabulary;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
 
 /**
  * One entry in the runtime plan: an extension that is allowed to load code, and
@@ -146,6 +147,7 @@ class ExtensionRuntimePlanService
             'pages.admin' => $entry->capabilities->hasAdminPages(),
             'bindings' => $entry->capabilities->bindings !== [],
             'streams' => $entry->capabilities->streams !== [],
+            'slots' => $entry->capabilities->slots !== [],
             default => str_starts_with($capability, 'privileged.')
                 && $entry->capabilities->grantsPrivilege(substr($capability, 11)),
         });
@@ -545,6 +547,35 @@ class ExtensionRuntimePlanService
                 ),
                 (array) ($capabilities['streams'] ?? [])
             ),
+            // Names are intersected with the closed vocabulary and entries are
+            // re-checked as slugs. The generated frontend manifest is written
+            // from the install-time parse, but hydration must still fail closed
+            // if the stored projection is edited later.
+            slots: array_values(array_filter(array_map(
+                function ($slot): ?FrontendSlotDefinition {
+                    if (!is_array($slot)) {
+                        return null;
+                    }
+
+                    $name = (string) ($slot['name'] ?? '');
+                    $entry = (string) ($slot['entry'] ?? '');
+
+                    if (!in_array($name, ExtensionCapabilityVocabulary::FRONTEND_SLOTS, true)
+                        || !preg_match(ExtensionCapabilityVocabulary::SLUG_PATTERN, $entry)) {
+                        return null;
+                    }
+
+                    return new FrontendSlotDefinition(
+                        name: $name,
+                        entry: $entry,
+                        order: (int) ($slot['order'] ?? 100),
+                        requiredServerPermission: isset($slot['requiredServerPermission'])
+                            ? (string) $slot['requiredServerPermission']
+                            : null,
+                    );
+                },
+                (array) ($capabilities['slots'] ?? [])
+            ))),
         );
     }
 

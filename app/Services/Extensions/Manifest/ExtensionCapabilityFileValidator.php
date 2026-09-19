@@ -5,6 +5,7 @@ namespace Everest\Services\Extensions\Manifest;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
 
 /**
  * Enforces that declared capabilities and shipped files agree in BOTH
@@ -120,7 +121,44 @@ class ExtensionCapabilityFileValidator
 
         $this->assertNoUndeclaredPages($paths, $frontend, 'server', $capabilities->serverPages);
         $this->assertNoUndeclaredPages($paths, $frontend, 'admin', $capabilities->adminPages);
+        foreach ($capabilities->slots as $slot) {
+            /** @var FrontendSlotDefinition $slot */
+            $expected = sprintf('%sslots/%s.tsx', $frontend, $slot->entry);
+
+            if (!isset($paths[$expected])) {
+                throw new DisplayException(sprintf('The manifest declares the frontend slot "%s" with entry "%s" but the package does not ship %s.', $slot->name, $slot->entry, $expected));
+            }
+        }
+        $this->assertNoUndeclaredSlots($paths, $frontend, $capabilities->slots);
         $this->assertNoLegacyLayout($paths, $frontend, $id);
+    }
+
+    /**
+     * @param array<string, int> $paths
+     * @param array<int, FrontendSlotDefinition> $slots
+     */
+    private function assertNoUndeclaredSlots(array $paths, string $frontend, array $slots): void
+    {
+        $prefix = $frontend . 'slots/';
+        $declared = array_map(fn (FrontendSlotDefinition $slot): string => $prefix . $slot->entry . '.tsx', $slots);
+
+        foreach (array_keys($paths) as $path) {
+            $path = (string) $path;
+
+            if (!str_starts_with($path, $prefix) || !str_ends_with($path, '.tsx')) {
+                continue;
+            }
+
+            // Supporting components may live below slots/components (or any
+            // other subdirectory); only a top-level entry is executable.
+            if (substr_count(substr($path, strlen($prefix)), '/') > 0) {
+                continue;
+            }
+
+            if (!in_array($path, $declared, true)) {
+                throw new DisplayException(sprintf('The package ships the frontend slot entry %s but does not declare it under capabilities.slots.', $path));
+            }
+        }
     }
 
     /**

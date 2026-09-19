@@ -13,6 +13,7 @@ use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
 
 /**
  * Strict manifest v3 parser.
@@ -156,7 +157,64 @@ class ExtensionManifestParser
             privileged: $this->parsePrivileged($capabilities['privileged'] ?? [], $extensionId),
             bindings: $this->parseBindings($capabilities['bindings'] ?? []),
             streams: $this->parseStreams($capabilities['streams'] ?? []),
+            slots: $this->parseFrontendSlots($capabilities['slots'] ?? []),
         );
+    }
+
+    /**
+     * Components mounted into panel-owned, always-available layout locations.
+     *
+     * The location is closed vocabulary and the component is a slug resolved
+     * inside the package. One contribution per package per slot keeps ordering
+     * and failure isolation intelligible; a package that needs several pieces
+     * in one location can compose them behind its single entry component.
+     *
+     * @return array<int, FrontendSlotDefinition>
+     */
+    private function parseFrontendSlots($slots): array
+    {
+        if ($slots === [] || $slots === null) {
+            return [];
+        }
+
+        if (!is_array($slots) || !array_is_list($slots)) {
+            throw new DisplayException('The manifest "capabilities.slots" section must be a list.');
+        }
+
+        $definitions = [];
+        $seen = [];
+
+        foreach ($slots as $index => $slot) {
+            $where = sprintf('capabilities.slots[%d]', $index);
+
+            if (!is_array($slot)) {
+                throw new DisplayException(sprintf('%s must be an object.', $where));
+            }
+
+            $this->assertKnownKeys($slot, ['name', 'entry', 'order', 'requiredServerPermission'], $where);
+
+            $name = (string) ($slot['name'] ?? '');
+            if (!in_array($name, ExtensionCapabilityVocabulary::FRONTEND_SLOTS, true)) {
+                throw new DisplayException(sprintf('%s names unknown frontend slot "%s". Allowed: %s.', $where, $name, implode(', ', ExtensionCapabilityVocabulary::FRONTEND_SLOTS)));
+            }
+            if (isset($seen[$name])) {
+                throw new DisplayException(sprintf('Duplicate frontend slot "%s".', $name));
+            }
+            $seen[$name] = true;
+
+            $definitions[] = new FrontendSlotDefinition(
+                name: $name,
+                entry: $this->slug($slot['entry'] ?? '', $where . '.entry'),
+                order: (int) ($slot['order'] ?? 100),
+                requiredServerPermission: isset($slot['requiredServerPermission'])
+                    ? (string) $slot['requiredServerPermission']
+                    : null,
+            );
+        }
+
+        usort($definitions, fn (FrontendSlotDefinition $a, FrontendSlotDefinition $b): int => strcmp($a->name, $b->name));
+
+        return $definitions;
     }
 
     /**

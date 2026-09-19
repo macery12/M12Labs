@@ -7,6 +7,8 @@ interface Props {
     extensionId: string;
     version?: string;
     children: ReactNode;
+    /** Slot mounts use null so a failed global contribution does not add chrome. */
+    fallback?: ReactNode;
 }
 
 interface State {
@@ -42,6 +44,8 @@ export class ExtensionErrorBoundary extends Component<Props, State> {
 
     render(): ReactNode {
         if (!this.state.error) return this.props.children;
+
+        if (this.props.fallback !== undefined) return this.props.fallback;
 
         return (
             <div

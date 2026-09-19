@@ -59,7 +59,7 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         $escalations = array_values(array_filter(
             $added,
             fn (string $capability): bool => (bool) preg_match(
-                '/^(routes|page|permission|hook|queue|secret|command|migrations|schedule|table|privileged|stream)\b/',
+                '/^(routes|page|slot|permission|hook|queue|secret|command|migrations|schedule|table|privileged|stream)\b/',
                 $capability
             )
         ));
@@ -123,6 +123,17 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         }
         foreach ($set->adminPages as $page) {
             $flat['page.admin:' . $page->slug] = true;
+        }
+        // Entry and permission are part of the statement. A component moved to
+        // another always-mounted location, replaced by a different entry, or
+        // made visible to a wider server audience is a different ask.
+        foreach ($set->slots as $slot) {
+            $flat[sprintf(
+                'slot:%s -> %s%s',
+                $slot->name,
+                $slot->entry,
+                $slot->requiredServerPermission === null ? '' : ' (permission: ' . $slot->requiredServerPermission . ')',
+            )] = true;
         }
         foreach ($set->settings as $setting) {
             $flat['setting:' . $setting->key] = true;

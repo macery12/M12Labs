@@ -9,6 +9,7 @@ use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
 
 /**
  * Every executable or privileged surface a package declares.
@@ -33,6 +34,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
      * @param array<int, string> $privileged
      * @param array<int, string> $bindings
      * @param array<int, StreamDefinition> $streams
+     * @param array<int, FrontendSlotDefinition> $slots
      */
     public function __construct(
         public bool $clientRoutes = false,
@@ -51,6 +53,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         public array $privileged = [],
         public array $bindings = [],
         public array $streams = [],
+        public array $slots = [],
     ) {
     }
 
@@ -179,6 +182,9 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         if ($this->streams !== []) {
             $projection['streams'] = array_map(fn (StreamDefinition $s): array => $s->jsonSerialize(), $this->streams);
         }
+        if ($this->slots !== []) {
+            $projection['slots'] = array_map(fn (FrontendSlotDefinition $s): array => $s->jsonSerialize(), $this->slots);
+        }
 
         return $projection;
     }
@@ -205,6 +211,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
             'privileged' => count($this->privileged),
             'bindings' => count($this->bindings),
             'streams' => count($this->streams),
+            'slots' => count($this->slots),
         ];
     }
 }

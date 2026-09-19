@@ -125,6 +125,38 @@ class ExtensionCapabilityFileValidatorTest extends TestCase
         );
     }
 
+    public function testAcceptsDeclaredFrontendSlotEntriesAndSupportingComponents(): void
+    {
+        $this->validate(
+            ['slots' => [['name' => 'server-layout.overlay', 'entry' => 'assistant-drawer']]],
+            [
+                'frontend/src/extensions/packages/demo/slots/assistant-drawer.tsx',
+                'frontend/src/extensions/packages/demo/slots/components/DrawerBody.tsx',
+            ]
+        );
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testRejectsADeclaredFrontendSlotWithNoEntryFile(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('declares the frontend slot "server-layout.banner"');
+
+        $this->validate(
+            ['slots' => [['name' => 'server-layout.banner', 'entry' => 'notice']]],
+            ['frontend/src/extensions/packages/demo/README.md']
+        );
+    }
+
+    public function testRejectsAnUndeclaredFrontendSlotEntry(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('does not declare it under capabilities.slots');
+
+        $this->validate([], ['frontend/src/extensions/packages/demo/slots/hidden.tsx']);
+    }
+
     /** Supporting components beside a page are fine; only the entry is declared. */
     public function testAllowsSupportingComponentsInASubdirectory(): void
     {

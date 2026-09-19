@@ -47,6 +47,7 @@ class ExtensionSignatureService
         'permissions.admin',
         'privileged',
         'streams',
+        'slots',
     ];
 
     public function __construct(private ExtensionManifestCanonicalizer $canonicalizer)
@@ -317,6 +318,11 @@ class ExtensionSignatureService
         // A held worker for up to an hour, from a package nobody vouched for.
         if ($capabilities->streams !== []) {
             $held[] = 'streams';
+        }
+        // Global layout code runs outside a route the user explicitly chose,
+        // so it is at least as executable as a declared page.
+        if ($capabilities->slots !== []) {
+            $held[] = 'slots';
         }
 
         return array_values(array_intersect(self::RESTRICTED_CAPABILITIES, $held));

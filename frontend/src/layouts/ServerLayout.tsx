@@ -10,6 +10,7 @@ import { getServer } from '@/api/servers';
 import { ServerContext } from '@/components/server/ServerContext';
 import { ServerHeader } from '@/components/server/ServerHeader';
 import { useServerSocketConnection } from '@/hooks/useServerSocket';
+import { ServerExtensionSlot } from '@/extensions/slots/registry';
 
 const AgentDrawer = lazy(() =>
     import('@/components/ai/AgentDrawer').then(module => ({ default: module.AgentDrawer })),
@@ -67,7 +68,12 @@ export default function ServerLayout() {
                 </div>
             ) : (
                 <ServerContext.Provider value={server}>
-                    <AppShell groups={groups} header={<ServerHeader />} />
+                    <AppShell
+                        groups={groups}
+                        header={<ServerHeader />}
+                        beforeContent={<ServerExtensionSlot name="server-layout.banner" />}
+                    />
+                    <ServerExtensionSlot name="server-layout.overlay" />
                     {/* Keep the disabled feature out of the browser graph. The
                         drawer remains inside the provider so an enabled agent
                         reaches the same server context the pages do. */}

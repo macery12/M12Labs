@@ -6,21 +6,25 @@ use Illuminate\Support\Facades\File;
 use Everest\Models\ExtensionPackageFile;
 use Everest\Services\Extensions\Manifest\ExtensionManifest;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
 
 /**
- * Writes the page manifest the frontend build reads.
+ * Writes the verified frontend manifest the build reads.
  *
  * Vite globs the filesystem and the database does not exist at build time, so
  * the declared pages have to reach the bundle as a file. That file cannot be
  * one the package ships: it decides nav category, permission and label for
  * every page, which is exactly the set of claims the manifest parser exists to
- * verify. So the panel writes it, from the already-verified manifest, into the
+ * verify. It now also carries named layout-slot declarations; the historical
+ * filename remains so install/update/uninstall keep one generated-file
+ * lifecycle. The panel writes it, from the already-verified manifest, into the
  * package's own frontend directory — and records it in extension_package_files
  * as `generated`, so uninstall removes it like anything else.
  *
- * A missing file means zero pages. That is the fail-closed direction: a package
- * whose generated manifest was lost contributes no navigation rather than
- * falling back to guessing from whatever .tsx files happen to be on disk.
+ * A missing file means zero pages and zero slots. That is the fail-closed
+ * direction: a package whose generated manifest was lost contributes no UI
+ * rather than falling back to guessing from whatever .tsx files happen to be
+ * on disk.
  */
 class ExtensionPageManifestService
 {
@@ -114,6 +118,10 @@ class ExtensionPageManifestService
             'admin' => array_map(
                 fn (PageDefinition $page): array => $this->page($manifest->id, $page),
                 $manifest->capabilities->adminPages
+            ),
+            'slots' => array_map(
+                fn (FrontendSlotDefinition $slot): array => $slot->jsonSerialize(),
+                $manifest->capabilities->slots
             ),
         ];
     }
