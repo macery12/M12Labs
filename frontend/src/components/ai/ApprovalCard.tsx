@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import type { AiApprovalPreview } from '@/lib/aiStream';
 import type { ChatEntry } from '@/state/agentChat';
 import { BatchPreview, unreviewedBatchCalls } from './BatchPreview';
-import { DiffView } from './DiffView';
+import { DiffView } from '@/extensions-sdk';
 import { ToolArgs } from './ToolArgs';
 import { ToolIcon, toolLabel, toolTarget, toolTargetKey } from './toolMeta';
 
@@ -138,7 +138,12 @@ export function ApprovalCard({
 
                 {entry.preview?.kind === 'diff' && (
                     <div className="px-3 pb-2">
-                        <DiffView original={entry.preview.original} updated={entry.preview.updated} />
+                        <DiffView
+                            original={entry.preview.original}
+                            updated={entry.preview.updated}
+                            legend={m['server.ai.approval.diffLegend']()}
+                            foldedLabel={count => m['server.ai.approval.diffFolded']({ count })}
+                        />
                     </div>
                 )}
 

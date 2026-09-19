@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Spinner } from '@/components/ui/Spinner';
 import { FieldRow, SaveBar, SectionCard } from '@/components/ui/editorChrome';
+import { SliderField } from '@/extensions-sdk';
 import { IgnoredSettings, type IgnoredSetting } from '../IgnoredSettings';
 import { SettingNotice } from '../SettingNotice';
-import { SliderRow } from '../SliderRow';
 import { useAiCapabilities, useAiSettingsForm } from '../useAiSettingsForm';
 import { AiLoadError } from '../LoadError';
 
@@ -91,9 +91,9 @@ export default function GenerationPage() {
                 title={m['admin.ai.settings.modelPerformance']()}
                 desc={m['admin.ai.pages.generationDesc']()}
             >
-                <SliderRow
+                <SliderField
                     label={m['admin.ai.settings.maxTokens']()}
-                    display={String(value.max_tokens)}
+                    displayValue={String(value.max_tokens)}
                     min={50}
                     max={4000}
                     step={50}
@@ -105,9 +105,9 @@ export default function GenerationPage() {
 
                 {capabilities.temperature !== 'rejected' && (
                     <div>
-                        <SliderRow
+                        <SliderField
                             label={m['admin.ai.settings.temperature']()}
-                            display={value.temperature.toFixed(2)}
+                            displayValue={value.temperature.toFixed(2)}
                             min={0}
                             max={1}
                             step={0.05}

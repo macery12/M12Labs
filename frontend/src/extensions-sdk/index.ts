@@ -29,6 +29,13 @@ export {
     type ExtensionStreamInfo,
 } from './stream';
 
+export {
+    useExtensionStream,
+    type ExtensionStreamController,
+    type ExtensionStreamStatus,
+    type StartExtensionStreamOptions,
+} from './useExtensionStream';
+
 export { extensionQueryKey, useExtensionQueryKey } from './query';
 
 export { createTranslator } from './i18n';
@@ -64,6 +71,29 @@ export { Panel } from '@/components/ui/Panel';
 export { Spinner } from '@/components/ui/Spinner';
 export { CopyField } from '@/components/ui/CopyField';
 export { HelpButton, HelpSteps } from '@/components/ui/HelpButton';
+
+export { Markdown, type MarkdownProps } from './Markdown';
+export {
+    DiffView,
+    type DiffViewProps,
+    type DiffRow,
+    type DiffGap,
+} from './DiffView';
+export {
+    DataTable,
+    type DataTableProps,
+    type DataTableColumn,
+    type DataTablePagination,
+} from './DataTable';
+export { SliderField, type SliderFieldProps } from './SliderField';
+export {
+    SectionNavigation,
+    TabNavigation,
+    type SectionNavigationProps,
+    type SectionNavigationGroup,
+    type SectionNavigationItem,
+    type TabNavigationProps,
+} from './Navigation';
 
 // Tailwind class composition. Extension pages are inside the panel's Vite build
 // and its Tailwind source globs cover them, so they style with the same

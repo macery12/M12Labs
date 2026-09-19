@@ -1,7 +1,7 @@
 import { Ban, Check, LoaderCircle, Pause, X, Zap } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
-import { Spinner } from '@/components/ui/Spinner';
+import { DataTable, type DataTableColumn } from '@/extensions-sdk';
 import type { AiLogEntry } from '@/api/adminAi';
 import { sourceChip, sourceLabel, sourceTone } from '../sources';
 
@@ -9,83 +9,95 @@ import { sourceChip, sourceLabel, sourceTone } from '../sources';
 // (filtered, up to 500). Cached responses carry a lightning badge — they cost
 // no tokens and return near-instantly.
 export function LogTable({ logs, loading }: { logs: AiLogEntry[]; loading: boolean }) {
-    if (loading) {
-        return (
-            <div className="flex justify-center py-8">
-                <Spinner className="h-5 w-5" />
-            </div>
-        );
-    }
-
-    if (logs.length === 0) {
-        return <p className="px-4 py-8 text-center text-xs text-[var(--color-ink-faint)]">{m['admin.ai.logs.empty']()}</p>;
-    }
+    const columns: DataTableColumn<AiLogEntry>[] = [
+        {
+            id: 'time',
+            header: m['admin.ai.logs.time'](),
+            cellClassName: 'whitespace-nowrap font-mono text-[var(--color-ink-faint)]',
+            cell: log => (
+                <>
+                    {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <span className="ml-1.5 opacity-60">
+                        {new Date(log.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    </span>
+                </>
+            ),
+        },
+        {
+            id: 'user',
+            header: m['admin.ai.logs.user'](),
+            cellClassName: 'text-[var(--color-ink)]',
+            cell: log => log.username,
+        },
+        {
+            id: 'server',
+            header: m['admin.ai.logs.server'](),
+            cellClassName: 'max-w-[10rem] truncate text-[var(--color-ink-muted)]',
+            cell: log => log.server_name ?? '—',
+        },
+        {
+            id: 'model',
+            header: m['admin.ai.logs.model'](),
+            cellClassName: 'font-mono text-[var(--color-ink-muted)]',
+            cell: log => log.model,
+        },
+        {
+            id: 'source',
+            header: m['admin.ai.logs.source'](),
+            cell: log => (
+                <span
+                    className={cn(
+                        'rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                        sourceChip[sourceTone(log.source)],
+                    )}
+                >
+                    {sourceLabel(log.source)}
+                </span>
+            ),
+        },
+        {
+            id: 'tokens',
+            header: m['admin.ai.logs.tokens'](),
+            cellClassName: 'font-mono tabular-nums text-[var(--color-ink-muted)]',
+            cell: log => log.total_tokens ?? '—',
+        },
+        {
+            id: 'latency',
+            header: m['admin.ai.logs.latency'](),
+            cellClassName: 'whitespace-nowrap font-mono tabular-nums text-[var(--color-ink-muted)]',
+            cell: log => (
+                <>
+                    {log.latency_ms != null ? `${log.latency_ms}ms` : '—'}
+                    {log.cached && (
+                        <span
+                            title={m['admin.ai.logs.cachedHint']()}
+                            className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-[var(--color-accent)]/15 px-1 py-0.5 text-[10px] font-semibold text-[var(--color-accent)]"
+                        >
+                            <Zap className="h-2.5 w-2.5" />
+                            {m['admin.ai.logs.cached']()}
+                        </span>
+                    )}
+                </>
+            ),
+        },
+        {
+            id: 'status',
+            header: m['admin.ai.logs.status'](),
+            cell: log => <StatusIcon log={log} />,
+        },
+    ];
 
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-                <thead>
-                    <tr className="border-b border-[var(--color-border)] text-left text-[var(--color-ink-faint)]">
-                        <th className="px-3 py-2 font-normal">{m['admin.ai.logs.time']()}</th>
-                        <th className="px-3 py-2 font-normal">{m['admin.ai.logs.user']()}</th>
-                        <th className="px-3 py-2 font-normal">{m['admin.ai.logs.server']()}</th>
-                        <th className="px-3 py-2 font-normal">{m['admin.ai.logs.model']()}</th>
-                        <th className="px-3 py-2 font-normal">{m['admin.ai.logs.source']()}</th>
-                        <th className="px-3 py-2 font-normal">{m['admin.ai.logs.tokens']()}</th>
-                        <th className="px-3 py-2 font-normal">{m['admin.ai.logs.latency']()}</th>
-                        <th className="px-3 py-2 font-normal">{m['admin.ai.logs.status']()}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {logs.map(log => (
-                        <tr
-                            key={log.id}
-                            className="border-b border-[var(--color-border)]/40 last:border-0 hover:bg-[var(--color-surface-2)]/50"
-                        >
-                            <td className="whitespace-nowrap px-3 py-1.5 font-mono text-[var(--color-ink-faint)]">
-                                {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                <span className="ml-1.5 opacity-60">
-                                    {new Date(log.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                </span>
-                            </td>
-                            <td className="px-3 py-1.5 text-[var(--color-ink)]">{log.username}</td>
-                            <td className="max-w-[10rem] truncate px-3 py-1.5 text-[var(--color-ink-muted)]">
-                                {log.server_name ?? '—'}
-                            </td>
-                            <td className="px-3 py-1.5 font-mono text-[var(--color-ink-muted)]">{log.model}</td>
-                            <td className="px-3 py-1.5">
-                                <span
-                                    className={cn(
-                                        'rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-                                        sourceChip[sourceTone(log.source)],
-                                    )}
-                                >
-                                    {sourceLabel(log.source)}
-                                </span>
-                            </td>
-                            <td className="px-3 py-1.5 font-mono tabular-nums text-[var(--color-ink-muted)]">
-                                {log.total_tokens ?? '—'}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-1.5 font-mono tabular-nums text-[var(--color-ink-muted)]">
-                                {log.latency_ms != null ? `${log.latency_ms}ms` : '—'}
-                                {log.cached && (
-                                    <span
-                                        title={m['admin.ai.logs.cachedHint']()}
-                                        className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-[var(--color-accent)]/15 px-1 py-0.5 text-[10px] font-semibold text-[var(--color-accent)]"
-                                    >
-                                        <Zap className="h-2.5 w-2.5" />
-                                        {m['admin.ai.logs.cached']()}
-                                    </span>
-                                )}
-                            </td>
-                            <td className="px-3 py-1.5">
-                                <StatusIcon log={log} />
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+        <DataTable
+            columns={columns}
+            rows={logs}
+            rowKey={log => log.id}
+            loading={loading}
+            loadingLabel={m['admin.ai.logs.title']()}
+            empty={m['admin.ai.logs.empty']()}
+            virtualize={logs.length > 50}
+            maxHeight={logs.length > 50 ? 520 : undefined}
+        />
     );
 }
 

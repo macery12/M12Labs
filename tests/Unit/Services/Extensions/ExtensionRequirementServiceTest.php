@@ -62,13 +62,13 @@ class ExtensionRequirementServiceTest extends TestCase
     public function testMissingOrTransitiveNpmPackageIsRejected(): void
     {
         $this->expectException(PackageRequirementsNotSatisfiedException::class);
-        $this->expectExceptionMessage('npm package "micromark"');
+        $this->expectExceptionMessage('npm package "@radix-ui/react-compose-refs"');
         $this->expectExceptionMessage('is not installed');
 
-        // micromark is currently present transitively through react-markdown,
-        // but pnpm does not expose that as a stable import contract.
+        // Radix's compose-refs helper is present transitively, but pnpm does
+        // not expose that as a stable import contract.
         app(ExtensionRequirementService::class)->assertSatisfied($this->manifest([
-            'npmPackages' => ['micromark' => '^4'],
+            'npmPackages' => ['@radix-ui/react-compose-refs' => '^1.1'],
         ]));
     }
 
@@ -89,7 +89,7 @@ class ExtensionRequirementServiceTest extends TestCase
 
         $this->assertSame('19.2.8', $packages['react']);
         $this->assertSame('5.102.8', $packages['@tanstack/react-query']);
-        $this->assertArrayNotHasKey('micromark', $packages);
+        $this->assertArrayNotHasKey('@radix-ui/react-compose-refs', $packages);
     }
 
     public function testCompatibleDirectLockedComposerPackagePasses(): void
