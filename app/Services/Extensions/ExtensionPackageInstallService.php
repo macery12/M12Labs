@@ -6,7 +6,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Everest\Models\ExtensionConfig;
-use Illuminate\Support\Facades\Log;
 use Everest\Models\ExtensionPackage;
 use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
@@ -28,8 +27,7 @@ class ExtensionPackageInstallService
         private ExtensionPermissionRegistry $permissionRegistry,
         private ExtensionPageManifestService $pageManifestService,
         private ExtensionSignatureService $signatureService,
-        private ExtensionFrontendImportScanner $importScanner,
-        private ExtensionPhpSourceScanner $phpScanner,
+        private ExtensionPackageSourceScanner $sourceScanner,
         private ExtensionRequirementService $requirementService,
     ) {
     }
@@ -345,6 +343,11 @@ class ExtensionPackageInstallService
             $this->ownershipService->repairStandardPaths($extensionId);
 
             $filePlans = $this->prepareFilePlans($extractPath, $parsedManifest, $backupRoot, $extensionId);
+            $this->sourceScanner->assertSafe(
+                $extensionId,
+                $filePlans,
+                (array) ($parsedManifest->requirements['npmPackages'] ?? []),
+            );
             $this->assertWritableInstallTargets($filePlans);
             $generatedPath = $this->pageManifestService->relativePath($extensionId);
             $this->ownershipService->ensureWritablePath(base_path($generatedPath), $generatedPath);
@@ -615,18 +618,6 @@ class ExtensionPackageInstallService
                 'backupPath' => $backupPath,
                 'backupChecksum' => $backupChecksum,
             ];
-        }
-
-        // Every shipped file is on disk and checksum-verified by now, so this is
-        // the first point at which what will actually be installed can be read.
-        // Before applying any of it.
-        $this->importScanner->assertOnlySdkImports($plans, (array) ($manifest->requirements['npmPackages'] ?? []));
-
-        // The PHP counterpart. Blocking findings throw; advisory ones are
-        // judgement calls a reviewer owns, so they are recorded rather than
-        // allowed to refuse an install.
-        foreach ($this->phpScanner->assertSafe($extensionId, $plans) as $advisory) {
-            Log::notice('Extension source advisory.', ['extension' => $extensionId, 'finding' => $advisory]);
         }
 
         return $plans;

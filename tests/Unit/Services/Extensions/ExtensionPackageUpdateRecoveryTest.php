@@ -17,8 +17,8 @@ use Everest\Services\Extensions\ExtensionRequirementService;
 use Everest\Services\Extensions\ExtensionPageManifestService;
 use Everest\Services\Extensions\ExtensionPanelRebuildService;
 use Everest\Services\Extensions\ExtensionOperationLockService;
+use Everest\Services\Extensions\ExtensionPackageSourceScanner;
 use Everest\Services\Extensions\ExtensionPackageUpdateService;
-use Everest\Services\Extensions\ExtensionFrontendImportScanner;
 use Everest\Services\Extensions\ExtensionInstallProgressService;
 use Everest\Services\Extensions\ExtensionPackageArtifactService;
 use Everest\Services\Extensions\ExtensionPackageIntegrityService;
@@ -129,7 +129,7 @@ class ExtensionPackageUpdateRecoveryTest extends TestCase
             \Mockery::mock(ExtensionJobDrainService::class),
             \Mockery::mock(ExtensionPageManifestService::class),
             \Mockery::mock(ExtensionSignatureService::class),
-            \Mockery::mock(ExtensionFrontendImportScanner::class),
+            \Mockery::mock(ExtensionPackageSourceScanner::class),
             \Mockery::mock(ExtensionRequirementService::class),
         );
     }

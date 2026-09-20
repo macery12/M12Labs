@@ -31,7 +31,7 @@ class ExtensionPackageUpdateService
         private ExtensionJobDrainService $drainService,
         private ExtensionPageManifestService $pageManifestService,
         private ExtensionSignatureService $signatureService,
-        private ExtensionFrontendImportScanner $importScanner,
+        private ExtensionPackageSourceScanner $sourceScanner,
         private ExtensionRequirementService $requirementService,
     ) {
     }
@@ -436,6 +436,7 @@ class ExtensionPackageUpdateService
         $existingPackage = null;
         $newFilePlans = [];
         $newBackupRoot = null;
+        $targetMutationStarted = false;
 
         File::ensureDirectoryExists($tempRoot);
         File::ensureDirectoryExists($extractPath);
@@ -497,6 +498,25 @@ class ExtensionPackageUpdateService
             }
 
             $this->assertCapabilitiesApproved($existingPackage, $parsedManifest, $approvedCapabilityHash);
+
+            // Build and scan the complete, checksum-verified artifact before
+            // draining jobs or touching an installed target. Repository and
+            // local archive updates must enforce the same frontend and PHP
+            // gates as a fresh install.
+            $newBackupRoot = storage_path('app/extensions/backups/' . $resolvedExtensionId . '/' . Str::uuid()->toString());
+            $newFilePlans = $this->prepareUpdateFilePlans(
+                $extractPath,
+                $parsedManifest,
+                $newBackupRoot,
+                $resolvedExtensionId,
+                $existingPackage
+            );
+            $this->sourceScanner->assertSafe(
+                $resolvedExtensionId,
+                $newFilePlans,
+                (array) ($parsedManifest->requirements['npmPackages'] ?? []),
+            );
+
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
 
             // An update replaces the very class files a queued job names, so
@@ -518,16 +538,6 @@ class ExtensionPackageUpdateService
             }
             $this->fileService->createRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
 
-            $newBackupRoot = storage_path('app/extensions/backups/' . $resolvedExtensionId . '/' . Str::uuid()->toString());
-
-            $newFilePlans = $this->prepareUpdateFilePlans(
-                $extractPath,
-                $parsedManifest,
-                $newBackupRoot,
-                $resolvedExtensionId,
-                $existingPackage
-            );
-
             $generatedPath = $this->pageManifestService->relativePath($resolvedExtensionId);
             $newFilePaths = [...array_column($newFilePlans, 'path'), $generatedPath];
             /** @var array<int, ExtensionPackageFile> $oldOnlyFiles */
@@ -540,6 +550,7 @@ class ExtensionPackageUpdateService
             $this->ownershipService->ensureWritablePath(base_path($generatedPath), $generatedPath);
 
             $this->progressService->report('update', $resolvedExtensionId, 'removing');
+            $targetMutationStarted = true;
             foreach ($oldOnlyFiles as $oldFile) {
                 $targetPath = base_path($oldFile->path);
 
@@ -599,7 +610,7 @@ class ExtensionPackageUpdateService
                 'tempRoot'                => $tempRoot,
             ];
         } catch (\Throwable $exception) {
-            if ($existingPackage) {
+            if ($existingPackage && $targetMutationStarted) {
                 $this->rollbackNewFilePlans($existingPackage, $newFilePlans);
                 $this->fileService->restoreRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
             }
@@ -785,11 +796,6 @@ class ExtensionPackageUpdateService
                 'backupChecksum' => $backupChecksum,
             ];
         }
-
-        // Checked on update as well as install: a package that shipped a clean
-        // release once can reach into panel internals in the next one, and an
-        // update is the path that would carry it in.
-        $this->importScanner->assertOnlySdkImports($plans, (array) ($manifest->requirements['npmPackages'] ?? []));
 
         return $plans;
     }
