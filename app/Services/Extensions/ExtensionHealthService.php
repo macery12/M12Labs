@@ -31,6 +31,7 @@ class ExtensionHealthService
         private ExtensionRuntimePlanService $plan,
         private ExtensionMigrationService $migrationService,
         private ExtensionSignatureService $signatureService,
+        private ExtensionPackageIntegrityService $integrityService,
     ) {
     }
 
@@ -103,6 +104,9 @@ class ExtensionHealthService
         }
 
         $entry = $this->plan->entry($extensionId);
+        // Runtime enforcement may have quarantined the package, or cleared an
+        // integrity-only quarantine after its authentic bytes were restored.
+        $package->refresh();
         $capabilities = $entry?->capabilities;
 
         return [
@@ -148,31 +152,19 @@ class ExtensionHealthService
      */
     private function integrity(ExtensionPackage $package): array
     {
-        $missing = [];
-        $modified = [];
-
-        foreach ($package->files as $file) {
-            $path = base_path($file->path);
-
-            if (!is_file($path)) {
-                $missing[] = $file->path;
-
-                continue;
-            }
-
-            if (hash_file('sha256', $path) !== $file->installed_checksum) {
-                $modified[] = $file->path;
-            }
-        }
+        $runtimeIntegrity = $this->integrityService->inspect($package);
 
         $projection = is_array($package->capabilities)
             ? $this->plan->hydrateCapabilities($package->capabilities)
             : null;
 
         return [
-            'trackedFiles' => $package->files->count(),
-            'missingFiles' => $missing,
-            'modifiedFiles' => $modified,
+            'trackedFiles' => $runtimeIntegrity->trackedFiles(),
+            'missingFiles' => $runtimeIntegrity->missingFiles,
+            'modifiedFiles' => $runtimeIntegrity->modifiedFiles,
+            'manifestAuthentic' => $runtimeIntegrity->manifestAuthentic,
+            'runtimeVerified' => $runtimeIntegrity->valid,
+            'failureReason' => $runtimeIntegrity->reason,
             'capabilityProjectionMatches' => $package->capability_hash === null
                 || ($projection !== null && $projection->hash() === $package->capability_hash),
         ];

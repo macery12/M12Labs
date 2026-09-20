@@ -95,19 +95,31 @@ export function ExtensionHealthPanel({ extensionId }: { extensionId: string }) {
             />
 
             <StatusRow
-                ok={(health.integrity?.missingFiles.length ?? 0) === 0 && (health.integrity?.modifiedFiles.length ?? 0) === 0}
+                ok={
+                    health.integrity?.runtimeVerified !== false &&
+                    (health.integrity?.missingFiles.length ?? 0) === 0 &&
+                    (health.integrity?.modifiedFiles.length ?? 0) === 0
+                }
                 okLabel={m['extensions.health.filesOk']({ count: health.integrity?.trackedFiles ?? 0 })}
-                failLabel={m['extensions.health.filesChanged']({
-                    missing: health.integrity?.missingFiles.length ?? 0,
-                    modified: health.integrity?.modifiedFiles.length ?? 0,
-                })}
+                failLabel={
+                    health.integrity?.failureReason ||
+                    m['extensions.health.filesChanged']({
+                        missing: health.integrity?.missingFiles.length ?? 0,
+                        modified: health.integrity?.modifiedFiles.length ?? 0,
+                    })
+                }
             />
 
             {health.signature && (
                 <StatusRow
-                    ok={!health.signature.enforced || health.signature.state === 'verified'}
+                    ok={
+                        (!health.signature.enforced || health.signature.state === 'verified') &&
+                        (health.signature.state !== 'verified' || health.integrity?.manifestAuthentic !== false)
+                    }
                     okLabel={m['extensions.health.signature']({ state: health.signature.state })}
-                    failLabel={m['extensions.health.signature']({ state: health.signature.state })}
+                    failLabel={
+                        health.integrity?.failureReason || m['extensions.health.signature']({ state: health.signature.state })
+                    }
                 />
             )}
 

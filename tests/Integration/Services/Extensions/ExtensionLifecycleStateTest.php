@@ -43,23 +43,29 @@ class ExtensionLifecycleStateTest extends IntegrationTestCase
         // projection and checks it against capability_hash, so a fixture
         // without one is (correctly) treated as inconsistent and never loads.
         $capabilities = new ExtensionCapabilitySet(clientRoutes: true);
-        $key = $this->trustExtensionSigningKey();
+        $attributes = $manifestVersion === 3
+            ? $this->signedRuntimePackageAttributes(
+                $id,
+                $capabilities,
+                [sprintf('app/Extensions/Packages/%s/routes/client.php', $id) => "<?php\n"],
+            )
+            : [
+                'extension_id' => $id,
+                'package_id' => $id,
+                'name' => $id,
+                'icon' => 'puzzle',
+                'installed_version' => '1.0.0',
+                'manifest' => ['manifestVersion' => $manifestVersion, 'extension' => ['id' => $id]],
+                'manifest_version' => $manifestVersion,
+                'signature_state' => 'unsigned_acknowledged',
+                'capabilities' => $capabilities->jsonSerialize(),
+                'capability_hash' => $capabilities->hash(),
+            ];
 
-        $package = ExtensionPackage::create([
-            'extension_id' => $id,
-            'package_id' => $id,
-            'name' => $id,
-            'icon' => 'puzzle',
-            'installed_version' => '1.0.0',
-            'manifest' => ['manifestVersion' => $manifestVersion, 'extension' => ['id' => $id]],
-            'manifest_version' => $manifestVersion,
-            'signature_state' => 'verified',
-            'signature_key_id' => $key->key_id,
-            'capabilities' => $capabilities->jsonSerialize(),
-            'capability_hash' => $capabilities->hash(),
+        $package = ExtensionPackage::create(array_merge($attributes, [
             'state' => $state,
             'state_reason' => $state === 'unsupported' ? 'Built for manifest version 2.' : null,
-        ]);
+        ]));
 
         ExtensionConfig::create(['extension_id' => $id, 'enabled' => $enabled]);
 

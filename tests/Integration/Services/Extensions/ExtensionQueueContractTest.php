@@ -57,7 +57,6 @@ class ExtensionQueueContractTest extends IntegrationTestCase
 
     private function installFixture(?QueueDefinition $queue = null, bool $enabled = true): void
     {
-        $key = $this->trustExtensionSigningKey();
         $capabilities = new ExtensionCapabilitySet(
             queues: [$queue ?? new QueueDefinition(
                 name: 'slow',
@@ -67,20 +66,14 @@ class ExtensionQueueContractTest extends IntegrationTestCase
             )],
         );
 
-        ExtensionPackage::create([
-            'extension_id' => 'fixture_queue',
-            'package_id' => 'fixture_queue',
+        ExtensionPackage::create(array_merge($this->signedRuntimePackageAttributes(
+            'fixture_queue',
+            $capabilities,
+            ['app/Extensions/Packages/fixture_queue/Jobs/SlowFixtureJob.php' => "<?php\n"],
+        ), [
             'name' => 'Queue fixture',
-            'icon' => 'puzzle',
-            'installed_version' => '1.0.0',
-            'manifest' => ['manifestVersion' => 3, 'extension' => ['id' => 'fixture_queue']],
-            'manifest_version' => 3,
-            'signature_state' => 'verified',
-            'signature_key_id' => $key->key_id,
-            'capabilities' => $capabilities->jsonSerialize(),
-            'capability_hash' => $capabilities->hash(),
             'state' => $enabled ? 'enabled' : 'installed_disabled',
-        ]);
+        ]));
 
         ExtensionConfig::create(['extension_id' => 'fixture_queue', 'enabled' => $enabled]);
         ExtensionRuntimePlanService::flush();

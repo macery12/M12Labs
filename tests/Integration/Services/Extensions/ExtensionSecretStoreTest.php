@@ -32,27 +32,13 @@ class ExtensionSecretStoreTest extends IntegrationTestCase
         config()->set('modules.extensions.enabled', true);
 
         $capabilities = new ExtensionCapabilitySet(
-            secrets: [new SecretDefinition(key: 'api-token', labelKey: 'ext.demo.secret.token')],
+            secrets: [new SecretDefinition(key: 'api_token', labelKey: 'ext.demo.secret.token')],
         );
 
-        ExtensionPackage::create([
-            'extension_id' => 'demo',
-            'package_id' => 'demo',
+        ExtensionPackage::create(array_merge($this->signedRuntimePackageAttributes('demo', $capabilities), [
             'name' => 'Demo',
-            'icon' => 'puzzle',
-            'installed_version' => '1.0.0',
-            'manifest' => ['manifestVersion' => 3, 'extension' => ['id' => 'demo']],
-            'manifest_version' => 3,
-            // What ExtensionSignatureService::verify() records for a package
-            // installed while no signing root was pinned. The column default is
-            // 'unsigned', which no install path produces and which the runtime plan
-            // refuses once a root exists — so a fixture that leaves it unset is not
-            // a package this panel could actually have.
-            'signature_state' => 'unsigned_acknowledged',
-            'capabilities' => $capabilities->jsonSerialize(),
-            'capability_hash' => $capabilities->hash(),
             'state' => 'enabled',
-        ]);
+        ]));
         ExtensionConfig::create(['extension_id' => 'demo', 'enabled' => true]);
         ExtensionRuntimePlanService::flush();
     }
@@ -71,9 +57,9 @@ class ExtensionSecretStoreTest extends IntegrationTestCase
 
     public function testAStoredSecretRoundTripsAndIsNeverAtRestInPlaintext(): void
     {
-        $this->store()->put('demo', 'api-token', 'cf-live-abcdef');
+        $this->store()->put('demo', 'api_token', 'cf-live-abcdef');
 
-        $this->assertSame('cf-live-abcdef', $this->store()->get('demo', 'api-token'));
+        $this->assertSame('cf-live-abcdef', $this->store()->get('demo', 'api_token'));
 
         $raw = ExtensionSecret::query()->where('extension_id', 'demo')->value('value');
         $this->assertIsString($raw);
@@ -107,34 +93,25 @@ class ExtensionSecretStoreTest extends IntegrationTestCase
      */
     public function testACiphertextMovedBetweenExtensionsIsInert(): void
     {
-        $this->store()->put('demo', 'api-token', 'cf-live-abcdef');
+        $this->store()->put('demo', 'api_token', 'cf-live-abcdef');
 
         // Same value, re-pointed at a different extension id.
         ExtensionSecret::query()->where('extension_id', 'demo')->update(['extension_id' => 'other']);
 
         $capabilities = new ExtensionCapabilitySet(
-            secrets: [new SecretDefinition(key: 'api-token', labelKey: 'ext.other.secret.token')],
+            secrets: [new SecretDefinition(key: 'api_token', labelKey: 'ext.other.secret.token')],
         );
-        ExtensionPackage::create([
-            'extension_id' => 'other',
-            'package_id' => 'other',
+        ExtensionPackage::create(array_merge($this->signedRuntimePackageAttributes('other', $capabilities), [
             'name' => 'Other',
-            'icon' => 'puzzle',
-            'installed_version' => '1.0.0',
-            'manifest' => ['manifestVersion' => 3, 'extension' => ['id' => 'other']],
-            'manifest_version' => 3,
-            'signature_state' => 'unsigned_acknowledged',
-            'capabilities' => $capabilities->jsonSerialize(),
-            'capability_hash' => $capabilities->hash(),
             'state' => 'enabled',
-        ]);
+        ]));
         ExtensionConfig::create(['extension_id' => 'other', 'enabled' => true]);
         ExtensionRuntimePlanService::flush();
 
         $this->expectException(DisplayException::class);
         $this->expectExceptionMessage('does not belong to it');
 
-        $this->store()->get('other', 'api-token');
+        $this->store()->get('other', 'api_token');
     }
 
     /**
@@ -143,43 +120,43 @@ class ExtensionSecretStoreTest extends IntegrationTestCase
      */
     public function testAnEmptyWriteLeavesTheStoredValueAlone(): void
     {
-        $this->store()->put('demo', 'api-token', 'cf-live-abcdef');
-        $this->store()->put('demo', 'api-token', '   ');
+        $this->store()->put('demo', 'api_token', 'cf-live-abcdef');
+        $this->store()->put('demo', 'api_token', '   ');
 
-        $this->assertSame('cf-live-abcdef', $this->store()->get('demo', 'api-token'));
+        $this->assertSame('cf-live-abcdef', $this->store()->get('demo', 'api_token'));
     }
 
     /** Replacing bumps the version, which is part of the context binding. */
     public function testReplacingRotatesTheVersion(): void
     {
-        $this->store()->put('demo', 'api-token', 'first');
-        $this->store()->put('demo', 'api-token', 'second');
+        $this->store()->put('demo', 'api_token', 'first');
+        $this->store()->put('demo', 'api_token', 'second');
 
         $row = ExtensionSecret::query()->where('extension_id', 'demo')->firstOrFail();
 
         $this->assertSame(2, $row->key_version);
         $this->assertNotNull($row->rotated_at);
-        $this->assertSame('second', $this->store()->get('demo', 'api-token'));
+        $this->assertSame('second', $this->store()->get('demo', 'api_token'));
     }
 
     /** describe() is what the API returns, and it must carry no value. */
     public function testDescribeExposesMetadataOnly(): void
     {
-        $this->store()->put('demo', 'api-token', 'cf-live-abcdef');
+        $this->store()->put('demo', 'api_token', 'cf-live-abcdef');
 
         $described = $this->store()->describe('demo');
 
         $this->assertCount(1, $described);
         $this->assertTrue($described[0]['configured']);
-        $this->assertSame('api-token', $described[0]['key']);
+        $this->assertSame('api_token', $described[0]['key']);
         $this->assertStringNotContainsString('cf-live-abcdef', json_encode($described));
     }
 
     public function testPurgeDestroysEveryCredential(): void
     {
-        $this->store()->put('demo', 'api-token', 'cf-live-abcdef');
+        $this->store()->put('demo', 'api_token', 'cf-live-abcdef');
 
         $this->assertSame(1, $this->store()->purge('demo'));
-        $this->assertFalse($this->store()->configured('demo', 'api-token'));
+        $this->assertFalse($this->store()->configured('demo', 'api_token'));
     }
 }

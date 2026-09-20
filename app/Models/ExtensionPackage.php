@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property string|null $capability_hash
  * @property string|null $approved_capability_hash
  * @property string|null $manifest_hash
+ * @property string|null $signed_manifest
  * @property string|null $publisher
  * @property string $signature_state
  * @property \Carbon\Carbon|null $installed_at
@@ -63,6 +64,7 @@ class ExtensionPackage extends Model
         'capability_hash',
         'approved_capability_hash',
         'manifest_hash',
+        'signed_manifest',
         'publisher',
         'signature_state',
         'signature_key_id',

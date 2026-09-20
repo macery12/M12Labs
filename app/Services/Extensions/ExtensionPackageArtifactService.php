@@ -255,7 +255,7 @@ class ExtensionPackageArtifactService
      * for strict schema parsing and type-preserved canonical JSON for signature
      * verification.
      *
-     * @return array{manifest: array<string, mixed>, canonical: string}
+     * @return array{manifest: array<string, mixed>, canonical: string, json: string}
      */
     public function readPackageManifestDocument(string $extractPath): array
     {
@@ -278,6 +278,7 @@ class ExtensionPackageArtifactService
         return [
             'manifest' => $manifest,
             'canonical' => $this->manifestCanonicalizer->canonicalizeJson($manifestJson),
+            'json' => $manifestJson,
         ];
     }
 

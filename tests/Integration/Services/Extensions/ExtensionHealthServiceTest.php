@@ -5,9 +5,9 @@ namespace Everest\Tests\Integration\Services\Extensions;
 use Everest\Models\ExtensionConfig;
 use Everest\Models\ExtensionSecret;
 use Everest\Models\ExtensionPackage;
+use Illuminate\Support\Facades\File;
 use Everest\Models\ExtensionQueueJob;
 use Everest\Models\ExtensionPermission;
-use Everest\Models\ExtensionPackageFile;
 use Everest\Tests\Integration\IntegrationTestCase;
 use Everest\Services\Extensions\ExtensionHealthService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -46,26 +46,22 @@ class ExtensionHealthServiceTest extends IntegrationTestCase
 
     private function install(string $state = 'enabled', bool $enabled = true): ExtensionPackage
     {
-        $key = $this->trustExtensionSigningKey();
         $capabilities = new ExtensionCapabilitySet(
             clientRoutes: true,
             queues: [new QueueDefinition(name: 'sync')],
         );
 
-        $package = ExtensionPackage::create([
-            'extension_id' => 'healthdemo',
-            'package_id' => 'healthdemo',
+        $package = ExtensionPackage::create(array_merge($this->signedRuntimePackageAttributes(
+            'healthdemo',
+            $capabilities,
+            [
+                'app/Extensions/Packages/healthdemo/routes/client.php' => "<?php\n",
+                'app/Extensions/Packages/healthdemo/Jobs/HealthJob.php' => "<?php\n",
+            ],
+        ), [
             'name' => 'Health Demo',
-            'icon' => 'puzzle',
-            'installed_version' => '1.0.0',
-            'manifest' => ['manifestVersion' => 3, 'extension' => ['id' => 'healthdemo']],
-            'manifest_version' => 3,
-            'signature_state' => 'verified',
-            'signature_key_id' => $key->key_id,
-            'capabilities' => $capabilities->jsonSerialize(),
-            'capability_hash' => $capabilities->hash(),
             'state' => $state,
-        ]);
+        ]));
 
         ExtensionConfig::create(['extension_id' => 'healthdemo', 'enabled' => $enabled]);
         ExtensionRuntimePlanService::flush();
@@ -137,16 +133,11 @@ class ExtensionHealthServiceTest extends IntegrationTestCase
     {
         $package = $this->install();
 
-        ExtensionPackageFile::create([
-            'extension_package_id' => $package->id,
-            'path' => 'app/Extensions/Packages/healthdemo/routes/client.php',
-            'operation' => 'created',
-            'installed_checksum' => str_repeat('a', 64),
-        ]);
+        File::delete(base_path('app/Extensions/Packages/healthdemo/routes/client.php'));
 
         $health = $this->health();
 
-        $this->assertSame(1, $health['integrity']['trackedFiles']);
+        $this->assertSame(2, $health['integrity']['trackedFiles']);
         $this->assertSame(
             ['app/Extensions/Packages/healthdemo/routes/client.php'],
             $health['integrity']['missingFiles']

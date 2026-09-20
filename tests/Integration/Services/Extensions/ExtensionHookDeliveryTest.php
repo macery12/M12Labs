@@ -75,7 +75,6 @@ class ExtensionHookDeliveryTest extends IntegrationTestCase
 
     private function installFixture(string $mode = 'synchronous_best_effort'): void
     {
-        $key = $this->trustExtensionSigningKey();
         $capabilities = new ExtensionCapabilitySet(
             hooks: [new HookDefinition(
                 event: 'server.pre_delete',
@@ -84,20 +83,14 @@ class ExtensionHookDeliveryTest extends IntegrationTestCase
             )],
         );
 
-        ExtensionPackage::create([
-            'extension_id' => 'fixture_hooks',
-            'package_id' => 'fixture_hooks',
+        ExtensionPackage::create(array_merge($this->signedRuntimePackageAttributes(
+            'fixture_hooks',
+            $capabilities,
+            ['app/Extensions/Packages/fixture_hooks/Hooks/RecordingHandler.php' => "<?php\n"],
+        ), [
             'name' => 'Hook fixture',
-            'icon' => 'puzzle',
-            'installed_version' => '1.0.0',
-            'manifest' => ['manifestVersion' => 3, 'extension' => ['id' => 'fixture_hooks']],
-            'manifest_version' => 3,
-            'signature_state' => 'verified',
-            'signature_key_id' => $key->key_id,
-            'capabilities' => $capabilities->jsonSerialize(),
-            'capability_hash' => $capabilities->hash(),
             'state' => 'enabled',
-        ]);
+        ]));
 
         ExtensionConfig::create(['extension_id' => 'fixture_hooks', 'enabled' => true]);
         ExtensionRuntimePlanService::flush();

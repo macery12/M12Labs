@@ -25,6 +25,8 @@ class ExtensionSignatureAudit extends Model
     public const VERDICT_UNSIGNED = 'unsigned_acknowledged';
     public const VERDICT_REJECTED = 'rejected';
     public const VERDICT_REVOKED = 'revoked';
+    public const VERDICT_INTEGRITY_FAILED = 'integrity_failed';
+    public const VERDICT_INTEGRITY_RESTORED = 'integrity_restored';
 
     protected $table = 'extension_signature_audit';
 

@@ -205,6 +205,8 @@ class ExtensionPackageInstallService
                 sourceArchiveUrl: $prepared['sourceArchiveUrl'],
                 archiveChecksum: $prepared['archiveChecksum'],
                 signature: $prepared['signature'] ?? ['state' => 'unsigned', 'keyId' => null, 'verifiedAt' => null],
+                signedManifest: $prepared['signedManifest'],
+                manifestHash: $prepared['manifestHash'],
             );
         });
     }
@@ -368,6 +370,8 @@ class ExtensionPackageInstallService
                 'extensionId' => $extensionId,
                 'appliedMigrations' => $appliedMigrations,
                 'parsedManifest' => $parsedManifest,
+                'signedManifest' => $manifestDocument['json'],
+                'manifestHash' => hash('sha256', $manifestDocument['canonical']),
                 'fallbackPackageMetadata' => $fallbackPackageMetadata,
                 'filePlans' => $filePlans,
                 'appliedFiles' => $appliedFiles,
@@ -406,6 +410,8 @@ class ExtensionPackageInstallService
         ?string $sourceArchiveUrl,
         ?string $archiveChecksum,
         array $signature,
+        string $signedManifest,
+        string $manifestHash,
     ): ExtensionPackage {
         $packageModel = ExtensionPackage::query()->create([
             'extension_id' => $extensionId,
@@ -433,7 +439,8 @@ class ExtensionPackageInstallService
             // package's first update re-asked for privileges it had already been
             // granted, and the panel could not answer what was consented to.
             'approved_capability_hash' => $parsedManifest->capabilities->hash(),
-            'manifest_hash' => $parsedManifest->hash(),
+            'manifest_hash' => $manifestHash,
+            'signed_manifest' => $signedManifest,
             'publisher' => $parsedManifest->publisher,
             'signature_state' => $signature['state'],
             'signature_key_id' => $signature['keyId'],

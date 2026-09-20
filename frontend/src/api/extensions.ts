@@ -504,6 +504,9 @@ export interface ExtensionHealth {
         trackedFiles: number;
         missingFiles: string[];
         modifiedFiles: string[];
+        manifestAuthentic: boolean;
+        runtimeVerified: boolean;
+        failureReason: string | null;
         capabilityProjectionMatches: boolean;
     };
     database?: { tablePrefix: string; tables: string[]; ranMigrations: string[] };

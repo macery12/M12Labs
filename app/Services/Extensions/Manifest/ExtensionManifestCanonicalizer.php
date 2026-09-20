@@ -79,11 +79,21 @@ final class ExtensionManifestCanonicalizer
      */
     public function signingMessage(string $extensionId, string $version, string $canonicalManifest): string
     {
+        return $this->signingMessageFromHash($extensionId, $version, hash('sha256', $canonicalManifest));
+    }
+
+    /**
+     * Rebuild the publisher's message when only the authenticated canonical
+     * manifest digest is needed. Runtime integrity checks use this after
+     * canonicalizing the exact JSON document retained at installation.
+     */
+    public function signingMessageFromHash(string $extensionId, string $version, string $canonicalManifestSha256): string
+    {
         return implode("\n", [
             'm12labs-ext-v3',
             $extensionId,
             $version,
-            hash('sha256', $canonicalManifest),
+            $canonicalManifestSha256,
         ]);
     }
 

@@ -444,6 +444,44 @@ class ExtensionSignatureService
     }
 
     /**
+     * Re-verify the retained manifest before its file hashes are trusted at
+     * runtime. Unlike verify(), this is a side-effect-free check of an already
+     * installed release: it neither records a fresh install verdict nor runs
+     * the rollback guard.
+     */
+    public function reverifyInstalledManifest(
+        ExtensionManifest $manifest,
+        string $canonicalManifest,
+        ?string $installedKeyId,
+    ): bool {
+        $manifestKeyId = $manifest->signingKeyId();
+        $signature = $manifest->signature();
+
+        if ($manifestKeyId === null || $manifestKeyId === ''
+            || $signature === null || $signature === ''
+            || $installedKeyId === null
+            || !hash_equals($installedKeyId, $manifestKeyId)) {
+            return false;
+        }
+
+        $key = $this->trustedKeyForCurrentRoot($manifestKeyId);
+        if ($key === null || !$key->isUsable()) {
+            return false;
+        }
+
+        $decoded = $this->decodeKey($key->public_key);
+        if ($decoded === null) {
+            return false;
+        }
+
+        return $this->verifyDetached(
+            $this->canonicalizer->signingMessage($manifest->id, $manifest->version, $canonicalManifest),
+            $signature,
+            $decoded,
+        );
+    }
+
+    /**
      * Whether installing $version would be a rollback for $extensionId.
      *
      * The read-only half of assertNotARollback, so the catalog can decline to

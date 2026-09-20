@@ -218,6 +218,8 @@ class ExtensionPackageUpdateService
         $sourceRegistryUrl = $prepared['sourceRegistryUrl'];
         $sourceArchiveUrl = $prepared['sourceArchiveUrl'];
         $signature = $prepared['signature'] ?? ['state' => 'unsigned', 'keyId' => null, 'verifiedAt' => null];
+        $signedManifest = $prepared['signedManifest'];
+        $manifestHash = $prepared['manifestHash'];
         $approvedCapabilityHash = $prepared['approvedCapabilityHash'] ?? null;
 
         return DB::transaction(function () use (
@@ -232,6 +234,8 @@ class ExtensionPackageUpdateService
             $sourceRepositoryId,
             $sourceRepositoryName,
             $signature,
+            $signedManifest,
+            $manifestHash,
             $approvedCapabilityHash
         ): ExtensionPackage {
             ExtensionPackageFile::query()
@@ -260,7 +264,8 @@ class ExtensionPackageUpdateService
                 // stops the next update re-prompting for privileges that were
                 // already granted.
                 'approved_capability_hash' => $approvedCapabilityHash,
-                'manifest_hash'          => $parsedManifest->hash(),
+                'manifest_hash'          => $manifestHash,
+                'signed_manifest'        => $signedManifest,
                 'publisher'              => $parsedManifest->publisher,
                 'signature_state'        => $signature['state'],
                 'signature_key_id'       => $signature['keyId'],
@@ -572,6 +577,8 @@ class ExtensionPackageUpdateService
                 'appliedMigrations'       => $appliedMigrations,
                 'existingPackage'         => $existingPackage,
                 'parsedManifest'          => $parsedManifest,
+                'signedManifest'          => $manifestDocument['json'],
+                'manifestHash'            => hash('sha256', $manifestDocument['canonical']),
                 'fallbackPackageMetadata' => $fallbackPackageMetadata,
                 'newFilePlans'            => $newFilePlans,
                 'oldOnlyFiles'            => $oldOnlyFiles,

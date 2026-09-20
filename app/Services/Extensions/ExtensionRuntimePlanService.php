@@ -51,6 +51,10 @@ class ExtensionRuntimePlanService
     /** Lifecycle states in which a package's code may be loaded. */
     public const EXECUTABLE_STATES = ['enabled'];
 
+    public function __construct(private ExtensionPackageIntegrityService $integrityService)
+    {
+    }
+
     /**
      * @return array<string, ExtensionRuntimeEntry> keyed by extension id
      */
@@ -85,9 +89,14 @@ class ExtensionRuntimePlanService
                 ->join('extension_configs', 'extension_configs.extension_id', '=', 'extension_packages.extension_id')
                 ->where('extension_configs.enabled', true)
                 ->get([
+                    'extension_packages.id',
                     'extension_packages.extension_id',
                     'extension_packages.installed_version',
                     'extension_packages.state',
+                    'extension_packages.state_reason',
+                    'extension_packages.package_checksum',
+                    'extension_packages.manifest',
+                    'extension_packages.signed_manifest',
                     'extension_packages.manifest_version',
                     'extension_packages.capabilities',
                     'extension_packages.capability_hash',
@@ -226,9 +235,14 @@ class ExtensionRuntimePlanService
                 ->where('extension_packages.extension_id', $extensionId)
                 ->where('extension_configs.enabled', true)
                 ->first([
+                    'extension_packages.id',
                     'extension_packages.extension_id',
                     'extension_packages.installed_version',
                     'extension_packages.state',
+                    'extension_packages.state_reason',
+                    'extension_packages.package_checksum',
+                    'extension_packages.manifest',
+                    'extension_packages.signed_manifest',
                     'extension_packages.manifest_version',
                     'extension_packages.capabilities',
                     'extension_packages.capability_hash',
@@ -289,7 +303,8 @@ class ExtensionRuntimePlanService
             return 'config_disabled';
         }
 
-        if (!in_array($package->state, self::EXECUTABLE_STATES, true)) {
+        if (!in_array($package->state, self::EXECUTABLE_STATES, true)
+            && !$this->integrityService->isIntegrityQuarantined($package)) {
             return 'state';
         }
 
@@ -299,6 +314,10 @@ class ExtensionRuntimePlanService
 
         if (!$this->signatureStateAllowed((string) $package->signature_state, $package->signature_key_id)) {
             return 'signature';
+        }
+
+        if ($this->integrityService->enforce($package) === null) {
+            return 'file_integrity';
         }
 
         $capabilities = $this->hydrate($package->capabilities);
@@ -323,7 +342,8 @@ class ExtensionRuntimePlanService
      */
     private function entryFor(ExtensionPackage $package, ?array $usableKeyIds = null): ?ExtensionRuntimeEntry
     {
-        if (!in_array($package->state, self::EXECUTABLE_STATES, true)) {
+        if (!in_array($package->state, self::EXECUTABLE_STATES, true)
+            && !$this->integrityService->isIntegrityQuarantined($package)) {
             return null;
         }
 
@@ -332,6 +352,13 @@ class ExtensionRuntimePlanService
         }
 
         if (!$this->signatureStateAllowed((string) $package->signature_state, $package->signature_key_id, $usableKeyIds)) {
+            return null;
+        }
+
+        // This is the last gate before any route file is required or package
+        // class is autoloaded. Expected checksums come from a freshly parsed,
+        // re-verified signed manifest rather than mutable tracking rows.
+        if ($this->integrityService->enforce($package) === null) {
             return null;
         }
 
