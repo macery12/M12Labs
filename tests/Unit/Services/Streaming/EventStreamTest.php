@@ -148,6 +148,46 @@ class EventStreamTest extends TestCase
     }
 
     /**
+     * Every connection has its own expiry and owner token. The first lease
+     * lapsing must neither erase a newer lease nor let its late release credit
+     * capacity that now belongs to a replacement connection.
+     */
+    public function testStaggeredLeasesStayFullAcrossTheFirstOwnersExpiry(): void
+    {
+        $now = 1_000;
+        $slots = new StreamSlots(
+            Cache::store('array'),
+            static function () use (&$now): int {
+                return $now;
+            },
+        );
+        $limits = ['global' => 2, 'user:1' => 2];
+
+        $old = $slots->acquire($limits, 10);
+        $this->assertNotNull($old);
+
+        $now += 5;
+        $newer = $slots->acquire($limits, 10);
+        $this->assertNotNull($newer);
+
+        // The old lease has expired, but the newer lease remains and exactly
+        // one replacement may take the capacity that the old owner vacated.
+        $now += 6;
+        $replacement = $slots->acquire($limits, 10);
+        $this->assertNotNull($replacement);
+        $this->assertSame(2, $slots->held('global'));
+        $this->assertSame(2, $slots->held('user:1'));
+        $this->assertNull($slots->acquire($limits, 10));
+
+        // This release belongs to the expired generation. It cannot remove
+        // either live token, so another connection must still be refused.
+        $old->release();
+        $this->assertSame(2, $slots->held('global'));
+        $this->assertSame(2, $slots->held('user:1'));
+        $this->assertNull($slots->acquire($limits, 10));
+    }
+
+    /**
      * A caller that passed one limit and failed another must leave no count
      * raised, or a deployment under load slowly locks out the users who keep
      * retrying -- each failed attempt having spent a place it never used.

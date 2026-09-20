@@ -17,6 +17,7 @@ final class StreamSlot
     /** @param array<int, string> $keys */
     public function __construct(
         private readonly array $keys,
+        private readonly string $ownerToken,
         private readonly \Closure $onRelease,
     ) {
     }
@@ -28,6 +29,6 @@ final class StreamSlot
         }
 
         $this->released = true;
-        ($this->onRelease)($this->keys);
+        ($this->onRelease)($this->keys, $this->ownerToken);
     }
 }
