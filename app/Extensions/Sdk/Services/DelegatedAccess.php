@@ -57,19 +57,22 @@ final class DelegatedAccess
     private function __construct(
         private string $extensionId,
         private CoreDelegatedAccess $access,
+        private ExtensionRuntimePlanService $plan,
     ) {
     }
 
     /**
-     * @throws PrivilegeNotGrantedException when the manifest never asked for it
+     * @throws PrivilegeNotGrantedException when the live runtime plan does not grant it
      */
     public static function for(string $extensionId): self
     {
-        if (!app(ExtensionRuntimePlanService::class)->grantsPrivilege($extensionId, self::PRIVILEGE)) {
+        $plan = app(ExtensionRuntimePlanService::class);
+
+        if (!$plan->grantsPrivilege($extensionId, self::PRIVILEGE)) {
             throw new PrivilegeNotGrantedException($extensionId, self::PRIVILEGE);
         }
 
-        return new self($extensionId, app(CoreDelegatedAccess::class));
+        return new self($extensionId, app(CoreDelegatedAccess::class), $plan);
     }
 
     /**
@@ -102,6 +105,8 @@ final class DelegatedAccess
      */
     public function open(User $admin, Server $server, string $reason, ?int $ticketId = null): DelegatedGrant
     {
+        $this->assertGranted();
+
         return $this->access->open($admin, $server, $reason, $ticketId, onBehalfOf: $this->extensionId);
     }
 
@@ -117,6 +122,8 @@ final class DelegatedAccess
      */
     public function escalate(User $admin, Server $server, DelegatedGrant $grant): DelegatedGrant
     {
+        $this->assertGranted();
+
         return $this->access->escalate($admin, $server, $grant, onBehalfOf: $this->extensionId);
     }
 
@@ -137,6 +144,8 @@ final class DelegatedAccess
      */
     public function during(User $admin, DelegatedGrant $grant, callable $run): mixed
     {
+        $this->assertGranted();
+
         return $this->access->during($admin, $grant, $run);
     }
 
@@ -149,6 +158,21 @@ final class DelegatedAccess
      */
     public function reauthorize(User $admin, DelegatedGrant $grant): ?Server
     {
+        $this->assertGranted();
+
         return $this->access->reauthorize($admin, $grant);
+    }
+
+    /**
+     * Recheck immediately before opening, widening, using, or resuming a grant.
+     * A retained facade must lose authority as soon as the live package does.
+     *
+     * @throws PrivilegeNotGrantedException
+     */
+    private function assertGranted(): void
+    {
+        if (!$this->plan->grantsPrivilege($this->extensionId, self::PRIVILEGE)) {
+            throw new PrivilegeNotGrantedException($this->extensionId, self::PRIVILEGE);
+        }
     }
 }

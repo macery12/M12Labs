@@ -54,19 +54,22 @@ final class InternalDispatch
     private function __construct(
         private string $extensionId,
         private CoreInternalDispatch $dispatch,
+        private ExtensionRuntimePlanService $plan,
     ) {
     }
 
     /**
-     * @throws PrivilegeNotGrantedException when the manifest never asked for it
+     * @throws PrivilegeNotGrantedException when the live runtime plan does not grant it
      */
     public static function for(string $extensionId): self
     {
-        if (!app(ExtensionRuntimePlanService::class)->grantsPrivilege($extensionId, self::PRIVILEGE)) {
+        $plan = app(ExtensionRuntimePlanService::class);
+
+        if (!$plan->grantsPrivilege($extensionId, self::PRIVILEGE)) {
             throw new PrivilegeNotGrantedException($extensionId, self::PRIVILEGE);
         }
 
-        return new self($extensionId, app(CoreInternalDispatch::class));
+        return new self($extensionId, app(CoreInternalDispatch::class), $plan);
     }
 
     /** @param array<string, mixed> $query */
@@ -107,6 +110,8 @@ final class InternalDispatch
      */
     private function send(InternalRequest $request, ?int $maxSeconds): InternalResponse
     {
+        $this->assertGranted();
+
         try {
             $response = $this->dispatch->dispatch(
                 $request,
@@ -129,5 +134,18 @@ final class InternalDispatch
             json: json_last_error() === JSON_ERROR_NONE && is_array($decoded) ? $decoded : null,
             body: $body,
         );
+    }
+
+    /**
+     * Recheck immediately before dispatch. A facade can outlive the package
+     * state that created it in a queue worker or another long-lived process.
+     *
+     * @throws PrivilegeNotGrantedException
+     */
+    private function assertGranted(): void
+    {
+        if (!$this->plan->grantsPrivilege($this->extensionId, self::PRIVILEGE)) {
+            throw new PrivilegeNotGrantedException($this->extensionId, self::PRIVILEGE);
+        }
     }
 }
