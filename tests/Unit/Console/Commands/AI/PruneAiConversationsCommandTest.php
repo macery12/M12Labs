@@ -40,15 +40,15 @@ class PruneAiConversationsCommandTest extends TestCase
 
         $oldEvent = AiTurnEvent::create($this->event('aaaaaaaa-bbbb-4ccc-8ddd-000000000001'));
         $newEvent = AiTurnEvent::create($this->event('aaaaaaaa-bbbb-4ccc-8ddd-000000000002'));
-        $this->age('ai_turn_events', $oldEvent->id, 'created_at', 3);
+        $this->age('ext_ai_turn_events', $oldEvent->id, 'created_at', 3);
 
         $oldCall = AiToolCall::create($this->toolCall('aaaaaaaa-bbbb-4ccc-8ddd-000000000005'));
         $newCall = AiToolCall::create($this->toolCall('aaaaaaaa-bbbb-4ccc-8ddd-000000000006'));
-        $this->age('ai_tool_calls', $oldCall->id, 'created_at', 91);
+        $this->age('ext_ai_tool_calls', $oldCall->id, 'created_at', 91);
 
         $oldUsage = AiUsageLog::create($this->usage('aaaaaaaa-bbbb-4ccc-8ddd-000000000007'));
         $newUsage = AiUsageLog::create($this->usage('aaaaaaaa-bbbb-4ccc-8ddd-000000000008'));
-        $this->age('ai_usage_logs', $oldUsage->id, 'created_at', 181);
+        $this->age('ext_ai_usage_logs', $oldUsage->id, 'created_at', 181);
 
         $terminal = AiPendingAction::create($this->pending(
             $user->id,
@@ -69,7 +69,7 @@ class PruneAiConversationsCommandTest extends TestCase
             AiPendingAction::STATUS_EXECUTING,
         ));
         foreach ([$terminal, $live, $executing] as $pending) {
-            $this->age('ai_pending_actions', $pending->id, 'updated_at', 31);
+            $this->age('ext_ai_pending_actions', $pending->id, 'updated_at', 31);
         }
 
         $this->artisan('p:ai:prune-conversations')->assertSuccessful();

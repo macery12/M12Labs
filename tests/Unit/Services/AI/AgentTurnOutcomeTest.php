@@ -34,7 +34,7 @@ class AgentTurnOutcomeTest extends TestCase
     use RefreshDatabase;
 
     private const LEAKY = 'SQLSTATE[42S02]: Base table or view not found: 1146 '
-        . "Table 'panel.ai_tool_calls' doesn't exist at /var/www/panel/app/Services/AI/Agent/AgentRunner.php:1284";
+        . "Table 'panel.ext_ai_tool_calls' doesn't exist at /var/www/panel/app/Services/AI/Agent/AgentRunner.php:1284";
 
     /*
     |--------------------------------------------------------------------------
@@ -108,7 +108,7 @@ class AgentTurnOutcomeTest extends TestCase
 
         // The stored row is not private: `agentTurnStatus()` returns it to the
         // browser when a stream is lost, so it is held to the same bar as SSE.
-        foreach (['SQLSTATE', 'panel.ai_tool_calls', '/var/www/panel', 'AgentRunner.php'] as $sentinel) {
+        foreach (['SQLSTATE', 'panel.ext_ai_tool_calls', '/var/www/panel', 'AgentRunner.php'] as $sentinel) {
             $this->assertStringNotContainsString($sentinel, $body, 'SSE: ' . $sentinel);
             $this->assertStringNotContainsString($sentinel, $stored, 'stored: ' . $sentinel);
         }

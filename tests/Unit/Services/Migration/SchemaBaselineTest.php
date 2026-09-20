@@ -4,6 +4,7 @@ namespace Everest\Tests\Unit\Services\Migration;
 
 use Everest\Tests\TestCase;
 use Everest\Services\Migration\SchemaBaseline;
+use Everest\Services\Extensions\ExtensionMigrationSourceParser;
 
 /**
  * Guards the one artifact the upgrade path cannot recover from being wrong.
@@ -102,23 +103,17 @@ class SchemaBaselineTest extends TestCase
     private function tablesCreatedByMigrations(): array
     {
         $created = [];
+        $parser = new ExtensionMigrationSourceParser();
 
         foreach (glob(database_path('migrations') . '/*.php') ?: [] as $file) {
-            preg_match_all("/Schema::create\(\s*'([^']+)'/", $this->upBody($file), $matches);
-
-            foreach ($matches[1] as $table) {
-                $created[$table] = basename($file);
-            }
-        }
-
-        // Dropped again by a later migration in the same chain, so a fresh
-        // install never ends up with it.
-        foreach (glob(database_path('migrations') . '/*.php') ?: [] as $file) {
-            preg_match_all("/Schema::dropIfExists\(\s*'([^']+)'/", $this->upBody($file), $matches);
-
-            foreach ($matches[1] as $table) {
-                if (isset($created[$table]) && basename($file) > $created[$table]) {
-                    unset($created[$table]);
+            foreach ($parser->operations($this->upBody($file)) as $operation) {
+                if ($operation['verb'] === 'create') {
+                    $created[$operation['table']] = basename($file);
+                } elseif (in_array($operation['verb'], ['drop', 'dropIfExists'], true)) {
+                    unset($created[$operation['table']]);
+                } elseif ($operation['verb'] === 'rename' && $operation['renameTo'] !== null && isset($created[$operation['table']])) {
+                    $created[$operation['renameTo']] = $created[$operation['table']];
+                    unset($created[$operation['table']]);
                 }
             }
         }

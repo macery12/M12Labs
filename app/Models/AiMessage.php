@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AiMessage extends Model
 {
-    protected $table = 'ai_messages';
+    protected $table = 'ext_ai_messages';
 
     public $timestamps = false;
 

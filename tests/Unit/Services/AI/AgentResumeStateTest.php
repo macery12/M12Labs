@@ -100,7 +100,7 @@ class AgentResumeStateTest extends TestCase
     }
 
     /**
-     * The ids have to survive the round trip through `ai_pending_actions.state`
+     * The ids have to survive the round trip through `ext_ai_pending_actions.state`
      * — that serialised form is all a resumed turn has to work from.
      */
     public function testToolCallIdsSurviveStateSerialisation(): void

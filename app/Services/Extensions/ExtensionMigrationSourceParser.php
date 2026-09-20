@@ -2,6 +2,8 @@
 
 namespace Everest\Services\Extensions;
 
+use Illuminate\Support\Str;
+
 /**
  * Reads the schema changes a package's PHP describes, without running it.
  *
@@ -34,6 +36,9 @@ class ExtensionMigrationSourceParser
      * incomplete, not to pretend it is not.
      */
     private const RAW = '~(DB::statement|DB::unprepared)\s*\(~';
+
+    /** Blueprint calls which create a foreign-key constraint. */
+    private const FOREIGN = '~->\s*(foreignIdFor|foreignUuidFor|foreignUlidFor|foreignId|foreignUuid|foreignUlid|foreign)\s*\(~';
 
     /**
      * Schema operations in source order.
@@ -91,9 +96,165 @@ class ExtensionMigrationSourceParser
         return array_values(array_filter([$operation['table'], $operation['renameTo']]));
     }
 
+    /**
+     * Literal foreign-key references in the source.
+     *
+     * A result with a null table/column is deliberate: a constraint was found,
+     * but its target was dynamic or used a shape this source-level validator
+     * cannot prove safe. Callers must refuse that constraint rather than
+     * silently treating "not understood" as "not present".
+     *
+     * The foreign-column helpers only become constraints when followed by
+     * `constrained()`. Without it they are column declarations and are not
+     * returned here. `foreignIdFor(Model::class)->constrained()` is returned as
+     * opaque and therefore refused: a model class is not a literal database
+     * ownership boundary.
+     *
+     * @return array<int, array{localColumn: ?string, table: ?string, referencedColumn: ?string, onDelete: ?string}>
+     */
+    public function foreignKeyReferences(string $source): array
+    {
+        $view = ExtensionPhpSourceView::of($source);
+        $references = [];
+
+        if (!preg_match_all(self::FOREIGN, $view->bare, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
+            return [];
+        }
+
+        foreach ($matches as $match) {
+            $method = $match[1][0];
+            $chain = $this->callChainAt($view->code, $match[0][1]);
+
+            if ($method !== 'foreign' && !preg_match('~->\s*constrained\s*\(~', $chain)) {
+                continue;
+            }
+
+            $localColumn = $this->firstLiteralArgument($chain, $method);
+            $table = null;
+            $referencedColumn = null;
+
+            if ($method === 'foreign') {
+                $table = $this->firstLiteralArgument($chain, 'on');
+                $referencedColumn = $this->firstLiteralArgument($chain, 'references');
+            } else {
+                $arguments = $this->callArguments($chain, 'constrained');
+                $target = $arguments === null ? ['table' => null, 'column' => null] : $this->constrainedTarget($arguments);
+
+                $table = $target['table'] ?? ($localColumn === null ? null : $this->inferConstrainedTable($localColumn));
+                $referencedColumn = $target['column'] ?? 'id';
+            }
+
+            $references[] = [
+                'localColumn' => $localColumn,
+                'table' => $table,
+                'referencedColumn' => $referencedColumn,
+                'onDelete' => $this->deleteAction($chain),
+            ];
+        }
+
+        return $references;
+    }
+
     /** How many statements in this source the parser cannot account for. */
     public function rawStatementCount(string $source): int
     {
         return preg_match_all(self::RAW, ExtensionPhpSourceView::of($source)->bare) ?: 0;
+    }
+
+    /** Return one fluent call chain, ending at its first unquoted semicolon. */
+    private function callChainAt(string $source, int $offset): string
+    {
+        $length = strlen($source);
+        $quote = null;
+        $escaped = false;
+
+        for ($i = $offset; $i < $length; ++$i) {
+            $char = $source[$i];
+
+            if ($quote !== null) {
+                if ($escaped) {
+                    $escaped = false;
+                } elseif ($char === '\\') {
+                    $escaped = true;
+                } elseif ($char === $quote) {
+                    $quote = null;
+                }
+
+                continue;
+            }
+
+            if ($char === "'" || $char === '"') {
+                $quote = $char;
+            } elseif ($char === ';') {
+                return substr($source, $offset, $i - $offset + 1);
+            }
+        }
+
+        return substr($source, $offset);
+    }
+
+    private function firstLiteralArgument(string $chain, string $method): ?string
+    {
+        $method = preg_quote($method, '~');
+
+        if (!preg_match(sprintf('~(?:^|->)\s*%s\s*\(\s*(?:\w+\s*:\s*)?([\'\"])([^\'\"]+)\1~s', $method), $chain, $match)) {
+            return null;
+        }
+
+        return $match[2];
+    }
+
+    private function callArguments(string $chain, string $method): ?string
+    {
+        $method = preg_quote($method, '~');
+        if (!preg_match(sprintf('~->\s*%s\s*\(([^)]*)\)~s', $method), $chain, $match)) {
+            return null;
+        }
+
+        return $match[1];
+    }
+
+    /** @return array{table: ?string, column: ?string} */
+    private function constrainedTarget(string $arguments): array
+    {
+        $named = [];
+        $positional = [];
+
+        if (preg_match_all('~(?:^|,)\s*(?:(\w+)\s*:\s*)?([\'\"])([^\'\"]+)\2~s', $arguments, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                if ($match[1] !== '') {
+                    $named[$match[1]] = $match[3];
+                } else {
+                    $positional[] = $match[3];
+                }
+            }
+        }
+
+        return [
+            'table' => $named['table'] ?? $positional[0] ?? null,
+            'column' => $named['column'] ?? $positional[1] ?? null,
+        ];
+    }
+
+    private function inferConstrainedTable(string $column): string
+    {
+        $stem = str_ends_with($column, '_id') ? substr($column, 0, -3) : $column;
+
+        return Str::plural($stem);
+    }
+
+    private function deleteAction(string $chain): ?string
+    {
+        if (preg_match('~->\s*onDelete\s*\(\s*([\'\"])([^\'\"]+)\1\s*\)~s', $chain, $match)) {
+            return strtolower(str_replace(['_', '-'], ' ', trim($match[2])));
+        }
+
+        foreach (['cascade' => 'cascade', 'null' => 'set null', 'restrict' => 'restrict', 'noAction' => 'no action'] as $method => $action) {
+            if (preg_match(sprintf('~->\s*%sOnDelete\s*\(\s*\)~', $method), $chain)) {
+                return $action;
+            }
+        }
+
+        return null;
     }
 }

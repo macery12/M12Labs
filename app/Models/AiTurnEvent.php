@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class AiTurnEvent extends Model
 {
-    protected $table = 'ai_turn_events';
+    protected $table = 'ext_ai_turn_events';
 
     public const UPDATED_AT = null;
 

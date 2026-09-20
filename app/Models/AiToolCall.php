@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class AiToolCall extends Model
 {
-    protected $table = 'ai_tool_calls';
+    protected $table = 'ext_ai_tool_calls';
 
     public $timestamps = false;
 

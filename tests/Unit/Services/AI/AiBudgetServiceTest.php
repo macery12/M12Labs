@@ -81,18 +81,18 @@ class AiBudgetServiceTest extends TestCase
         $user = User::factory()->create();
         $old = $this->budget->reserve($user);
 
-        DB::table('ai_budget_reservations')
+        DB::table('ext_ai_budget_reservations')
             ->where('user_id', $user->id)
             ->update(['expires_at' => now()->subSecond()]);
 
         $replacement = $this->budget->reserve($user);
-        $token = DB::table('ai_budget_reservations')->where('user_id', $user->id)->value('token');
+        $token = DB::table('ext_ai_budget_reservations')->where('user_id', $user->id)->value('token');
 
         $old->release();
 
-        $this->assertSame($token, DB::table('ai_budget_reservations')->where('user_id', $user->id)->value('token'));
+        $this->assertSame($token, DB::table('ext_ai_budget_reservations')->where('user_id', $user->id)->value('token'));
         $replacement->release();
-        $this->assertDatabaseMissing('ai_budget_reservations', ['user_id' => $user->id]);
+        $this->assertDatabaseMissing('ext_ai_budget_reservations', ['user_id' => $user->id]);
     }
 
     private function usage(User $user, int $tokens): void

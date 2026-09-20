@@ -25,8 +25,10 @@ class ExtensionMigrationService
 {
     public const MIGRATIONS_DIR = 'database/migrations';
 
-    public function __construct(private ExtensionMigrationSourceParser $sourceParser = new ExtensionMigrationSourceParser())
-    {
+    public function __construct(
+        private ExtensionMigrationSourceParser $sourceParser = new ExtensionMigrationSourceParser(),
+        private ExtensionForeignKeyPolicy $foreignKeyPolicy = new ExtensionForeignKeyPolicy(),
+    ) {
     }
 
     public function migrationPath(string $extensionId): string
@@ -307,19 +309,20 @@ class ExtensionMigrationService
     }
 
     /**
-     * Reject migrations naming a table outside the extension's ext_<id>_
-     * namespace, whichever verb names it.
+     * Enforce table ownership and cross-boundary foreign-key rules before a
+     * package migration executes.
      *
      * A source-level read, so it is defense-in-depth against accidents —
      * deliberate evasion is equivalent to shipping malicious PHP, which manual
      * review owns. It overlaps with ExtensionPhpSourceScanner deliberately:
      * this runs against the migration set specifically, on every install and
-     * update path, and the two read the same parser so they cannot disagree
-     * about what a file says.
+     * update path. Both the table check and foreign-key policy share their
+     * parsers with the scanner so the two gates cannot disagree about what a
+     * file says.
      *
      * @param array<int, string> $migrationFilePaths absolute paths
      */
-    public function assertTablePrefixConvention(string $extensionId, array $migrationFilePaths): void
+    public function assertMigrationConventions(string $extensionId, array $migrationFilePaths): void
     {
         $prefix = $this->tablePrefix($extensionId);
 
@@ -339,7 +342,22 @@ class ExtensionMigrationService
                     }
                 }
             }
+
+            foreach ($this->foreignKeyPolicy->violations($extensionId, $source) as $violation) {
+                throw new DisplayException(sprintf('The migration "%s" %s', basename($filePath), $violation));
+            }
         }
+    }
+
+    /**
+     * @deprecated use assertMigrationConventions(); retained for callers built
+     *             against the earlier public service name
+     *
+     * @param array<int, string> $migrationFilePaths absolute paths
+     */
+    public function assertTablePrefixConvention(string $extensionId, array $migrationFilePaths): void
+    {
+        $this->assertMigrationConventions($extensionId, $migrationFilePaths);
     }
 
     public function tablePrefix(string $extensionId): string

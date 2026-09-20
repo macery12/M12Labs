@@ -66,182 +66,6 @@ CREATE TABLE `admin_roles` (
   UNIQUE KEY `admin_roles_id_unique` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_budget_reservations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_budget_reservations` (
-  `user_id` int(10) unsigned NOT NULL,
-  `token` char(36) NOT NULL,
-  `expires_at` timestamp NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `ai_budget_reservations_token_unique` (`token`),
-  CONSTRAINT `ai_budget_reservations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_conversations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_conversations` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned NOT NULL,
-  `server_uuid` char(36) DEFAULT NULL,
-  `scope` varchar(16) NOT NULL DEFAULT 'server',
-  `title` varchar(255) NOT NULL DEFAULT 'New conversation',
-  `redactions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`redactions`)),
-  `assist` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`assist`)),
-  `is_saved` tinyint(1) NOT NULL DEFAULT 0,
-  `expires_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `ai_conversations_user_id_server_uuid_index` (`user_id`,`server_uuid`),
-  KEY `ai_conversations_expires_at_index` (`expires_at`),
-  KEY `ai_conversations_server_uuid_foreign` (`server_uuid`),
-  KEY `ai_conversations_user_id_scope_index` (`user_id`,`scope`),
-  CONSTRAINT `ai_conversations_server_uuid_foreign` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`uuid`) ON DELETE CASCADE,
-  CONSTRAINT `ai_conversations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_messages`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_messages` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `conversation_id` bigint(20) unsigned NOT NULL,
-  `role` enum('user','assistant','system','tool') NOT NULL,
-  `content` text NOT NULL,
-  `tool_calls` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tool_calls`)),
-  `tool_call_id` varchar(128) DEFAULT NULL,
-  `tool_name` varchar(64) DEFAULT NULL,
-  `step` smallint(5) unsigned DEFAULT NULL,
-  `created_at` timestamp(3) NOT NULL DEFAULT current_timestamp(3),
-  PRIMARY KEY (`id`),
-  KEY `ai_messages_conversation_id_index` (`conversation_id`),
-  CONSTRAINT `ai_messages_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_pending_actions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_pending_actions` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `turn_id` char(36) NOT NULL,
-  `conversation_id` bigint(20) unsigned NOT NULL,
-  `user_id` int(10) unsigned NOT NULL,
-  `server_uuid` char(36) DEFAULT NULL,
-  `scope` varchar(16) NOT NULL DEFAULT 'server',
-  `tool_name` varchar(64) NOT NULL,
-  `tool_call_id` varchar(128) DEFAULT NULL,
-  `risk` varchar(16) NOT NULL,
-  `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
-  `state` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`state`)),
-  `assist_grant` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`assist_grant`)),
-  `assist_grant_mac` char(64) DEFAULT NULL,
-  `step` smallint(5) unsigned NOT NULL DEFAULT 0,
-  `status` varchar(16) NOT NULL DEFAULT 'pending',
-  `execution_key` char(36) DEFAULT NULL,
-  `claimed_at` timestamp NULL DEFAULT NULL,
-  `resolved_at` timestamp NULL DEFAULT NULL,
-  `failure_reason` varchar(255) DEFAULT NULL,
-  `expires_at` timestamp NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ai_pending_actions_turn_id_unique` (`turn_id`),
-  UNIQUE KEY `ai_pending_actions_execution_key_unique` (`execution_key`),
-  KEY `ai_pending_actions_user_status_expires_index` (`user_id`,`status`,`expires_at`),
-  KEY `ai_pending_actions_user_server_status_index` (`user_id`,`server_uuid`,`status`),
-  KEY `ai_pending_actions_updated_status_index` (`updated_at`,`status`),
-  KEY `ai_pending_actions_conversation_id_index` (`conversation_id`),
-  CONSTRAINT `ai_pending_actions_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `ai_pending_actions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_tool_calls`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_tool_calls` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `turn_id` char(36) NOT NULL,
-  `conversation_id` bigint(20) unsigned DEFAULT NULL,
-  `user_id` int(10) unsigned DEFAULT NULL,
-  `server_uuid` char(36) DEFAULT NULL,
-  `scope` varchar(16) NOT NULL DEFAULT 'server',
-  `tool_call_id` varchar(128) DEFAULT NULL,
-  `batch_parent_tool_call_id` varchar(128) DEFAULT NULL,
-  `batch_index` smallint(5) unsigned DEFAULT NULL,
-  `tool_name` varchar(64) NOT NULL,
-  `risk` varchar(16) NOT NULL,
-  `step` smallint(5) unsigned NOT NULL DEFAULT 0,
-  `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`arguments`)),
-  `result_summary` text DEFAULT NULL,
-  `status` varchar(24) NOT NULL DEFAULT 'pending_approval',
-  `http_status` smallint(5) unsigned DEFAULT NULL,
-  `duration_ms` int(10) unsigned DEFAULT NULL,
-  `created_at` timestamp(3) NOT NULL DEFAULT current_timestamp(3),
-  `resolved_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `ai_tool_calls_turn_call_index` (`turn_id`,`tool_call_id`),
-  KEY `ai_tool_calls_created_at_index` (`created_at`),
-  KEY `ai_tool_calls_conversation_id_index` (`conversation_id`),
-  KEY `ai_tool_calls_user_id_index` (`user_id`),
-  CONSTRAINT `ai_tool_calls_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `ai_tool_calls_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_turn_events`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_turn_events` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `turn_id` char(36) NOT NULL,
-  `seq` int(10) unsigned NOT NULL,
-  `type` varchar(32) NOT NULL,
-  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payload`)),
-  `created_at` timestamp(3) NOT NULL DEFAULT current_timestamp(3),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ai_turn_events_turn_seq_unique` (`turn_id`,`seq`),
-  KEY `ai_turn_events_created_at_index` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_usage_logs`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_usage_logs` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned DEFAULT NULL,
-  `server_uuid` char(36) DEFAULT NULL,
-  `conversation_id` bigint(20) unsigned DEFAULT NULL,
-  `turn_id` char(36) DEFAULT NULL,
-  `step` smallint(5) unsigned DEFAULT NULL,
-  `tool_calls_count` smallint(5) unsigned NOT NULL DEFAULT 0,
-  `model` varchar(100) NOT NULL,
-  `source` varchar(20) NOT NULL DEFAULT 'client',
-  `prompt_tokens` int(10) unsigned DEFAULT NULL,
-  `completion_tokens` int(10) unsigned DEFAULT NULL,
-  `total_tokens` int(10) unsigned DEFAULT NULL,
-  `latency_ms` int(10) unsigned DEFAULT NULL,
-  `status` enum('success','error','suspended','running','cancelled') NOT NULL DEFAULT 'success',
-  `cached` tinyint(1) NOT NULL DEFAULT 0,
-  `error_message` text DEFAULT NULL,
-  `heartbeat_at` timestamp NULL DEFAULT NULL,
-  `deadline_at` timestamp NULL DEFAULT NULL,
-  `cancel_requested_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ai_usage_logs_turn_unique` (`turn_id`),
-  KEY `ai_usage_logs_created_at_index` (`created_at`),
-  KEY `ai_usage_logs_conversation_id_foreign` (`conversation_id`),
-  KEY `ai_usage_logs_user_id_index` (`user_id`),
-  KEY `ai_usage_logs_server_uuid_index` (`server_uuid`),
-  KEY `ai_usage_logs_user_created_index` (`user_id`,`created_at`),
-  KEY `ai_usage_logs_user_status_id_index` (`user_id`,`status`,`id`),
-  CONSTRAINT `ai_usage_logs_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `ai_usage_logs_server_uuid_foreign` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`uuid`) ON DELETE SET NULL,
-  CONSTRAINT `ai_usage_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `alert_user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -803,6 +627,182 @@ CREATE TABLE `email_quotas` (
   KEY `email_quotas_period_month_index` (`period_month`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ext_ai_budget_reservations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ext_ai_budget_reservations` (
+  `user_id` int(10) unsigned NOT NULL,
+  `token` char(36) NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `ai_budget_reservations_token_unique` (`token`),
+  CONSTRAINT `ai_budget_reservations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ext_ai_conversations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ext_ai_conversations` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) unsigned NOT NULL,
+  `server_uuid` char(36) DEFAULT NULL,
+  `scope` varchar(16) NOT NULL DEFAULT 'server',
+  `title` varchar(255) NOT NULL DEFAULT 'New conversation',
+  `redactions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`redactions`)),
+  `assist` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`assist`)),
+  `is_saved` tinyint(1) NOT NULL DEFAULT 0,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ai_conversations_user_id_server_uuid_index` (`user_id`,`server_uuid`),
+  KEY `ai_conversations_expires_at_index` (`expires_at`),
+  KEY `ai_conversations_server_uuid_foreign` (`server_uuid`),
+  KEY `ai_conversations_user_id_scope_index` (`user_id`,`scope`),
+  CONSTRAINT `ai_conversations_server_uuid_foreign` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`uuid`) ON DELETE CASCADE,
+  CONSTRAINT `ai_conversations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ext_ai_messages`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ext_ai_messages` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `conversation_id` bigint(20) unsigned NOT NULL,
+  `role` enum('user','assistant','system','tool') NOT NULL,
+  `content` text NOT NULL,
+  `tool_calls` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tool_calls`)),
+  `tool_call_id` varchar(128) DEFAULT NULL,
+  `tool_name` varchar(64) DEFAULT NULL,
+  `step` smallint(5) unsigned DEFAULT NULL,
+  `created_at` timestamp(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  KEY `ai_messages_conversation_id_index` (`conversation_id`),
+  CONSTRAINT `ai_messages_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ext_ai_conversations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ext_ai_pending_actions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ext_ai_pending_actions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `turn_id` char(36) NOT NULL,
+  `conversation_id` bigint(20) unsigned NOT NULL,
+  `user_id` int(10) unsigned NOT NULL,
+  `server_uuid` char(36) DEFAULT NULL,
+  `scope` varchar(16) NOT NULL DEFAULT 'server',
+  `tool_name` varchar(64) NOT NULL,
+  `tool_call_id` varchar(128) DEFAULT NULL,
+  `risk` varchar(16) NOT NULL,
+  `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
+  `state` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`state`)),
+  `assist_grant` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`assist_grant`)),
+  `assist_grant_mac` char(64) DEFAULT NULL,
+  `step` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `status` varchar(16) NOT NULL DEFAULT 'pending',
+  `execution_key` char(36) DEFAULT NULL,
+  `claimed_at` timestamp NULL DEFAULT NULL,
+  `resolved_at` timestamp NULL DEFAULT NULL,
+  `failure_reason` varchar(255) DEFAULT NULL,
+  `expires_at` timestamp NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ai_pending_actions_turn_id_unique` (`turn_id`),
+  UNIQUE KEY `ai_pending_actions_execution_key_unique` (`execution_key`),
+  KEY `ai_pending_actions_user_status_expires_index` (`user_id`,`status`,`expires_at`),
+  KEY `ai_pending_actions_user_server_status_index` (`user_id`,`server_uuid`,`status`),
+  KEY `ai_pending_actions_updated_status_index` (`updated_at`,`status`),
+  KEY `ai_pending_actions_conversation_id_index` (`conversation_id`),
+  CONSTRAINT `ai_pending_actions_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ext_ai_conversations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ai_pending_actions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ext_ai_tool_calls`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ext_ai_tool_calls` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `turn_id` char(36) NOT NULL,
+  `conversation_id` bigint(20) unsigned DEFAULT NULL,
+  `user_id` int(10) unsigned DEFAULT NULL,
+  `server_uuid` char(36) DEFAULT NULL,
+  `scope` varchar(16) NOT NULL DEFAULT 'server',
+  `tool_call_id` varchar(128) DEFAULT NULL,
+  `batch_parent_tool_call_id` varchar(128) DEFAULT NULL,
+  `batch_index` smallint(5) unsigned DEFAULT NULL,
+  `tool_name` varchar(64) NOT NULL,
+  `risk` varchar(16) NOT NULL,
+  `step` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`arguments`)),
+  `result_summary` text DEFAULT NULL,
+  `status` varchar(24) NOT NULL DEFAULT 'pending_approval',
+  `http_status` smallint(5) unsigned DEFAULT NULL,
+  `duration_ms` int(10) unsigned DEFAULT NULL,
+  `created_at` timestamp(3) NOT NULL DEFAULT current_timestamp(3),
+  `resolved_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ai_tool_calls_turn_call_index` (`turn_id`,`tool_call_id`),
+  KEY `ai_tool_calls_created_at_index` (`created_at`),
+  KEY `ai_tool_calls_conversation_id_index` (`conversation_id`),
+  KEY `ai_tool_calls_user_id_index` (`user_id`),
+  CONSTRAINT `ai_tool_calls_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ext_ai_conversations` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ai_tool_calls_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ext_ai_turn_events`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ext_ai_turn_events` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `turn_id` char(36) NOT NULL,
+  `seq` int(10) unsigned NOT NULL,
+  `type` varchar(32) NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payload`)),
+  `created_at` timestamp(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ai_turn_events_turn_seq_unique` (`turn_id`,`seq`),
+  KEY `ai_turn_events_created_at_index` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ext_ai_usage_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ext_ai_usage_logs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) unsigned DEFAULT NULL,
+  `server_uuid` char(36) DEFAULT NULL,
+  `conversation_id` bigint(20) unsigned DEFAULT NULL,
+  `turn_id` char(36) DEFAULT NULL,
+  `step` smallint(5) unsigned DEFAULT NULL,
+  `tool_calls_count` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `model` varchar(100) NOT NULL,
+  `source` varchar(20) NOT NULL DEFAULT 'client',
+  `prompt_tokens` int(10) unsigned DEFAULT NULL,
+  `completion_tokens` int(10) unsigned DEFAULT NULL,
+  `total_tokens` int(10) unsigned DEFAULT NULL,
+  `latency_ms` int(10) unsigned DEFAULT NULL,
+  `status` enum('success','error','suspended','running','cancelled') NOT NULL DEFAULT 'success',
+  `cached` tinyint(1) NOT NULL DEFAULT 0,
+  `error_message` text DEFAULT NULL,
+  `heartbeat_at` timestamp NULL DEFAULT NULL,
+  `deadline_at` timestamp NULL DEFAULT NULL,
+  `cancel_requested_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ai_usage_logs_turn_unique` (`turn_id`),
+  KEY `ai_usage_logs_created_at_index` (`created_at`),
+  KEY `ai_usage_logs_conversation_id_foreign` (`conversation_id`),
+  KEY `ai_usage_logs_user_id_index` (`user_id`),
+  KEY `ai_usage_logs_server_uuid_index` (`server_uuid`),
+  KEY `ai_usage_logs_user_created_index` (`user_id`,`created_at`),
+  KEY `ai_usage_logs_user_status_id_index` (`user_id`,`status`,`id`),
+  CONSTRAINT `ai_usage_logs_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ext_ai_conversations` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ai_usage_logs_server_uuid_foreign` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`uuid`) ON DELETE SET NULL,
+  CONSTRAINT `ai_usage_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `extension_configs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -1271,7 +1271,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(191) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mount_node`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2059,4 +2059,3 @@ CREATE TABLE `webhook_events` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-

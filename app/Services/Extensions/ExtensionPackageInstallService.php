@@ -502,7 +502,7 @@ class ExtensionPackageInstallService
         }
 
         $this->progressService->report($action, $extensionId, 'migrating');
-        $this->migrationService->assertTablePrefixConvention($extensionId, $migrationFiles);
+        $this->migrationService->assertMigrationConventions($extensionId, $migrationFiles);
 
         try {
             $result = $this->migrationService->run($extensionId);

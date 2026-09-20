@@ -347,7 +347,7 @@ class IntelligenceController extends ApplicationApiController
     }
 
     /**
-     * Return aggregated usage statistics from ai_usage_logs.
+     * Return aggregated usage statistics from ext_ai_usage_logs.
      */
     public function stats(GetIntelligenceRequest $request): JsonResponse
     {

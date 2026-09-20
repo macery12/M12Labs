@@ -18,7 +18,7 @@ class AiUsageLog extends Model
      */
     public $timestamps = false;
 
-    protected $table = 'ai_usage_logs';
+    protected $table = 'ext_ai_usage_logs';
 
     protected $fillable = [
         'user_id',

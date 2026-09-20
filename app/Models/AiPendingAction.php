@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class AiPendingAction extends Model
 {
-    protected $table = 'ai_pending_actions';
+    protected $table = 'ext_ai_pending_actions';
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_EXECUTING = 'executing';

@@ -33,8 +33,10 @@ use Everest\Exceptions\DisplayException;
  */
 class ExtensionPhpSourceScanner
 {
-    public function __construct(private ExtensionMigrationSourceParser $migrations = new ExtensionMigrationSourceParser())
-    {
+    public function __construct(
+        private ExtensionMigrationSourceParser $migrations = new ExtensionMigrationSourceParser(),
+        private ExtensionForeignKeyPolicy $foreignKeys = new ExtensionForeignKeyPolicy(),
+    ) {
     }
 
     /**
@@ -343,6 +345,10 @@ class ExtensionPhpSourceScanner
                     $path
                 )];
             }
+        }
+
+        foreach ($this->foreignKeys->violations($extensionId, $source) as $violation) {
+            $findings[] = ['block', sprintf('%s %s', $path, $violation)];
         }
 
         return $findings;

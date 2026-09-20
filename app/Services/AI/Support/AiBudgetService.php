@@ -104,18 +104,18 @@ class AiBudgetService
         DB::transaction(function () use ($user, $token): void {
             User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
-            DB::table('ai_budget_reservations')
+            DB::table('ext_ai_budget_reservations')
                 ->where('user_id', $user->id)
                 ->where('expires_at', '<=', now())
                 ->delete();
 
-            if (DB::table('ai_budget_reservations')->where('user_id', $user->id)->exists()) {
+            if (DB::table('ext_ai_budget_reservations')->where('user_id', $user->id)->exists()) {
                 abort(429, 'You already have an AI request running. Wait for it to finish before starting another.');
             }
 
             $this->assertWithinBudget($user);
 
-            DB::table('ai_budget_reservations')->insert([
+            DB::table('ext_ai_budget_reservations')->insert([
                 'user_id' => $user->id,
                 'token' => $token,
                 'expires_at' => now()->addSeconds($this->reservationTtlSeconds()),
@@ -143,7 +143,7 @@ class AiBudgetService
     public function releaseHandle(array $handle): void
     {
         try {
-            DB::table('ai_budget_reservations')
+            DB::table('ext_ai_budget_reservations')
                 ->where('user_id', $handle['user_id'])
                 ->where('token', $handle['token'])
                 ->delete();

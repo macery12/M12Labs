@@ -43,7 +43,7 @@ class AiTurnUsageRecorderTest extends TestCase
             'status' => 'suspended',
         ]);
 
-        $this->assertDatabaseHas('ai_usage_logs', [
+        $this->assertDatabaseHas('ext_ai_usage_logs', [
             'turn_id' => $turnId,
             'total_tokens' => 40,
             'status' => 'suspended',
@@ -99,7 +99,7 @@ class AiTurnUsageRecorderTest extends TestCase
 
         $this->assertTrue($data['terminal']);
         $this->assertSame('error', $data['status']);
-        $this->assertDatabaseHas('ai_usage_logs', [
+        $this->assertDatabaseHas('ext_ai_usage_logs', [
             'turn_id' => $turnId,
             'status' => 'error',
         ]);

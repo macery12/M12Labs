@@ -21,8 +21,8 @@ class PendingActionClaimTest extends TestCase
     {
         parent::setUp();
 
-        if (!Schema::hasTable('ai_pending_actions')) {
-            Schema::create('ai_pending_actions', function (Blueprint $table): void {
+        if (!Schema::hasTable('ext_ai_pending_actions')) {
+            Schema::create('ext_ai_pending_actions', function (Blueprint $table): void {
                 $table->id();
                 $table->uuid('turn_id')->unique();
                 $table->unsignedBigInteger('conversation_id')->nullable();
