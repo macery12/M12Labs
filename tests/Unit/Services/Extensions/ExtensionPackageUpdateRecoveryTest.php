@@ -14,7 +14,6 @@ use Everest\Services\Extensions\ExtensionSignatureService;
 use Everest\Services\Extensions\ExtensionPackageFileService;
 use Everest\Services\Extensions\ExtensionPermissionRegistry;
 use Everest\Services\Extensions\ExtensionRequirementService;
-use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Services\Extensions\ExtensionPageManifestService;
 use Everest\Services\Extensions\ExtensionPanelRebuildService;
 use Everest\Services\Extensions\ExtensionOperationLockService;
@@ -22,6 +21,7 @@ use Everest\Services\Extensions\ExtensionPackageUpdateService;
 use Everest\Services\Extensions\ExtensionFrontendImportScanner;
 use Everest\Services\Extensions\ExtensionInstallProgressService;
 use Everest\Services\Extensions\ExtensionPackageArtifactService;
+use Everest\Services\Extensions\ExtensionPackageIntegrityService;
 use Everest\Services\Extensions\ExtensionFilesystemOwnershipService;
 
 class ExtensionPackageUpdateRecoveryTest extends TestCase
@@ -124,7 +124,7 @@ class ExtensionPackageUpdateRecoveryTest extends TestCase
             \Mockery::mock(ExtensionPackageArtifactService::class),
             $fileService ?? \Mockery::mock(ExtensionPackageFileService::class),
             \Mockery::mock(ExtensionMigrationService::class),
-            \Mockery::mock(ExtensionRuntimePlanService::class),
+            \Mockery::mock(ExtensionPackageIntegrityService::class),
             \Mockery::mock(ExtensionPermissionRegistry::class),
             \Mockery::mock(ExtensionJobDrainService::class),
             \Mockery::mock(ExtensionPageManifestService::class),

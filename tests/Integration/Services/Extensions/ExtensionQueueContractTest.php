@@ -4,6 +4,7 @@ namespace Everest\Tests\Integration\Services\Extensions;
 
 use Everest\Models\ExtensionConfig;
 use Everest\Models\ExtensionPackage;
+use Illuminate\Support\Facades\File;
 use Everest\Models\ExtensionQueueJob;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Queue\QueueTopology;
@@ -190,11 +191,25 @@ class ExtensionQueueContractTest extends IntegrationTestCase
         $updated = new ExtensionCapabilitySet(
             queues: [new QueueDefinition(name: 'slow', rateLimit: '5/hour')],
         );
+        File::deleteDirectory(base_path('app/Extensions/Packages/fixture_queue'));
+        $signedUpdate = $this->signedRuntimePackageAttributes(
+            'fixture_queue',
+            $updated,
+            ['app/Extensions/Packages/fixture_queue/Jobs/SlowFixtureJob.php' => "<?php\n"],
+            '1.1.0',
+        );
         ExtensionPackage::query()
             ->where('extension_id', 'fixture_queue')
             ->update([
-                'capabilities' => json_encode($updated->jsonSerialize()),
-                'capability_hash' => $updated->hash(),
+                'installed_version' => $signedUpdate['installed_version'],
+                'manifest' => $signedUpdate['manifest'],
+                'signed_manifest' => $signedUpdate['signed_manifest'],
+                'manifest_hash' => $signedUpdate['manifest_hash'],
+                'capabilities' => $signedUpdate['capabilities'],
+                'capability_hash' => $signedUpdate['capability_hash'],
+                'package_checksum' => $signedUpdate['package_checksum'],
+                'signature_key_id' => $signedUpdate['signature_key_id'],
+                'signature_verified_at' => $signedUpdate['signature_verified_at'],
             ]);
 
         (new SlowFixtureJob())->middleware();

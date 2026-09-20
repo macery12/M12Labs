@@ -157,6 +157,9 @@ class ExtensionHealthService
         $projection = is_array($package->capabilities)
             ? $this->plan->hydrateCapabilities($package->capabilities)
             : null;
+        $authenticatedCapabilities = $runtimeIntegrity->manifestAuthentic
+            ? $runtimeIntegrity->manifest?->capabilities
+            : null;
 
         return [
             'trackedFiles' => $runtimeIntegrity->trackedFiles(),
@@ -165,8 +168,12 @@ class ExtensionHealthService
             'manifestAuthentic' => $runtimeIntegrity->manifestAuthentic,
             'runtimeVerified' => $runtimeIntegrity->valid,
             'failureReason' => $runtimeIntegrity->reason,
-            'capabilityProjectionMatches' => $package->capability_hash === null
-                || ($projection !== null && $projection->hash() === $package->capability_hash),
+            'capabilityProjectionMatches' => is_string($package->capability_hash)
+                && $package->capability_hash !== ''
+                && $projection !== null
+                && $authenticatedCapabilities !== null
+                && hash_equals($authenticatedCapabilities->hash(), $package->capability_hash)
+                && hash_equals($authenticatedCapabilities->hash(), $projection->hash()),
         ];
     }
 

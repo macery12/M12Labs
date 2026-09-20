@@ -316,20 +316,23 @@ class ExtensionRuntimePlanService
             return 'signature';
         }
 
-        if ($this->integrityService->enforce($package) === null) {
+        $manifest = $this->integrityService->enforce($package);
+        if ($manifest === null) {
             return 'file_integrity';
         }
 
-        $capabilities = $this->hydrate($package->capabilities);
-        if ($capabilities === null) {
+        $storedCapabilities = $this->hydrate($package->capabilities);
+        if ($storedCapabilities === null) {
             return 'capabilities_missing';
         }
+
+        $capabilities = $manifest->capabilities;
 
         if (!$this->unverifiedCapabilitiesAllowed((string) $package->signature_state, $capabilities)) {
             return 'signature';
         }
 
-        if ($package->capability_hash !== null && $capabilities->hash() !== $package->capability_hash) {
+        if (!$this->capabilityProjectionMatches($package, $storedCapabilities, $capabilities)) {
             return 'capability_hash';
         }
 
@@ -337,8 +340,8 @@ class ExtensionRuntimePlanService
     }
 
     /**
-     * Decide whether one installed package may load, and rehydrate its
-     * capabilities from the stored projection.
+     * Decide whether one installed package may load, deriving its authority
+     * from the authenticated retained manifest.
      */
     private function entryFor(ExtensionPackage $package, ?array $usableKeyIds = null): ?ExtensionRuntimeEntry
     {
@@ -358,14 +361,22 @@ class ExtensionRuntimePlanService
         // This is the last gate before any route file is required or package
         // class is autoloaded. Expected checksums come from a freshly parsed,
         // re-verified signed manifest rather than mutable tracking rows.
-        if ($this->integrityService->enforce($package) === null) {
+        $manifest = $this->integrityService->enforce($package);
+        if ($manifest === null) {
             return null;
         }
 
-        $capabilities = $this->hydrate($package->capabilities);
-        if ($capabilities === null) {
+        $storedCapabilities = $this->hydrate($package->capabilities);
+        if ($storedCapabilities === null) {
             return null;
         }
+
+        // Runtime authority comes from the freshly reparsed and reverified
+        // retained manifest, never from the adjacent database projection. The
+        // projection and its hash remain useful consistency checks, but a
+        // writer who changes both still cannot grant a capability that was not
+        // publisher-signed.
+        $capabilities = $manifest->capabilities;
 
         // Defense in depth for packages installed before the unsigned policy
         // was tightened. A stale unsigned_acknowledged row cannot keep loading
@@ -374,15 +385,27 @@ class ExtensionRuntimePlanService
             return null;
         }
 
-        // The projection is denormalized from the manifest so this query stays
-        // cheap. The hash is what keeps the duplication honest: a projection
-        // edited in the database no longer matches, and the package goes inert
-        // rather than running with capabilities nobody approved.
-        if ($package->capability_hash !== null && $capabilities->hash() !== $package->capability_hash) {
+        if (!$this->capabilityProjectionMatches($package, $storedCapabilities, $capabilities)) {
             return null;
         }
 
         return new ExtensionRuntimeEntry($package->extension_id, (string) $package->installed_version, $capabilities);
+    }
+
+    private function capabilityProjectionMatches(
+        ExtensionPackage $package,
+        ExtensionCapabilitySet $stored,
+        ExtensionCapabilitySet $authenticated,
+    ): bool {
+        // Legacy rows with no digest used to bypass this check. Every
+        // executable v3 package now needs complete metadata, and both adjacent
+        // values must agree with the publisher-authenticated manifest.
+        if (!is_string($package->capability_hash) || $package->capability_hash === '') {
+            return false;
+        }
+
+        return hash_equals($authenticated->hash(), $package->capability_hash)
+            && hash_equals($authenticated->hash(), $stored->hash());
     }
 
     /**

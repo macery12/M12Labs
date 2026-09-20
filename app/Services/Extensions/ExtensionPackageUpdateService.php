@@ -26,7 +26,7 @@ class ExtensionPackageUpdateService
         private ExtensionPackageArtifactService $artifactService,
         private ExtensionPackageFileService $fileService,
         private ExtensionMigrationService $migrationService,
-        private ExtensionRuntimePlanService $planService,
+        private ExtensionPackageIntegrityService $integrityService,
         private ExtensionPermissionRegistry $permissionRegistry,
         private ExtensionJobDrainService $drainService,
         private ExtensionPageManifestService $pageManifestService,
@@ -663,15 +663,6 @@ class ExtensionPackageUpdateService
     }
 
     /**
-     * An update must never silently widen what a package can do.
-     *
-     * The diff is taken against the capabilities currently installed, so a
-     * release that only narrows or keeps them proceeds untouched; one that adds
-     * a permission, hook, queue, secret, command, table, migration or schedule
-     * needs the administrator to consent to that specific set. The stored
-     * projection is the record of what was previously approved.
-     */
-    /**
      * The lifecycle state a freshly updated package should hold.
      *
      * Derived from the operator's enable flag rather than from the previous
@@ -687,10 +678,20 @@ class ExtensionPackageUpdateService
         return $enabled ? 'enabled' : 'installed_disabled';
     }
 
-    private function assertCapabilitiesApproved(ExtensionPackage $existingPackage, ExtensionManifest $manifest, ?string $approvedCapabilityHash): void
+    /**
+     * An update must never silently widen what a package can do.
+     *
+     * The diff is taken against the capabilities in the authenticated retained
+     * manifest. A release that only narrows or keeps them proceeds untouched;
+     * one that adds a privilege needs the administrator to consent to that
+     * specific set. The adjacent stored projection and digest are not an
+     * authority: a database writer can change both.
+     */
+    public function assertCapabilitiesApproved(ExtensionPackage $existingPackage, ExtensionManifest $manifest, ?string $approvedCapabilityHash): void
     {
-        $installed = is_array($existingPackage->capabilities)
-            ? $this->planService->hydrateCapabilities($existingPackage->capabilities)
+        $inspection = $this->integrityService->inspect($existingPackage);
+        $installed = $inspection->manifestAuthentic
+            ? $inspection->manifest?->capabilities
             : null;
 
         $diff = ExtensionCapabilityDiff::between($installed, $manifest->capabilities);
