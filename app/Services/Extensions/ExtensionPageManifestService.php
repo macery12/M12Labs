@@ -138,6 +138,7 @@ class ExtensionPageManifestService
             'category' => $page->category,
             'order' => $page->order,
             'requiredServerPermission' => $page->requiredServerPermission,
+            'requiredFlags' => $page->requiredFlags,
             // Expanded to the full capability identifier here, not in the
             // browser: deriving a permission name client-side from a
             // package-supplied fragment is how a package ends up influencing
@@ -145,6 +146,6 @@ class ExtensionPageManifestService
             'requiredPermission' => $page->requiredExtensionPermission === null
                 ? null
                 : sprintf('ext.%s.admin.%s', $extensionId, $page->requiredExtensionPermission),
-        ], fn ($value) => $value !== null);
+        ], fn ($value) => $value !== null && $value !== []);
     }
 }

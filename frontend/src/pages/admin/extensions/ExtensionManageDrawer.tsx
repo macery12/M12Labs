@@ -1,6 +1,7 @@
 import { m, td } from '@/i18n/messages';
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { refreshExtensionFlags } from '@/extensions-sdk/flags';
 import { X, ExternalLink, Download, ArrowUpCircle, Trash2, AlertTriangle, Settings2, ShieldCheck } from 'lucide-react';
 import {
     type Extension,
@@ -105,7 +106,10 @@ export function ExtensionManageDrawer({
         setPossiblyUnused(null);
     }, [ext]);
 
-    const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
+    const invalidate = () => {
+        void qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
+        void refreshExtensionFlags().catch(() => undefined);
+    };
     const fail = (error: unknown) =>
         push({ type: 'error', message: firstError(error) ?? m['common.states.genericError']() });
 

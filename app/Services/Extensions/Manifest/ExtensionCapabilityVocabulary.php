@@ -42,7 +42,14 @@ final class ExtensionCapabilityVocabulary
         'bindings',
         'streams',
         'slots',
+        'flags',
     ];
+
+    /** Maximum named frontend flags one package may publish. */
+    public const MAX_FRONTEND_FLAGS = 32;
+
+    /** Maximum predicates in either side of one flat flag expression. */
+    public const MAX_FLAG_PREDICATES = 32;
 
     /**
      * Panel-owned frontend locations a package may contribute to.

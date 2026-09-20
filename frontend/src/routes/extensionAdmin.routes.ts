@@ -1,7 +1,12 @@
 /// <reference types="vite/client" />
 import { lazy, type ComponentType } from 'react';
 import { withExtensionIsolation } from '@/extensions-sdk/ExtensionErrorBoundary';
-import { pageManifests, byDeclaredOrder, type ExtensionPage } from '@/extensions-sdk/pages';
+import {
+    pageManifests,
+    byDeclaredOrder,
+    extensionFlagsSatisfied,
+    type ExtensionPage,
+} from '@/extensions-sdk/pages';
 import { route, type RouteDef } from './registry';
 import { resolveExtensionIcon } from '@/pages/admin/extensions/extMeta';
 
@@ -62,7 +67,10 @@ export const extensionAdminRoutes: RouteDef[] = pageManifests(manifests)
                     // Hidden unless the extensions module is on AND this
                     // extension is enabled; the extensions.admin API middleware
                     // enforces the same state server-side.
-                    condition: f => f.extensions.enabled && (f.extensions.active ?? []).includes(id),
+                    condition: f =>
+                        f.extensions.enabled &&
+                        (f.extensions.active ?? []).includes(id) &&
+                        extensionFlagsSatisfied(f.extensions.flags, id, page.requiredFlags),
                     // Isolated so a throwing admin extension page cannot take
                     // down the admin shell — including the Extensions screen
                     // used to disable it.

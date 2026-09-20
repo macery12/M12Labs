@@ -30,6 +30,8 @@ export interface ExtensionPage {
     requiredServerPermission?: string;
     /** Full `ext.<id>.admin.<action>` identifier for an admin page. */
     requiredPermission?: string;
+    /** Package-owned server-evaluated booleans that must all be true. */
+    requiredFlags?: string[];
 }
 
 export interface ExtensionPageManifest {
@@ -47,6 +49,22 @@ export interface ExtensionFrontendSlot {
     entry: string;
     order: number;
     requiredServerPermission?: string;
+    requiredFlags?: string[];
+}
+
+export type ExtensionFlagValues = Record<string, Record<string, boolean>>;
+
+/** Missing, malformed, and false values all fail closed. */
+export function extensionFlagsSatisfied(
+    values: ExtensionFlagValues | undefined,
+    extensionId: string,
+    required: string[] | undefined,
+): boolean {
+    if (required === undefined || required.length === 0) return true;
+    if (!Array.isArray(required) || !required.every(flag => typeof flag === 'string')) return false;
+
+    const packageFlags = values?.[extensionId];
+    return packageFlags !== undefined && required.every(flag => packageFlags[flag] === true);
 }
 
 /** Manifests keyed by their file path, for correlating with page modules. */

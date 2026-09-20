@@ -80,6 +80,8 @@ export interface ExtensionCapabilitySummary {
     streams?: number;
     // Components mounted into panel-owned global layout locations.
     slots?: number;
+    // Boolean-only package state gates evaluated by the panel.
+    flags?: number;
 }
 
 export interface Extension {

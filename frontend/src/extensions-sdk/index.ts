@@ -38,6 +38,13 @@ export {
 
 export { extensionQueryKey, useExtensionQueryKey } from './query';
 
+export {
+    useExtensionFlag,
+    useExtensionFlags,
+    refreshExtensionFlags,
+    type ExtensionFrontendState,
+} from './flags';
+
 export { createTranslator } from './i18n';
 
 export {

@@ -24,6 +24,10 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
     Route::get('/permissions', [Client\ClientController::class, 'permissions']);
     Route::get('links', [Client\LinkController::class, 'index']);
     Route::get('/alerts', [Client\AlertController::class, 'index']);
+    // Authenticated refresh of the same boolean-only package state embedded in
+    // the page bootstrap. Extension settings pages use this after a save so
+    // navigation and global slots update without a full reload.
+    Route::get('/extensions/flags', Client\Extensions\ExtensionFlagsController::class);
 
     Route::prefix('/groups')->group(function () {
         Route::get('/', [Client\ServerGroupController::class, 'index']);

@@ -153,6 +153,45 @@ class ExtensionPageManifestServiceTest extends IntegrationTestCase
         ]], $written['slots']);
     }
 
+    public function testItWritesOnlyDeclaredFlagNamesOntoPagesAndSlots(): void
+    {
+        $manifest = $this->manifest(
+            [
+                'settings' => ['fields' => [[
+                    'key' => 'assistant_enabled',
+                    'type' => 'boolean',
+                    'labelKey' => 'ext.pagedemo.assistant_enabled',
+                ]]],
+                'flags' => [[
+                    'name' => 'assistant-ready',
+                    'all' => [['setting' => 'assistant_enabled', 'equals' => true]],
+                ]],
+                'pages' => ['admin' => [[
+                    'slug' => 'assistant',
+                    'labelKey' => 'ext.pagedemo.nav.assistant',
+                    'icon' => 'bot',
+                    'category' => 'modules',
+                    'requiredFlags' => ['assistant-ready'],
+                ]]],
+                'slots' => [[
+                    'name' => 'server-layout.overlay',
+                    'entry' => 'assistant-drawer',
+                    'requiredFlags' => ['assistant-ready'],
+                ]],
+            ],
+            [
+                'frontend/src/extensions/packages/pagedemo/pages/admin/assistant.tsx',
+                'frontend/src/extensions/packages/pagedemo/slots/assistant-drawer.tsx',
+            ]
+        );
+
+        $written = json_decode((string) file_get_contents($this->service->write($manifest, $this->workspace . '/backups')['targetPath']), true);
+
+        $this->assertSame(['assistant-ready'], $written['admin'][0]['requiredFlags']);
+        $this->assertSame(['assistant-ready'], $written['slots'][0]['requiredFlags']);
+        $this->assertArrayNotHasKey('flags', $written);
+    }
+
     /** The checksum in the plan matches what actually landed on disk. */
     public function testTheGeneratedPlanChecksumMatchesTheFile(): void
     {

@@ -22,6 +22,8 @@ final readonly class PageDefinition implements \JsonSerializable
         public ?string $requiredServerPermission = null,
         /** Action segment of ext.<id>.admin.<action> required for an admin page. */
         public ?string $requiredExtensionPermission = null,
+        /** Package-owned boolean flags that must all be true. */
+        public array $requiredFlags = [],
     ) {
     }
 
@@ -36,6 +38,7 @@ final readonly class PageDefinition implements \JsonSerializable
             'order' => $this->order,
             'requiredServerPermission' => $this->requiredServerPermission,
             'requiredExtensionPermission' => $this->requiredExtensionPermission,
-        ], fn ($value) => $value !== null);
+            'requiredFlags' => $this->requiredFlags,
+        ], fn ($value) => $value !== null && $value !== []);
     }
 }

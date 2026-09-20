@@ -3,7 +3,13 @@ import { slotDeclarations } from './slots';
 
 function manifest(
     id: string,
-    slots?: Array<{ name: string; entry: string; order: number; requiredServerPermission?: string }>,
+    slots?: Array<{
+        name: string;
+        entry: string;
+        order: number;
+        requiredServerPermission?: string;
+        requiredFlags?: string[];
+    }>,
 ) {
     return {
         id,
@@ -50,6 +56,12 @@ describe('extension frontend slot declarations', () => {
                     entry: 'bad-permission',
                     order: 2,
                     requiredServerPermission: 42 as unknown as string,
+                },
+                {
+                    name: 'server-layout.banner',
+                    entry: 'bad-flags',
+                    order: 2,
+                    requiredFlags: [42 as unknown as string],
                 },
                 { name: 'server-layout.overlay', entry: 'safe-drawer', order: 3 },
             ]),

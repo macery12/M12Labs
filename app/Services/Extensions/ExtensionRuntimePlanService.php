@@ -14,7 +14,9 @@ use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilityVocabulary;
+use Everest\Services\Extensions\Manifest\Definitions\PackageFlagPredicate;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\PackageFlagDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
 
 /**
@@ -437,12 +439,47 @@ class ExtensionRuntimePlanService
         $database = (array) ($capabilities['database'] ?? []);
         $permissions = (array) ($capabilities['permissions'] ?? []);
         $settings = (array) ($capabilities['settings'] ?? []);
+        $hydratedSecrets = array_map(
+            fn (array $s): SecretDefinition => new SecretDefinition(
+                (string) $s['key'],
+                (string) $s['labelKey'],
+                isset($s['helpKey']) ? (string) $s['helpKey'] : null,
+                (bool) ($s['rotatable'] ?? true),
+            ),
+            (array) ($capabilities['secrets'] ?? [])
+        );
+        $hydratedSettings = array_map(
+            fn (array $f): SettingDefinition => new SettingDefinition(
+                key: (string) $f['key'],
+                type: (string) $f['type'],
+                labelKey: (string) $f['labelKey'],
+                helpKey: isset($f['helpKey']) ? (string) $f['helpKey'] : null,
+                required: (bool) ($f['required'] ?? false),
+                default: $f['default'] ?? null,
+                minLength: isset($f['minLength']) ? (int) $f['minLength'] : null,
+                maxLength: isset($f['maxLength']) ? (int) $f['maxLength'] : null,
+                pattern: isset($f['pattern']) ? (string) $f['pattern'] : null,
+                enum: isset($f['enum']) ? array_map('strval', (array) $f['enum']) : null,
+                min: isset($f['min']) ? $f['min'] + 0 : null,
+                max: isset($f['max']) ? $f['max'] + 0 : null,
+                urlHosts: isset($f['urlHosts']) ? array_map('strval', (array) $f['urlHosts']) : null,
+                visibility: (string) ($f['visibility'] ?? 'admin'),
+                requiresRebuild: (bool) ($f['requiresRebuild'] ?? false),
+            ),
+            (array) ($settings['fields'] ?? [])
+        );
+        $hydratedFlags = $this->hydratePackageFlags(
+            (array) ($capabilities['flags'] ?? []),
+            $hydratedSettings,
+            $hydratedSecrets,
+        );
+        $flagNames = array_map(fn (PackageFlagDefinition $flag): string => $flag->name, $hydratedFlags);
 
         return new ExtensionCapabilitySet(
             clientRoutes: (bool) ($routes['client'] ?? false),
             adminRoutes: (bool) ($routes['admin'] ?? false),
-            serverPages: $this->hydratePages((array) ($pages['server'] ?? [])),
-            adminPages: $this->hydratePages((array) ($pages['admin'] ?? [])),
+            serverPages: $this->hydratePages((array) ($pages['server'] ?? []), $flagNames),
+            adminPages: $this->hydratePages((array) ($pages['admin'] ?? []), $flagNames),
             adminPermissions: array_map(
                 fn (array $p): PermissionDefinition => new PermissionDefinition(
                     (string) $p['key'],
@@ -490,35 +527,8 @@ class ExtensionRuntimePlanService
             ),
             schedule: (bool) ($capabilities['schedule'] ?? false),
             commands: array_values(array_map('strval', (array) ($capabilities['commands'] ?? []))),
-            secrets: array_map(
-                fn (array $s): SecretDefinition => new SecretDefinition(
-                    (string) $s['key'],
-                    (string) $s['labelKey'],
-                    isset($s['helpKey']) ? (string) $s['helpKey'] : null,
-                    (bool) ($s['rotatable'] ?? true),
-                ),
-                (array) ($capabilities['secrets'] ?? [])
-            ),
-            settings: array_map(
-                fn (array $f): SettingDefinition => new SettingDefinition(
-                    key: (string) $f['key'],
-                    type: (string) $f['type'],
-                    labelKey: (string) $f['labelKey'],
-                    helpKey: isset($f['helpKey']) ? (string) $f['helpKey'] : null,
-                    required: (bool) ($f['required'] ?? false),
-                    default: $f['default'] ?? null,
-                    minLength: isset($f['minLength']) ? (int) $f['minLength'] : null,
-                    maxLength: isset($f['maxLength']) ? (int) $f['maxLength'] : null,
-                    pattern: isset($f['pattern']) ? (string) $f['pattern'] : null,
-                    enum: isset($f['enum']) ? array_map('strval', (array) $f['enum']) : null,
-                    min: isset($f['min']) ? $f['min'] + 0 : null,
-                    max: isset($f['max']) ? $f['max'] + 0 : null,
-                    urlHosts: isset($f['urlHosts']) ? array_map('strval', (array) $f['urlHosts']) : null,
-                    visibility: (string) ($f['visibility'] ?? 'admin'),
-                    requiresRebuild: (bool) ($f['requiresRebuild'] ?? false),
-                ),
-                (array) ($settings['fields'] ?? [])
-            ),
+            secrets: $hydratedSecrets,
+            settings: $hydratedSettings,
             // Absent on every package installed before privileged services
             // existed, which is exactly why the projection omits the key when
             // nothing was asked for — see ExtensionCapabilitySet::jsonSerialize.
@@ -552,7 +562,7 @@ class ExtensionRuntimePlanService
             // from the install-time parse, but hydration must still fail closed
             // if the stored projection is edited later.
             slots: array_values(array_filter(array_map(
-                function ($slot): ?FrontendSlotDefinition {
+                function ($slot) use ($flagNames): ?FrontendSlotDefinition {
                     if (!is_array($slot)) {
                         return null;
                     }
@@ -572,10 +582,12 @@ class ExtensionRuntimePlanService
                         requiredServerPermission: isset($slot['requiredServerPermission'])
                             ? (string) $slot['requiredServerPermission']
                             : null,
+                        requiredFlags: $this->hydrateRequiredFlags($slot['requiredFlags'] ?? [], $flagNames),
                     );
                 },
                 (array) ($capabilities['slots'] ?? [])
             ))),
+            flags: $hydratedFlags,
         );
     }
 
@@ -598,11 +610,168 @@ class ExtensionRuntimePlanService
     }
 
     /**
+     * Rehydrate only predicates the stored projection could have received from
+     * the strict manifest parser. Anything else is dropped, changing the
+     * recomputed capability hash and making a tampered package inert.
+     *
+     * @param array<int, mixed> $flags
+     * @param array<int, SettingDefinition> $settings
+     * @param array<int, SecretDefinition> $secrets
+     *
+     * @return array<int, PackageFlagDefinition>
+     */
+    private function hydratePackageFlags(array $flags, array $settings, array $secrets): array
+    {
+        $settingMap = [];
+        foreach ($settings as $setting) {
+            $settingMap[$setting->key] = $setting;
+        }
+        $secretKeys = array_fill_keys(
+            array_map(fn (SecretDefinition $secret): string => $secret->key, $secrets),
+            true
+        );
+
+        $hydrated = [];
+        $seen = [];
+        foreach (array_slice($flags, 0, ExtensionCapabilityVocabulary::MAX_FRONTEND_FLAGS) as $flag) {
+            if (!is_array($flag)) {
+                continue;
+            }
+
+            $name = (string) ($flag['name'] ?? '');
+            if (!preg_match(ExtensionCapabilityVocabulary::SLUG_PATTERN, $name) || isset($seen[$name])) {
+                continue;
+            }
+
+            $all = $this->hydrateFlagPredicates($flag['all'] ?? [], $settingMap, $secretKeys);
+            $any = $this->hydrateFlagPredicates($flag['any'] ?? [], $settingMap, $secretKeys);
+            if ($all === [] && $any === []) {
+                continue;
+            }
+
+            $seen[$name] = true;
+            $hydrated[] = new PackageFlagDefinition($name, $all, $any);
+        }
+
+        usort($hydrated, fn (PackageFlagDefinition $a, PackageFlagDefinition $b): int => strcmp($a->name, $b->name));
+
+        return $hydrated;
+    }
+
+    /**
+     * @param array<string, SettingDefinition> $settings
+     * @param array<string, true> $secrets
+     *
+     * @return array<int, PackageFlagPredicate>
+     */
+    private function hydrateFlagPredicates(mixed $predicates, array $settings, array $secrets): array
+    {
+        if (!is_array($predicates) || !array_is_list($predicates)) {
+            return [];
+        }
+
+        $hydrated = [];
+        $seen = [];
+        foreach (array_slice($predicates, 0, ExtensionCapabilityVocabulary::MAX_FLAG_PREDICATES) as $predicate) {
+            if (!is_array($predicate)) {
+                continue;
+            }
+
+            $hasSetting = isset($predicate['setting']) && is_string($predicate['setting']);
+            $hasSecret = isset($predicate['secret']) && is_string($predicate['secret']);
+            if ($hasSetting === $hasSecret) {
+                continue;
+            }
+
+            $operator = array_key_exists(PackageFlagPredicate::OPERATOR_EQUALS, $predicate)
+                ? PackageFlagPredicate::OPERATOR_EQUALS
+                : (array_key_exists(PackageFlagPredicate::OPERATOR_CONFIGURED, $predicate)
+                    ? PackageFlagPredicate::OPERATOR_CONFIGURED
+                    : null);
+            if ($operator === null
+                || (array_key_exists(PackageFlagPredicate::OPERATOR_EQUALS, $predicate)
+                    && array_key_exists(PackageFlagPredicate::OPERATOR_CONFIGURED, $predicate))) {
+                continue;
+            }
+
+            $source = $hasSetting ? PackageFlagPredicate::SOURCE_SETTING : PackageFlagPredicate::SOURCE_SECRET;
+            $key = (string) $predicate[$source];
+            $expected = $predicate[$operator];
+
+            if ($source === PackageFlagPredicate::SOURCE_SECRET) {
+                if ($operator !== PackageFlagPredicate::OPERATOR_CONFIGURED
+                    || !isset($secrets[$key])
+                    || !is_bool($expected)) {
+                    continue;
+                }
+            } else {
+                $setting = $settings[$key] ?? null;
+                if ($setting === null || $setting->isSecret()) {
+                    continue;
+                }
+                if ($operator === PackageFlagPredicate::OPERATOR_CONFIGURED) {
+                    if (!is_bool($expected)) {
+                        continue;
+                    }
+                } elseif (!$this->flagExpectedMatchesSetting($expected, $setting)) {
+                    continue;
+                }
+            }
+
+            /** @var string|int|float|bool $expected */
+            $item = new PackageFlagPredicate($source, $key, $operator, $expected);
+            $signature = json_encode($item->jsonSerialize(), JSON_THROW_ON_ERROR);
+            if (isset($seen[$signature])) {
+                continue;
+            }
+            $seen[$signature] = true;
+            $hydrated[] = $item;
+        }
+
+        usort($hydrated, fn (PackageFlagPredicate $a, PackageFlagPredicate $b): int => strcmp(
+            json_encode($a->jsonSerialize(), JSON_THROW_ON_ERROR),
+            json_encode($b->jsonSerialize(), JSON_THROW_ON_ERROR),
+        ));
+
+        return $hydrated;
+    }
+
+    private function flagExpectedMatchesSetting(mixed $expected, SettingDefinition $setting): bool
+    {
+        return match ($setting->type) {
+            'boolean' => is_bool($expected),
+            'number' => is_int($expected) || is_float($expected),
+            default => is_string($expected),
+        };
+    }
+
+    /**
+     * @param array<int, string> $declared
+     *
+     * @return array<int, string>
+     */
+    private function hydrateRequiredFlags(mixed $required, array $declared): array
+    {
+        if (!is_array($required) || !array_is_list($required)) {
+            return [];
+        }
+
+        $flags = array_values(array_unique(array_filter(
+            $required,
+            fn (mixed $flag): bool => is_string($flag) && in_array($flag, $declared, true),
+        )));
+        sort($flags, SORT_STRING);
+
+        return $flags;
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $pages
+     * @param array<int, string> $flagNames
      *
      * @return array<int, PageDefinition>
      */
-    private function hydratePages(array $pages): array
+    private function hydratePages(array $pages, array $flagNames): array
     {
         return array_map(
             fn (array $page): PageDefinition => new PageDefinition(
@@ -613,6 +782,7 @@ class ExtensionRuntimePlanService
                 order: (int) ($page['order'] ?? 100),
                 requiredServerPermission: isset($page['requiredServerPermission']) ? (string) $page['requiredServerPermission'] : null,
                 requiredExtensionPermission: isset($page['requiredExtensionPermission']) ? (string) $page['requiredExtensionPermission'] : null,
+                requiredFlags: $this->hydrateRequiredFlags($page['requiredFlags'] ?? [], $flagNames),
             ),
             $pages
         );

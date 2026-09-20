@@ -10,7 +10,7 @@ use Everest\Services\Email\EmailVerificationGate;
 use Everest\Services\Billing\InvoiceSettingsService;
 use Everest\Services\Billing\PaymentWebhookRegistry;
 use Everest\Services\Billing\PaymentProcessorConfigService;
-use Everest\Services\Extensions\ExtensionRuntimePlanService;
+use Everest\Services\Extensions\ExtensionFrontendFlagService;
 
 class EverestComposer
 {
@@ -20,7 +20,7 @@ class EverestComposer
         private InvoiceSettingsService $invoiceSettingsService,
         private StoreConfigService $storeConfigService,
         private PaymentWebhookRegistry $paymentWebhookRegistry,
-        private ExtensionRuntimePlanService $extensionRuntimePlan,
+        private ExtensionFrontendFlagService $extensionFrontendFlags,
     ) {
     }
 
@@ -155,7 +155,9 @@ class EverestComposer
             // quarantined, unsigned, incompatible or has a capability-hash
             // mismatch. This list is safe for every authenticated user and is
             // needed by server-scoped slots, not only by administrators.
-            $configuration['extensions']['active'] = $this->enabledExtensionIds();
+            $extensionState = $this->extensionFrontendFlags->snapshot();
+            $configuration['extensions']['active'] = $extensionState['active'];
+            $configuration['extensions']['flags'] = $extensionState['flags'];
         }
         if ($user && $user->isAdministrator()) {
             $configuration = array_merge_recursive($configuration, $this->getAdminConfiguration());
@@ -205,14 +207,6 @@ class EverestComposer
                 'require_billing_address' => (bool) $invoiceSettings->require_billing_address,
             ],
         ];
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function enabledExtensionIds(): array
-    {
-        return $this->extensionRuntimePlan->enabledIds();
     }
 
     private function emailEnabled(): bool

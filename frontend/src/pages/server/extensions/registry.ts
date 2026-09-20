@@ -1,7 +1,12 @@
 /// <reference types="vite/client" />
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
 import { withExtensionIsolation } from '@/extensions-sdk/ExtensionErrorBoundary';
-import { pageManifests, byDeclaredOrder, type ExtensionPage } from '@/extensions-sdk/pages';
+import {
+    pageManifests,
+    byDeclaredOrder,
+    extensionFlagsSatisfied,
+    type ExtensionPage,
+} from '@/extensions-sdk/pages';
 import { route, type RouteDef, type ServerCategory } from '@/routes/registry';
 import { resolveExtensionIcon } from '@/pages/admin/extensions/extMeta';
 
@@ -21,6 +26,7 @@ export interface ExtensionRouteDefinition {
     category: ServerCategory;
     order: number;
     requiredServerPermission?: string;
+    requiredFlags?: string[];
     component: LazyExoticComponent<ComponentType>;
 }
 
@@ -53,6 +59,7 @@ export const extensionRoutes: ExtensionRouteDefinition[] = pageManifests(manifes
                     category: 'extensions' as const,
                     order: page.order,
                     requiredServerPermission: page.requiredServerPermission,
+                    requiredFlags: page.requiredFlags,
                     // Every extension page gets its own error boundary: extension
                     // code shares this React tree, so an unisolated throw would
                     // unmount the whole server route including the navigation
@@ -92,7 +99,10 @@ export const extensionServerRoutes: RouteDef[] = extensionRoutes.map(def =>
         permission: def.requiredServerPermission,
         // Hidden unless the module is on AND this extension is enabled; the
         // client API middleware enforces the same state server-side.
-        condition: f => f.extensions.enabled && (f.extensions.active ?? []).includes(def.id),
+        condition: f =>
+            f.extensions.enabled &&
+            (f.extensions.active ?? []).includes(def.id) &&
+            extensionFlagsSatisfied(f.extensions.flags, def.id, def.requiredFlags),
         element: def.component,
     }),
 );

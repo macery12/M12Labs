@@ -9,6 +9,7 @@ import {
     type ExtensionSlotName,
     type ExtensionSlotProps,
 } from '@/extensions-sdk/slots';
+import { extensionFlagsSatisfied } from '@/extensions-sdk/pages';
 
 interface SlotContribution {
     extensionId: string;
@@ -17,6 +18,7 @@ interface SlotContribution {
     entry: string;
     order: number;
     requiredServerPermission?: string;
+    requiredFlags?: string[];
     component: LazyExoticComponent<ComponentType<ExtensionSlotProps>>;
 }
 
@@ -49,6 +51,7 @@ export const extensionSlotContributions: SlotContribution[] = slotDeclarations(m
                 entry: slot.entry,
                 order: slot.order,
                 requiredServerPermission: slot.requiredServerPermission,
+                requiredFlags: slot.requiredFlags,
                 component: lazy(loader),
             },
         ];
@@ -73,6 +76,7 @@ export function ServerExtensionSlot({ name }: { name: ExtensionSlotName }): Reac
         contribution =>
             contribution.name === name &&
             active.includes(contribution.extensionId) &&
+            extensionFlagsSatisfied(flags.extensions.flags, contribution.extensionId, contribution.requiredFlags) &&
             can(server.permissions ?? [], contribution.requiredServerPermission),
     );
 

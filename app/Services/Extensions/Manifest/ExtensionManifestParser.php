@@ -13,7 +13,9 @@ use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\PackageFlagPredicate;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\PackageFlagDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
 
 /**
@@ -140,12 +142,16 @@ class ExtensionManifestParser
         $this->assertKnownKeys($database, ['migrations', 'tables'], 'capabilities.database');
 
         $adminPermissions = $this->parsePermissions($permissions['admin'] ?? [], $extensionId);
+        $secrets = $this->parseSecrets($capabilities['secrets'] ?? [], $extensionId);
+        $settings = $this->parseSettings($capabilities['settings'] ?? [], $extensionId);
+        $flags = $this->parsePackageFlags($capabilities['flags'] ?? [], $settings, $secrets);
+        $flagNames = array_map(fn (PackageFlagDefinition $flag): string => $flag->name, $flags);
 
         return new ExtensionCapabilitySet(
             clientRoutes: (bool) ($routes['client'] ?? false),
             adminRoutes: (bool) ($routes['admin'] ?? false),
-            serverPages: $this->parsePages($pages['server'] ?? [], 'server', $extensionId, $adminPermissions),
-            adminPages: $this->parsePages($pages['admin'] ?? [], 'admin', $extensionId, $adminPermissions),
+            serverPages: $this->parsePages($pages['server'] ?? [], 'server', $extensionId, $adminPermissions, $flagNames),
+            adminPages: $this->parsePages($pages['admin'] ?? [], 'admin', $extensionId, $adminPermissions, $flagNames),
             adminPermissions: $adminPermissions,
             migrations: (bool) ($database['migrations'] ?? false),
             tables: $this->parseTables($database['tables'] ?? [], $extensionId),
@@ -153,12 +159,13 @@ class ExtensionManifestParser
             queues: $this->parseQueues($capabilities['queues'] ?? []),
             schedule: (bool) ($capabilities['schedule'] ?? false),
             commands: $this->parseCommands($capabilities['commands'] ?? [], $extensionId),
-            secrets: $this->parseSecrets($capabilities['secrets'] ?? [], $extensionId),
-            settings: $this->parseSettings($capabilities['settings'] ?? [], $extensionId),
+            secrets: $secrets,
+            settings: $settings,
             privileged: $this->parsePrivileged($capabilities['privileged'] ?? [], $extensionId),
             bindings: $this->parseBindings($capabilities['bindings'] ?? []),
             streams: $this->parseStreams($capabilities['streams'] ?? []),
-            slots: $this->parseFrontendSlots($capabilities['slots'] ?? []),
+            slots: $this->parseFrontendSlots($capabilities['slots'] ?? [], $flagNames),
+            flags: $flags,
         );
     }
 
@@ -172,7 +179,7 @@ class ExtensionManifestParser
      *
      * @return array<int, FrontendSlotDefinition>
      */
-    private function parseFrontendSlots($slots): array
+    private function parseFrontendSlots($slots, array $flagNames): array
     {
         if ($slots === [] || $slots === null) {
             return [];
@@ -192,7 +199,7 @@ class ExtensionManifestParser
                 throw new DisplayException(sprintf('%s must be an object.', $where));
             }
 
-            $this->assertKnownKeys($slot, ['name', 'entry', 'order', 'requiredServerPermission'], $where);
+            $this->assertKnownKeys($slot, ['name', 'entry', 'order', 'requiredServerPermission', 'requiredFlags'], $where);
 
             $name = (string) ($slot['name'] ?? '');
             if (!in_array($name, ExtensionCapabilityVocabulary::FRONTEND_SLOTS, true)) {
@@ -210,6 +217,7 @@ class ExtensionManifestParser
                 requiredServerPermission: isset($slot['requiredServerPermission'])
                     ? (string) $slot['requiredServerPermission']
                     : null,
+                requiredFlags: $this->requiredFlags($slot['requiredFlags'] ?? [], $flagNames, $where . '.requiredFlags'),
             );
         }
 
@@ -369,10 +377,11 @@ class ExtensionManifestParser
 
     /**
      * @param array<int, PermissionDefinition> $adminPermissions
+     * @param array<int, string> $flagNames
      *
      * @return array<int, PageDefinition>
      */
-    private function parsePages($pages, string $surface, string $extensionId, array $adminPermissions): array
+    private function parsePages($pages, string $surface, string $extensionId, array $adminPermissions, array $flagNames): array
     {
         if ($pages === [] || $pages === null) {
             return [];
@@ -400,6 +409,7 @@ class ExtensionManifestParser
             $this->assertKnownKeys($page, [
                 'slug', 'labelKey', 'icon', 'category', 'order',
                 'requiredServerPermission', 'requiredExtensionPermission',
+                'requiredFlags',
             ], $where);
 
             $slug = $this->slug($page['slug'] ?? '', $where . '.slug');
@@ -441,6 +451,7 @@ class ExtensionManifestParser
                     ? (string) $page['requiredServerPermission']
                     : null,
                 requiredExtensionPermission: $requiredExtensionPermission,
+                requiredFlags: $this->requiredFlags($page['requiredFlags'] ?? [], $flagNames, $where . '.requiredFlags'),
             );
         }
 
@@ -851,6 +862,204 @@ class ExtensionManifestParser
         }
 
         return $definitions;
+    }
+
+    /**
+     * Parse the booleans core may publish for this package in the authenticated
+     * bootstrap payload. Expressions stay deliberately flat and bounded: they
+     * can combine declared configuration, but cannot execute package code.
+     *
+     * @param array<int, SettingDefinition> $settings
+     * @param array<int, SecretDefinition> $secrets
+     *
+     * @return array<int, PackageFlagDefinition>
+     */
+    private function parsePackageFlags($flags, array $settings, array $secrets): array
+    {
+        if ($flags === [] || $flags === null) {
+            return [];
+        }
+
+        if (!is_array($flags) || !array_is_list($flags)) {
+            throw new DisplayException('The manifest "capabilities.flags" section must be a list.');
+        }
+        if (count($flags) > ExtensionCapabilityVocabulary::MAX_FRONTEND_FLAGS) {
+            throw new DisplayException(sprintf('The manifest may declare at most %d frontend flags.', ExtensionCapabilityVocabulary::MAX_FRONTEND_FLAGS));
+        }
+
+        $settingMap = [];
+        foreach ($settings as $setting) {
+            $settingMap[$setting->key] = $setting;
+        }
+        $secretKeys = array_fill_keys(
+            array_map(fn (SecretDefinition $secret): string => $secret->key, $secrets),
+            true
+        );
+
+        $definitions = [];
+        $seen = [];
+
+        foreach ($flags as $index => $flag) {
+            $where = sprintf('capabilities.flags[%d]', $index);
+            if (!is_array($flag)) {
+                throw new DisplayException(sprintf('%s must be an object.', $where));
+            }
+
+            $this->assertKnownKeys($flag, ['name', 'all', 'any'], $where);
+            $name = $this->slug($flag['name'] ?? '', $where . '.name');
+            if (isset($seen[$name])) {
+                throw new DisplayException(sprintf('Duplicate frontend flag "%s".', $name));
+            }
+            $seen[$name] = true;
+
+            $all = $this->parseFlagPredicates($flag['all'] ?? [], $settingMap, $secretKeys, $where . '.all');
+            $any = $this->parseFlagPredicates($flag['any'] ?? [], $settingMap, $secretKeys, $where . '.any');
+            if ($all === [] && $any === []) {
+                throw new DisplayException(sprintf('%s must declare at least one predicate under "all" or "any".', $where));
+            }
+
+            $definitions[] = new PackageFlagDefinition($name, $all, $any);
+        }
+
+        usort($definitions, fn (PackageFlagDefinition $a, PackageFlagDefinition $b): int => strcmp($a->name, $b->name));
+
+        return $definitions;
+    }
+
+    /**
+     * @param array<string, SettingDefinition> $settings
+     * @param array<string, true> $secrets
+     *
+     * @return array<int, PackageFlagPredicate>
+     */
+    private function parseFlagPredicates($predicates, array $settings, array $secrets, string $where): array
+    {
+        if ($predicates === [] || $predicates === null) {
+            return [];
+        }
+        if (!is_array($predicates) || !array_is_list($predicates)) {
+            throw new DisplayException(sprintf('%s must be a list.', $where));
+        }
+        if (count($predicates) > ExtensionCapabilityVocabulary::MAX_FLAG_PREDICATES) {
+            throw new DisplayException(sprintf('%s may contain at most %d predicates.', $where, ExtensionCapabilityVocabulary::MAX_FLAG_PREDICATES));
+        }
+
+        $parsed = [];
+        $seen = [];
+
+        foreach ($predicates as $index => $predicate) {
+            $at = sprintf('%s[%d]', $where, $index);
+            if (!is_array($predicate)) {
+                throw new DisplayException(sprintf('%s must be an object.', $at));
+            }
+
+            $this->assertKnownKeys($predicate, ['setting', 'secret', 'equals', 'configured'], $at);
+            $hasSetting = array_key_exists('setting', $predicate);
+            $hasSecret = array_key_exists('secret', $predicate);
+            if ($hasSetting === $hasSecret) {
+                throw new DisplayException(sprintf('%s must name exactly one declared setting or secret.', $at));
+            }
+
+            if ($hasSecret) {
+                $key = $this->settingKey($predicate['secret'], $at . '.secret');
+                if (!isset($secrets[$key])) {
+                    throw new DisplayException(sprintf('%s refers to secret "%s", which the manifest does not declare.', $at, $key));
+                }
+                if (array_key_exists('equals', $predicate)) {
+                    throw new DisplayException(sprintf('%s may only test whether a secret is configured; secret values are never available to flags.', $at));
+                }
+
+                $parsedPredicate = new PackageFlagPredicate(
+                    PackageFlagPredicate::SOURCE_SECRET,
+                    $key,
+                    PackageFlagPredicate::OPERATOR_CONFIGURED,
+                    $this->bool($predicate['configured'] ?? true, $at . '.configured'),
+                );
+            } else {
+                $key = $this->settingKey($predicate['setting'], $at . '.setting');
+                $setting = $settings[$key] ?? null;
+                if ($setting === null || $setting->isSecret()) {
+                    throw new DisplayException(sprintf('%s refers to setting "%s", which the manifest does not declare as a readable setting.', $at, $key));
+                }
+
+                $hasEquals = array_key_exists('equals', $predicate);
+                $hasConfigured = array_key_exists('configured', $predicate);
+                if ($hasEquals === $hasConfigured) {
+                    throw new DisplayException(sprintf('%s must test the setting with exactly one of "equals" or "configured".', $at));
+                }
+
+                if ($hasConfigured) {
+                    $parsedPredicate = new PackageFlagPredicate(
+                        PackageFlagPredicate::SOURCE_SETTING,
+                        $key,
+                        PackageFlagPredicate::OPERATOR_CONFIGURED,
+                        $this->bool($predicate['configured'], $at . '.configured'),
+                    );
+                } else {
+                    $expected = $predicate['equals'];
+                    $valid = match ($setting->type) {
+                        'boolean' => is_bool($expected),
+                        'number' => is_int($expected) || is_float($expected),
+                        default => is_string($expected),
+                    };
+                    if (!$valid) {
+                        throw new DisplayException(sprintf('%s.equals must match the declared %s setting type.', $at, $setting->type));
+                    }
+
+                    $parsedPredicate = new PackageFlagPredicate(
+                        PackageFlagPredicate::SOURCE_SETTING,
+                        $key,
+                        PackageFlagPredicate::OPERATOR_EQUALS,
+                        $expected,
+                    );
+                }
+            }
+
+            $signature = json_encode($parsedPredicate->jsonSerialize(), JSON_THROW_ON_ERROR);
+            if (isset($seen[$signature])) {
+                throw new DisplayException(sprintf('%s repeats the same predicate.', $where));
+            }
+            $seen[$signature] = true;
+            $parsed[] = $parsedPredicate;
+        }
+
+        usort($parsed, fn (PackageFlagPredicate $a, PackageFlagPredicate $b): int => strcmp(
+            json_encode($a->jsonSerialize(), JSON_THROW_ON_ERROR),
+            json_encode($b->jsonSerialize(), JSON_THROW_ON_ERROR),
+        ));
+
+        return $parsed;
+    }
+
+    /**
+     * @param array<int, string> $declared
+     *
+     * @return array<int, string>
+     */
+    private function requiredFlags($required, array $declared, string $where): array
+    {
+        if ($required === [] || $required === null) {
+            return [];
+        }
+        if (!is_array($required) || !array_is_list($required)) {
+            throw new DisplayException(sprintf('%s must be a list.', $where));
+        }
+
+        $parsed = [];
+        foreach ($required as $flag) {
+            $name = $this->slug($flag, $where);
+            if (!in_array($name, $declared, true)) {
+                throw new DisplayException(sprintf('%s requires frontend flag "%s", which the manifest does not declare.', $where, $name));
+            }
+            if (in_array($name, $parsed, true)) {
+                throw new DisplayException(sprintf('%s names frontend flag "%s" more than once.', $where, $name));
+            }
+            $parsed[] = $name;
+        }
+
+        sort($parsed, SORT_STRING);
+
+        return $parsed;
     }
 
     /**

@@ -5,6 +5,7 @@ import { m, td } from '@/i18n/messages';
 import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
+import { refreshExtensionFlags } from '@/extensions-sdk/flags';
 import {
     getExtensionSecrets,
     putExtensionSecret,
@@ -38,6 +39,7 @@ export function ExtensionSecretsPanel({ extensionId, disabled }: { extensionId: 
         onSuccess: (data, vars) => {
             qc.setQueryData(['admin', 'extension-secrets', extensionId], data);
             setDrafts(d => ({ ...d, [vars.key]: '' }));
+            void refreshExtensionFlags().catch(() => undefined);
             push({ type: 'success', message: m['extensions.secrets.saved']() });
         },
         onError: () => push({ type: 'error', message: m['extensions.secrets.saveFailed']() }),
@@ -47,6 +49,7 @@ export function ExtensionSecretsPanel({ extensionId, disabled }: { extensionId: 
         mutationFn: (key: string) => deleteExtensionSecret(extensionId, key),
         onSuccess: data => {
             qc.setQueryData(['admin', 'extension-secrets', extensionId], data);
+            void refreshExtensionFlags().catch(() => undefined);
             push({ type: 'success', message: m['extensions.secrets.cleared']() });
         },
         onError: () => push({ type: 'error', message: m['extensions.secrets.saveFailed']() }),

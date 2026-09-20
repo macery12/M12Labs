@@ -617,6 +617,7 @@ class ExtensionCatalogService
             'bindings' => (int) ($summary['bindings'] ?? 0),
             'streams' => (int) ($summary['streams'] ?? 0),
             'slots' => (int) ($summary['slots'] ?? 0),
+            'flags' => (int) ($summary['flags'] ?? 0),
         ];
     }
 

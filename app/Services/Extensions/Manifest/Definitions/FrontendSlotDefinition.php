@@ -17,6 +17,8 @@ final readonly class FrontendSlotDefinition implements \JsonSerializable
         public int $order = 100,
         /** Core server permission required before the contribution is mounted. */
         public ?string $requiredServerPermission = null,
+        /** Package-owned boolean flags that must all be true. */
+        public array $requiredFlags = [],
     ) {
     }
 
@@ -28,6 +30,7 @@ final readonly class FrontendSlotDefinition implements \JsonSerializable
             'entry' => $this->entry,
             'order' => $this->order,
             'requiredServerPermission' => $this->requiredServerPermission,
-        ], fn ($value) => $value !== null);
+            'requiredFlags' => $this->requiredFlags,
+        ], fn ($value) => $value !== null && $value !== []);
     }
 }

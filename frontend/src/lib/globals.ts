@@ -190,7 +190,11 @@ export interface EverestConfiguration {
     email: { enabled: boolean; module_enabled?: boolean; [k: string]: unknown };
     // Enabled, runtime-eligible package ids for authenticated sessions. Used
     // by pages and global slots; backend middleware remains authoritative.
-    extensions: { enabled: boolean; active?: string[] };
+    extensions: {
+        enabled: boolean;
+        active?: string[];
+        flags?: Record<string, Record<string, boolean>>;
+    };
     [k: string]: unknown;
 }
 

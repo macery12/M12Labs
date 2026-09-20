@@ -40,7 +40,10 @@ export function slotDeclarations(globbed: Record<string, unknown>): ExtensionSlo
                     !/^[a-z][a-z0-9-]{0,31}$/.test(slot.entry) ||
                     !Number.isFinite(slot.order) ||
                     (slot.requiredServerPermission !== undefined &&
-                        typeof slot.requiredServerPermission !== 'string')
+                        typeof slot.requiredServerPermission !== 'string') ||
+                    (slot.requiredFlags !== undefined &&
+                        (!Array.isArray(slot.requiredFlags) ||
+                            !slot.requiredFlags.every(flag => typeof flag === 'string')))
                 ) {
                     return [];
                 }
