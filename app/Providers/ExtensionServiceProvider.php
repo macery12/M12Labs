@@ -4,7 +4,6 @@ namespace Everest\Providers;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Queue\Events\JobFailed;
-use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Queue\Events\JobQueueing;
@@ -55,7 +54,6 @@ class ExtensionServiceProvider extends ServiceProvider
         $journal = $this->app->make(ExtensionQueueJournal::class);
 
         Event::listen(JobQueueing::class, fn (JobQueueing $event) => $journal->queueing($event));
-        Event::listen(JobQueued::class, fn (JobQueued $event) => $journal->queued($event));
         Event::listen(JobProcessing::class, fn (JobProcessing $event) => $journal->processing($event));
         Event::listen(JobProcessed::class, fn (JobProcessed $event) => $journal->processed($event));
         Event::listen(JobFailed::class, fn (JobFailed $event) => $journal->failed($event));

@@ -525,7 +525,6 @@ class ExtensionPackageUpdateService
             // with arguments the old version built.
             $this->progressService->report('update', $resolvedExtensionId, 'draining');
             $this->drainService->beginDrain($resolvedExtensionId);
-            $this->drainService->cancelQueued($resolvedExtensionId);
             $this->drainService->waitForDrain($resolvedExtensionId, (int) config('extensions.queues.drain_timeout_seconds', 60));
             $this->drainService->assertSafeToRemove($resolvedExtensionId);
 

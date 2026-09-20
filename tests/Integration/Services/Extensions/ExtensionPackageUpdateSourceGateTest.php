@@ -171,7 +171,6 @@ class ExtensionPackageUpdateSourceGateTest extends IntegrationTestCase
 
         $drain = \Mockery::mock(ExtensionJobDrainService::class);
         $drain->shouldNotReceive('beginDrain');
-        $drain->shouldNotReceive('cancelQueued');
         $drain->shouldNotReceive('waitForDrain');
         $drain->shouldNotReceive('assertSafeToRemove');
         $drain->expects('endDrain')->once()->with('demo');

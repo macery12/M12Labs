@@ -146,7 +146,6 @@ class ExtensionPackageUninstallService
         // longer exists.
         $this->progressService->report('uninstall', $extensionId, 'draining');
         $this->drainService->beginDrain($extensionId);
-        $this->drainService->cancelQueued($extensionId);
         $this->drainService->waitForDrain($extensionId, (int) config('extensions.queues.drain_timeout_seconds', 60));
         $this->drainService->assertSafeToRemove($extensionId);
 
@@ -228,11 +227,6 @@ class ExtensionPackageUninstallService
             // one is stripped in the same transaction — a role must never carry
             // an identifier that no longer resolves to anything.
             $this->permissionRegistry->purge($extensionId);
-
-            // The drain emptied the queue; anything left is a row whose worker
-            // died mid-job. Marking it quarantined records that work was
-            // abandoned rather than completed.
-            $this->drainService->quarantine($extensionId);
 
             // Unconditionally, whatever the drop-data choice: a credential
             // outliving the extension that used it is a standing liability

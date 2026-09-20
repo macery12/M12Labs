@@ -6,7 +6,6 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Everest\Models\ExtensionQueueJob;
 use Illuminate\Queue\Events\JobFailed;
-use Illuminate\Queue\Events\JobQueued;
 use Everest\Exceptions\DisplayException;
 use Illuminate\Queue\Events\JobQueueing;
 use Everest\Extensions\Jobs\ExtensionJob;
@@ -21,9 +20,10 @@ use Illuminate\Queue\Events\JobProcessing;
  * overriding a method — and cannot dispatch work that an uninstall would then
  * fail to notice.
  *
- * JobQueueing is also where the maxOutstanding quota and the drain refusal are
- * enforced, because it is the last point at which a dispatch can still be
- * refused to the caller instead of silently discarded later.
+ * JobQueueing is also where the maxOutstanding quota, drain refusal and
+ * durable reservation are enforced. It is the last point before the backend
+ * push: if the journal cannot reserve the payload there, dispatch fails closed
+ * and no untracked package job reaches Redis or the database queue.
  */
 class ExtensionQueueJournal
 {
@@ -60,24 +60,23 @@ class ExtensionQueueJournal
             && $this->registry->outstanding($id, $group) >= $definition->maxOutstanding) {
             throw new DisplayException(sprintf('The queue group [%s] for extension [%s] already has its maximum of %d jobs in flight.', $group, $id, $definition->maxOutstanding));
         }
-    }
 
-    public function queued(JobQueued $event): void
-    {
-        $job = $event->job;
-
-        if (!$job instanceof ExtensionJob) {
-            return;
+        $uuid = $event->payload()['uuid'] ?? null;
+        if (!is_string($uuid) || $uuid === '') {
+            throw new DisplayException(sprintf('The queue backend did not assign a trackable UUID to the extension [%s] job.', $id));
         }
 
-        $this->record(fn () => ExtensionQueueJob::query()->create([
-            'job_uuid' => $event->payload()['uuid'] ?? null,
-            'extension_id' => $job->extensionId(),
-            'queue_name' => $job->queueGroup(),
+        // Deliberately not wrapped by record(). This write reserves the exact
+        // payload before the queue driver sees it. Failing open here creates a
+        // backend message no lifecycle operation can know it must drain.
+        ExtensionQueueJob::query()->create([
+            'job_uuid' => $uuid,
+            'extension_id' => $id,
+            'queue_name' => $group,
             'job_class' => $job::class,
             'status' => ExtensionQueueJob::STATUS_QUEUED,
             'dispatched_at' => now(),
-        ]));
+        ]);
     }
 
     public function processing(JobProcessing $event): void
@@ -136,9 +135,9 @@ class ExtensionQueueJournal
     }
 
     /**
-     * Bookkeeping must never be the reason a job fails. A missing table on a
-     * partially migrated install, or a closed connection in a dying worker,
-     * is logged and stepped over.
+     * Terminal bookkeeping failures leave the row in flight. That can refuse a
+     * lifecycle operation until an operator repairs the journal, but it cannot
+     * permit package files to be replaced while a payload might still exist.
      */
     private function record(callable $write): void
     {

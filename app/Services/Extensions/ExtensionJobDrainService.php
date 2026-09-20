@@ -14,10 +14,10 @@ use Everest\Exceptions\DisplayException;
  * uninstall or update drains first.
  *
  * A drain has two halves. beginDrain() refuses new dispatches at the source and
- * makes the enabled gate discard anything already queued, which empties the
- * queued set quickly. Running jobs cannot be interrupted — PHP has no safe way
- * to preempt one — so waitForDrain() waits for them within a budget, and what
- * happens on timeout is the operator's decision, not this service's.
+ * makes workers discard anything already queued. Those rows remain in flight
+ * until a worker has deleted the actual backend payload and acknowledged the
+ * cancellation. Running jobs cannot be interrupted — PHP has no safe way to
+ * preempt one — so waitForDrain() waits for both states within a budget.
  */
 class ExtensionJobDrainService
 {
@@ -65,61 +65,18 @@ class ExtensionJobDrainService
             ->count();
     }
 
-    public function running(string $extensionId): int
-    {
-        return ExtensionQueueJob::query()
-            ->where('extension_id', $extensionId)
-            ->where('status', ExtensionQueueJob::STATUS_RUNNING)
-            ->count();
-    }
-
     /**
-     * Discard everything still queued. Jobs already running are left alone —
-     * they are executing package code that this process cannot stop.
-     */
-    public function cancelQueued(string $extensionId): int
-    {
-        return ExtensionQueueJob::query()
-            ->where('extension_id', $extensionId)
-            ->where('status', ExtensionQueueJob::STATUS_QUEUED)
-            ->update([
-                'status' => ExtensionQueueJob::STATUS_CANCELLED,
-                'last_error' => 'Cancelled while draining for a lifecycle operation.',
-                'finished_at' => now(),
-                'updated_at' => now(),
-            ]);
-    }
-
-    /**
-     * Set aside jobs that outlasted the drain budget so the operation can
-     * proceed. Quarantined rows are excluded from the in-flight set and stay as
-     * a record that work was abandoned mid-flight, which is not the same thing
-     * as work that completed.
-     */
-    public function quarantine(string $extensionId): int
-    {
-        return ExtensionQueueJob::query()
-            ->where('extension_id', $extensionId)
-            ->whereIn('status', ExtensionQueueJob::IN_FLIGHT)
-            ->update([
-                'status' => ExtensionQueueJob::STATUS_QUARANTINED,
-                'last_error' => 'Still in flight when the extension was removed.',
-                'finished_at' => now(),
-                'updated_at' => now(),
-            ]);
-    }
-
-    /**
-     * The guard an uninstall calls once the drain budget is spent. Refuses
-     * while package code is genuinely executing, because deleting its files
-     * underneath a running worker is the failure this service exists to avoid.
+     * The guard lifecycle operations call once the drain budget is spent.
+     * Queued rows still represent real backend payloads, and running rows
+     * represent code already executing. Neither is safe to carry across a file
+     * replacement or removal.
      */
     public function assertSafeToRemove(string $extensionId): void
     {
-        $running = $this->running($extensionId);
+        $inFlight = $this->inFlight($extensionId);
 
-        if ($running > 0) {
-            throw new DisplayException(sprintf('The extension [%s] still has %d job(s) running. Wait for them to finish, or quarantine them, before removing its files.', $extensionId, $running));
+        if ($inFlight > 0) {
+            throw new DisplayException(sprintf('The extension [%s] still has %d queued or running backend job(s). Keep the drain active and let workers delete or finish them before replacing its files.', $extensionId, $inFlight));
         }
     }
 }

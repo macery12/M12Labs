@@ -2,10 +2,13 @@
 
 namespace Everest\Tests\Integration\Services\Extensions;
 
+use Illuminate\Support\Facades\DB;
 use Everest\Models\ExtensionConfig;
+use Illuminate\Queue\WorkerOptions;
 use Everest\Models\ExtensionPackage;
 use Illuminate\Support\Facades\File;
 use Everest\Models\ExtensionQueueJob;
+use Illuminate\Support\Facades\Schema;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Queue\QueueTopology;
 use Everest\Tests\Integration\IntegrationTestCase;
@@ -40,10 +43,10 @@ class ExtensionQueueContractTest extends IntegrationTestCase
         config()->set('modules.extensions.enabled', true);
 
         // A real driver, not Queue::fake(): the fake replaces the queue manager
-        // and never raises JobQueueing/JobQueued, which is exactly where the
-        // quota, the drain refusal and the journal live. after_commit is
-        // disabled because DatabaseTransactions never commits, so a deferred
-        // push would not happen at all.
+        // and never raises the enqueue lifecycle events, which is exactly
+        // where the quota, drain refusal and durable reservation live.
+        // after_commit is disabled because DatabaseTransactions never commits,
+        // so a deferred push would not happen at all.
         config()->set('queue.default', 'database');
         config()->set('queue.connections.database.after_commit', false);
     }
@@ -276,6 +279,26 @@ class ExtensionQueueContractTest extends IntegrationTestCase
         $this->assertNotNull($row->job_uuid);
     }
 
+    /** A journal outage must abort before the queue driver receives a payload. */
+    public function testDispatchFailsClosedWhenTheJournalCannotReserveThePayload(): void
+    {
+        $this->installFixture();
+        Schema::rename('extension_queue_jobs', 'extension_queue_jobs_unavailable');
+
+        try {
+            try {
+                SlowFixtureJob::dispatch();
+                $this->fail('Dispatch should fail when its durable journal reservation cannot be written.');
+            } catch (\Illuminate\Database\QueryException) {
+                $this->addToAssertionCount(1);
+            }
+
+            $this->assertSame(0, DB::table('jobs')->count());
+        } finally {
+            Schema::rename('extension_queue_jobs_unavailable', 'extension_queue_jobs');
+        }
+    }
+
     /**
      * The uninstall guard. Deleting a package's class files while a worker
      * holds one of its jobs leaves a payload that can never be deserialized.
@@ -294,30 +317,49 @@ class ExtensionQueueContractTest extends IntegrationTestCase
         ]);
 
         $this->expectException(DisplayException::class);
-        $this->expectExceptionMessage('still has 1 job(s) running');
+        $this->expectExceptionMessage('still has 1 queued or running backend job(s)');
 
         app(ExtensionJobDrainService::class)->assertSafeToRemove('fixture_queue');
     }
 
-    /** Queued work is discarded outright; running work is left to finish. */
-    public function testDrainCancelsQueuedWorkAndLeavesRunningWorkAlone(): void
+    /**
+     * A stopped worker leaves the real database payload in place, so lifecycle
+     * mutation is refused. Once a worker consumes it under the drain gate, the
+     * middleware deletes the payload and acknowledges the journal row.
+     */
+    public function testDrainWaitsForTheBackendPayloadToBeDeleted(): void
     {
         $this->installFixture();
-
-        foreach ([ExtensionQueueJob::STATUS_QUEUED, ExtensionQueueJob::STATUS_RUNNING] as $status) {
-            ExtensionQueueJob::create([
-                'job_uuid' => (string) \Illuminate\Support\Str::uuid(),
-                'extension_id' => 'fixture_queue',
-                'queue_name' => 'slow',
-                'job_class' => SlowFixtureJob::class,
-                'status' => $status,
-            ]);
-        }
+        SlowFixtureJob::dispatch();
 
         $drain = app(ExtensionJobDrainService::class);
+        $drain->beginDrain('fixture_queue');
 
-        $this->assertSame(1, $drain->cancelQueued('fixture_queue'));
+        $this->assertSame(1, DB::table('jobs')->count());
         $this->assertSame(1, $drain->inFlight('fixture_queue'));
-        $this->assertSame(1, $drain->running('fixture_queue'));
+        $this->assertFalse($drain->waitForDrain('fixture_queue', 0, 0));
+
+        try {
+            $drain->assertSafeToRemove('fixture_queue');
+            $this->fail('Lifecycle mutation should be refused while the backend payload exists.');
+        } catch (DisplayException $exception) {
+            $this->assertStringContainsString('queued or running backend job', $exception->getMessage());
+        }
+
+        $queue = app('queue')->connection('database');
+        $backendJob = $queue->pop(app(QueueTopology::class)->queueFor('extensions'));
+        $this->assertNotNull($backendJob);
+        app('queue.worker')->process('database', $backendJob, new WorkerOptions());
+
+        $this->assertSame(0, DB::table('jobs')->count());
+        $this->assertSame(0, $drain->inFlight('fixture_queue'));
+        $this->assertTrue($drain->waitForDrain('fixture_queue', 0, 0));
+        $this->assertSame(
+            ExtensionQueueJob::STATUS_CANCELLED,
+            ExtensionQueueJob::query()->where('extension_id', 'fixture_queue')->value('status'),
+        );
+
+        $drain->assertSafeToRemove('fixture_queue');
+        $this->addToAssertionCount(1);
     }
 }
