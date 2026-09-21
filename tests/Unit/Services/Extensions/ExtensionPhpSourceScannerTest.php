@@ -112,6 +112,54 @@ class ExtensionPhpSourceScannerTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    /**
+     * Three core symbols a package may name because the SDK cannot wrap them.
+     *
+     * Two are exceptions it catches -- an unreachable node and a refused
+     * sub-request -- which a package has to name to tell a refusal apart from a
+     * crash. The third is the redaction map, which the caller owns because
+     * restoring a reply needs the same map that redacted the request, so it
+     * outlives any one call into the engine.
+     */
+    public function testReceivedCoreValueObjectsAreAllowed(): void
+    {
+        $this->scan([
+            self::SERVICE => <<<'PHP'
+                <?php
+                namespace Everest\Extensions\Packages\demo\Services;
+
+                use Everest\Services\Privacy\RedactionMap;
+                use Everest\Extensions\Sdk\Services\PackageRedaction;
+                use Everest\Exceptions\Service\Access\InternalDispatchException;
+                use Everest\Exceptions\Http\Connection\DaemonConnectionException;
+
+                class DemoService {}
+                PHP,
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * The engine itself is not on the list. A package goes through
+     * Sdk\Services\PackageRedaction, so there stays one regex set in the
+     * panel -- a second copy drifts, and the copy that drifts is the one
+     * nobody looks at.
+     */
+    public function testTheRedactionEngineItselfIsRefused(): void
+    {
+        $this->assertBlocked([
+            self::SERVICE => <<<'PHP'
+                <?php
+                namespace Everest\Extensions\Packages\demo\Services;
+
+                use Everest\Services\Privacy\PiiRedactor;
+
+                class DemoService {}
+                PHP,
+        ], 'imports Everest\Services\Privacy\PiiRedactor');
+    }
+
     public function testPanelInternalsAreRefused(): void
     {
         $this->assertBlocked([

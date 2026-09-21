@@ -89,6 +89,18 @@ class ExtensionPhpSourceScanner
         // Thrown through SDK server operations; packages catch it to report an
         // unreachable node as a result rather than a failure.
         'Everest\\Exceptions\\Http\\Connection\\DaemonConnectionException',
+
+        // Thrown through Sdk\Services\InternalDispatch, for the same reason:
+        // a package dispatching a sub-request has to be able to tell a refusal
+        // apart from a crash and report it rather than fail the whole turn.
+        'Everest\\Exceptions\\Service\\Access\\InternalDispatchException',
+
+        // The placeholder/value table Sdk\Services\PackageRedaction fills in
+        // and reads back. The caller owns it because restoring a reply needs
+        // the same map that redacted the request, so it is persisted between
+        // calls and cannot live inside the engine. Inert: it holds only what
+        // the package already passed through it.
+        'Everest\\Services\\Privacy\\RedactionMap',
     ];
 
     /** Namespace prefixes a package may import freely. */
