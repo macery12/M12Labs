@@ -112,7 +112,7 @@ class ExtensionPhpSourceScanner
      * Calls that execute code or shell commands. No reviewed extension needs
      * one, and every one of them turns a file-write bug into code execution.
      */
-    private const DANGEROUS_CALLS = '~(?<![\w$>])(eval|assert|exec|shell_exec|system|passthru|proc_open|popen|pcntl_exec)\s*\(~';
+    private const DANGEROUS_CALLS = '~(?<![\w$>])(?<!function )(eval|assert|exec|shell_exec|system|passthru|proc_open|popen|pcntl_exec)\s*\(~';
 
     private const BACKTICK_EXEC = '~(?<![\\\\\'"])`[^`\n]{2,}`~';
 

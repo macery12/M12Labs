@@ -160,6 +160,34 @@ class ExtensionPhpSourceScannerTest extends TestCase
         ], 'imports Everest\Services\Privacy\PiiRedactor');
     }
 
+    /**
+     * A method may legitimately be *named* one of the dangerous calls.
+     *
+     * `AiMessage::system()` is a factory for a system-role message. Blocking a
+     * declaration would be a gate that cannot be satisfied except by renaming
+     * working code, and the author would have no way to tell that from a real
+     * finding.
+     */
+    public function testAMethodNamedAfterADangerousCallIsNotACall(): void
+    {
+        $this->scan([
+            self::SERVICE => <<<'PHP'
+                <?php
+                namespace Everest\Extensions\Packages\demo\Services;
+
+                class DemoService
+                {
+                    public static function system(string $content): self
+                    {
+                        return new self();
+                    }
+                }
+                PHP,
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
     public function testPanelInternalsAreRefused(): void
     {
         $this->assertBlocked([

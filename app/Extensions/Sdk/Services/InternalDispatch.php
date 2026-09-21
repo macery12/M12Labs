@@ -72,34 +72,38 @@ final class InternalDispatch
         return new self($extensionId, app(CoreInternalDispatch::class), $plan);
     }
 
-    /** @param array<string, mixed> $query */
-    public function get(string $uri, array $query = [], ?int $maxSeconds = null): InternalResponse
+    /**
+     * @param array<string, mixed> $query
+     * @param int|null $nodeSeconds ceiling for a single daemon call made while
+     *                              serving this sub-request; see {@see send()}
+     */
+    public function get(string $uri, array $query = [], ?int $maxSeconds = null, ?int $nodeSeconds = null): InternalResponse
     {
-        return $this->send(new InternalRequest('GET', $uri, query: $query), $maxSeconds);
+        return $this->send(new InternalRequest('GET', $uri, query: $query), $maxSeconds, $nodeSeconds);
     }
 
     /** @param array<string, mixed> $body */
-    public function post(string $uri, array $body = [], ?string $idempotencyKey = null, ?int $maxSeconds = null): InternalResponse
+    public function post(string $uri, array $body = [], ?string $idempotencyKey = null, ?int $maxSeconds = null, ?int $nodeSeconds = null): InternalResponse
     {
-        return $this->send(new InternalRequest('POST', $uri, body: $body, idempotencyKey: $idempotencyKey), $maxSeconds);
+        return $this->send(new InternalRequest('POST', $uri, body: $body, idempotencyKey: $idempotencyKey), $maxSeconds, $nodeSeconds);
     }
 
     /** @param array<string, mixed> $body */
-    public function put(string $uri, array $body = [], ?string $idempotencyKey = null, ?int $maxSeconds = null): InternalResponse
+    public function put(string $uri, array $body = [], ?string $idempotencyKey = null, ?int $maxSeconds = null, ?int $nodeSeconds = null): InternalResponse
     {
-        return $this->send(new InternalRequest('PUT', $uri, body: $body, idempotencyKey: $idempotencyKey), $maxSeconds);
+        return $this->send(new InternalRequest('PUT', $uri, body: $body, idempotencyKey: $idempotencyKey), $maxSeconds, $nodeSeconds);
     }
 
     /** @param array<string, mixed> $body */
-    public function patch(string $uri, array $body = [], ?string $idempotencyKey = null, ?int $maxSeconds = null): InternalResponse
+    public function patch(string $uri, array $body = [], ?string $idempotencyKey = null, ?int $maxSeconds = null, ?int $nodeSeconds = null): InternalResponse
     {
-        return $this->send(new InternalRequest('PATCH', $uri, body: $body, idempotencyKey: $idempotencyKey), $maxSeconds);
+        return $this->send(new InternalRequest('PATCH', $uri, body: $body, idempotencyKey: $idempotencyKey), $maxSeconds, $nodeSeconds);
     }
 
     /** @param array<string, mixed> $body */
-    public function delete(string $uri, array $body = [], ?int $maxSeconds = null): InternalResponse
+    public function delete(string $uri, array $body = [], ?int $maxSeconds = null, ?int $nodeSeconds = null): InternalResponse
     {
-        return $this->send(new InternalRequest('DELETE', $uri, body: $body), $maxSeconds);
+        return $this->send(new InternalRequest('DELETE', $uri, body: $body), $maxSeconds, $nodeSeconds);
     }
 
     /**
@@ -107,8 +111,14 @@ final class InternalDispatch
      * them is something the panel itself would have told a browser: a 403, a
      * 404, a 422 with the offending fields. A package handling those is
      * handling ordinary API results, and should not have to catch to do it.
+     *
+     * The two bounds are separate on purpose. `$maxSeconds` is how long the
+     * whole sub-request may take; `$nodeSeconds` is how long one call to a
+     * node made while serving it may take. Collapsing them into one number
+     * lets a single slow node consume a caller's entire remaining allowance in
+     * local controller work, which is what they were split to prevent.
      */
-    private function send(InternalRequest $request, ?int $maxSeconds): InternalResponse
+    private function send(InternalRequest $request, ?int $maxSeconds, ?int $nodeSeconds = null): InternalResponse
     {
         $this->assertGranted();
 
@@ -116,6 +126,7 @@ final class InternalDispatch
             $response = $this->dispatch->dispatch(
                 $request,
                 deadlineSeconds: $maxSeconds,
+                nodeTimeoutSeconds: $nodeSeconds,
                 onBehalfOf: $this->extensionId,
             );
         } catch (InternalDispatchException $e) {

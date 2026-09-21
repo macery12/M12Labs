@@ -3,6 +3,7 @@
 namespace Everest\Extensions\Sdk\Services;
 
 use Everest\Facades\Activity;
+use Everest\Facades\LogBatch;
 use Everest\Models\ActivityLog;
 use Everest\Services\Activity\ActivityLogService;
 
@@ -32,6 +33,29 @@ final class PanelActivity
 {
     private function __construct(private string $extensionId)
     {
+    }
+
+    /**
+     * Group every activity row written inside the callback under one batch.
+     *
+     * The panel's activity feed shows a batch as a single entry that expands,
+     * so a piece of work that touches five things reads as one action rather
+     * than five unrelated ones a second apart. Worth doing whenever a package
+     * writes more than one row for what a user experienced as one request --
+     * a sync, a bulk edit, an agent turn that called several tools.
+     *
+     * The batch closes even when the callback throws, because a half-open
+     * batch would swallow the next unrelated rows written in the same process.
+     */
+    public static function batch(callable $work): mixed
+    {
+        LogBatch::start();
+
+        try {
+            return $work();
+        } finally {
+            LogBatch::end();
+        }
     }
 
     public static function for(string $extensionId): self
