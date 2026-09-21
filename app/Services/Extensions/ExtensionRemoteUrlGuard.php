@@ -66,9 +66,72 @@ class ExtensionRemoteUrlGuard
         return [
             'host' => $host,
             'port' => (int) ($parts['port'] ?? 443),
-            'addresses' => $addresses,
+            'addresses' => $this->preferRoutable($addresses),
             'literalIp' => $literalIp,
         ];
+    }
+
+    /**
+     * Drop address families this host has no route for.
+     *
+     * Pinning the resolver's answer is what makes the safety check and the
+     * connection agree, and it is not optional -- without it a host can answer
+     * the check with a public address and rebind to loopback for the fetch.
+     * But pinning also takes address *selection* away from the resolver, and
+     * the resolver was doing something useful with it: on a machine with AAAA
+     * records and no IPv6 route, `getaddrinfo` ordering plus the client's own
+     * fallback is what quietly makes IPv4 win. Hand cURL a pinned list and that
+     * disappears -- every connection to such a host fails instantly, with a
+     * message about being unable to reach a server that is in fact reachable.
+     *
+     * So the selection has to be done here instead. A family with no route is
+     * removed rather than reordered, because reordering only helps if the
+     * client walks the whole list, which is exactly the behaviour that varies.
+     *
+     * Conservative in both directions: an inconclusive probe keeps the address,
+     * and if the filter would empty the list it is discarded entirely, so a
+     * genuinely unreachable host still fails as a connection error rather than
+     * as "could not be resolved".
+     *
+     * @param array<int, string> $addresses
+     *
+     * @return array<int, string>
+     */
+    protected function preferRoutable(array $addresses): array
+    {
+        $routable = array_values(array_filter(
+            $addresses,
+            fn (string $address): bool => $this->hasRouteTo($address),
+        ));
+
+        return $routable === [] ? $addresses : $routable;
+    }
+
+    /**
+     * Whether the kernel has any route to this address.
+     *
+     * A connected UDP socket sends nothing -- `connect(2)` on a datagram socket
+     * only fixes the peer -- but it does consult the routing table, so this
+     * answers the question without a packet, a handshake or a timeout.
+     */
+    protected function hasRouteTo(string $address): bool
+    {
+        $target = str_contains($address, ':') ? '[' . $address . ']' : $address;
+        $socket = @stream_socket_client(
+            sprintf('udp://%s:443', $target),
+            $errorCode,
+            $errorMessage,
+            1,
+            STREAM_CLIENT_CONNECT,
+        );
+
+        if ($socket === false) {
+            return false;
+        }
+
+        fclose($socket);
+
+        return true;
     }
 
     /**

@@ -48,4 +48,61 @@ class ExtensionRemoteUrlGuardTest extends TestCase
         $this->assertSame(['2606:4700:4700::1111'], $target['addresses']);
         $this->assertTrue($target['literalIp']);
     }
+
+    public function testDropsAddressFamiliesTheHostHasNoRouteFor(): void
+    {
+        $guard = $this->guardResolving(
+            ['185.199.108.133', '2606:50c0:8000::154'],
+            routable: ['185.199.108.133'],
+        );
+
+        $target = $guard->assertSafeHttpsUrl('https://example.com/registry.json', 'Repository manifest URL');
+
+        // Pinning the resolver's answer is what makes the safety check and the
+        // connection agree, but it also means nothing else is left to fall back
+        // to IPv4 when the machine has AAAA records and no IPv6 route.
+        $this->assertSame(['185.199.108.133'], $target['addresses']);
+    }
+
+    public function testKeepsEveryAddressWhenNoneIsRoutable(): void
+    {
+        $guard = $this->guardResolving(
+            ['185.199.108.133', '2606:50c0:8000::154'],
+            routable: [],
+        );
+
+        $target = $guard->assertSafeHttpsUrl('https://example.com/registry.json', 'Repository manifest URL');
+
+        // A host that is genuinely unreachable should fail as a connection
+        // error, which says something true, rather than as "could not be
+        // resolved", which does not.
+        $this->assertSame(['185.199.108.133', '2606:50c0:8000::154'], $target['addresses']);
+    }
+
+    /**
+     * @param array<int, string> $addresses
+     * @param array<int, string> $routable
+     */
+    private function guardResolving(array $addresses, array $routable): ExtensionRemoteUrlGuard
+    {
+        return new class ($addresses, $routable) extends ExtensionRemoteUrlGuard {
+            /**
+             * @param array<int, string> $addresses
+             * @param array<int, string> $routable
+             */
+            public function __construct(private array $addresses, private array $routable)
+            {
+            }
+
+            protected function resolveHostAddresses(string $host): array
+            {
+                return $this->addresses;
+            }
+
+            protected function hasRouteTo(string $address): bool
+            {
+                return in_array($address, $this->routable, true);
+            }
+        };
+    }
 }

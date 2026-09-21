@@ -1,6 +1,7 @@
 import {
     Puzzle,
     Bot,
+    Sparkles,
     ShieldCheck,
     Mail,
     Webhook,
@@ -32,6 +33,8 @@ const ICONS: Record<string, LucideIcon> = {
     puzzle: Puzzle,
     bot: Bot,
     ai: Bot,
+    sparkles: Sparkles,
+    assistant: Sparkles,
     shield: ShieldCheck,
     shieldcheck: ShieldCheck,
     auth: ShieldCheck,

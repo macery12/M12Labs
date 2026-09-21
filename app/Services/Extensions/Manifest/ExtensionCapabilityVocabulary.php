@@ -200,7 +200,7 @@ final class ExtensionCapabilityVocabulary
 
     /** Icon slugs shared with the frontend icon map. */
     public const ICONS = [
-        'puzzle', 'bot', 'ai', 'shield', 'shieldcheck', 'auth', 'security', 'mail', 'email',
+        'puzzle', 'bot', 'ai', 'sparkles', 'assistant', 'shield', 'shieldcheck', 'auth', 'security', 'mail', 'email',
         'webhook', 'webhooks', 'billing', 'creditcard', 'payment', 'globe', 'domain', 'domains',
         'ticket', 'tickets', 'support', 'bell', 'alert', 'alerts', 'notification', 'database',
         'db', 'server', 'node', 'users', 'user', 'player', 'players', 'playermanager', 'gamepad',
