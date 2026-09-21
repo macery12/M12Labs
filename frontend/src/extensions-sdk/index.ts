@@ -50,8 +50,10 @@ export { createTranslator } from './i18n';
 export {
     useExtensionServerContext,
     useExtensionAdminContext,
+    useExtensionViewer,
     type ExtensionServerContext,
     type ExtensionAdminContext,
+    type ExtensionViewer,
 } from './context';
 
 export { ExtensionErrorBoundary, ExtensionSuspense, withExtensionIsolation } from './ExtensionErrorBoundary';

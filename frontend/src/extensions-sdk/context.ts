@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { can } from '@/lib/can';
 import { useServer } from '@/components/server/ServerContext';
+import { useSession } from '@/state/session';
 import { useAdminPermissions } from '@/layouts/heldPermissions';
 import type { ServerDetail } from '@/api/servers';
 
@@ -56,5 +57,49 @@ export function useExtensionAdminContext(extensionId: string): ExtensionAdminCon
             can: (action: string) => can(held, `ext.${extensionId}.admin.${action}`),
         }),
         [held, isLoading, extensionId],
+    );
+}
+
+export interface ExtensionViewer {
+    /** Stable id for the signed-in account. Safe to key UI state on. */
+    uuid: string;
+    username: string;
+    email: string;
+    /** Avatar URL the panel already resolved, or '' when there is none. */
+    avatarUrl: string;
+}
+
+/**
+ * Who is looking at the page, for display.
+ *
+ * Deliberately four fields and no more. A package rendering a transcript, an
+ * audit trail or an author byline needs a name to put next to the viewer's own
+ * entries, and the alternative — writing "You" everywhere — loses the thing
+ * that makes a shared record readable.
+ *
+ * Nothing here decides anything. Roles, admin status and the access profile are
+ * absent on purpose: a package asking "is this person an admin" is asking the
+ * wrong question, because the answer it actually needs is whether they hold a
+ * specific permission, which is {@see useExtensionAdminContext}. And hiding UI
+ * is not authorization in either case — the backend FormRequest is.
+ *
+ * Null before the bootstrap has landed, which is a real state on a cold load
+ * rather than a signed-out one, so render a neutral label rather than treating
+ * it as absence of a user.
+ */
+export function useExtensionViewer(): ExtensionViewer | null {
+    const user = useSession(state => state.user);
+
+    return useMemo(
+        () =>
+            user === null
+                ? null
+                : {
+                      uuid: user.uuid,
+                      username: user.username,
+                      email: user.email,
+                      avatarUrl: user.avatar_url ?? '',
+                  },
+        [user],
     );
 }
