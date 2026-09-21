@@ -14,6 +14,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Everest\Services\Extensions\ExtensionQueueJournal;
 use Everest\Services\Extensions\ExtensionQueueRegistry;
 use Everest\Extensions\Jobs\Middleware\ExtensionEnabledGate;
 use Everest\Extensions\Jobs\Middleware\ExtensionConcurrencyLimit;
@@ -55,6 +56,9 @@ abstract class ExtensionJob implements ShouldQueue
     /** Where core's own extension jobs live. */
     private const CORE_NAMESPACE = 'Everest\\Extensions\\Jobs\\';
 
+    /** Runtime-only: payload serialization happens before JobQueueing. */
+    private ?string $pendingQueueReservationUuid = null;
+
     public function __construct()
     {
         $topology = app(QueueTopology::class);
@@ -62,6 +66,51 @@ abstract class ExtensionJob implements ShouldQueue
 
         $this->onQueue($topology->queueFor($lane));
         $this->onConnection($topology->connectionFor($lane));
+    }
+
+    /**
+     * Use a dispatch wrapper that can distinguish a backend push exception
+     * from a successful push and release only the former's reservation.
+     */
+    protected static function newPendingDispatch($job): ExtensionPendingDispatch
+    {
+        return new ExtensionPendingDispatch($job);
+    }
+
+    final public function trackQueueReservation(string $uuid): void
+    {
+        $this->pendingQueueReservationUuid = $uuid;
+    }
+
+    /** Called first in JobQueued, before confirmation bookkeeping can fail. */
+    final public function markQueuePushAccepted(): void
+    {
+        $this->pendingQueueReservationUuid = null;
+    }
+
+    final public function takeFailedQueueReservation(): ?string
+    {
+        $uuid = $this->pendingQueueReservationUuid;
+        $this->pendingQueueReservationUuid = null;
+
+        return $uuid;
+    }
+
+    /**
+     * Covers callers that bypass the SDK's static dispatch helper and retain
+     * no wrapper. Failure to clean up remains fail-closed as an in-flight row.
+     */
+    final public function __destruct()
+    {
+        if ($this->pendingQueueReservationUuid === null) {
+            return;
+        }
+
+        try {
+            app(ExtensionQueueJournal::class)->pushFailed($this);
+        } catch (\Throwable) {
+            // Destructors must not replace the original queue/backend error.
+        }
     }
 
     /**

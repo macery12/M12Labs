@@ -299,6 +299,46 @@ class ExtensionQueueContractTest extends IntegrationTestCase
         }
     }
 
+    /** A backend push exception must release its pre-enqueue reservation. */
+    public function testBackendPushFailureReconcilesTheOutstandingReservation(): void
+    {
+        $this->installFixture(new QueueDefinition(name: 'slow', maxOutstanding: 1));
+        Schema::rename('jobs', 'jobs_unavailable');
+
+        try {
+            try {
+                SlowFixtureJob::dispatch();
+                $this->fail('Dispatch should surface the backend push failure.');
+            } catch (\Illuminate\Database\QueryException) {
+                $this->addToAssertionCount(1);
+            }
+
+            $this->assertSame(0, ExtensionQueueJob::query()->where('extension_id', 'fixture_queue')->count());
+            $this->assertSame(0, app(ExtensionQueueRegistry::class)->outstanding('fixture_queue', 'slow'));
+        } finally {
+            Schema::rename('jobs_unavailable', 'jobs');
+        }
+    }
+
+    public function testTerminalTransitionReleasesTheAtomicOutstandingSlot(): void
+    {
+        $this->installFixture(new QueueDefinition(name: 'slow', maxOutstanding: 1));
+        SlowFixtureJob::dispatch();
+
+        $queue = app('queue')->connection('database');
+        $backendJob = $queue->pop(app(QueueTopology::class)->queueFor('extensions'));
+        $this->assertNotNull($backendJob);
+        app('queue.worker')->process('database', $backendJob, new WorkerOptions());
+
+        $this->assertSame(ExtensionQueueJob::STATUS_COMPLETED, ExtensionQueueJob::query()->value('status'));
+        $this->assertSame(0, app(ExtensionQueueRegistry::class)->outstanding('fixture_queue', 'slow'));
+
+        SlowFixtureJob::dispatch();
+
+        $this->assertSame(1, app(ExtensionQueueRegistry::class)->outstanding('fixture_queue', 'slow'));
+        $this->assertSame(1, DB::table('jobs')->count());
+    }
+
     /**
      * The uninstall guard. Deleting a package's class files while a worker
      * holds one of its jobs leaves a payload that can never be deserialized.
