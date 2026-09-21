@@ -125,7 +125,7 @@ class RouteServiceProvider extends ServiceProvider
             // the human's — see internalRateLimitKey() for why, and for how it
             // is split per extension.
             if (InternalDispatch::isInternal($request)) {
-                return Limit::perMinute(config('modules.ai.agent.tool_rate_limit', 240))
+                return Limit::perMinute(config('extensions.internal_rate_limit', 240))
                     ->by($this->internalRateLimitKey($request, $key));
             }
 
@@ -139,7 +139,7 @@ class RouteServiceProvider extends ServiceProvider
             $key = optional($request->user())->uuid ?: $request->ip();
 
             if (InternalDispatch::isInternal($request)) {
-                return Limit::perMinute(config('modules.ai.agent.tool_rate_limit', 240))
+                return Limit::perMinute(config('extensions.internal_rate_limit', 240))
                     ->by($this->internalRateLimitKey($request, $key));
             }
 
@@ -200,31 +200,6 @@ class RouteServiceProvider extends ServiceProvider
                             'code' => 'ThrottleRequestsException',
                             'status' => '429',
                             'detail' => 'Too many file diff requests. Please wait before saving again.',
-                        ],
-                    ],
-                ], 429);
-            });
-        });
-
-        RateLimiter::for('ai.agent', function (Request $request) {
-            $key = optional($request->user())->uuid ?: $request->ip();
-            $retrying = is_string($request->input('ticket')) && trim($request->input('ticket')) !== '';
-
-            return Limit::perMinutes(
-                max(1, (int) config('http.rate_limit.ai_agent_period', 1)),
-                max(1, (int) config(
-                    $retrying ? 'http.rate_limit.ai_agent_retry' : 'http.rate_limit.ai_agent',
-                    $retrying ? 120 : 10,
-                ))
-            )->by(($retrying ? 'ai-agent-retry:' : 'ai-agent:') . $key)->response(function () use ($retrying) {
-                return response()->json([
-                    'errors' => [
-                        [
-                            'code' => 'ThrottleRequestsException',
-                            'status' => '429',
-                            'detail' => $retrying
-                                ? 'Too many AI queue checks. Please wait before checking again.'
-                                : 'Too many AI agent requests. Please wait before starting another turn.',
                         ],
                     ],
                 ], 429);

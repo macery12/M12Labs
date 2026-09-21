@@ -1,7 +1,6 @@
 import { lazy } from 'react';
 import {
     Terminal,
-    Bot,
     FolderOpen,
     Database,
     Boxes,
@@ -25,7 +24,6 @@ const NetworkPage = lazy(() => import('@/pages/server/network/NetworkPage'));
 const SchedulesSection = lazy(() => import('@/pages/server/schedules/SchedulesSection'));
 const UsersSection = lazy(() => import('@/pages/server/users/UsersSection'));
 const SettingsPage = lazy(() => import('@/pages/server/settings/SettingsPage'));
-const AiPage = lazy(() => import('@/pages/server/ai/AiPage'));
 const DatabasesPage = lazy(() => import('@/pages/server/databases/DatabasesPage'));
 const BackupsPage = lazy(() => import('@/pages/server/backups/BackupsPage'));
 const ServerActivityPage = lazy(() => import('@/pages/server/activity/ServerActivityPage'));
@@ -41,7 +39,6 @@ import { extensionServerRoutes } from '@/pages/server/extensions/registry';
 // (console-focal); the rest remain placeholders.
 export const serverRoutes: RouteDef[] = [
     route('', { name: 'Console', icon: Terminal, permission: 'control.console', element: ServerOverviewPage, end: true }),
-    route('ai/*', { name: 'AI Assistant', icon: Bot, condition: f => f.ai.enabled && f.ai.feature_agent, element: AiPage }),
 
     route('files/*', { name: 'Files', icon: FolderOpen, permission: 'file.*', category: 'data', element: FilesSection }),
     route('databases/*', { name: 'Databases', icon: Database, permission: 'database.*', category: 'data', element: DatabasesPage }),

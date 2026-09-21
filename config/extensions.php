@@ -162,6 +162,23 @@ return [
         'max_concurrent_per_user' => (int) env('EXTENSIONS_STREAM_MAX_CONCURRENT_PER_USER', 4),
     ],
 
+    /*
+     * How many internally dispatched sub-requests one extension may make per
+     * minute, per user.
+     *
+     * A sub-request traverses the panel's real middleware stack, so it lands on
+     * `api.client` or `api.application` like any other request -- and without a
+     * bucket of its own, one package working through a list would spend the
+     * human's budget and lock them out of the panel they are watching it in.
+     *
+     * The number was the AI module's `agent.tool_rate_limit` and moved here
+     * when that module became a package: the budget is a property of internal
+     * dispatch, which is core's, not of whichever package happens to be using
+     * it. Per extension *and* per user, so two packages cannot starve each
+     * other and one user cannot spend another's.
+     */
+    'internal_rate_limit' => (int) env('EXTENSIONS_INTERNAL_RATE_LIMIT', 240),
+
     'queues' => [
         /*
          * Whether some enabled package declares a `longRunning` queue group.

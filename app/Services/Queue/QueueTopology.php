@@ -158,10 +158,6 @@ class QueueTopology
                 'connection' => $this->longConnection(),
                 'queue' => [$this->queueFor('mods')],
             ],
-            'supervisor-agent' => [
-                'connection' => $this->longConnection(),
-                'queue' => [$this->queueFor('agent')],
-            ],
             'supervisor-extensions-long' => [
                 'connection' => $this->longConnection(),
                 'queue' => [$this->queueFor('extensions-long')],

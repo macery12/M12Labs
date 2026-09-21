@@ -1,5 +1,5 @@
-import { lazy, Suspense, useMemo } from 'react';
-import { useMatch, useParams } from 'react-router-dom';
+import { useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AppShell } from '@/components/shell/AppShell';
 import { RequireAuth } from './RequireAuth';
@@ -11,10 +11,6 @@ import { ServerContext } from '@/components/server/ServerContext';
 import { ServerHeader } from '@/components/server/ServerHeader';
 import { useServerSocketConnection } from '@/hooks/useServerSocket';
 import { ServerExtensionSlot } from '@/extensions/slots/registry';
-
-const AgentDrawer = lazy(() =>
-    import('@/components/ai/AgentDrawer').then(module => ({ default: module.AgentDrawer })),
-);
 
 function ServerLoadingHeader() {
     return (
@@ -40,8 +36,6 @@ function ServerLoadingHeader() {
 export default function ServerLayout() {
     const { id } = useParams();
     const flags = useFlags(s => s.everest);
-    const agentEnabled = Boolean(flags?.ai.enabled && flags.ai.feature_agent);
-    const onAiPage = Boolean(useMatch('/server/:id/ai/*'));
 
     const { data: server, isLoading, isError } = useQuery({
         queryKey: ['server', id],
@@ -74,14 +68,6 @@ export default function ServerLayout() {
                         beforeContent={<ServerExtensionSlot name="server-layout.banner" />}
                     />
                     <ServerExtensionSlot name="server-layout.overlay" />
-                    {/* Keep the disabled feature out of the browser graph. The
-                        drawer remains inside the provider so an enabled agent
-                        reaches the same server context the pages do. */}
-                    {agentEnabled && !onAiPage && (
-                        <Suspense fallback={null}>
-                            <AgentDrawer />
-                        </Suspense>
-                    )}
                 </ServerContext.Provider>
             )}
         </RequireAuth>

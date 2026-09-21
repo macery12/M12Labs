@@ -48,7 +48,6 @@ const accountRouteEntries = [
 const adminBillingSection = 'src/pages/admin/billing/BillingSection.tsx';
 const adminInfrastructureSection = 'src/pages/admin/infrastructure/InfrastructureSection.tsx';
 const adminNestsSection = 'src/pages/admin/nests/NestsSection.tsx';
-const adminAiSection = 'src/pages/admin/ai/AiSection.tsx';
 const adminEmailSection = 'src/pages/admin/email/EmailSection.tsx';
 const adminMarketplaceSection = 'src/pages/admin/marketplace/MarketplaceSection.tsx';
 const serverFilesSection = 'src/pages/server/files/FilesSection.tsx';
@@ -84,15 +83,6 @@ const adminRouteEntries = [
     [/^\/admin\/infrastructure\/servers\/[^/]+$/, [adminInfrastructureSection, 'src/pages/admin/infrastructure/server/ServerDetailPage.tsx']],
     [/^\/admin\/nests\/(?:[^/]+\/eggs\/(?:new|[^/]+))$/, [adminNestsSection, 'src/pages/admin/nests/egg/EggEditorPage.tsx']],
     [/^\/admin\/nests(?:\/[^/]+)?$/, [adminNestsSection, 'src/pages/admin/nests/NestsWorkspace.tsx']],
-    [/^\/admin\/ai$/, [adminAiSection, 'src/pages/admin/ai/pages/OverviewPage.tsx']],
-    [/^\/admin\/ai\/provider$/, [adminAiSection, 'src/pages/admin/ai/pages/ProviderPage.tsx']],
-    [/^\/admin\/ai\/generation$/, [adminAiSection, 'src/pages/admin/ai/pages/GenerationPage.tsx']],
-    [/^\/admin\/ai\/agent$/, [adminAiSection, 'src/pages/admin/ai/pages/AgentPage.tsx']],
-    [/^\/admin\/ai\/tools$/, [adminAiSection, 'src/pages/admin/ai/pages/ToolsPage.tsx']],
-    [/^\/admin\/ai\/privacy$/, [adminAiSection, 'src/pages/admin/ai/pages/PrivacyPage.tsx']],
-    [/^\/admin\/ai\/performance$/, [adminAiSection, 'src/pages/admin/ai/pages/PerformancePage.tsx']],
-    [/^\/admin\/ai\/limits$/, [adminAiSection, 'src/pages/admin/ai/pages/LimitsPage.tsx']],
-    [/^\/admin\/ai\/logs$/, [adminAiSection, 'src/pages/admin/ai/pages/LogsPage.tsx']],
     [/^\/admin\/email$/, [adminEmailSection, 'src/pages/admin/email/pages/OverviewPage.tsx']],
     [/^\/admin\/email\/smtp$/, [adminEmailSection, 'src/pages/admin/email/pages/SmtpPage.tsx']],
     [/^\/admin\/email\/resend$/, [adminEmailSection, 'src/pages/admin/email/pages/ResendPage.tsx']],

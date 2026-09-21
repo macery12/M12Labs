@@ -7,7 +7,6 @@ import {
     ShieldCheck,
     CreditCard,
     LifeBuoy,
-    Bot,
     Boxes,
     Mail,
     Webhook,
@@ -22,7 +21,6 @@ import {
     Link2,
     Users,
     UserCog,
-    Sparkles,
     ListOrdered,
 } from 'lucide-react';
 import { lazy } from 'react';
@@ -58,8 +56,6 @@ const AlertsSection = lazy(() => import('@/pages/admin/alerts/AlertsSection'));
 const OverviewPage = lazy(() => import('@/pages/admin/overview/OverviewPage'));
 const DatabasesSection = lazy(() => import('@/pages/admin/databases/DatabasesSection'));
 const FeaturesSection = lazy(() => import('@/pages/admin/features/FeaturesSection'));
-const AiSection = lazy(() => import('@/pages/admin/ai/AiSection'));
-const AssistantPage = lazy(() => import('@/pages/admin/assistant/AssistantPage'));
 const LinksSection = lazy(() => import('@/pages/admin/links/LinksSection'));
 const AdminIndexRedirect = lazy(() => import('@/pages/admin/overview/AdminIndexRedirect'));
 const QueuesPage = lazy(() => import('@/pages/admin/queues/QueuesPage'));
@@ -68,21 +64,6 @@ const QueuesPage = lazy(() => import('@/pages/admin/queues/QueuesPage'));
 // Seeded from V1_UI_Map §3.4. All entries are placeholders for Phase 1.
 export const adminRoutes: RouteDef[] = [
     route('', { element: AdminIndexRedirect }),
-
-    // The admin assistant, deliberately first and deliberately category-less.
-    // `buildNav` groups in registry order and renders no heading for an entry
-    // with no category, so this lands alone above General rather than as one
-    // more item in a list of twenty. It is the only page here you hold a
-    // conversation with; burying it under a heading was what made it feel like
-    // a settings screen.
-    route('assistant', {
-        name: 'AI Assistant',
-        icon: Sparkles,
-        permission: 'ai.read',
-        condition: f => f.ai.enabled && f.ai.feature_admin_agent,
-        end: true,
-        element: AssistantPage,
-    }),
 
     route('overview', { name: 'Overview', icon: LayoutDashboard, category: 'general', permission: 'overview.read', end: true, element: OverviewPage }),
     route('settings/*', { name: 'Settings', icon: Settings, category: 'general', permission: 'settings.read', element: SettingsSection }),
@@ -105,7 +86,6 @@ export const adminRoutes: RouteDef[] = [
 
     route('billing/*', { name: 'Billing', icon: CreditCard, category: 'modules', permission: 'billing.read', condition: f => f.billing.enabled, element: BillingSection }),
     route('tickets/*', { name: 'Tickets', icon: LifeBuoy, category: 'modules', permission: 'tickets.read', condition: f => f.tickets.enabled, element: TicketsSection }),
-    route('ai/*', { name: 'AI', icon: Bot, category: 'modules', permission: 'ai.read', condition: f => f.ai.enabled, element: AiSection }),
     route('marketplace/*', { name: 'Marketplace', icon: Boxes, category: 'modules', permission: 'mods.read', condition: f => f.mods.enabled, element: MarketplaceSection }),
     route('email/*', { name: 'Email', icon: Mail, category: 'modules', permission: 'email.read', condition: f => !!f.email.module_enabled, element: EmailSection }),
     route('webhooks/*', { name: 'Webhooks', icon: Webhook, category: 'modules', permission: 'webhooks.read', condition: f => f.webhooks.enabled, element: WebhooksSection }),

@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Bot, Boxes, Mail, Webhook, Puzzle, LifeBuoy, CreditCard } from 'lucide-react';
+import { Boxes, Mail, Webhook, Puzzle, LifeBuoy, CreditCard } from 'lucide-react';
 import type { EverestConfiguration } from '@/lib/globals';
 
 // Single source of truth for the toggleable optional modules surfaced on the
@@ -7,7 +7,6 @@ import type { EverestConfiguration } from '@/lib/globals';
 // Billing is included so it round-trips through the same API, but the page
 // renders it on its own (a "disable billing completely" master switch).
 export type FeatureKey =
-    | 'ai'
     | 'mods'
     | 'email'
     | 'webhooks'
@@ -29,13 +28,6 @@ export interface FeatureDef {
 
 // Optional modules shown in the toggle grid (billing is rendered separately).
 export const MODULE_FEATURES: FeatureDef[] = [
-    {
-        key: 'ai',
-        icon: Bot,
-        labelKey: 'admin.features.items.ai.label',
-        descKey: 'admin.features.items.ai.desc',
-        read: f => !!f.ai?.enabled,
-    },
     {
         key: 'mods',
         icon: Boxes,
@@ -84,9 +76,9 @@ export const BILLING_FEATURE: FeatureDef = {
 export const ALL_FEATURES: FeatureDef[] = [...MODULE_FEATURES, BILLING_FEATURE];
 export const FEATURE_KEYS: FeatureKey[] = ALL_FEATURES.map(f => f.key);
 
-// The four modules the panel ships disabled; everything else is on by default.
+// The three modules the panel ships disabled; everything else is on by default.
 // Used by the "Restore defaults" preset (mirrors the config() shipping values).
-const DISABLED_BY_DEFAULT: FeatureKey[] = ['ai', 'mods', 'email', 'webhooks'];
+const DISABLED_BY_DEFAULT: FeatureKey[] = ['mods', 'email', 'webhooks'];
 
 export const PRESETS: Record<'bareMinimum' | 'everything' | 'defaults', FeatureFlags> = {
     bareMinimum: Object.fromEntries(FEATURE_KEYS.map(k => [k, false])) as FeatureFlags,
@@ -105,7 +97,6 @@ export function readFeatureFlags(f: EverestConfiguration): FeatureFlags {
 export function applyFeatureFlags(everest: EverestConfiguration, flags: FeatureFlags): EverestConfiguration {
     return {
         ...everest,
-        ai: { ...everest.ai, enabled: flags.ai },
         mods: { ...everest.mods, enabled: flags.mods },
         email: { ...everest.email, module_enabled: flags.email },
         webhooks: { ...everest.webhooks, enabled: flags.webhooks },

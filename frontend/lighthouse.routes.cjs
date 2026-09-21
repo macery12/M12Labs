@@ -35,7 +35,6 @@ const routes = [
 
     // Server pages and their nested route pages.
     page('server', 'Console', '/server/fixture'),
-    page('server', 'AI assistant', '/server/fixture/ai'),
     page('server', 'Files', '/server/fixture/files'),
     page('server', 'New file', '/server/fixture/files/new'),
     page('server', 'Edit file', '/server/fixture/files/edit/lighthouse.txt'),
@@ -57,7 +56,6 @@ const routes = [
 
     // Admin primary pages.
     page('admin', 'Admin overview', '/admin/overview'),
-    page('admin', 'Admin assistant', '/admin/assistant'),
     page('admin', 'Panel settings', '/admin/settings'),
     page('admin', 'Feature settings', '/admin/features'),
     page('admin', 'Landing editor', '/admin/landing'),
@@ -94,15 +92,6 @@ const routes = [
     // Feature-module administration and nested tabs.
     page('admin', 'Tickets', '/admin/tickets'),
     page('admin', 'Ticket detail', '/admin/tickets/1'),
-    page('admin', 'AI overview', '/admin/ai'),
-    page('admin', 'AI provider', '/admin/ai/provider'),
-    page('admin', 'AI generation', '/admin/ai/generation'),
-    page('admin', 'AI agent', '/admin/ai/agent'),
-    page('admin', 'AI tools', '/admin/ai/tools'),
-    page('admin', 'AI privacy', '/admin/ai/privacy'),
-    page('admin', 'AI performance', '/admin/ai/performance'),
-    page('admin', 'AI limits', '/admin/ai/limits'),
-    page('admin', 'AI logs', '/admin/ai/logs'),
     page('admin', 'Marketplace overview', '/admin/marketplace'),
     page('admin', 'Marketplace settings', '/admin/marketplace/settings'),
     page('admin', 'Marketplace providers', '/admin/marketplace/providers'),

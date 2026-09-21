@@ -137,7 +137,6 @@ return [
         'schedules' => env('QUEUE_SCHEDULES', 'schedules'),
         'mail' => env('QUEUE_MAIL', 'mail'),
         'mods' => env('QUEUE_MODS', 'mods'),
-        'agent' => env('QUEUE_AGENT', 'agent'),
         'standard' => env('QUEUE_STANDARD', 'standard'),
 
         // Declared last on purpose. supervisor-interactive runs with
@@ -167,7 +166,7 @@ return [
     | short `retry_after` and hand a still-running job to a second worker.
     */
 
-    'long_lanes' => ['mods', 'agent', 'extensions-long'],
+    'long_lanes' => ['mods', 'extensions-long'],
 
     /*
     | Lanes that only need a worker when a module is switched on. The mods
@@ -180,12 +179,6 @@ return [
 
     'lane_requires' => [
         'mods' => 'modules.mods.enabled',
-
-        // Durable agent turns, not the agent itself. On an install that has
-        // deliberately switched execution back to request-bound, nothing is ever
-        // dispatched here and an unstaffed lane is the correct state rather
-        // than a fault to report.
-        'agent' => 'modules.ai.agent.durable',
 
         // Not an operator setting: ExtensionServiceProvider writes this during
         // boot, true only while some enabled package declares a long-running
@@ -227,8 +220,6 @@ return [
 
         Everest\Jobs\InstallModpackJob::class => 'mods',
         Everest\Jobs\DownloadModJob::class => 'mods',
-
-        Everest\Jobs\AI\RunAgentTurnJob::class => 'agent',
     ],
 
     /*
@@ -261,10 +252,6 @@ return [
         'mods' => [
             'title' => 'Modpack installs',
             'summary' => 'Modpack and mod downloads. A single job here legitimately runs for hours.',
-        ],
-        'agent' => [
-            'title' => 'AI assistant turns',
-            'summary' => 'Durable assistant turns and their tool calls. Never retried automatically.',
         ],
         'standard' => [
             'title' => 'Everything else',
@@ -302,10 +289,6 @@ return [
         'supervisor-mods' => [
             'title' => 'Modpack installs',
             'summary' => 'One process on the long connection. A job here may legitimately run for hours.',
-        ],
-        'supervisor-agent' => [
-            'title' => 'AI assistant turns',
-            'summary' => 'Sized to the inference concurrency the AI gate already enforces.',
         ],
         'supervisor-extensions-long' => [
             'title' => 'Long extension jobs',
@@ -361,11 +344,6 @@ return [
         Everest\Jobs\DownloadModJob::class => [
             'title' => 'Download mod',
             'summary' => "Fetches a single mod file into a server's mod directory.",
-        ],
-
-        Everest\Jobs\AI\RunAgentTurnJob::class => [
-            'title' => 'Run AI assistant turn',
-            'summary' => 'Executes one durable assistant turn, including its tool calls.',
         ],
     ],
 

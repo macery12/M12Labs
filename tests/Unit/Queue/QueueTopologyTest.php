@@ -250,7 +250,6 @@ class QueueTopologyTest extends TestCase
                 'schedules' => 'custom-schedules',
                 'mail' => 'custom-mail',
                 'mods' => 'custom-mods',
-                'agent' => 'custom-agent',
                 'standard' => 'custom-standard',
             ],
         ]);
@@ -271,10 +270,6 @@ class QueueTopologyTest extends TestCase
             'connection' => 'custom-long',
             'queue' => ['custom-mods'],
         ], $supervisors['supervisor-mods']);
-        $this->assertSame([
-            'connection' => 'custom-long',
-            'queue' => ['custom-agent'],
-        ], $supervisors['supervisor-agent']);
     }
 
     public function testBootedHorizonConfigMatchesTheResolvedTopology(): void

@@ -105,16 +105,6 @@ class EverestComposer
                 ],
                 'verification_rules' => $this->emailVerificationGate->getRules(),
             ],
-            'ai' => [
-                'enabled' => boolval(config('modules.ai.enabled', false)),
-                // The agent is gated separately from the assistant: it can act
-                // on a server, so turning chat on must not turn it on too.
-                'feature_agent' => boolval(config('modules.ai.agent.enabled', false)),
-                // And the admin assistant separately again, because it acts on
-                // the panel itself rather than on one customer's server.
-                'feature_admin_agent' => boolval(config('modules.ai.agent.enabled', false))
-                    && boolval(config('modules.ai.agent.admin_enabled', false)),
-            ],
             'webhooks' => [
                 'enabled' => boolval(config('modules.webhooks.enabled', false)),
                 'url' => !empty(config('modules.webhooks.url')),

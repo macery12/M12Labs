@@ -3,7 +3,6 @@
 namespace Everest\Tests\Unit\Queue;
 
 use Everest\Tests\TestCase;
-use Everest\Jobs\AI\RunAgentTurnJob;
 use Everest\Jobs\Schedule\RunTaskJob;
 use Everest\Services\Queue\JobCatalogue;
 
@@ -51,10 +50,16 @@ class JobCatalogueTest extends TestCase
         $this->assertSame('acme.jobs.sync_billing', $this->catalogue()->describe('Acme\\Jobs\\SyncBillingJob')['key']);
     }
 
-    /** Str::snake('AI') is 'a_i', which is not a name anyone would recognise. */
+    /**
+     * Str::snake('AI') is 'a_i', which is not a name anyone would recognise.
+     *
+     * A synthetic class, like the sibling above: the panel's own acronym
+     * namespace left with the AI module, and an extension's is exactly the
+     * case this has to keep working for.
+     */
     public function testAcronymSegmentsStayIntactInTheKey(): void
     {
-        $this->assertSame('ai.run_agent_turn', $this->catalogue()->describe(RunAgentTurnJob::class)['key']);
+        $this->assertSame('acme.ai.run_agent_turn', $this->catalogue()->describe('Acme\\AI\\RunAgentTurnJob')['key']);
     }
 
     public function testEveryRoutedJobIsCatalogued(): void

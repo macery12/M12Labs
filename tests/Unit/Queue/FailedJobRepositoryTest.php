@@ -205,8 +205,6 @@ class FailedJobRepositoryTest extends TestCase
      */
     public function testAnExceptionMessageIsMaskedBeforeItReachesTheList(): void
     {
-        config(['modules.ai.privacy.enabled' => false]);
-
         $this->recordFailure(exception: 'QueryException: SQLSTATE[23000] (SQL: insert into users (password) '
             . 'values ($2y$10$abcdefghijklmnopqrstuvABCDEFGHIJKLMNOPQRSTUVWXYZ01234))');
 
@@ -219,8 +217,6 @@ class FailedJobRepositoryTest extends TestCase
 
     public function testTheTraceIsMaskedToo(): void
     {
-        config(['modules.ai.privacy.enabled' => false]);
-
         $uuid = $this->recordFailure(exception: "RuntimeException: refused\n#0 connect(mysql://panel:sup3rSecret@db/panel)");
 
         $this->assertStringNotContainsString('sup3rSecret', $this->repository()->find($uuid)['exception']);

@@ -108,9 +108,6 @@ class AdminRole extends Model
     public const TICKETS_DELETE = 'tickets.delete';
     public const TICKETS_MESSAGE = 'tickets.message';
 
-    public const AI_READ = 'ai.read';
-    public const AI_UPDATE = 'ai.update';
-
     public const MODS_READ = 'mods.read';
     public const MODS_UPDATE = 'mods.update';
 
@@ -286,13 +283,6 @@ class AdminRole extends Model
                 'update' => 'Update an existing ticket.',
                 'delete' => 'Delete an existing ticket.',
                 'message' => 'Send a message in a ticket.',
-            ],
-        ],
-        'ai' => [
-            'description' => 'Permissions to configure the AI module.',
-            'keys' => [
-                'read' => 'View the Admin AI console.',
-                'update' => 'Control the AI settings.',
             ],
         ],
         'mods' => [

@@ -17,7 +17,6 @@ import {
     KeyRound,
     CreditCard,
     LifeBuoy,
-    Bot,
     Webhook,
     Puzzle,
     Mail,
@@ -92,7 +91,6 @@ export const QUICK_TABS: QuickTab[] = [
         items: [
             { to: '/admin/billing', name: 'Billing', icon: CreditCard, permission: 'billing.read', condition: f => f.billing.enabled },
             { to: '/admin/tickets', name: 'Tickets', icon: LifeBuoy, permission: 'tickets.read', condition: f => f.tickets.enabled },
-            { to: '/admin/ai', name: 'AI', icon: Bot, permission: 'ai.read', condition: f => f.ai.enabled },
             { to: '/admin/marketplace', name: 'Marketplace', icon: Boxes, permission: 'mods.read', condition: f => f.mods.enabled },
             { to: '/admin/webhooks', name: 'Webhooks', icon: Webhook, permission: 'webhooks.read', condition: f => f.webhooks.enabled },
             { to: '/admin/extensions', name: 'Extensions', icon: Puzzle, permission: 'extensions.read', condition: f => f.extensions.enabled },

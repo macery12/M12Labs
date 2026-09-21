@@ -29,29 +29,21 @@ class PiiRedactorEngineTest extends TestCase
     {
         parent::setUp();
 
-        // Through forget() rather than a query: the settings repository caches
-        // resolved keys on a *static*, so deleting the rows underneath it would
-        // leave a previous test's value in place for the rest of the process.
-        Setting::forget('settings::modules:ai:privacy:enabled');
-        Setting::forget('settings::modules:ai:privacy:categories');
-
         $this->engine = app(PiiRedactor::class);
     }
 
     /**
      * The regression test for the coupling this class was extracted to remove.
      *
-     * FailedJobRedactor used to inherit the AI module's off switch, so turning
-     * off redaction for the assistant also turned it off on the admin queue
-     * page. Nothing below reads a setting, so there is nothing left to inherit.
+     * FailedJobRedactor used to inherit an off switch belonging to the module
+     * that owned the redactor, so turning off redaction for the assistant also
+     * turned it off on the admin queue page. That module is an extension now
+     * and could be uninstalled entirely; this asserts the property that made
+     * either possible -- the engine reads no setting at all, so there is
+     * nothing left to inherit.
      */
-    public function testTheEngineIgnoresTheAiModulesOffSwitch(): void
+    public function testTheEngineReadsNoSettingOfItsOwn(): void
     {
-        Setting::set('settings::modules:ai:privacy:enabled', '0');
-        Setting::set('settings::modules:ai:privacy:categories', json_encode(['name']));
-        config(['modules.ai.privacy.enabled' => false]);
-        config(['modules.ai.privacy.categories' => ['name']]);
-
         $out = $this->engine->redact(['email' => 'jo@example.com'], new RedactionMap());
 
         $this->assertMatchesRegularExpression('/^\[email_[0-9a-f]{6,}]$/', $out['email']);

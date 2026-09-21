@@ -3,16 +3,13 @@
 namespace Everest\Console;
 
 use Everest\Models\ActivityLog;
-use Everest\Services\AI\ProviderFactory;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Console\PruneCommand;
-use Everest\Console\Commands\AI\WarmAiModelCommand;
 use Everest\Console\Commands\Billing\CleanupOrdersCommand;
 use Everest\Console\Commands\Billing\ExpireCouponsCommand;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Everest\Console\Commands\Billing\ExpireInvoicesCommand;
 use Everest\Console\Commands\Billing\ExpirePdfCacheCommand;
-use Everest\Console\Commands\AI\PruneAiConversationsCommand;
 use Everest\Console\Commands\Schedule\ProcessRunnableCommand;
 use Everest\Console\Commands\Email\ProcessDeferredEmailsCommand;
 use Everest\Console\Commands\Auth\ProcessJGuardActivationsCommand;
@@ -63,14 +60,6 @@ class Kernel extends ConsoleKernel
         // Execute scheduled commands for servers every minute, as if there was a normal cron running.
         $schedule->command(ProcessRunnableCommand::class)->everyMinute()->withoutOverlapping();
         $schedule->command(CleanServiceBackupFilesCommand::class)->daily();
-        $schedule->command(PruneAiConversationsCommand::class)->hourly()->withoutOverlapping();
-        // Re-assert Ollama keep_alive before it lapses. Do not launch a child
-        // process for hosted providers or when warm-up is disabled; the command
-        // repeats this guard for manual invocations and settings-change races.
-        $schedule->command(WarmAiModelCommand::class)
-            ->everyFiveMinutes()
-            ->when(fn (ProviderFactory $factory): bool => WarmAiModelCommand::shouldRun($factory))
-            ->withoutOverlapping();
 
         if (config('backups.prune_age')) {
             // Every 30 minutes, run the backup pruning command so that any abandoned backups can be deleted.

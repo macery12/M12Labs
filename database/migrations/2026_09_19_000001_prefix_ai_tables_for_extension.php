@@ -52,8 +52,14 @@ return new class () extends Migration {
             return;
         }
 
-        $state = $hasFrom ? 'both tables exist' : 'neither table exists';
+        if (!$hasFrom && !$hasTo) {
+            // A fresh install. The migrations that created these tables left
+            // with the module, so there is nothing here to rename and never
+            // was -- only an install that predates the extension has anything
+            // for this to do.
+            return;
+        }
 
-        throw new RuntimeException(sprintf('Cannot rename AI table "%s" to "%s": %s.', $from, $to, $state));
+        throw new RuntimeException(sprintf('Cannot rename AI table "%s" to "%s": both tables exist.', $from, $to));
     }
 };

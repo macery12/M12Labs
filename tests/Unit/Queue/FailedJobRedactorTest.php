@@ -13,22 +13,16 @@ use Everest\Services\Queue\FailedJobRedactor;
  * one that catches people out: Laravel interpolates a query's bindings into the
  * QueryException message, so a failed write stores its column values verbatim.
  *
- * The AI module's privacy setting is switched off throughout, and that is now
- * the assertion rather than the setup: redaction here used to run the fuzzy
- * pass only when that setting was on, so an admin page got more revealing
- * because somebody changed a setting in a different module. The engine is
- * core's now and takes its categories as an argument, so both passes run
- * whatever the AI module is configured to do -- or whether it is installed.
+ * Nothing here configures a privacy setting, and that absence is the
+ * assertion rather than an omission: redaction on this page used to run its
+ * fuzzy pass only while the AI module's switch was on, so an admin page got
+ * more revealing because somebody changed a setting in a different module.
+ * The engine is core's now and takes its categories as an argument, so both
+ * passes run whatever any extension is configured to do -- or whether one is
+ * installed at all.
  */
 class FailedJobRedactorTest extends TestCase
 {
-    public function setUp(): void
-    {
-        parent::setUp();
-
-        config(['modules.ai.privacy.enabled' => false]);
-    }
-
     private function redactor(): FailedJobRedactor
     {
         return $this->app->make(FailedJobRedactor::class);
@@ -55,7 +49,7 @@ class FailedJobRedactorTest extends TestCase
         $this->assertMatchesRegularExpression(
             '/^\[email_[0-9a-f]{6,}]$/',
             $out['data']['to'],
-            'Personal data is the engine, and it runs with the AI module switched off.'
+            'Personal data is the engine, and it runs with no module configuring it.'
         );
         $this->assertSame('SendEmailJob', $out['data']['commandName'], 'Masking is not for everything.');
     }
