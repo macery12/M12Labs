@@ -130,10 +130,14 @@ final class InternalDispatch
                 onBehalfOf: $this->extensionId,
             );
         } catch (InternalDispatchException $e) {
+            // A status code so every caller has something to branch on, and
+            // the reason beside it so a caller that cares can tell "the panel
+            // failed" from "this request was never sent".
             return new InternalResponse(
                 status: $e->reason === InternalDispatchException::REASON_DEADLINE ? 504 : 500,
                 json: null,
                 body: $e->getMessage(),
+                refusedReason: $e->reason,
             );
         }
 
