@@ -2,8 +2,8 @@
 
 namespace Everest\Services\AI\Tools;
 
-use Everest\Models\Setting;
 use Illuminate\Support\Str;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\Access\InternalRequest;
 use Everest\Services\Access\InternalDispatch;
 use Symfony\Component\HttpFoundation\Response;
@@ -79,10 +79,7 @@ class ToolExecutor
      */
     protected function nodeTimeout(?int $remainingSeconds): int
     {
-        $ceiling = max(5, (int) Setting::get(
-            'settings::modules:ai:agent:max_tool_seconds',
-            config('modules.ai.agent.max_tool_seconds', 90)
-        ));
+        $ceiling = max(5, AiConfiguration::integer('agent.max_tool_seconds', 90));
 
         return $remainingSeconds === null ? $ceiling : max(1, min($ceiling, $remainingSeconds));
     }

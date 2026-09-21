@@ -3,7 +3,6 @@
 namespace Everest\Http\Controllers\Api\Client\Servers;
 
 use Everest\Models\Server;
-use Everest\Models\Setting;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -11,6 +10,7 @@ use Everest\Models\AiConversation;
 use Everest\Models\AiPendingAction;
 use Everest\Services\AI\Data\AiMessage;
 use Everest\Services\AI\Tools\RiskGate;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Agent\AgentRunner;
 use Everest\Services\AI\Agent\AgentContext;
@@ -432,21 +432,11 @@ class AgentController extends ClientApiController
     /** The customer-agent kill switches apply equally to every account. */
     protected function assertAgentEnabled(Request $request): void
     {
-        $enabled = filter_var(
-            Setting::get('settings::modules:ai:enabled', config('modules.ai.enabled', false)),
-            FILTER_VALIDATE_BOOLEAN
-        );
-
-        if (!$enabled) {
+        if (!AiConfiguration::boolean('enabled')) {
             abort(403, 'The AI module is not enabled.');
         }
 
-        $agentEnabled = filter_var(
-            Setting::get('settings::modules:ai:agent:enabled', config('modules.ai.agent.enabled', false)),
-            FILTER_VALIDATE_BOOLEAN
-        );
-
-        if (!$agentEnabled) {
+        if (!AiConfiguration::boolean('agent.enabled')) {
             abort(403, 'The AI agent has been disabled by the administrator.');
         }
     }

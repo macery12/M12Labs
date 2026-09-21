@@ -2,7 +2,7 @@
 
 namespace Everest\Services\AI\Tools;
 
-use Everest\Models\Setting;
+use Everest\Services\AI\AiConfiguration;
 
 /**
  * Resolves the tier a tool call actually runs at.
@@ -105,15 +105,7 @@ class RiskGate
      */
     public function overrides(): array
     {
-        $stored = Setting::get('settings::modules:ai:risk_overrides');
-
-        if (!is_string($stored) || $stored === '') {
-            return [];
-        }
-
-        $decoded = json_decode($stored, true);
-
-        return is_array($decoded) ? $decoded : [];
+        return AiConfiguration::list('risk_overrides');
     }
 
     /**
@@ -122,14 +114,6 @@ class RiskGate
      */
     public function disabledTools(): array
     {
-        $stored = Setting::get('settings::modules:ai:disabled_tools');
-
-        if (!is_string($stored) || $stored === '') {
-            return [];
-        }
-
-        $decoded = json_decode($stored, true);
-
-        return is_array($decoded) ? array_values(array_filter($decoded, 'is_string')) : [];
+        return array_values(array_filter(AiConfiguration::list('disabled_tools'), 'is_string'));
     }
 }

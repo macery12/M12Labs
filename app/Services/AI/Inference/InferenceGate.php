@@ -2,10 +2,10 @@
 
 namespace Everest\Services\AI\Inference;
 
-use Everest\Models\Setting;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Data\ProviderConfig;
 use Everest\Services\AI\Providers\OllamaProvider;
@@ -631,9 +631,7 @@ class InferenceGate
      */
     public function slots(): int
     {
-        $configured = $this->setting('concurrency:slots', config('modules.ai.concurrency.slots'));
-
-        return max(1, (int) ($configured ?: 2));
+        return max(1, AiConfiguration::integer('concurrency.slots') ?: 2);
     }
 
     /**
@@ -644,10 +642,7 @@ class InferenceGate
      */
     public function maxQueueDepth(): int
     {
-        return max(0, (int) $this->setting(
-            'concurrency:queue_depth',
-            config('modules.ai.concurrency.queue_depth', 20)
-        ));
+        return max(0, AiConfiguration::integer('concurrency.queue_depth', 20));
     }
 
     /**
@@ -655,12 +650,12 @@ class InferenceGate
      */
     public function maxWaitSeconds(): int
     {
-        return max(5, (int) $this->setting('concurrency:max_wait_seconds', config('modules.ai.concurrency.max_wait_seconds', 120)));
+        return max(5, AiConfiguration::integer('concurrency.max_wait_seconds', 120));
     }
 
     public function perUserLimit(): int
     {
-        return (int) $this->setting('concurrency:per_user', config('modules.ai.concurrency.per_user', 1));
+        return AiConfiguration::integer('concurrency.per_user', 1);
     }
 
     /**
@@ -670,7 +665,7 @@ class InferenceGate
      */
     protected function leaseTtlSeconds(): int
     {
-        $wall = (int) $this->setting('agent:max_wall_seconds', config('modules.ai.agent.max_wall_seconds', 180));
+        $wall = AiConfiguration::integer('agent.max_wall_seconds', 180);
 
         return max(60, $wall) + 60;
     }
@@ -681,11 +676,6 @@ class InferenceGate
     protected function reservationTtlSeconds(): int
     {
         return $this->maxWaitSeconds() + $this->leaseTtlSeconds();
-    }
-
-    protected function setting(string $key, mixed $default = null): mixed
-    {
-        return Setting::get('settings::modules:ai:' . $key, $default);
     }
 
     /**

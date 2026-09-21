@@ -2,7 +2,6 @@
 
 namespace Everest\Services\AI\Agent;
 
-use Everest\Models\Setting;
 use Everest\Facades\LogBatch;
 use Everest\Models\AiToolCall;
 use Everest\Models\AiPendingAction;
@@ -11,6 +10,7 @@ use Everest\Services\AI\Data\AiTool;
 use Everest\Services\AI\Data\AiMessage;
 use Everest\Services\AI\Data\AiRequest;
 use Everest\Services\AI\Tools\RiskGate;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Tools\ToolResult;
 use Everest\Services\Access\DelegatedGrant;
@@ -2438,14 +2438,14 @@ class AgentRunner
 
     public function maxSteps(): int
     {
-        return max(1, (int) $this->setting('agent:max_steps', config('modules.ai.agent.max_steps', 12)));
+        return max(1, AiConfiguration::integer('agent.max_steps', 12));
     }
 
     public function maxWallSeconds(): int
     {
         return min(self::MAX_WALL_SECONDS, max(
             self::MIN_WALL_SECONDS,
-            (int) $this->setting('agent:max_wall_seconds', config('modules.ai.agent.max_wall_seconds', 180)),
+            AiConfiguration::integer('agent.max_wall_seconds', 180),
         ));
     }
 
@@ -2457,7 +2457,7 @@ class AgentRunner
 
     protected function maxRepairs(): int
     {
-        return max(0, (int) $this->setting('agent:max_repairs', config('modules.ai.agent.max_repairs', 2)));
+        return max(0, AiConfiguration::integer('agent.max_repairs', 2));
     }
 
     /**
@@ -2472,16 +2472,13 @@ class AgentRunner
     {
         return max(
             SharedTools::MIN_BATCH_CALLS,
-            (int) $this->setting('agent:max_batch_calls', config('modules.ai.agent.max_batch_calls', 25))
+            AiConfiguration::integer('agent.max_batch_calls', 25)
         );
     }
 
     protected function allowDestructiveBatches(): bool
     {
-        return (bool) $this->setting(
-            'agent:allow_destructive_batches',
-            config('modules.ai.agent.allow_destructive_batches', false)
-        );
+        return AiConfiguration::boolean('agent.allow_destructive_batches');
     }
 
     /**
@@ -2535,16 +2532,11 @@ class AgentRunner
      */
     protected function reasoningEnabled(): bool
     {
-        return (bool) $this->setting('agent:reasoning', config('modules.ai.agent.reasoning', true));
+        return AiConfiguration::boolean('agent.reasoning', true);
     }
 
     protected function toolResultBytes(): int
     {
-        return max(1024, (int) $this->setting('agent:tool_result_bytes', config('modules.ai.agent.tool_result_bytes', 12288)));
-    }
-
-    protected function setting(string $key, mixed $default = null): mixed
-    {
-        return Setting::get('settings::modules:ai:' . $key, $default);
+        return max(1024, AiConfiguration::integer('agent.tool_result_bytes', 12288));
     }
 }

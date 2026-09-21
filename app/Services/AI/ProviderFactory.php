@@ -2,7 +2,6 @@
 
 namespace Everest\Services\AI;
 
-use Everest\Models\Setting;
 use Everest\Services\AI\Data\ProviderConfig;
 use Everest\Services\AI\Contracts\AiProvider;
 use Everest\Services\AI\Providers\OllamaProvider;
@@ -14,9 +13,9 @@ use Everest\Services\AI\Providers\OpenAiCompatibleProvider;
 /**
  * Resolves the configured provider driver.
  *
- * This is the only place that reads AI settings. Drivers receive a fully
- * resolved ProviderConfig so they never touch the database, which keeps them
- * trivially testable against a fixed configuration.
+ * Drivers receive a fully resolved ProviderConfig so they never touch the
+ * database or {@see AiConfiguration}, which keeps them trivially testable
+ * against a fixed configuration.
  */
 class ProviderFactory
 {
@@ -70,27 +69,27 @@ class ProviderFactory
     {
         $provider = $this->provider();
 
-        $endpoint = (string) $this->setting('endpoint', config('modules.ai.endpoint'));
+        $endpoint = AiConfiguration::string('endpoint');
         if ($provider === ProviderConfig::PROVIDER_OPENROUTER) {
             $endpoint = OpenRouterProvider::ENDPOINT;
         } elseif ($endpoint === '') {
             $endpoint = self::DEFAULT_ENDPOINTS[$provider] ?? '';
         }
 
-        $contextTokens = $this->setting('context_tokens', config('modules.ai.context_tokens'));
+        $contextTokens = AiConfiguration::integer('context_tokens');
 
         return new ProviderConfig(
             provider: $provider,
             endpoint: $endpoint,
-            apiKey: (string) ($this->setting('key', config('modules.ai.key')) ?: ''),
+            apiKey: AiConfiguration::secret('key'),
             model: $this->model(),
-            maxTokens: (int) $this->setting('max_tokens', config('modules.ai.max_tokens', 1024)),
-            temperature: (float) $this->setting('temperature', config('modules.ai.temperature', 0.3)),
+            maxTokens: AiConfiguration::integer('max_tokens', 1024),
+            temperature: AiConfiguration::number('temperature', 0.3),
             systemPrompt: $this->systemPrompt(),
-            keepAlive: (string) ($this->setting('keep_alive', config('modules.ai.keep_alive', '10m')) ?: '10m'),
-            timeout: (int) config('modules.ai.timeout', 300),
-            connectTimeout: (int) config('modules.ai.connect_timeout', 10),
-            contextTokens: $contextTokens ? (int) $contextTokens : null,
+            keepAlive: AiConfiguration::string('keep_alive', '10m') ?: '10m',
+            timeout: AiConfiguration::integer('timeout', 300),
+            connectTimeout: AiConfiguration::integer('connect_timeout', 10),
+            contextTokens: $contextTokens ?: null,
         );
     }
 
@@ -103,10 +102,10 @@ class ProviderFactory
      */
     public function provider(): string
     {
-        $provider = (string) ($this->setting('provider', config('modules.ai.provider')) ?: '');
+        $provider = AiConfiguration::string('provider');
 
         if ($provider === '') {
-            $provider = (string) ($this->setting('mode', config('modules.ai.mode', 'ollama')) ?: 'ollama');
+            $provider = AiConfiguration::string('mode', 'ollama') ?: 'ollama';
         }
 
         return in_array($provider, ProviderConfig::PROVIDERS, true)
@@ -123,7 +122,7 @@ class ProviderFactory
             return OpenRouterProvider::MODEL;
         }
 
-        return (string) ($this->setting('model', config('modules.ai.model')) ?: '');
+        return AiConfiguration::string('model');
     }
 
     /** Database, environment and direct factory callers cannot redirect OpenRouter. */
@@ -154,15 +153,10 @@ class ProviderFactory
      */
     public function systemPrompt(): string
     {
-        $prompt = trim((string) ($this->setting('system_prompt', '') ?: ''));
+        $prompt = trim(AiConfiguration::string('system_prompt'));
 
         return $prompt !== ''
             ? $prompt
-            : trim((string) config('modules.ai.default_system_prompt', config('modules.ai.system_prompt', '')));
-    }
-
-    protected function setting(string $key, mixed $default = null): mixed
-    {
-        return Setting::get('settings::modules:ai:' . $key, $default);
+            : trim(AiConfiguration::string('default_system_prompt') ?: AiConfiguration::string('system_prompt'));
     }
 }

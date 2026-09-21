@@ -2,8 +2,8 @@
 
 namespace Everest\Console\Commands\AI;
 
-use Everest\Models\Setting;
 use Illuminate\Console\Command;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Data\ProviderConfig;
 use Everest\Services\AI\Providers\OllamaProvider;
@@ -24,14 +24,8 @@ class WarmAiModelCommand extends Command
      */
     public static function shouldRun(ProviderFactory $factory): bool
     {
-        $enabled = filter_var(
-            Setting::get('settings::modules:ai:enabled', config('modules.ai.enabled', false)),
-            FILTER_VALIDATE_BOOLEAN
-        );
-        $warm = filter_var(
-            Setting::get('settings::modules:ai:warm', config('modules.ai.warm', false)),
-            FILTER_VALIDATE_BOOLEAN
-        );
+        $enabled = AiConfiguration::boolean('enabled');
+        $warm = AiConfiguration::boolean('warm');
         $provider = $factory->provider();
 
         return $enabled && $warm && $provider === ProviderConfig::PROVIDER_OLLAMA;

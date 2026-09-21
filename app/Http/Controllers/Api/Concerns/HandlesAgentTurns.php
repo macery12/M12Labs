@@ -3,7 +3,6 @@
 namespace Everest\Http\Controllers\Api\Concerns;
 
 use Everest\Models\Server;
-use Everest\Models\Setting;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Everest\Models\AiToolCall;
@@ -15,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Everest\Jobs\AI\RunAgentTurnJob;
 use Everest\Services\AI\Data\AiMessage;
 use Everest\Services\AI\Tools\RiskGate;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Agent\AgentEvent;
 use Everest\Services\AI\Agent\AgentRunner;
@@ -335,10 +335,7 @@ trait HandlesAgentTurns
      */
     protected function agentDurable(): bool
     {
-        return filter_var(
-            Setting::get('settings::modules:ai:agent:durable', config('modules.ai.agent.durable')),
-            FILTER_VALIDATE_BOOLEAN
-        );
+        return AiConfiguration::boolean('agent.durable');
     }
 
     /**

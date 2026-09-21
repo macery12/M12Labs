@@ -3,7 +3,6 @@
 namespace Everest\Http\Controllers\Api\Application;
 
 use Everest\Models\Server;
-use Everest\Models\Setting;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Everest\Facades\Activity;
@@ -14,6 +13,7 @@ use Everest\Models\AiPendingAction;
 use Illuminate\Support\Facades\Log;
 use Everest\Services\AI\Data\AiMessage;
 use Everest\Services\AI\Tools\RiskGate;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\ProviderFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Everest\Services\AI\Agent\AgentRunner;
@@ -460,16 +460,11 @@ class AiAgentController extends ApplicationApiController
     protected function assertAgentAvailable(): void
     {
         foreach ([
-            'modules:ai:enabled' => ['modules.ai.enabled', 'The AI module is not enabled.'],
-            'modules:ai:agent:enabled' => ['modules.ai.agent.enabled', 'The AI agent has been disabled.'],
-            'modules:ai:agent:admin_enabled' => ['modules.ai.agent.admin_enabled', 'The admin AI assistant has been disabled.'],
-        ] as $key => [$config, $message]) {
-            $enabled = filter_var(
-                Setting::get('settings::' . $key, config($config, false)),
-                FILTER_VALIDATE_BOOLEAN
-            );
-
-            if (!$enabled) {
+            'enabled' => 'The AI module is not enabled.',
+            'agent.enabled' => 'The AI agent has been disabled.',
+            'agent.admin_enabled' => 'The admin AI assistant has been disabled.',
+        ] as $key => $message) {
+            if (!AiConfiguration::boolean($key)) {
                 abort(403, $message);
             }
         }
@@ -574,9 +569,9 @@ class AiAgentController extends ApplicationApiController
             (array) $request->input('console_safe_commands', [])
         ))));
 
-        Setting::set('settings::modules:ai:risk_overrides', json_encode($overrides));
-        Setting::set('settings::modules:ai:disabled_tools', json_encode($disabled));
-        Setting::set('settings::modules:ai:console:safe_commands', json_encode($console));
+        AiConfiguration::set('risk_overrides', json_encode($overrides));
+        AiConfiguration::set('disabled_tools', json_encode($disabled));
+        AiConfiguration::set('console.safe_commands', json_encode($console));
 
         Activity::event('admin:ai:tools')
             ->property('overrides', $overrides)
@@ -636,7 +631,7 @@ class AiAgentController extends ApplicationApiController
      */
     private function consoleExtras(): array
     {
-        $stored = Setting::get('settings::modules:ai:console:safe_commands');
+        $stored = AiConfiguration::get('console.safe_commands');
 
         if (!is_string($stored) || $stored === '') {
             return [];

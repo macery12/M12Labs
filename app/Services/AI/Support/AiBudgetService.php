@@ -3,12 +3,12 @@
 namespace Everest\Services\AI\Support;
 
 use Everest\Models\User;
-use Everest\Models\Setting;
 use Illuminate\Support\Str;
 use Everest\Models\AiUsageLog;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Everest\Services\AI\AiConfiguration;
 
 /**
  * Monthly token budgets.
@@ -33,18 +33,12 @@ class AiBudgetService
 
     public function enforced(): bool
     {
-        return filter_var(
-            Setting::get('settings::modules:ai:budget:enforce', config('modules.ai.budget.enforce', false)),
-            FILTER_VALIDATE_BOOLEAN
-        );
+        return AiConfiguration::boolean('budget.enforce');
     }
 
     public function monthlyLimit(): int
     {
-        return max(0, (int) Setting::get(
-            'settings::modules:ai:budget:monthly_tokens',
-            config('modules.ai.budget.monthly_tokens', 2000000)
-        ));
+        return max(0, AiConfiguration::integer('budget.monthly_tokens', 2000000));
     }
 
     /**
@@ -156,14 +150,8 @@ class AiBudgetService
 
     protected function reservationTtlSeconds(): int
     {
-        $wall = max(30, (int) Setting::get(
-            'settings::modules:ai:agent:max_wall_seconds',
-            config('modules.ai.agent.max_wall_seconds', 180)
-        ));
-        $wait = max(5, (int) Setting::get(
-            'settings::modules:ai:concurrency:max_wait_seconds',
-            config('modules.ai.concurrency.max_wait_seconds', 120)
-        ));
+        $wall = max(30, AiConfiguration::integer('agent.max_wall_seconds', 180));
+        $wait = max(5, AiConfiguration::integer('concurrency.max_wait_seconds', 120));
 
         return $wall + $wait + self::RESERVATION_MARGIN_SECONDS;
     }

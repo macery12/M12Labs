@@ -2,7 +2,7 @@
 
 namespace Everest\Services\AI\Tools;
 
-use Everest\Models\Setting;
+use Everest\Services\AI\AiConfiguration;
 
 /**
  * Decides whether a console command the agent wants to send is routine enough
@@ -110,21 +110,11 @@ class ConsoleCommandGate
      */
     public function safeCommands(): array
     {
-        $stored = Setting::get('settings::modules:ai:console:safe_commands');
+        $extra = array_values(array_filter(array_map(
+            fn ($value) => is_string($value) ? strtolower(trim($value)) : null,
+            AiConfiguration::list('console.safe_commands')
+        )));
 
-        if (is_string($stored) && $stored !== '') {
-            $decoded = json_decode($stored, true);
-
-            if (is_array($decoded)) {
-                $extra = array_values(array_filter(array_map(
-                    fn ($value) => is_string($value) ? strtolower(trim($value)) : null,
-                    $decoded
-                )));
-
-                return array_values(array_unique(array_merge(self::DEFAULT_SAFE, $extra)));
-            }
-        }
-
-        return self::DEFAULT_SAFE;
+        return array_values(array_unique(array_merge(self::DEFAULT_SAFE, $extra)));
     }
 }

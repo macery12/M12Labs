@@ -3,6 +3,7 @@
 namespace Everest\Tests\Unit\Services\AI;
 
 use GuzzleHttp\Middleware;
+use Everest\Models\Setting;
 use Everest\Tests\TestCase;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
@@ -63,16 +64,14 @@ class OpenRouterProviderTest extends TestCase
         $this->assertFalse($provider->config()->isSelfHosted());
         $this->assertTrue($provider->config()->requiresApiKey());
 
-        $settingsFactory = new class (['provider' => 'openrouter', 'endpoint' => 'https://stale.example/v1', 'model' => 'stale/model']) extends ProviderFactory {
-            public function __construct(private array $values)
-            {
-            }
+        // The other input source: values an administrator saved. A stale
+        // endpoint and model left over from a different provider must not
+        // redirect OpenRouter either.
+        Setting::set('settings::modules:ai:provider', 'openrouter');
+        Setting::set('settings::modules:ai:endpoint', 'https://stale.example/v1');
+        Setting::set('settings::modules:ai:model', 'stale/model');
 
-            protected function setting(string $key, mixed $default = null): mixed
-            {
-                return $this->values[$key] ?? $default;
-            }
-        };
+        $settingsFactory = new ProviderFactory();
 
         $this->assertSame(OpenRouterProvider::ENDPOINT, $settingsFactory->config()->endpoint);
         $this->assertSame(OpenRouterProvider::MODEL, $settingsFactory->config()->model);

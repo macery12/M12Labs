@@ -2,10 +2,10 @@
 
 namespace Everest\Services\AI\Benchmark;
 
-use Everest\Models\Setting;
 use Everest\Services\AI\Data\AiTool;
 use Everest\Services\AI\Data\AiMessage;
 use Everest\Services\AI\Data\AiRequest;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\Data\AiResponse;
 use Everest\Services\AI\Data\AiToolCall;
 use Everest\Services\AI\Data\AiStreamEvent;
@@ -43,10 +43,7 @@ class AiModelBenchmark
     {
         $runs = max(1, min(10, $runs));
         $config = $provider->config();
-        $this->reasoning = (bool) Setting::get(
-            'settings::modules:ai:agent:reasoning',
-            config('modules.ai.agent.reasoning', true),
-        );
+        $this->reasoning = AiConfiguration::boolean('agent.reasoning', true);
         $startedAt = now();
 
         $healthStarted = hrtime(true);

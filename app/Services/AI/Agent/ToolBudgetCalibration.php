@@ -3,12 +3,16 @@
 namespace Everest\Services\AI\Agent;
 
 use Everest\Models\Setting;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\Data\ProviderConfig;
 
 /** Stores an operator-requested, repeatedly measured tool budget per model. */
 class ToolBudgetCalibration
 {
-    public const SETTING = 'settings::modules:ai:agent:calibrated_tool_budgets';
+    public const KEY = 'agent.calibrated_tool_budgets';
+
+    /** @deprecated Spell the key through {@see AiConfiguration}; kept for callers still naming the raw row. */
+    public const SETTING = AiConfiguration::SETTING_PREFIX . 'agent:calibrated_tool_budgets';
 
     /** @return array<string, mixed>|null */
     public function find(ProviderConfig $config): ?array
@@ -115,10 +119,7 @@ class ToolBudgetCalibration
 
     private function reasoningEnabled(): bool
     {
-        return (bool) Setting::get(
-            'settings::modules:ai:agent:reasoning',
-            config('modules.ai.agent.reasoning', true),
-        );
+        return AiConfiguration::boolean('agent.reasoning', true);
     }
 
     /** @return array<string, array<string, mixed>> */

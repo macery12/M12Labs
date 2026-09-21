@@ -2,10 +2,10 @@
 
 namespace Everest\Console\Commands\AI;
 
-use Everest\Models\Setting;
 use Illuminate\Support\Str;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Agent\ToolBudget;
 use Everest\Services\AI\Data\ProviderConfig;
@@ -110,10 +110,7 @@ class BenchmarkAiModelCommand extends Command
             return self::INVALID;
         }
 
-        $reasoning = (bool) Setting::get(
-            'settings::modules:ai:agent:reasoning',
-            config('modules.ai.agent.reasoning', true),
-        );
+        $reasoning = AiConfiguration::boolean('agent.reasoning', true);
         $this->renderPreflight(
             $config,
             $suites,

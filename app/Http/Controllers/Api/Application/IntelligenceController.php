@@ -2,13 +2,13 @@
 
 namespace Everest\Http\Controllers\Api\Application;
 
-use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Everest\Models\AiUsageLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Agent\ToolBudget;
 use Everest\Services\Email\EmailRedactor;
@@ -45,7 +45,7 @@ class IntelligenceController extends ApplicationApiController
         $config = $this->factory->config();
 
         return response()->json([
-            'enabled' => boolval(config('modules.ai.enabled', false)),
+            'enabled' => AiConfiguration::boolean('enabled'),
             'key' => $config->apiKey !== '',
             'endpoint' => $config->endpoint,
             'model' => $config->model,
@@ -53,27 +53,27 @@ class IntelligenceController extends ApplicationApiController
             // `mode` predates multi-provider support and is still what old
             // installs are configured with, so the resolved provider is
             // returned alongside it rather than in place of it.
-            'mode' => config('modules.ai.mode', 'ollama'),
+            'mode' => AiConfiguration::string('mode', 'ollama'),
             'provider' => $this->factory->provider(),
 
-            'max_tokens' => (int) config('modules.ai.max_tokens', 1024),
-            'temperature' => (float) config('modules.ai.temperature', 0.3),
-            'context_tokens' => config('modules.ai.context_tokens') ? (int) config('modules.ai.context_tokens') : null,
-            'keep_alive' => (string) config('modules.ai.keep_alive', '10m'),
-            'warm' => boolval(config('modules.ai.warm', false)),
+            'max_tokens' => AiConfiguration::integer('max_tokens', 1024),
+            'temperature' => AiConfiguration::number('temperature', 0.3),
+            'context_tokens' => AiConfiguration::integer('context_tokens') ?: null,
+            'keep_alive' => AiConfiguration::string('keep_alive', '10m'),
+            'warm' => AiConfiguration::boolean('warm'),
             // Return the effective value, including the packaged fallback when
             // an older save left an empty setting row behind.
             'system_prompt' => $this->factory->systemPrompt(),
 
             'agent' => [
-                'enabled' => boolval(config('modules.ai.agent.enabled', false)),
-                'admin_enabled' => boolval(config('modules.ai.agent.admin_enabled', false)),
-                'reasoning' => boolval(config('modules.ai.agent.reasoning', true)),
-                'max_steps' => (int) config('modules.ai.agent.max_steps', 12),
-                'max_wall_seconds' => (int) config('modules.ai.agent.max_wall_seconds', 180),
-                'max_tool_seconds' => (int) config('modules.ai.agent.max_tool_seconds', 90),
-                'tool_result_bytes' => (int) config('modules.ai.agent.tool_result_bytes', 12288),
-                'max_repairs' => (int) config('modules.ai.agent.max_repairs', 2),
+                'enabled' => AiConfiguration::boolean('agent.enabled'),
+                'admin_enabled' => AiConfiguration::boolean('agent.admin_enabled'),
+                'reasoning' => AiConfiguration::boolean('agent.reasoning', true),
+                'max_steps' => AiConfiguration::integer('agent.max_steps', 12),
+                'max_wall_seconds' => AiConfiguration::integer('agent.max_wall_seconds', 180),
+                'max_tool_seconds' => AiConfiguration::integer('agent.max_tool_seconds', 90),
+                'tool_result_bytes' => AiConfiguration::integer('agent.tool_result_bytes', 12288),
+                'max_repairs' => AiConfiguration::integer('agent.max_repairs', 2),
                 // Null means auto. Kept null rather than resolved, so the form
                 // can tell "the operator chose 12" from "the panel worked out 12"
                 // — the second has to keep tracking the model when it changes.
@@ -81,8 +81,8 @@ class IntelligenceController extends ApplicationApiController
                 // stores null as an empty string, and casting that string here
                 // previously returned 0 and made Auto switch off after refresh.
                 'max_tools' => $this->budget->manualSchemas(),
-                'max_batch_calls' => (int) config('modules.ai.agent.max_batch_calls', 25),
-                'allow_destructive_batches' => boolval(config('modules.ai.agent.allow_destructive_batches', false)),
+                'max_batch_calls' => AiConfiguration::integer('agent.max_batch_calls', 25),
+                'allow_destructive_batches' => AiConfiguration::boolean('agent.allow_destructive_batches'),
 
                 // What the budget actually resolved to, so an operator can see
                 // the consequence of leaving it on auto without having to guess.
@@ -99,15 +99,15 @@ class IntelligenceController extends ApplicationApiController
             ],
 
             'concurrency' => [
-                'slots' => config('modules.ai.concurrency.slots') ? (int) config('modules.ai.concurrency.slots') : null,
-                'queue_depth' => (int) config('modules.ai.concurrency.queue_depth', 20),
-                'max_wait_seconds' => (int) config('modules.ai.concurrency.max_wait_seconds', 120),
-                'per_user' => (int) config('modules.ai.concurrency.per_user', 1),
+                'slots' => AiConfiguration::integer('concurrency.slots') ?: null,
+                'queue_depth' => AiConfiguration::integer('concurrency.queue_depth', 20),
+                'max_wait_seconds' => AiConfiguration::integer('concurrency.max_wait_seconds', 120),
+                'per_user' => AiConfiguration::integer('concurrency.per_user', 1),
             ],
 
             'budget' => [
-                'enforce' => boolval(config('modules.ai.budget.enforce', false)),
-                'monthly_tokens' => (int) config('modules.ai.budget.monthly_tokens', 2000000),
+                'enforce' => AiConfiguration::boolean('budget.enforce'),
+                'monthly_tokens' => AiConfiguration::integer('budget.monthly_tokens', 2000000),
             ],
 
             // Read through the policy rather than off config: the category
@@ -149,7 +149,7 @@ class IntelligenceController extends ApplicationApiController
                 continue;
             }
 
-            Setting::set('settings::modules:ai:' . $key, $value);
+            AiConfiguration::set(str_replace(':', '.', $key), $value);
         }
 
         $activitySettings = EmailRedactor::redactSensitivePayload(

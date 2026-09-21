@@ -7,6 +7,7 @@ use Everest\Models\AiUsageLog;
 use Illuminate\Console\Command;
 use Everest\Models\AiConversation;
 use Everest\Models\AiPendingAction;
+use Everest\Services\AI\AiConfiguration;
 use Illuminate\Database\Eloquent\Builder;
 use Everest\Services\AI\Agent\AgentEventLog;
 
@@ -89,12 +90,12 @@ class PruneAiConversationsCommand extends Command
 
     private function days(string $key): int
     {
-        return max(1, (int) config("modules.ai.retention.{$key}_days"));
+        return max(1, AiConfiguration::integer("retention.{$key}_days"));
     }
 
     private function limit(string $key): int
     {
-        return max(1, (int) config("modules.ai.retention.{$key}_limit"));
+        return max(1, AiConfiguration::integer("retention.{$key}_limit"));
     }
 
     private function report(string $label, int $deleted): void

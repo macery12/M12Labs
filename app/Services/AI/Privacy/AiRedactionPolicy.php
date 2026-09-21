@@ -2,7 +2,7 @@
 
 namespace Everest\Services\AI\Privacy;
 
-use Everest\Models\Setting;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\Privacy\PiiRedactor;
 use Everest\Services\Privacy\RedactionMap;
@@ -75,10 +75,7 @@ class AiRedactionPolicy
             return true;
         }
 
-        return (bool) Setting::get(
-            'settings::modules:ai:privacy:enabled',
-            config('modules.ai.privacy.enabled', true)
-        );
+        return AiConfiguration::boolean('privacy.enabled', true);
     }
 
     /**
@@ -94,24 +91,16 @@ class AiRedactionPolicy
             return PiiRedactor::KINDS;
         }
 
-        $stored = Setting::get('settings::modules:ai:privacy:categories');
-
-        if (!is_string($stored) || $stored === '') {
-            return array_values(array_intersect(
-                PiiRedactor::KINDS,
-                (array) config('modules.ai.privacy.categories', PiiRedactor::DEFAULT_KINDS)
-            ));
-        }
-
-        $decoded = json_decode($stored, true);
-
-        if (!is_array($decoded)) {
-            return PiiRedactor::DEFAULT_KINDS;
-        }
+        // An empty or unparseable value falls back to the defaults rather
+        // than to no categories at all, which is the point of the comment
+        // above: "none" has to be something an operator chose, never
+        // something a malformed row decided on their behalf.
+        $selected = AiConfiguration::list('privacy.categories', PiiRedactor::DEFAULT_KINDS)
+            ?: PiiRedactor::DEFAULT_KINDS;
 
         // Intersected against the canonical list so the order is the declared
         // one and an unknown category cannot reach the walker.
-        return array_values(array_intersect(PiiRedactor::KINDS, $decoded));
+        return array_values(array_intersect(PiiRedactor::KINDS, $selected));
     }
 
     /** OpenRouter always receives fully redacted panel context and tool output. */

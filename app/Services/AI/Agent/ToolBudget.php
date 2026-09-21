@@ -2,7 +2,7 @@
 
 namespace Everest\Services\AI\Agent;
 
-use Everest\Models\Setting;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\ProviderFactory;
 use Everest\Services\AI\Tools\Definitions\AdminTools;
 use Everest\Services\AI\Tools\Definitions\ServerTools;
@@ -178,10 +178,7 @@ class ToolBudget
             return;
         }
 
-        $configured = Setting::get(
-            'settings::modules:ai:agent:max_tools',
-            config('modules.ai.agent.max_tools')
-        );
+        $configured = AiConfiguration::get('agent.max_tools');
 
         // An explicit number always wins. Nothing here second-guesses it: an
         // operator who measured their model knows more than a size bucket does.

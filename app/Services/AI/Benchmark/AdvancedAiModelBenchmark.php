@@ -4,11 +4,11 @@ namespace Everest\Services\AI\Benchmark;
 
 use Everest\Models\User;
 use Everest\Models\Server;
-use Everest\Models\Setting;
 use Everest\Models\AdminRole;
 use Everest\Services\AI\Data\AiTool;
 use Everest\Services\AI\Data\AiMessage;
 use Everest\Services\AI\Data\AiRequest;
+use Everest\Services\AI\AiConfiguration;
 use Everest\Services\AI\Data\AiResponse;
 use Everest\Services\AI\Data\AiToolCall;
 use Everest\Services\AI\Tools\ToolResult;
@@ -64,10 +64,7 @@ class AdvancedAiModelBenchmark
     ): array {
         $runs = max(1, min(10, $runs));
         $config = $provider->config();
-        $reasoning = (bool) Setting::get(
-            'settings::modules:ai:agent:reasoning',
-            config('modules.ai.agent.reasoning', true),
-        );
+        $reasoning = AiConfiguration::boolean('agent.reasoning', true);
         $capabilityLimit = $capabilityLimit === null ? null : max(4, $capabilityLimit);
         $startedAt = now();
 

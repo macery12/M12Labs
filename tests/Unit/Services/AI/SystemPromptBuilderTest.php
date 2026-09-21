@@ -4,6 +4,7 @@ namespace Everest\Tests\Unit\Services\AI;
 
 use Everest\Models\User;
 use Everest\Models\Server;
+use Everest\Models\Setting;
 use Everest\Tests\TestCase;
 use Everest\Services\AI\Data\AiTool;
 use Everest\Services\AI\Data\AiMessage;
@@ -141,27 +142,38 @@ class SystemPromptBuilderTest extends TestCase
         $this->assertStringNotContainsString('[email_1]', $withTokens);
     }
 
-    public function testBlankStoredHousePromptFallsBackAndCustomTextStillWins(): void
+    /**
+     * Clearing the field is a request for the packaged prompt back, not for no
+     * prompt at all — a model given no framing answers as a generic chatbot
+     * with no idea it is inside a game server panel.
+     *
+     * Split from its sibling below because the unit suite's in-memory schema
+     * supports creating a settings row but not updating one, so a test may
+     * write any given key only once.
+     */
+    public function testBlankStoredHousePromptFallsBackToThePackagedDefault(): void
     {
         $original = config('modules.ai.default_system_prompt');
-        $factory = new class () extends ProviderFactory {
-            public ?string $storedPrompt = null;
-
-            protected function setting(string $key, mixed $default = null): mixed
-            {
-                return $key === 'system_prompt' ? $this->storedPrompt : $default;
-            }
-        };
 
         try {
             config()->set('modules.ai.default_system_prompt', 'Packaged fallback.');
-            $factory->storedPrompt = '';
+            Setting::set('settings::modules:ai:system_prompt', '');
 
-            $this->assertSame('Packaged fallback.', $factory->systemPrompt());
+            $this->assertSame('Packaged fallback.', (new ProviderFactory())->systemPrompt());
+        } finally {
+            config()->set('modules.ai.default_system_prompt', $original);
+        }
+    }
 
-            $factory->storedPrompt = 'Operator preference.';
+    public function testStoredHousePromptWinsOverThePackagedDefault(): void
+    {
+        $original = config('modules.ai.default_system_prompt');
 
-            $this->assertSame('Operator preference.', $factory->systemPrompt());
+        try {
+            config()->set('modules.ai.default_system_prompt', 'Packaged fallback.');
+            Setting::set('settings::modules:ai:system_prompt', 'Operator preference.');
+
+            $this->assertSame('Operator preference.', (new ProviderFactory())->systemPrompt());
         } finally {
             config()->set('modules.ai.default_system_prompt', $original);
         }
