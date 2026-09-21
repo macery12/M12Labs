@@ -7,6 +7,7 @@ use IPTools\Range;
 use Everest\Models\User;
 use Everest\Models\ApiKey;
 use Everest\Models\UserSession;
+use Laravel\Sanctum\TransientToken;
 
 /**
  * Whether the authority that started a piece of work still holds.
@@ -105,6 +106,45 @@ final class UserAuthority
         }
 
         return false;
+    }
+
+    /**
+     * Put the credential a piece of background work started with back onto a
+     * loaded user, so anything it dispatches is authenticated the same way the
+     * original request was.
+     *
+     * A queue worker has no request and no guard, and a turn that ran as its
+     * owner *without* the originating key would quietly widen what it can do:
+     * the panel's key-type, profile and address middleware all read the token,
+     * and a user carrying none looks like a full browser session. So the kind
+     * is preserved rather than approximated -- a browser session gets Sanctum's
+     * transient token, an API request gets the key reloaded from the database,
+     * never the secret, which is why only the id has to survive the queue.
+     *
+     * Returns false when `$apiKeyId` names a key that no longer belongs to the
+     * user, which the caller should treat as the authority having lapsed. A
+     * null id is a browser session and always succeeds.
+     */
+    public function restoreAccessToken(User $user, ?int $apiKeyId): bool
+    {
+        if ($apiKeyId === null) {
+            $user->withAccessToken(new TransientToken());
+
+            return true;
+        }
+
+        $key = ApiKey::query()
+            ->whereKey($apiKeyId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$key instanceof ApiKey) {
+            return false;
+        }
+
+        $user->withAccessToken($key);
+
+        return true;
     }
 
     /**

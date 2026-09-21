@@ -44,6 +44,24 @@ final class AdminAuthorization
         return $this->authorizer->isOwner($user);
     }
 
+    /**
+     * The owner, acting right now from a signed-in browser session rather than
+     * through an API key.
+     *
+     * The question a package asks before a change that widens the panel's own
+     * trust boundary -- a new outbound endpoint, a stored credential, anything
+     * whose blast radius is the deployment rather than one record. An
+     * Application API key belonging to the owner answers false here on purpose:
+     * a key is long-lived, delegable and hard to notice being used, so it is
+     * the wrong instrument for a decision somebody should be present for.
+     *
+     * Everything else stays delegable through `holds()`.
+     */
+    public function isInteractiveOwner(User $user): bool
+    {
+        return $this->authorizer->isInteractiveOwner($user);
+    }
+
     /** Whether this user can reach the admin area at all. */
     public function canAccessAdmin(User $user): bool
     {
