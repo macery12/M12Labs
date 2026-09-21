@@ -10,12 +10,15 @@ use Illuminate\Queue\Events\JobQueueing;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Database\Events\MigrationEnded;
+use Illuminate\Database\Events\MigrationStarted;
 use Everest\Services\Extensions\ExtensionQueueJournal;
 use Everest\Services\Extensions\ExtensionQueueRegistry;
 use Everest\Services\Extensions\ExtensionHookDispatcher;
 use Everest\Services\Extensions\ExtensionJobDrainService;
 use Everest\Services\Extensions\ExtensionBindingRegistrar;
 use Everest\Services\Extensions\ExtensionPermissionRegistry;
+use Everest\Services\Extensions\ExtensionOperationLockService;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 
 /**
@@ -45,6 +48,7 @@ class ExtensionServiceProvider extends ServiceProvider
         $this->app->singleton(ExtensionQueueRegistry::class);
         $this->app->singleton(ExtensionQueueJournal::class);
         $this->app->singleton(ExtensionJobDrainService::class);
+        $this->app->singleton(ExtensionOperationLockService::class);
         $this->app->singleton(ExtensionHookDispatcher::class);
         $this->app->singleton(ExtensionPermissionRegistry::class);
     }
@@ -57,6 +61,12 @@ class ExtensionServiceProvider extends ServiceProvider
         Event::listen(JobProcessing::class, fn (JobProcessing $event) => $journal->processing($event));
         Event::listen(JobProcessed::class, fn (JobProcessed $event) => $journal->processed($event));
         Event::listen(JobFailed::class, fn (JobFailed $event) => $journal->failed($event));
+
+        // Extension migrations execute in-process. Renew and fence on both
+        // sides of each migration so a multi-file batch cannot outlive its
+        // lifecycle owner between schema mutations.
+        Event::listen(MigrationStarted::class, fn () => $this->app->make(ExtensionOperationLockService::class)->checkpoint());
+        Event::listen(MigrationEnded::class, fn () => $this->app->make(ExtensionOperationLockService::class)->checkpoint());
 
         // Deferred to booted() for the same reason QueueServiceProvider defers
         // its supervisor sizing: both of these read the runtime plan, which

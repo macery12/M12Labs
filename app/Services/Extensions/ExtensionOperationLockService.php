@@ -9,7 +9,9 @@ class ExtensionOperationLockService
 {
     private const LOCK_KEY = 'm12labs:extensions:operation-lock';
     private const CONTEXT_KEY = 'm12labs:extensions:operation-context';
-    private const LOCK_TTL_SECONDS = 1800;
+    private const GENERATION_KEY = 'm12labs:extensions:operation-generation';
+
+    private ?ExtensionLockLease $activeLease = null;
 
     public function __construct(
         private ExtensionFilesystemOwnershipService $ownershipService,
@@ -20,24 +22,53 @@ class ExtensionOperationLockService
     {
         $this->assertSafeExecutionUser();
 
-        $lock = Cache::lock(self::LOCK_KEY, self::LOCK_TTL_SECONDS);
+        $lease = ExtensionLockLease::acquire(
+            self::LOCK_KEY,
+            self::CONTEXT_KEY,
+            self::GENERATION_KEY,
+            'lifecycle operation',
+            $this->ttlSeconds(),
+            [
+                'action' => $action,
+                'subject' => $subject,
+                'started_at' => now()->toIso8601String(),
+            ],
+        );
 
-        if (!$lock->get()) {
+        if ($lease === null) {
             throw new DisplayException($this->buildBlockedMessage());
         }
 
-        Cache::put(self::CONTEXT_KEY, [
-            'action' => $action,
-            'subject' => $subject,
-            'started_at' => now()->toIso8601String(),
-        ], self::LOCK_TTL_SECONDS);
+        $this->activeLease = $lease;
 
         try {
+            $lease->checkpoint();
+
             return $callback();
         } finally {
-            Cache::forget(self::CONTEXT_KEY);
-            $lock->release();
+            $this->activeLease = null;
+            $lease->release();
         }
+    }
+
+    /**
+     * Fence a lifecycle mutation and renew the lease while work remains active.
+     * A no-op outside the public lifecycle entry points keeps read-only helper
+     * use and focused service tests possible without manufacturing a lock.
+     */
+    public function checkpoint(): void
+    {
+        $this->activeLease?->checkpoint();
+    }
+
+    public function activeGeneration(): ?int
+    {
+        return $this->activeLease?->generation();
+    }
+
+    private function ttlSeconds(): int
+    {
+        return max(60, (int) config('extensions.lifecycle.lock_ttl_seconds', 7200));
     }
 
     /**

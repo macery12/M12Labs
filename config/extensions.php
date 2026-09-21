@@ -12,6 +12,14 @@
 */
 
 return [
+    'lifecycle' => [
+        // A lifecycle can include downloads, a queue drain, migrations, the
+        // frontend build and compensation. Checkpoints renew this owner-
+        // qualified lease; this initial window also exceeds the former
+        // 30-minute ceiling so a slow pre-mutation download cannot expire it.
+        'lock_ttl_seconds' => (int) env('EXTENSIONS_LIFECYCLE_LOCK_TTL', 7200),
+    ],
+
     /*
      * Repository manifests are untrusted remote input. They are fetched only
      * from public HTTPS destinations and read through a bounded stream.

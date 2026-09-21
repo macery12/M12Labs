@@ -115,10 +115,13 @@ class ExtensionPackageUpdateRecoveryTest extends TestCase
         ?ExtensionFilesystemOwnershipService $ownership = null,
         ?ExtensionPackageFileService $fileService = null,
     ): ExtensionPackageUpdateService {
+        $operationLock = \Mockery::mock(ExtensionOperationLockService::class);
+        $operationLock->allows('checkpoint');
+
         return new ExtensionPackageUpdateService(
             \Mockery::mock(ExtensionCatalogService::class),
             \Mockery::mock(ExtensionPanelRebuildService::class),
-            \Mockery::mock(ExtensionOperationLockService::class),
+            $operationLock,
             $ownership ?? \Mockery::mock(ExtensionFilesystemOwnershipService::class),
             \Mockery::mock(ExtensionInstallProgressService::class),
             \Mockery::mock(ExtensionPackageArtifactService::class),

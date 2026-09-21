@@ -5,6 +5,7 @@ namespace Everest\Services\Extensions;
 use Illuminate\Support\Facades\DB;
 use Everest\Models\ExtensionPackage;
 use Everest\Exceptions\DisplayException;
+use Everest\Exceptions\Service\Extension\ExtensionLockLostException;
 
 /**
  * Orchestrates batch install, uninstall, and update operations for multiple extensions.
@@ -99,6 +100,10 @@ class ExtensionPackageBatchService
 
                 return $packages;
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
                 if ($committed) {
                     $this->reportPostCommitFailure($exception);
 
@@ -119,6 +124,7 @@ class ExtensionPackageBatchService
             } finally {
                 $this->progressService->clear();
                 foreach ($preparedList as $prepared) {
+                    $this->operationLockService->checkpoint();
                     $this->ownershipService->repairStandardPaths($prepared['extensionId'] ?? null);
                     $this->installService->cleanupPreparedInstall($prepared);
                 }
@@ -226,6 +232,10 @@ class ExtensionPackageBatchService
                     'possiblyUnusedPackages' => $possiblyUnusedPackages,
                 ], $preparedList);
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
                 if ($committed) {
                     $this->reportPostCommitFailure($exception);
 
@@ -251,6 +261,7 @@ class ExtensionPackageBatchService
             } finally {
                 $this->progressService->clear();
                 foreach ($preparedList as $prepared) {
+                    $this->operationLockService->checkpoint();
                     $this->ownershipService->repairStandardPaths($prepared['extensionId'] ?? null);
                     $this->uninstallService->cleanupPreparedUninstall($prepared);
                 }
@@ -333,6 +344,10 @@ class ExtensionPackageBatchService
 
                 return $packages;
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
                 if ($committed) {
                     $this->reportPostCommitFailure($exception);
 
@@ -353,6 +368,7 @@ class ExtensionPackageBatchService
             } finally {
                 $this->progressService->clear();
                 foreach ($preparedList as $prepared) {
+                    $this->operationLockService->checkpoint();
                     $this->ownershipService->repairStandardPaths($prepared['extensionId'] ?? null);
                     $this->updateService->cleanupPreparedUpdate($prepared);
                 }

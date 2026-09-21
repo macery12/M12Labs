@@ -12,6 +12,7 @@ use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
 use Everest\Services\Extensions\Manifest\ExtensionManifest;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilityDiff;
+use Everest\Exceptions\Service\Extension\ExtensionLockLostException;
 use Everest\Exceptions\Service\Extension\CapabilityApprovalRequiredException;
 
 class ExtensionPackageInstallService
@@ -59,6 +60,10 @@ class ExtensionPackageInstallService
 
                 return $packageModel;
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
                 if ($committed) {
                     $this->reportPostCommitFailure($exception);
 
@@ -128,6 +133,10 @@ class ExtensionPackageInstallService
 
                 return $packageModel;
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
                 if ($committed) {
                     $this->reportPostCommitFailure($exception);
 
@@ -191,6 +200,8 @@ class ExtensionPackageInstallService
      */
     public function finalizeInstall(array $prepared): ExtensionPackage
     {
+        $this->operationLockService->checkpoint();
+
         return DB::transaction(function () use ($prepared) {
             return $this->persistInstalledPackage(
                 extensionId: $prepared['extensionId'],
@@ -216,6 +227,8 @@ class ExtensionPackageInstallService
      */
     public function rollbackInstall(array $prepared): void
     {
+        $this->operationLockService->checkpoint();
+
         // Migrations roll back first: the migration files must still exist on
         // disk for the migrator to resolve their down() methods.
         if (!empty($prepared['appliedMigrations'])) {
@@ -340,6 +353,7 @@ class ExtensionPackageInstallService
                 $this->artifactService->assertCompatiblePanelVersions($compatiblePanelVersions);
                 $this->artifactService->assertCompatiblePanelVersions($parsedManifest->compatiblePanelVersions);
             }
+            $this->operationLockService->checkpoint();
             $this->ownershipService->repairStandardPaths($extensionId);
 
             $filePlans = $this->prepareFilePlans($extractPath, $parsedManifest, $backupRoot, $extensionId);
@@ -354,6 +368,7 @@ class ExtensionPackageInstallService
 
             $this->progressService->report('install', $extensionId, 'copying');
             foreach ($filePlans as $plan) {
+                $this->operationLockService->checkpoint();
                 File::ensureDirectoryExists(dirname($plan['targetPath']));
                 File::copy($plan['sourcePath'], $plan['targetPath']);
                 $appliedFiles[] = $plan;
@@ -362,6 +377,7 @@ class ExtensionPackageInstallService
             // Written after the package's own files and before the rebuild
             // that follows, because the bundle reads it. Tracked as a file plan
             // so it is checksummed, rolled back and uninstalled like any other.
+            $this->operationLockService->checkpoint();
             $generated = $this->pageManifestService->write($parsedManifest, $backupRoot);
             $filePlans[] = $generated;
             $appliedFiles[] = $generated;
@@ -386,6 +402,12 @@ class ExtensionPackageInstallService
                 'tempRoot' => $tempRoot,
             ];
         } catch (\Throwable $exception) {
+            if ($exception instanceof ExtensionLockLostException) {
+                File::deleteDirectory($tempRoot);
+
+                throw $exception;
+            }
+
             $this->rollbackAppliedFiles($appliedFiles);
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
             File::deleteDirectory($tempRoot);
@@ -515,8 +537,14 @@ class ExtensionPackageInstallService
         $this->migrationService->assertMigrationConventions($extensionId, $migrationFiles);
 
         try {
+            $this->operationLockService->checkpoint();
             $result = $this->migrationService->run($extensionId);
+            $this->operationLockService->checkpoint();
         } catch (\Throwable $exception) {
+            if ($exception instanceof ExtensionLockLostException) {
+                throw $exception;
+            }
+
             try {
                 $this->migrationService->rollbackLastBatch($extensionId);
             } catch (\Throwable $rollbackException) {
@@ -639,6 +667,8 @@ class ExtensionPackageInstallService
     private function rollbackAppliedFiles(array $appliedFiles): void
     {
         foreach (array_reverse($appliedFiles) as $plan) {
+            $this->operationLockService->checkpoint();
+
             if (!empty($plan['backupPath']) && is_file($plan['backupPath'])) {
                 File::ensureDirectoryExists(dirname($plan['targetPath']));
                 File::copy($plan['backupPath'], $plan['targetPath']);

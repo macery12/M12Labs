@@ -10,6 +10,7 @@ use Everest\Models\ExtensionPackage;
 use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
+use Everest\Exceptions\Service\Extension\ExtensionLockLostException;
 
 class ExtensionPackageUninstallService
 {
@@ -76,6 +77,10 @@ class ExtensionPackageUninstallService
                     'possiblyUnusedPackages' => $possiblyUnusedPackages,
                 ];
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
                 if ($committed) {
                     $this->reportPostCommitFailure($exception);
 
@@ -99,6 +104,7 @@ class ExtensionPackageUninstallService
 
                 throw new DisplayException('Failed to uninstall the selected extension package.', $exception);
             } finally {
+                $this->operationLockService->checkpoint();
                 // Whether the uninstall completed or rolled back, the extension
                 // must stop refusing dispatches: on a rollback it is still
                 // installed and expected to work.
@@ -152,6 +158,7 @@ class ExtensionPackageUninstallService
         $files = $package->files->sortByDesc(fn (ExtensionPackageFile $file) => substr_count($file->path, '/'))->values();
         $rollbackRoot = storage_path('app/extensions/tmp-uninstall/' . Str::uuid()->toString());
         File::ensureDirectoryExists($rollbackRoot);
+        $this->operationLockService->checkpoint();
         $this->ownershipService->repairStandardPaths($extensionId);
 
         $this->progressService->report('uninstall', $extensionId, 'validating');
@@ -170,6 +177,7 @@ class ExtensionPackageUninstallService
 
             $this->progressService->report('uninstall', $extensionId, 'removing');
             foreach ($files as $file) {
+                $this->operationLockService->checkpoint();
                 $targetPath = base_path($file->path);
 
                 if ($file->operation === 'updated') {
@@ -195,6 +203,12 @@ class ExtensionPackageUninstallService
                 'rollbackRoot' => $rollbackRoot,
             ], $migrationState);
         } catch (\Throwable $exception) {
+            if ($exception instanceof ExtensionLockLostException) {
+                File::deleteDirectory($rollbackRoot);
+
+                throw $exception;
+            }
+
             $this->fileService->restoreRollbackSnapshot($files->all(), $rollbackRoot);
             File::deleteDirectory($rollbackRoot);
             // Nothing was prepared, so cleanupPreparedUninstall() will never run
@@ -219,6 +233,8 @@ class ExtensionPackageUninstallService
      */
     public function finalizeUninstall(array $prepared): void
     {
+        $this->operationLockService->checkpoint();
+
         $package = $prepared['package'];
         $extensionId = $prepared['extensionId'];
 
@@ -252,6 +268,7 @@ class ExtensionPackageUninstallService
             }
 
             try {
+                $this->operationLockService->checkpoint();
                 File::delete($file->backup_path);
             } catch (\Throwable $exception) {
                 // The uninstall is committed; retaining a now-orphaned backup
@@ -270,6 +287,8 @@ class ExtensionPackageUninstallService
      */
     public function rollbackUninstall(array $prepared): void
     {
+        $this->operationLockService->checkpoint();
+
         $this->fileService->restoreRollbackSnapshot($prepared['files']->all(), $prepared['rollbackRoot']);
         $this->ownershipService->repairStandardPaths($prepared['extensionId']);
 
@@ -328,11 +347,17 @@ class ExtensionPackageUninstallService
         ];
 
         try {
+            $this->operationLockService->checkpoint();
             $result = $this->migrationService->reset($extensionId);
+            $this->operationLockService->checkpoint();
             $auditContext['rolled_back'] = $result['rolledBack'];
             $auditContext['migrator_output'] = $result['output'];
             $logPath = $this->migrationService->writeMigrationLog($extensionId, 'uninstall-drop-data', $auditContext);
         } catch (\Throwable $exception) {
+            if ($exception instanceof ExtensionLockLostException) {
+                throw $exception;
+            }
+
             $logPath = $this->migrationService->writeMigrationLog($extensionId, 'uninstall-drop-data', $auditContext, $exception);
 
             throw new DisplayException(sprintf("Dropping the extension's database tables failed, so the uninstall was aborted. Details: %s. Manual cleanup, if you still want the data removed:\n%s", $logPath, implode("\n", $manualCleanup)), $exception);

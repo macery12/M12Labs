@@ -13,6 +13,7 @@ use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
 use Everest\Services\Extensions\Manifest\ExtensionManifest;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilityDiff;
+use Everest\Exceptions\Service\Extension\ExtensionLockLostException;
 use Everest\Exceptions\Service\Extension\CapabilityApprovalRequiredException;
 
 class ExtensionPackageUpdateService
@@ -67,6 +68,10 @@ class ExtensionPackageUpdateService
 
                 return $packageModel;
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
                 if ($committed && $packageModel instanceof ExtensionPackage) {
                     $this->reportPostCommitFailure($exception);
 
@@ -86,6 +91,7 @@ class ExtensionPackageUpdateService
             } finally {
                 $this->progressService->clear();
                 if ($prepared !== null) {
+                    $this->operationLockService->checkpoint();
                     $this->ownershipService->repairStandardPaths($prepared['extensionId']);
                     $this->cleanupPreparedUpdate($prepared);
                 }
@@ -142,6 +148,10 @@ class ExtensionPackageUpdateService
 
                 return $packageModel;
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
                 if ($committed && $packageModel instanceof ExtensionPackage) {
                     $this->reportPostCommitFailure($exception);
 
@@ -161,6 +171,7 @@ class ExtensionPackageUpdateService
             } finally {
                 $this->progressService->clear();
                 if ($prepared !== null) {
+                    $this->operationLockService->checkpoint();
                     $this->ownershipService->repairStandardPaths($prepared['extensionId']);
                     $this->cleanupPreparedUpdate($prepared);
                 }
@@ -207,6 +218,8 @@ class ExtensionPackageUpdateService
      */
     public function finalizeUpdate(array $prepared): ExtensionPackage
     {
+        $this->operationLockService->checkpoint();
+
         $existingPackage = $prepared['existingPackage'];
         $parsedManifest = $prepared['parsedManifest'];
         $fallbackPackageMetadata = $prepared['fallbackPackageMetadata'];
@@ -329,6 +342,7 @@ class ExtensionPackageUpdateService
             }
 
             try {
+                $this->operationLockService->checkpoint();
                 File::delete($oldFile->backup_path);
             } catch (\Throwable $exception) {
                 // The update is already committed. A stale backup is safe and
@@ -346,6 +360,8 @@ class ExtensionPackageUpdateService
      */
     public function rollbackUpdate(array $prepared): void
     {
+        $this->operationLockService->checkpoint();
+
         // Only migrations applied by THIS update are reverted (they form the
         // newest batch); the previous version's migrations must survive. Runs
         // before the file snapshot restore so the new migration files are
@@ -517,6 +533,7 @@ class ExtensionPackageUpdateService
                 (array) ($parsedManifest->requirements['npmPackages'] ?? []),
             );
 
+            $this->operationLockService->checkpoint();
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
 
             // An update replaces the very class files a queued job names, so
@@ -551,6 +568,7 @@ class ExtensionPackageUpdateService
             $this->progressService->report('update', $resolvedExtensionId, 'removing');
             $targetMutationStarted = true;
             foreach ($oldOnlyFiles as $oldFile) {
+                $this->operationLockService->checkpoint();
                 $targetPath = base_path($oldFile->path);
 
                 if ($oldFile->operation === 'updated') {
@@ -565,6 +583,7 @@ class ExtensionPackageUpdateService
 
             $this->progressService->report('update', $resolvedExtensionId, 'copying');
             foreach ($newFilePlans as $plan) {
+                $this->operationLockService->checkpoint();
                 File::ensureDirectoryExists(dirname($plan['targetPath']));
                 File::copy($plan['sourcePath'], $plan['targetPath']);
             }
@@ -574,6 +593,7 @@ class ExtensionPackageUpdateService
             // than at the next install.
             /** @var ExtensionPackageFile|null $previousGeneratedFile */
             $previousGeneratedFile = $existingPackage->files->firstWhere('path', $generatedPath);
+            $this->operationLockService->checkpoint();
             $newFilePlans[] = $this->pageManifestService->write(
                 $parsedManifest,
                 $newBackupRoot,
@@ -609,6 +629,12 @@ class ExtensionPackageUpdateService
                 'tempRoot'                => $tempRoot,
             ];
         } catch (\Throwable $exception) {
+            if ($exception instanceof ExtensionLockLostException) {
+                File::deleteDirectory($tempRoot);
+
+                throw $exception;
+            }
+
             if ($existingPackage && $targetMutationStarted) {
                 $this->rollbackNewFilePlans($existingPackage, $newFilePlans);
                 $this->fileService->restoreRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
@@ -649,6 +675,8 @@ class ExtensionPackageUpdateService
         $oldPaths = array_fill_keys($existingPackage->files->pluck('path')->all(), true);
 
         foreach (array_reverse($newFilePlans) as $plan) {
+            $this->operationLockService->checkpoint();
+
             $path = (string) ($plan['path'] ?? '');
             $targetPath = $plan['targetPath'] ?? null;
 
@@ -827,8 +855,14 @@ class ExtensionPackageUpdateService
         $this->migrationService->assertMigrationConventions($extensionId, $migrationFiles);
 
         try {
+            $this->operationLockService->checkpoint();
             $result = $this->migrationService->run($extensionId);
+            $this->operationLockService->checkpoint();
         } catch (\Throwable $exception) {
+            if ($exception instanceof ExtensionLockLostException) {
+                throw $exception;
+            }
+
             try {
                 $this->migrationService->rollbackLastBatch($extensionId);
             } catch (\Throwable $rollbackException) {

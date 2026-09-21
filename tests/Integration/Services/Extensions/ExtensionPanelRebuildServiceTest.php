@@ -2,6 +2,7 @@
 
 namespace Everest\Tests\Integration\Services\Extensions;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Everest\Exceptions\DisplayException;
 use Everest\Tests\Integration\IntegrationTestCase;
@@ -19,6 +20,9 @@ class ExtensionPanelRebuildServiceTest extends IntegrationTestCase
     public function tearDown(): void
     {
         Cache::lock(self::BUILD_LOCK)->forceRelease();
+        Cache::forget('m12labs:extensions:build-context');
+        Cache::forget('m12labs:extensions:build-generation');
+        CarbonImmutable::setTestNow();
 
         parent::tearDown();
     }
@@ -58,5 +62,52 @@ class ExtensionPanelRebuildServiceTest extends IntegrationTestCase
 
         $contender = Cache::lock(self::BUILD_LOCK, 10);
         $this->assertFalse($contender->get(), 'the original holder should still own the build lock');
+    }
+
+    public function testBuildLeaseOutlivesItsFormerFixedTtl(): void
+    {
+        CarbonImmutable::setTestNow('2026-09-20 12:00:00');
+        config()->set('extensions.build.timeout_seconds', 900);
+
+        try {
+            app(ExtensionPanelRebuildService::class)->rebuild('outer test', function (int $stage): void {
+                if ($stage !== 0) {
+                    return;
+                }
+
+                CarbonImmutable::setTestNow(now()->addSeconds(1021));
+
+                try {
+                    app(ExtensionPanelRebuildService::class)->rebuild('contender');
+                    $this->fail('The former fixed build TTL admitted a contender.');
+                } catch (DisplayException $exception) {
+                    $this->assertStringContainsString('Another panel rebuild is already running.', $exception->getMessage());
+                }
+
+                throw new \RuntimeException('stop before commands');
+            });
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('stop before commands', $exception->getMessage());
+        }
+    }
+
+    public function testLostBuildFenceAbortsBeforeTheFirstCommand(): void
+    {
+        $replacement = null;
+
+        try {
+            app(ExtensionPanelRebuildService::class)->rebuild('lease-loss test', function (int $stage) use (&$replacement): void {
+                $this->assertSame(0, $stage);
+                Cache::lock(self::BUILD_LOCK)->forceRelease();
+                $replacement = Cache::lock(self::BUILD_LOCK, 60);
+                $this->assertTrue($replacement->get());
+            });
+            $this->fail('The stale rebuild owner should have been fenced out.');
+        } catch (DisplayException $exception) {
+            $this->assertStringContainsString('lease was lost', $exception->getMessage());
+        }
+
+        $this->assertFalse(Cache::lock(self::BUILD_LOCK, 60)->get(), 'the stale rebuild must not release its successor');
+        $replacement?->release();
     }
 }

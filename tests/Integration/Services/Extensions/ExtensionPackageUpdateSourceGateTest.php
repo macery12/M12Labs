@@ -151,6 +151,7 @@ class ExtensionPackageUpdateSourceGateTest extends IntegrationTestCase
         $artifact = $this->app->make(ExtensionPackageArtifactService::class);
 
         $lock = \Mockery::mock(ExtensionOperationLockService::class);
+        $lock->allows('checkpoint');
         $lock->expects('withinLock')->once()->andReturnUsing(
             static fn (string $action, string $subject, callable $callback) => $callback()
         );

@@ -4,7 +4,6 @@ namespace Everest\Services\Extensions;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Cache;
 use Symfony\Component\Process\Process;
 use Everest\Exceptions\DisplayException;
 use Symfony\Component\Process\ExecutableFinder;
@@ -32,6 +31,8 @@ class ExtensionPanelRebuildService
      * manually triggered rebuild cannot run concurrently with an install.
      */
     private const BUILD_LOCK = 'm12labs:extensions:build';
+    private const BUILD_CONTEXT = 'm12labs:extensions:build-context';
+    private const BUILD_GENERATION = 'm12labs:extensions:build-generation';
 
     /**
      * Compiled artifacts that must be discarded once a package's files change.
@@ -58,6 +59,7 @@ class ExtensionPanelRebuildService
 
     public function __construct(
         private ExtensionFilesystemOwnershipService $ownershipService,
+        private ExtensionOperationLockService $operationLockService,
     ) {
     }
 
@@ -72,23 +74,30 @@ class ExtensionPanelRebuildService
      */
     public function rebuild(string $reason, ?callable $onCommandStart = null): array
     {
-        $lock = Cache::lock(self::BUILD_LOCK, (int) config('extensions.build.timeout_seconds', 900) + 120);
+        $lease = ExtensionLockLease::acquire(
+            self::BUILD_LOCK,
+            self::BUILD_CONTEXT,
+            self::BUILD_GENERATION,
+            'panel rebuild',
+            $this->lockTtlSeconds(),
+            ['reason' => $reason, 'started_at' => now()->toIso8601String()],
+        );
 
-        if (!$lock->get()) {
+        if ($lease === null) {
             throw new DisplayException('Another panel rebuild is already running. Wait for it to finish before starting a new one.');
         }
 
         try {
-            return $this->runRebuild($reason, $onCommandStart);
+            return $this->runRebuild($reason, $lease, $onCommandStart);
         } finally {
-            $lock->release();
+            $lease->release();
         }
     }
 
     /**
      * @return array<int, array{command: string, output: string, durationMs: int}>
      */
-    private function runRebuild(string $reason, ?callable $onCommandStart): array
+    private function runRebuild(string $reason, ExtensionLockLease $lease, ?callable $onCommandStart): array
     {
         // Two stages, not two commands: stage 0 clears several compiled
         // artifacts. Callers map the stage index to a progress label, so the
@@ -103,9 +112,15 @@ class ExtensionPanelRebuildService
         $snapshot = null;
 
         foreach ($stages as $index => $commands) {
+            $this->checkpoint($lease);
+
             if ($onCommandStart !== null) {
                 $onCommandStart($index);
             }
+
+            // A progress callback can perform I/O of its own. Fence again at
+            // the last instant before snapshotting or starting a command.
+            $this->checkpoint($lease);
 
             if ($index === 1) {
                 // Validate (and auto-repair when root) filesystem ownership so
@@ -119,7 +134,7 @@ class ExtensionPanelRebuildService
                 $startedAt = microtime(true);
                 $process = new Process($command, base_path(), $environment);
                 $process->setTimeout($index === 1 ? (float) config('extensions.build.timeout_seconds', 900) : 300.0);
-                $process->run();
+                $this->runProcess($process, $lease);
                 $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
 
                 $combinedOutput = trim($process->getOutput() . "\n" . $process->getErrorOutput());
@@ -130,6 +145,7 @@ class ExtensionPanelRebuildService
                 ];
 
                 if (!$process->isSuccessful()) {
+                    $this->checkpoint($lease);
                     $this->restoreAssets($snapshot);
 
                     throw new DisplayException(sprintf('M12Labs rebuild failed while running "%s".', implode(' ', $command)), new \RuntimeException($combinedOutput));
@@ -138,17 +154,62 @@ class ExtensionPanelRebuildService
         }
 
         try {
+            $this->checkpoint($lease);
             $this->assertOutputWithinBudget();
         } catch (DisplayException $exception) {
+            $this->checkpoint($lease);
             $this->restoreAssets($snapshot);
 
             throw $exception;
         }
 
+        $this->checkpoint($lease);
         $this->pruneSnapshots();
         $this->pruneStore($environment);
 
         return $output;
+    }
+
+    /**
+     * Poll rather than blocking in Process::run(), renewing both leases while
+     * a command is alive. If either fence is lost, stop the child before it can
+     * publish more output and abort the lifecycle.
+     */
+    private function runProcess(Process $process, ExtensionLockLease $lease): void
+    {
+        $process->start();
+
+        try {
+            while ($process->isRunning()) {
+                $this->checkpoint($lease);
+                $process->checkTimeout();
+                usleep(250_000);
+            }
+
+            $this->checkpoint($lease);
+        } catch (\Throwable $exception) {
+            if ($process->isRunning()) {
+                $process->stop(0);
+            }
+
+            throw $exception;
+        }
+    }
+
+    private function checkpoint(ExtensionLockLease $lease): void
+    {
+        $lease->checkpoint();
+        $this->operationLockService->checkpoint();
+    }
+
+    /**
+     * Covers every bounded stage even if a worker is descheduled between
+     * checkpoints: four cache clears, snapshot creation, the frontend build,
+     * store pruning, and a conservative handoff margin.
+     */
+    private function lockTtlSeconds(): int
+    {
+        return max(60, (int) config('extensions.build.timeout_seconds', 900) + 1800);
     }
 
     /**

@@ -154,7 +154,7 @@ class ExtensionPackageBatchServiceTest extends TestCase
     }
 
     /**
-     * @return array{ExtensionPackageBatchService, Mockery\MockInterface, Mockery\MockInterface, Mockery\MockInterface, Mockery\MockInterface, Mockery\MockInterface, Mockery\MockInterface, Mockery\MockInterface}
+     * @return array{ExtensionPackageBatchService, \Mockery\MockInterface, \Mockery\MockInterface, \Mockery\MockInterface, \Mockery\MockInterface, \Mockery\MockInterface, \Mockery\MockInterface, \Mockery\MockInterface}
      */
     private function service(): array
     {
@@ -163,6 +163,7 @@ class ExtensionPackageBatchServiceTest extends TestCase
         $update = \Mockery::mock(ExtensionPackageUpdateService::class);
         $rebuild = \Mockery::mock(ExtensionPanelRebuildService::class);
         $lock = \Mockery::mock(ExtensionOperationLockService::class);
+        $lock->allows('checkpoint');
         $ownership = \Mockery::mock(ExtensionFilesystemOwnershipService::class);
         $progress = \Mockery::mock(ExtensionInstallProgressService::class);
 
