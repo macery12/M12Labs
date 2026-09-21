@@ -10,21 +10,16 @@ import { cn } from '@/lib/cn';
 // Titled section cards, a label/field row, and a sticky save bar that reflects
 // unsaved state. Lives in components/ui because it is no longer billing-only.
 
-export function SectionCard({
-    id,
-    icon: Icon,
-    title,
-    desc,
-    right,
-    children,
-}: {
+export interface SectionCardProps {
     id?: string;
     icon: LucideIcon;
     title: string;
     desc: string;
     right?: React.ReactNode;
     children: React.ReactNode;
-}) {
+}
+
+export function SectionCard({ id, icon: Icon, title, desc, right, children }: SectionCardProps) {
     return (
         <section id={id} className="scroll-mt-6 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70">
             <header className="flex flex-col items-stretch gap-3 border-b border-[var(--color-border)] px-5 py-3.5 sm:flex-row sm:items-center">
@@ -48,7 +43,12 @@ export function SectionCard({
 // forms are mostly short inputs (ports, limits, counts) — stacking them turns a
 // four-field section into four screens of scrolling. Pair them up by default and
 // let the genuinely long ones opt out with <FieldRow wide>.
-export function FieldGrid({ children, columns = 2 }: { children: React.ReactNode; columns?: 2 | 3 }) {
+export interface FieldGridProps {
+    children: React.ReactNode;
+    columns?: 2 | 3;
+}
+
+export function FieldGrid({ children, columns = 2 }: FieldGridProps) {
     return (
         <div className={cn('grid gap-x-5 gap-y-4', columns === 3 ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2')}>
             {children}
@@ -56,14 +56,7 @@ export function FieldGrid({ children, columns = 2 }: { children: React.ReactNode
     );
 }
 
-export function FieldRow({
-    label,
-    desc,
-    mono,
-    error,
-    wide,
-    children,
-}: {
+export interface FieldRowProps {
     label: string;
     desc?: string;
     mono?: string;
@@ -71,7 +64,9 @@ export function FieldRow({
     /** Span the whole FieldGrid — for paths, commands, descriptions, textareas. */
     wide?: boolean;
     children: React.ReactNode;
-}) {
+}
+
+export function FieldRow({ label, desc, mono, error, wide, children }: FieldRowProps) {
     return (
         <div className={cn('flex flex-col gap-1.5', wide && 'sm:col-span-full')}>
             <label className="flex items-baseline gap-2 text-sm font-medium text-[var(--color-ink-muted)]">
@@ -87,7 +82,11 @@ export function FieldRow({
 
 // A group of related on/off settings, rendered as a single bordered list with
 // each option labelled + described. Reads far cleaner than scattered switches.
-export function ToggleGroup({ children }: { children: React.ReactNode }) {
+export interface ToggleGroupProps {
+    children: React.ReactNode;
+}
+
+export function ToggleGroup({ children }: ToggleGroupProps) {
     return (
         <div className="divide-y divide-[var(--color-border)] overflow-hidden rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-2)]/40">
             {children}
@@ -95,19 +94,15 @@ export function ToggleGroup({ children }: { children: React.ReactNode }) {
     );
 }
 
-export function ToggleRow({
-    label,
-    desc,
-    checked,
-    onChange,
-    disabled,
-}: {
+export interface ToggleRowProps {
     label: string;
     desc?: string;
     checked: boolean;
     onChange: (next: boolean) => void;
     disabled?: boolean;
-}) {
+}
+
+export function ToggleRow({ label, desc, checked, onChange, disabled }: ToggleRowProps) {
     return (
         <div className="flex items-center justify-between gap-4 px-4 py-3">
             <div className="min-w-0">
@@ -119,12 +114,7 @@ export function ToggleRow({
     );
 }
 
-export function SaveBar({
-    dirty,
-    saving,
-    onDiscard,
-    blockedReason,
-}: {
+export interface SaveBarProps {
     dirty: boolean;
     saving: boolean;
     onDiscard: () => void;
@@ -135,7 +125,17 @@ export function SaveBar({
      * form failed before anyone had picked a nest.
      */
     blockedReason?: string | null;
-}) {
+    /**
+     * Wording overrides. These four are generic panel strings and default to
+     * the panel's own translations, which is why an extension reusing this bar
+     * gets a correctly localized Save button without shipping one. Override
+     * only when the action is not "save" — "Apply", "Publish" — and pass a
+     * translated string when you do.
+     */
+    labels?: Partial<Record<'unsaved' | 'allSaved' | 'discard' | 'save', string>>;
+}
+
+export function SaveBar({ dirty, saving, onDiscard, blockedReason, labels }: SaveBarProps) {
     const blocked = Boolean(blockedReason);
 
     return (
@@ -148,16 +148,16 @@ export function SaveBar({
             ) : (
                 <span className={cn('flex items-center gap-2 text-xs', dirty ? 'text-[var(--color-warning)]' : 'text-[var(--color-ink-faint)]')}>
                     <span className={cn('h-1.5 w-1.5 rounded-full', dirty ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-ink-faint)]')} />
-                    {dirty ? m['common.editor.unsaved']() : m['common.editor.allSaved']()}
+                    {dirty ? (labels?.unsaved ?? m['common.editor.unsaved']()) : (labels?.allSaved ?? m['common.editor.allSaved']())}
                 </span>
             )}
             <div className="flex items-center justify-end gap-2">
                 <Button type="button" variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>
-                    <RotateCcw className="h-4 w-4" /> {m['common.actions.discard']()}
+                    <RotateCcw className="h-4 w-4" /> {labels?.discard ?? m['common.actions.discard']()}
                 </Button>
                 <Button type="submit" size="sm" disabled={!dirty || saving || blocked}>
                     {saving ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                    {m['common.actions.save']()}
+                    {labels?.save ?? m['common.actions.save']()}
                 </Button>
             </div>
         </div>

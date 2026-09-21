@@ -93,6 +93,27 @@ export {
     type DataTablePagination,
 } from './DataTable';
 export { SliderField, type SliderFieldProps } from './SliderField';
+
+// Full-page editor chrome: titled section cards, a two-column field grid, a
+// toggle list and a sticky save bar. Re-exported rather than reimplemented so a
+// package's settings page is laid out the same way the panel's own editors are
+// — and so the dense two-column default applies to extensions too, instead of
+// every package rediscovering that a column of full-width inputs turns four
+// fields into four screens of scrolling.
+export {
+    SectionCard,
+    FieldGrid,
+    FieldRow,
+    ToggleGroup,
+    ToggleRow,
+    SaveBar,
+    type SectionCardProps,
+    type FieldGridProps,
+    type FieldRowProps,
+    type ToggleGroupProps,
+    type ToggleRowProps,
+    type SaveBarProps,
+} from '@/components/ui/editorChrome';
 export {
     SectionNavigation,
     TabNavigation,
