@@ -5,8 +5,8 @@ namespace Everest\Tests\Unit\Services\Extensions;
 use Everest\Tests\TestCase;
 use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
-use Everest\Services\Extensions\ExtensionMigrationService;
 use Everest\Services\Extensions\ExtensionForeignKeyPolicy;
+use Everest\Services\Extensions\ExtensionMigrationService;
 use Everest\Services\Extensions\ExtensionPhpSourceScanner;
 use Everest\Services\Extensions\ExtensionMigrationSourceParser;
 
