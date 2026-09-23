@@ -13,6 +13,7 @@ use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\VisibilityCondition;
 use Everest\Services\Extensions\Manifest\Definitions\PackageFlagPredicate;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PackageFlagDefinition;
@@ -142,8 +143,9 @@ class ExtensionManifestParser
         $this->assertKnownKeys($database, ['migrations', 'tables'], 'capabilities.database');
 
         $adminPermissions = $this->parsePermissions($permissions['admin'] ?? [], $extensionId);
-        $secrets = $this->parseSecrets($capabilities['secrets'] ?? [], $extensionId);
+        // Settings first: a credential's `visibleWhen` reads them.
         $settings = $this->parseSettings($capabilities['settings'] ?? [], $extensionId);
+        $secrets = $this->parseSecrets($capabilities['secrets'] ?? [], $extensionId, $settings);
         $flags = $this->parsePackageFlags($capabilities['flags'] ?? [], $settings, $secrets);
         $flagNames = array_map(fn (PackageFlagDefinition $flag): string => $flag->name, $flags);
 
@@ -728,7 +730,10 @@ class ExtensionManifestParser
     /**
      * @return array<int, SecretDefinition>
      */
-    private function parseSecrets($secrets, string $extensionId): array
+    /**
+     * @param array<int, SettingDefinition> $settings
+     */
+    private function parseSecrets($secrets, string $extensionId, array $settings = []): array
     {
         if ($secrets === [] || $secrets === null) {
             return [];
@@ -748,7 +753,7 @@ class ExtensionManifestParser
                 throw new DisplayException(sprintf('%s must be an object.', $where));
             }
 
-            $this->assertKnownKeys($secret, ['key', 'labelKey', 'helpKey', 'rotatable', 'default'], $where);
+            $this->assertKnownKeys($secret, ['key', 'labelKey', 'helpKey', 'rotatable', 'default', 'visibleWhen'], $where);
 
             // A secret with a default would ship the credential in the archive
             // and the registry, where it is neither secret nor rotatable.
@@ -767,6 +772,7 @@ class ExtensionManifestParser
                 labelKey: $this->labelKey($secret['labelKey'] ?? '', $extensionId, $where . '.labelKey'),
                 helpKey: isset($secret['helpKey']) ? $this->labelKey($secret['helpKey'], $extensionId, $where . '.helpKey') : null,
                 rotatable: (bool) ($secret['rotatable'] ?? true),
+                visibleWhen: $this->parseVisibleWhen($secret['visibleWhen'] ?? null, $settings, null, $where . '.visibleWhen'),
             );
         }
 
@@ -810,7 +816,7 @@ class ExtensionManifestParser
             $this->assertKnownKeys($field, [
                 'key', 'type', 'labelKey', 'helpKey', 'required', 'default',
                 'minLength', 'maxLength', 'pattern', 'enum', 'min', 'max',
-                'urlHosts', 'visibility', 'requiresRebuild',
+                'urlHosts', 'visibility', 'requiresRebuild', 'visibleWhen',
             ], $where);
 
             $key = $this->settingKey($field['key'] ?? '', $where . '.key');
@@ -861,7 +867,69 @@ class ExtensionManifestParser
             );
         }
 
+        // A condition names other fields, so it can only be resolved once
+        // every field is known -- a field may depend on one declared after it.
+        foreach ($fields as $index => $field) {
+            if (!array_key_exists('visibleWhen', $field)) {
+                continue;
+            }
+
+            $definitions[$index] = $definitions[$index]->withVisibleWhen($this->parseVisibleWhen(
+                $field['visibleWhen'],
+                $definitions,
+                $definitions[$index]->key,
+                sprintf('capabilities.settings.fields[%d].visibleWhen', $index),
+            ));
+        }
+
         return $definitions;
+    }
+
+    /**
+     * Parse when a field or credential is shown by the generated admin form.
+     *
+     * The flag grammar, restricted to settings: the condition is evaluated in
+     * the browser against the form being edited, and whether a secret is
+     * configured is not something that form changes. A field may not depend on
+     * itself, which would hide it the moment it was edited.
+     *
+     * @param array<int, SettingDefinition> $settings
+     */
+    private function parseVisibleWhen($condition, array $settings, ?string $self, string $where): ?VisibilityCondition
+    {
+        if ($condition === null) {
+            return null;
+        }
+        if (!is_array($condition) || array_is_list($condition)) {
+            throw new DisplayException(sprintf('%s must be an object with "all" and/or "any".', $where));
+        }
+
+        $this->assertKnownKeys($condition, ['all', 'any'], $where);
+
+        $settingMap = [];
+        foreach ($settings as $setting) {
+            $settingMap[$setting->key] = $setting;
+        }
+
+        foreach (['all', 'any'] as $group) {
+            foreach ((array) ($condition[$group] ?? []) as $index => $predicate) {
+                $at = sprintf('%s.%s[%d]', $where, $group, $index);
+                if (is_array($predicate) && array_key_exists('secret', $predicate)) {
+                    throw new DisplayException(sprintf('%s may only test settings; a credential\'s configured state is not part of the form being edited.', $at));
+                }
+                if ($self !== null && is_array($predicate) && ($predicate['setting'] ?? null) === $self) {
+                    throw new DisplayException(sprintf('%s makes "%s" depend on itself, which would hide it while it is being edited.', $at, $self));
+                }
+            }
+        }
+
+        $all = $this->parseFlagPredicates($condition['all'] ?? [], $settingMap, [], $where . '.all');
+        $any = $this->parseFlagPredicates($condition['any'] ?? [], $settingMap, [], $where . '.any');
+        if ($all === [] && $any === []) {
+            throw new DisplayException(sprintf('%s must declare at least one predicate under "all" or "any".', $where));
+        }
+
+        return new VisibilityCondition($all, $any);
     }
 
     /**

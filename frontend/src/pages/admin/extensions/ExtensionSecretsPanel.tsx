@@ -11,7 +11,9 @@ import {
     putExtensionSecret,
     deleteExtensionSecret,
     type ExtensionSecret,
+    type ExtensionSettingField,
 } from '@/api/extensions';
+import { isVisible } from './settingVisibility';
 
 /**
  * Credential fields for an installed extension.
@@ -23,7 +25,18 @@ import {
  * drawer for an unrelated reason cannot destroy a working credential — clearing
  * is its own explicit button.
  */
-export function ExtensionSecretsPanel({ extensionId, disabled }: { extensionId: string; disabled: boolean }) {
+export function ExtensionSecretsPanel({
+    extensionId,
+    disabled,
+    schema = [],
+    settings = {},
+}: {
+    extensionId: string;
+    disabled: boolean;
+    /** The settings form, so a credential's `visibleWhen` follows unsaved edits. */
+    schema?: ExtensionSettingField[];
+    settings?: Record<string, unknown>;
+}) {
     const qc = useQueryClient();
     const { push } = useFlashes();
     const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -72,7 +85,7 @@ export function ExtensionSecretsPanel({ extensionId, disabled }: { extensionId: 
 
     return (
         <div className="space-y-3">
-            {secrets.map((secret: ExtensionSecret) => {
+            {secrets.filter(secret => isVisible(secret.visibleWhen, schema, settings)).map((secret: ExtensionSecret) => {
                 const draft = drafts[secret.key] ?? '';
 
                 return (

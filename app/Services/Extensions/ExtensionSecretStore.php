@@ -49,7 +49,7 @@ class ExtensionSecretStore
      * Metadata for every key the extension declares — enough to render the
      * admin form, and nothing more.
      *
-     * @return array<int, array{key: string, labelKey: string, helpKey: ?string, rotatable: bool, configured: bool, updatedAt: ?string, rotatedAt: ?string}>
+     * @return array<int, array{key: string, labelKey: string, helpKey: ?string, rotatable: bool, visibleWhen: ?array<string, mixed>, configured: bool, updatedAt: ?string, rotatedAt: ?string}>
      */
     public function describe(string $extensionId): array
     {
@@ -68,6 +68,7 @@ class ExtensionSecretStore
                 'labelKey' => $secret->labelKey,
                 'helpKey' => $secret->helpKey,
                 'rotatable' => $secret->rotatable,
+                'visibleWhen' => $secret->visibleWhen?->jsonSerialize(),
                 'configured' => $row !== null,
                 'updatedAt' => $row?->updated_at?->toIso8601String(),
                 'rotatedAt' => $row?->rotated_at?->toIso8601String(),
@@ -200,6 +201,18 @@ class ExtensionSecretStore
         return ['rewrapped' => $rewrapped, 'failed' => $failed];
     }
 
+    /** Whether the extension's verified manifest declares this key. */
+    public function declares(string $extensionId, string $key): bool
+    {
+        foreach ($this->declared($extensionId) as $secret) {
+            if ($secret->key === $key) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @return array<int, Manifest\Definitions\SecretDefinition>
      */
@@ -210,10 +223,8 @@ class ExtensionSecretStore
 
     private function assertDeclared(string $extensionId, string $key): void
     {
-        foreach ($this->declared($extensionId) as $secret) {
-            if ($secret->key === $key) {
-                return;
-            }
+        if ($this->declares($extensionId, $key)) {
+            return;
         }
 
         throw new DisplayException(sprintf('The extension [%s] does not declare a secret named [%s].', $extensionId, $key));

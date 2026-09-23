@@ -2836,6 +2836,8 @@
   "extensions.drawer.nests": "Reder",
   "extensions.drawer.noDatabaseHint": "Denne udvidelse har ingen databasetabeller, så der er intet, der skal slettes.",
   "extensions.drawer.noEggs": "Vælg et rede for at udvælge bestemte æg.",
+  "extensions.drawer.fullSettings": "Åbn alle indstillinger",
+  "extensions.drawer.fullSettingsHint": "Denne udvidelse har sin egen indstillingsside med alle muligheder. Ændringer begge steder gælder de samme værdier.",
   "extensions.drawer.noSettings": "Denne udvidelse har ingen indstillinger, der kan konfigureres.",
   "extensions.drawer.settings": "Indstillinger",
   "extensions.health.copied": "Kopieret",

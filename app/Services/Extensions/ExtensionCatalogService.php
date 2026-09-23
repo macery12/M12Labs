@@ -121,6 +121,7 @@ class ExtensionCatalogService
                 // resolves to nothing for a v3 package, whose pages the loader
                 // mounts at extensions/ext/<id>/<slug>.
                 'serverPagePath' => $this->primaryServerPagePath($package->extension_id, $capabilities),
+                'adminSettingsPath' => $this->adminSettingsPath($package->extension_id, $capabilities),
                 'hasServerPage' => $hasServerPage,
                 'admin' => $adminSurface,
                 'type' => $this->deriveExtensionType($hasServerPage, $hasAdminPage),
@@ -679,6 +680,27 @@ class ExtensionCatalogService
     }
 
     /**
+     * The path under /admin/ of a package's own settings page, by convention
+     * the admin page whose slug is `settings`.
+     *
+     * A package with more configuration than the generated form can carry
+     * ships its own page for it, and the drawer links there rather than
+     * leaving an operator to find it in the sidebar. Built the same way as
+     * {@see primaryServerPagePath()}: from the verified projection, never a
+     * path the package names.
+     */
+    private function adminSettingsPath(string $extensionId, ?ExtensionCapabilitySet $capabilities): ?string
+    {
+        foreach ($capabilities?->adminPages ?? [] as $page) {
+            if ($page->slug === 'settings') {
+                return sprintf('extensions/ext/%s/settings', $extensionId);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The URL segment under /server/:id/ for a package's first server page.
      *
      * Derived from the verified capability projection and the extension id, in
@@ -715,7 +737,10 @@ class ExtensionCatalogService
      * The declared settings fields, in the shape the admin drawer renders.
      *
      * Secret-visibility fields are excluded: they are written through the
-     * secret store, and this payload is returned by the catalog API.
+     * secret store, and this payload is returned by the catalog API. Internal
+     * fields are excluded too -- the package's own settings UI owns them, and
+     * the drawer rendering them anyway is how a legacy key nobody reads ends
+     * up looking like a control that matters.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -724,7 +749,7 @@ class ExtensionCatalogService
         $fields = [];
 
         foreach ($capabilities->settings as $field) {
-            if ($field->isSecret()) {
+            if ($field->isSecret() || $field->isInternal()) {
                 continue;
             }
 
@@ -742,6 +767,9 @@ class ExtensionCatalogService
                 'options' => $field->enum === null
                     ? null
                     : array_map(fn (string $value): array => ['value' => $value, 'label' => $value], $field->enum),
+                'min' => $field->min,
+                'max' => $field->max,
+                'visibleWhen' => $field->visibleWhen?->jsonSerialize(),
             ], fn ($value) => $value !== null && $value !== false);
         }
 

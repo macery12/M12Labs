@@ -14,6 +14,7 @@ use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilityVocabulary;
+use Everest\Services\Extensions\Manifest\Definitions\VisibilityCondition;
 use Everest\Services\Extensions\Manifest\Definitions\PackageFlagPredicate;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PackageFlagDefinition;
@@ -489,15 +490,6 @@ class ExtensionRuntimePlanService
         $database = (array) ($capabilities['database'] ?? []);
         $permissions = (array) ($capabilities['permissions'] ?? []);
         $settings = (array) ($capabilities['settings'] ?? []);
-        $hydratedSecrets = array_map(
-            fn (array $s): SecretDefinition => new SecretDefinition(
-                (string) $s['key'],
-                (string) $s['labelKey'],
-                isset($s['helpKey']) ? (string) $s['helpKey'] : null,
-                (bool) ($s['rotatable'] ?? true),
-            ),
-            (array) ($capabilities['secrets'] ?? [])
-        );
         $hydratedSettings = array_map(
             fn (array $f): SettingDefinition => new SettingDefinition(
                 key: (string) $f['key'],
@@ -517,6 +509,25 @@ class ExtensionRuntimePlanService
                 requiresRebuild: (bool) ($f['requiresRebuild'] ?? false),
             ),
             (array) ($settings['fields'] ?? [])
+        );
+        // Conditions name other fields, so they attach once every field is
+        // known -- the same two passes the parser makes.
+        foreach ((array) ($settings['fields'] ?? []) as $index => $f) {
+            if (isset($hydratedSettings[$index]) && isset($f['visibleWhen'])) {
+                $hydratedSettings[$index] = $hydratedSettings[$index]->withVisibleWhen(
+                    $this->hydrateVisibleWhen($f['visibleWhen'], $hydratedSettings)
+                );
+            }
+        }
+        $hydratedSecrets = array_map(
+            fn (array $s): SecretDefinition => new SecretDefinition(
+                (string) $s['key'],
+                (string) $s['labelKey'],
+                isset($s['helpKey']) ? (string) $s['helpKey'] : null,
+                (bool) ($s['rotatable'] ?? true),
+                isset($s['visibleWhen']) ? $this->hydrateVisibleWhen($s['visibleWhen'], $hydratedSettings) : null,
+            ),
+            (array) ($capabilities['secrets'] ?? [])
         );
         $hydratedFlags = $this->hydratePackageFlags(
             (array) ($capabilities['flags'] ?? []),
@@ -784,6 +795,31 @@ class ExtensionRuntimePlanService
         ));
 
         return $hydrated;
+    }
+
+    /**
+     * A stored `visibleWhen`, re-read with the same leniency as a flag: a
+     * predicate that no longer names a readable setting is dropped rather than
+     * failing the whole package, and a condition left with nothing in it means
+     * "always shown".
+     *
+     * @param array<int, SettingDefinition> $settings
+     */
+    private function hydrateVisibleWhen(mixed $condition, array $settings): ?VisibilityCondition
+    {
+        if (!is_array($condition)) {
+            return null;
+        }
+
+        $settingMap = [];
+        foreach ($settings as $setting) {
+            $settingMap[$setting->key] = $setting;
+        }
+
+        $all = $this->hydrateFlagPredicates($condition['all'] ?? [], $settingMap, []);
+        $any = $this->hydrateFlagPredicates($condition['any'] ?? [], $settingMap, []);
+
+        return $all === [] && $any === [] ? null : new VisibilityCondition($all, $any);
     }
 
     private function flagExpectedMatchesSetting(mixed $expected, SettingDefinition $setting): bool

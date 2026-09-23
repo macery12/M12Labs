@@ -2942,6 +2942,8 @@
   "extensions.drawer.nests": "Nests",
   "extensions.drawer.noDatabaseHint": "This extension has no database tables, so there is nothing to drop.",
   "extensions.drawer.noEggs": "Select a nest to choose specific eggs.",
+  "extensions.drawer.fullSettings": "Open full settings",
+  "extensions.drawer.fullSettingsHint": "This extension has its own settings page with every option. Changes made in either place are the same values.",
   "extensions.drawer.noSettings": "This extension has no configurable settings.",
   "extensions.drawer.settings": "Settings",
   "extensions.health.copied": "Copied",

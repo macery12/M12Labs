@@ -2,6 +2,7 @@ import { m, td } from '@/i18n/messages';
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { refreshExtensionFlags } from '@/extensions-sdk/flags';
+import { Link } from 'react-router-dom';
 import { X, ExternalLink, Download, ArrowUpCircle, Trash2, AlertTriangle, Settings2, ShieldCheck } from 'lucide-react';
 import {
     type Extension,
@@ -32,6 +33,7 @@ import { ModifiedFilesModal } from './ModifiedFilesModal';
 import { PackageRequirementsModal } from './PackageRequirementsModal';
 import { UnusedPackagesModal, hasPossiblyUnusedPackages } from './UnusedPackagesModal';
 import { ExtensionSecretsPanel } from './ExtensionSecretsPanel';
+import { isVisible } from './settingVisibility';
 import { ExtensionHealthPanel, ExtensionHealthIcon } from './ExtensionHealthPanel';
 import { DatabaseChangesModal } from './DatabaseChangesModal';
 import type { DatabasePlanOperation } from '@/api/extensions';
@@ -364,11 +366,30 @@ export function ExtensionManageDrawer({
 
                             {/* settings schema */}
                             <Section title={m['extensions.drawer.settings']()}>
+                                {/* A package with its own settings page owns the full
+                                    form; the fields below are the same values. */}
+                                {e.adminSettingsPath && (
+                                    <Link
+                                        to={`/admin/${e.adminSettingsPath}`}
+                                        onClick={onClose}
+                                        className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-[var(--brand)]/30 bg-[var(--brand)]/[0.06] px-3 py-2.5 text-xs text-[var(--color-ink)] transition-colors hover:bg-[var(--brand)]/10"
+                                    >
+                                        <span className="min-w-0">
+                                            <span className="block font-medium">{m['extensions.drawer.fullSettings']()}</span>
+                                            <span className="block text-[11px] text-[var(--color-ink-faint)]">
+                                                {m['extensions.drawer.fullSettingsHint']()}
+                                            </span>
+                                        </span>
+                                        <Settings2 className="h-4 w-4 shrink-0 text-[var(--brand)]" />
+                                    </Link>
+                                )}
                                 {e.settingsSchema.length === 0 ? (
                                     <p className="text-xs text-[var(--color-ink-faint)]">{m['extensions.drawer.noSettings']()}</p>
                                 ) : (
                                     <div className="space-y-3">
-                                        {e.settingsSchema.map(field => (
+                                        {e.settingsSchema
+                                            .filter(field => isVisible(field.visibleWhen, e.settingsSchema, settings))
+                                            .map(field => (
                                             <SettingFieldRow
                                                 key={field.key}
                                                 field={field}
@@ -391,7 +412,12 @@ export function ExtensionManageDrawer({
                                 <p className="-mt-1 mb-2 text-[11px] text-[var(--color-ink-faint)]">
                                     {m['extensions.secrets.hint']()}
                                 </p>
-                                <ExtensionSecretsPanel extensionId={e.id} disabled={busy} />
+                                <ExtensionSecretsPanel
+                                    extensionId={e.id}
+                                    disabled={busy}
+                                    schema={e.settingsSchema}
+                                    settings={settings}
+                                />
                             </Section>
 
                             {/* access control — only meaningful for extensions with a
@@ -730,13 +756,17 @@ function SettingFieldRow({
                 >
                     {field.options.map(o => (
                         <option key={o.value} value={o.value}>
-                            {o.label}
+                            {/* `<labelKey>.option.<value>` in the package's own
+                                catalog; the raw value when it has none. */}
+                            {field.labelKey ? td(`${field.labelKey}.option.${o.value}`, o.label) : o.label}
                         </option>
                     ))}
                 </select>
             ) : (
                 <Input
                     type={type === 'number' ? 'number' : type === 'password' ? 'password' : 'text'}
+                    min={type === 'number' ? field.min : undefined}
+                    max={type === 'number' ? field.max : undefined}
                     disabled={disabled}
                     value={String(value ?? '')}
                     placeholder={field.placeholder}

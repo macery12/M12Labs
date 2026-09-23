@@ -16,6 +16,8 @@ final readonly class SecretDefinition implements \JsonSerializable
         public string $labelKey,
         public ?string $helpKey = null,
         public bool $rotatable = true,
+        /** When the admin form offers this credential; null means always. */
+        public ?VisibilityCondition $visibleWhen = null,
     ) {
     }
 
@@ -27,6 +29,7 @@ final readonly class SecretDefinition implements \JsonSerializable
             'labelKey' => $this->labelKey,
             'helpKey' => $this->helpKey,
             'rotatable' => $this->rotatable,
+            'visibleWhen' => $this->visibleWhen?->jsonSerialize(),
         ], fn ($value) => $value !== null);
     }
 }

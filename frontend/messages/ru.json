@@ -2788,6 +2788,8 @@
   "extensions.drawer.installing": "Установка…",
   "extensions.drawer.nests": "Гнезда",
   "extensions.drawer.noEggs": "Выберите гнездо, чтобы выбрать конкретные яйца.",
+  "extensions.drawer.fullSettings": "Открыть все настройки",
+  "extensions.drawer.fullSettingsHint": "У этого расширения есть собственная страница со всеми параметрами. Изменения в любом из мест относятся к одним и тем же значениям.",
   "extensions.drawer.noSettings": "У этого расширения нет настраиваемых параметров.",
   "extensions.drawer.settings": "Настройки",
   "extensions.drawer.sourceCore": "Поставляется компанией M12Labs",

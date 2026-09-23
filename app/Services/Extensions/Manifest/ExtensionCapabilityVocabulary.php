@@ -196,7 +196,7 @@ final class ExtensionCapabilityVocabulary
      */
     public const SETTING_TYPES = ['text', 'textarea', 'select', 'boolean', 'number', 'url', 'host'];
 
-    public const SETTING_VISIBILITIES = ['public', 'admin', 'secret'];
+    public const SETTING_VISIBILITIES = ['public', 'admin', 'secret', 'internal'];
 
     /** Icon slugs shared with the frontend icon map. */
     public const ICONS = [

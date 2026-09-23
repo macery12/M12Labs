@@ -33,6 +33,21 @@ export interface ExtensionSource {
     securityWarning: string | null;
 }
 
+// One test inside a `visibleWhen`: `{ setting, equals }` or `{ setting, configured }`.
+export interface ExtensionVisibilityPredicate {
+    setting: string;
+    equals?: string | number | boolean;
+    configured?: boolean;
+}
+
+// When the admin form shows a field or credential. Every `all` predicate must
+// pass and, when `any` is present, at least one of those. Presentation only —
+// a hidden field keeps its stored value.
+export interface ExtensionVisibilityCondition {
+    all?: ExtensionVisibilityPredicate[];
+    any?: ExtensionVisibilityPredicate[];
+}
+
 // A single field in an extension's settings schema (manifest-defined).
 export interface ExtensionSettingField {
     key: string;
@@ -48,6 +63,9 @@ export interface ExtensionSettingField {
     // `label`/`description` as the fallback.
     labelKey?: string;
     helpKey?: string;
+    min?: number;
+    max?: number;
+    visibleWhen?: ExtensionVisibilityCondition;
 }
 
 /**
@@ -97,6 +115,9 @@ export interface Extension {
     // page, 'admin' = admin page only (no per-server access scoping), 'both'.
     type: ExtensionType;
     hasServerPage: boolean;
+    // Path under /admin/ of the package's own settings page (its admin page
+    // with slug `settings`), or null when it has none.
+    adminSettingsPath?: string | null;
     // What a repository ADVERTISES a package contains, for the catalog card of
     // something not yet installed. Never a capability the panel acts on:
     // registry metadata is unauthenticated, and the panel gates on the signed
@@ -549,6 +570,7 @@ export interface ExtensionSecret {
     labelKey: string;
     helpKey: string | null;
     rotatable: boolean;
+    visibleWhen?: ExtensionVisibilityCondition | null;
     configured: boolean;
     updatedAt: string | null;
     rotatedAt: string | null;
