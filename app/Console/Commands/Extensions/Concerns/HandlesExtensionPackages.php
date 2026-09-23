@@ -356,4 +356,27 @@ trait HandlesExtensionPackages
     {
         return (bool) $this->option('debug');
     }
+
+    /**
+     * Put Horizon's supervisors right after a lifecycle change commits.
+     *
+     * The change's own frontend build restarted Horizon before the package was
+     * committed, so a lane the change made necessary is not staffed yet. The
+     * scheduler would notice within a couple of minutes; a command the operator
+     * is watching should not leave that gap.
+     */
+    protected function reconcileHorizon(): void
+    {
+        try {
+            $missing = app(\Everest\Services\Queue\HorizonProvisioningReconciler::class)->reconcileNow();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return;
+        }
+
+        if ($missing !== null) {
+            $this->components->info(sprintf('Restarting Horizon to staff %s.', $missing));
+        }
+    }
 }

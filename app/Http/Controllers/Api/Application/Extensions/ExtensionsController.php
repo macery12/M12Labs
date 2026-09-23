@@ -13,6 +13,7 @@ use Everest\Models\ExtensionPackage;
 use Everest\Models\ExtensionRepository;
 use Everest\Services\Extensions\ExtensionHealthService;
 use Everest\Services\Extensions\ExtensionCatalogService;
+use Everest\Services\Queue\HorizonProvisioningReconciler;
 use Everest\Services\Extensions\ExtensionSettingsValidator;
 use Everest\Services\Extensions\ExtensionPermissionRegistry;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
@@ -379,6 +380,15 @@ class ExtensionsController extends ApplicationApiController
         ExtensionRuntimePlanService::flush();
         ExtensionPermissionRegistry::flush();
         $this->healthService->flush();
+
+        // Horizon sized its lanes when it started, and an install's own
+        // frontend build restarted it before this change committed. Put the
+        // supervisors right now rather than on the next scheduled check.
+        try {
+            app(HorizonProvisioningReconciler::class)->reconcileNow();
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
     }
 
     /**

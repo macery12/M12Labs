@@ -191,6 +191,12 @@ return [
          */
         'long_lane_in_use' => false,
 
+        // Ceiling on the extensions long lane's worker processes. The lane is
+        // sized from the `maxConcurrent` its packages declare, summed; each
+        // process can be held for up to an hour, so this bounds what a package
+        // can ask for.
+        'long_lane_max_processes' => (int) env('EXTENSIONS_LONG_LANE_MAX_PROCESSES', 4),
+
         // How long an update or uninstall waits for an extension's in-flight
         // jobs before giving up. Queued work is discarded immediately; this
         // budget covers jobs already executing, which cannot be interrupted.

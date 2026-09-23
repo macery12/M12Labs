@@ -69,6 +69,37 @@ class ExtensionQueueRegistry
     }
 
     /**
+     * How many processes the extensions long lane should run, from the live plan.
+     *
+     * Zero while nothing enabled declares a long-running group -- a process
+     * spent on a lane nothing can reach is waste. Otherwise the declared
+     * `maxConcurrent` of every long group, summed: a lane of one runs one AI
+     * turn at a time across the whole panel, and every other user's turn waits
+     * behind it however many inference slots are free. Capped by
+     * `extensions.queues.long_lane_max_processes`, because each process can be
+     * held for up to an hour.
+     *
+     * Read live rather than from config, so a process that booted before an
+     * install or an enable still gets today's answer.
+     */
+    public function longLaneProcesses(): int
+    {
+        $wanted = 0;
+
+        foreach ($this->all() as ['queue' => $queue]) {
+            if ($queue->longRunning) {
+                $wanted += max(1, (int) ($queue->maxConcurrent ?? 1));
+            }
+        }
+
+        if ($wanted === 0) {
+            return 0;
+        }
+
+        return max(1, min($wanted, (int) config('extensions.queues.long_lane_max_processes', 4)));
+    }
+
+    /**
      * Every declared queue group across the enabled set, as
      * [extensionId, definition] pairs. Used to register limiters at boot.
      *

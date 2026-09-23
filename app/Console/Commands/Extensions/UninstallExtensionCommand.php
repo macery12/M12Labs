@@ -79,6 +79,7 @@ class UninstallExtensionCommand extends Command
         }
 
         $this->components->info(sprintf('Uninstalled %s.', $extensionId));
+        $this->reconcileHorizon();
 
         if ($result['dataDropped']) {
             $this->components->info(sprintf('Database tables were dropped. Audit log: %s', $result['migrationLog']));

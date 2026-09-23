@@ -10,6 +10,7 @@ use Everest\Console\Commands\Billing\ExpireCouponsCommand;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Everest\Console\Commands\Billing\ExpireInvoicesCommand;
 use Everest\Console\Commands\Billing\ExpirePdfCacheCommand;
+use Everest\Console\Commands\Queue\ReconcileHorizonCommand;
 use Everest\Console\Commands\Schedule\ProcessRunnableCommand;
 use Everest\Console\Commands\Email\ProcessDeferredEmailsCommand;
 use Everest\Console\Commands\Auth\ProcessJGuardActivationsCommand;
@@ -100,6 +101,12 @@ class Kernel extends ConsoleKernel
         // Note this *deletes* the live counters as it goes, which is why the
         // queue page reports over the retained window rather than the counters.
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
+
+        // Horizon takes its supervisor list once, at start. The extensions long
+        // lane is staffed from live state, so a Horizon that restarted mid
+        // extension install keeps a lane with jobs and no worker until
+        // something restarts it again; this is that something.
+        $schedule->command(ReconcileHorizonCommand::class)->everyMinute()->withoutOverlapping();
 
         // Send server renewal notices (run daily - checks for servers expiring in 7, 3, and 1 day)
         if (config('modules.billing.enabled')) {

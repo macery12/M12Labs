@@ -94,6 +94,7 @@ class UpdateExtensionCommand extends Command
         }
 
         $this->components->info(sprintf('Updated %s to %s.', $package->extension_id, $package->installed_version));
+        $this->reconcileHorizon();
         $this->table(['Field', 'Value'], [
             ['Extension', $package->extension_id],
             ['Version', $package->installed_version],

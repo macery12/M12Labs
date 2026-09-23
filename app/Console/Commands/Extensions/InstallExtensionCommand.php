@@ -90,6 +90,7 @@ class InstallExtensionCommand extends Command
         }
 
         $this->components->info(sprintf('Installed %s (%s).', $package->extension_id, $package->installed_version));
+        $this->reconcileHorizon();
         $this->table(['Field', 'Value'], [
             ['Extension', $package->extension_id],
             ['Version', $package->installed_version],
