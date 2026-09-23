@@ -4,6 +4,7 @@ namespace Everest\Services\Extensions;
 
 use Everest\Models\ExtensionQueueJob;
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Queue\HorizonProvisioningReconciler;
 
 /**
  * Empties an extension's queue before its files are touched.
@@ -76,7 +77,22 @@ class ExtensionJobDrainService
         $inFlight = $this->inFlight($extensionId);
 
         if ($inFlight > 0) {
-            throw new DisplayException(sprintf('The extension [%s] still has %d queued or running backend job(s). Keep the drain active and let workers delete or finish them before replacing its files.', $extensionId, $inFlight));
+            $message = sprintf('The extension [%s] still has %d queued or running backend job(s). Keep the drain active and let workers delete or finish them before replacing its files.', $extensionId, $inFlight);
+
+            // A drain is carried out by workers. On a lane with none -- which
+            // is what a missed Horizon restart leaves -- nothing will ever
+            // remove the job, and waiting longer cannot help. Say so.
+            try {
+                $missing = app(HorizonProvisioningReconciler::class)->missing();
+            } catch (\Throwable) {
+                $missing = [];
+            }
+
+            if ($missing !== []) {
+                $message .= sprintf(' Horizon is not running %s, so no worker can; run "php artisan p:queue:reconcile --now" and retry.', implode(', ', $missing));
+            }
+
+            throw new DisplayException($message);
         }
     }
 }

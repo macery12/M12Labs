@@ -100,13 +100,28 @@ class HorizonProvisioningReconcilerTest extends TestCase
         $this->assertNull($this->reconciler(['supervisor-interactive' => 3], longLane: 4)->reconcile());
     }
 
-    public function testAnImmediateCheckRestartsOnceWithinTheCooldown(): void
+    /** A lifecycle change is not held back by a restart something else just did. */
+    public function testAnImmediateCheckIgnoresTheCooldownButStartsIt(): void
     {
-        Artisan::shouldReceive('call')->once()->with('horizon:terminate');
+        Artisan::shouldReceive('call')->twice()->with('horizon:terminate');
 
         $reconciler = $this->reconciler(['supervisor-interactive' => 3], longLane: 4);
 
         $this->assertSame('supervisor-extensions-long', $reconciler->reconcileNow());
-        $this->assertNull($reconciler->reconcileNow());
+        $this->assertSame('supervisor-extensions-long', $reconciler->reconcileNow());
+        $this->assertTrue(Cache::has('queue:horizon:reprovision-cooldown'));
+    }
+
+    /** The scheduled check backs off inside the cooldown, so a bad plan cannot loop. */
+    public function testTheScheduledCheckRespectsTheCooldown(): void
+    {
+        Artisan::shouldReceive('call')->once()->with('horizon:terminate');
+
+        $reconciler = $this->reconciler(['supervisor-interactive' => 3], longLane: 4);
+        $reconciler->reconcileNow();
+
+        Cache::put('queue:horizon:missing-supervisors-since', time() - 120, 600);
+
+        $this->assertNull($reconciler->reconcile());
     }
 }

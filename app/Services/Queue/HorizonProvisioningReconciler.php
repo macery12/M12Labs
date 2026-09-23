@@ -31,8 +31,9 @@ use Laravel\Horizon\Contracts\MasterSupervisorRepository;
  * - {@see reconcileNow()}, after an extension lifecycle change commits, when
  *   the mismatch is expected and waiting a minute would only delay the fix.
  *
- * Both share a cooldown, so a plan Horizon cannot satisfy (a supervisor that
- * dies on boot) produces one restart every few minutes, not one a minute.
+ * The scheduled check honours a cooldown, so a plan Horizon cannot satisfy (a
+ * supervisor that dies on boot) produces one restart every few minutes, not
+ * one a minute; the immediate check starts it but does not wait on it.
  * `horizon:terminate` is graceful: running jobs finish first, and the process
  * manager starts the replacement.
  */
@@ -116,18 +117,25 @@ class HorizonProvisioningReconciler
         return $this->restart($missing);
     }
 
-    /** After a lifecycle change: the mismatch is expected, so do not wait. */
+    /**
+     * After a lifecycle change: the mismatch is expected, so do not wait, and
+     * do not defer to a cooldown some earlier restart started -- an operator
+     * installing two packages in five minutes would otherwise get the lane
+     * for the first and not the second.
+     */
     public function reconcileNow(): ?string
     {
         $missing = $this->missing();
 
-        return $missing === [] ? null : $this->restart($missing);
+        return $missing === [] ? null : $this->restart($missing, force: true);
     }
 
     /** @param array<int, string> $missing */
-    private function restart(array $missing): ?string
+    private function restart(array $missing, bool $force = false): ?string
     {
-        if (!Cache::add(self::COOLDOWN_KEY, time(), self::COOLDOWN_SECONDS)) {
+        if ($force) {
+            Cache::put(self::COOLDOWN_KEY, time(), self::COOLDOWN_SECONDS);
+        } elseif (!Cache::add(self::COOLDOWN_KEY, time(), self::COOLDOWN_SECONDS)) {
             return null;
         }
 
