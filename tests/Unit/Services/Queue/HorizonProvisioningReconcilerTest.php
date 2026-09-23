@@ -4,7 +4,7 @@ namespace Everest\Tests\Unit\Services\Queue;
 
 use Everest\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Artisan;
+use Laravel\Horizon\MasterSupervisor;
 use Laravel\Horizon\Contracts\SupervisorRepository;
 use Everest\Services\Extensions\ExtensionQueueRegistry;
 use Everest\Services\Queue\HorizonProvisioningReconciler;
@@ -40,11 +40,18 @@ class HorizonProvisioningReconcilerTest extends TestCase
         parent::tearDown();
     }
 
+    /** @var array<int, int> pids the reconciler signalled */
+    private array $signalled = [];
+
     /** @param array<string, int> $running supervisor => maxProcesses */
     private function reconciler(array $running, int $longLane, bool $horizonUp = true): HorizonProvisioningReconciler
     {
         $masters = \Mockery::mock(MasterSupervisorRepository::class);
-        $masters->shouldReceive('all')->andReturn($horizonUp ? [(object) ['name' => 'host-abc']] : []);
+        $masters->shouldReceive('all')->andReturn($horizonUp ? [
+            (object) ['name' => MasterSupervisor::basename() . '-abc', 'pid' => 4242],
+            // Another host's Horizon, which is never this host's to restart.
+            (object) ['name' => 'elsewhere-xyz', 'pid' => 9999],
+        ] : []);
 
         $supervisors = \Mockery::mock(SupervisorRepository::class);
         $supervisors->shouldReceive('all')->andReturn(array_map(
@@ -56,7 +63,22 @@ class HorizonProvisioningReconcilerTest extends TestCase
         $queues = \Mockery::mock(ExtensionQueueRegistry::class);
         $queues->shouldReceive('longLaneProcesses')->andReturn($longLane);
 
-        return new HorizonProvisioningReconciler($masters, $supervisors, $queues);
+        $signalled = &$this->signalled;
+
+        return new class ($masters, $supervisors, $queues, $signalled) extends HorizonProvisioningReconciler {
+            /** @param array<int, int> $signalled */
+            public function __construct($masters, $supervisors, $queues, private array &$signalled)
+            {
+                parent::__construct($masters, $supervisors, $queues);
+            }
+
+            protected function signal(int $pid): bool
+            {
+                $this->signalled[] = $pid;
+
+                return true;
+            }
+        };
     }
 
     public function testAnUnstaffedLaneTheLivePlanNeedsIsMissing(): void
@@ -95,33 +117,42 @@ class HorizonProvisioningReconcilerTest extends TestCase
     /** The scheduler waits for a second observation, so a restart in flight is left alone. */
     public function testTheScheduledCheckWaitsForASecondObservation(): void
     {
-        Artisan::shouldReceive('call')->never();
-
         $this->assertNull($this->reconciler(['supervisor-interactive' => 3], longLane: 4)->reconcile());
+        $this->assertSame([], $this->signalled);
+    }
+
+    /**
+     * Redis hands the stored timestamp back as a string. Requiring an int made
+     * every run look like the first sighting, so the check never acted.
+     */
+    public function testTheScheduledCheckActsOnASecondObservationFromRedis(): void
+    {
+        Cache::put('queue:horizon:missing-supervisors-since', (string) (time() - 120), 600);
+
+        $this->assertSame('supervisor-extensions-long', $this->reconciler(['supervisor-interactive' => 3], longLane: 4)->reconcile());
+        $this->assertSame([4242], $this->signalled);
     }
 
     /** A lifecycle change is not held back by a restart something else just did. */
     public function testAnImmediateCheckIgnoresTheCooldownButStartsIt(): void
     {
-        Artisan::shouldReceive('call')->twice()->with('horizon:terminate');
-
         $reconciler = $this->reconciler(['supervisor-interactive' => 3], longLane: 4);
 
         $this->assertSame('supervisor-extensions-long', $reconciler->reconcileNow());
         $this->assertSame('supervisor-extensions-long', $reconciler->reconcileNow());
         $this->assertTrue(Cache::has('queue:horizon:reprovision-cooldown'));
+        $this->assertSame([4242, 4242], $this->signalled);
     }
 
     /** The scheduled check backs off inside the cooldown, so a bad plan cannot loop. */
     public function testTheScheduledCheckRespectsTheCooldown(): void
     {
-        Artisan::shouldReceive('call')->once()->with('horizon:terminate');
-
         $reconciler = $this->reconciler(['supervisor-interactive' => 3], longLane: 4);
         $reconciler->reconcileNow();
 
         Cache::put('queue:horizon:missing-supervisors-since', time() - 120, 600);
 
         $this->assertNull($reconciler->reconcile());
+        $this->assertSame([4242], $this->signalled);
     }
 }

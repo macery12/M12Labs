@@ -5,7 +5,7 @@ namespace Everest\Services\Queue;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Artisan;
+use Laravel\Horizon\MasterSupervisor;
 use Laravel\Horizon\Contracts\SupervisorRepository;
 use Everest\Services\Extensions\ExtensionQueueRegistry;
 use Laravel\Horizon\Contracts\MasterSupervisorRepository;
@@ -102,15 +102,18 @@ class HorizonProvisioningReconciler
             return null;
         }
 
+        // Numeric, not int: Redis hands back what was stored as a string, and
+        // an is_int() here made every run look like the first sighting -- the
+        // scheduled check reset its own clock each minute and never acted.
         $since = Cache::get(self::MISSING_SINCE_KEY);
 
-        if (!is_int($since)) {
+        if (!is_numeric($since)) {
             Cache::put(self::MISSING_SINCE_KEY, time(), 600);
 
             return null;
         }
 
-        if (time() - $since < 50) {
+        if (time() - (int) $since < 50) {
             return null;
         }
 
@@ -145,9 +148,57 @@ class HorizonProvisioningReconciler
             'missing' => $missing,
         ]);
 
-        Artisan::call('horizon:terminate');
+        if (!$this->terminate()) {
+            return null;
+        }
 
         return implode(', ', $missing);
+    }
+
+    /**
+     * What `horizon:terminate` does, without needing the command.
+     *
+     * Horizon registers its commands only in a console process, so from the
+     * drawer -- a web request, which is where an operator enables a package --
+     * `Artisan::call('horizon:terminate')` failed with "command does not
+     * exist" and the lane stayed unstaffed. Signalling the master directly
+     * works from either: FPM runs as the same user Horizon does.
+     */
+    private function terminate(): bool
+    {
+        if (!function_exists('posix_kill')) {
+            Log::error('Cannot restart Horizon: the posix extension is not available to this PHP process.');
+
+            return false;
+        }
+
+        $sent = false;
+        foreach ($this->masters->all() as $master) {
+            // Only this host's masters; another host's Horizon is its own.
+            if (!Str::startsWith((string) $master->name, MasterSupervisor::basename())) {
+                continue;
+            }
+
+            if ($this->signal((int) $master->pid)) {
+                $sent = true;
+            } else {
+                Log::error('Could not signal the Horizon master to restart.', [
+                    'pid' => $master->pid,
+                    'error' => function_exists('posix_strerror') ? posix_strerror(posix_get_last_error()) : null,
+                ]);
+            }
+        }
+
+        // What horizon:terminate also does, for any plain queue:work workers.
+        Cache::forever('illuminate:queue:restart', now()->getTimestamp());
+
+        return $sent;
+    }
+
+    /** Graceful: the master stops its supervisors, which finish their jobs. */
+    protected function signal(int $pid): bool
+    {
+        return @posix_kill($pid, defined('SIGTERM') ? SIGTERM : 15);
     }
 
     /**
