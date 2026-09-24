@@ -12,7 +12,8 @@ use Illuminate\Database\Migrations\Migration;
  * `ai_usage_logs` -- into their agent-ready form, in the same file because
  * they were core tables then. They are an extension's now, created by its own
  * migration in the shape this one used to patch them into, so all of that is
- * gone.
+ * gone. An install that renamed them before this reshape ever ran is brought
+ * up to that shape by 2026_09_24_000001.
  *
  * What is left is the part that was never about AI: `tickets.server_id`, a
  * core relation `Ticket::server()` reads. Renaming the file to say so would
