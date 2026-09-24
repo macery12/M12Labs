@@ -2,9 +2,14 @@
 
 namespace Everest\Extensions\Sdk\Services;
 
+use Everest\Models\User;
 use Everest\Models\Server;
+use Everest\Facades\Activity;
+use Everest\Models\AdminRole;
+use Illuminate\Support\Facades\DB;
 use Everest\Models\ExtensionConfig;
 use Everest\Extensions\Sdk\DisplayException;
+use Everest\Services\Authorization\AdminAuthorizer;
 use Everest\Services\Extensions\ExtensionCallerGuard;
 use Everest\Services\Extensions\ExtensionSettingsValidator;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
@@ -145,7 +150,9 @@ final class PackageSettings
      * package whose settings UI is several pages -- saving one page must not
      * reset the keys the other pages own, which is exactly what would happen
      * if a partial payload went to the validator alone, since it fills absent
-     * keys from their declared defaults.
+     * keys from their declared defaults. The stored values are re-read under a
+     * row lock for the merge, not taken from when this instance was built, so
+     * two pages saving at once cannot undo each other.
      *
      * Validation is `ExtensionSettingsValidator`, the same one the settings API
      * applies to an administrator's edit. So a package cannot write a key it
@@ -153,17 +160,26 @@ final class PackageSettings
      * enum, and cannot write a field declared `visibility: secret` -- those go
      * to {@see PackageSecrets}, and this column is returned by the catalog API.
      *
+     * **Who.** Pass `$actor` when an administrator made the change on the
+     * package's own settings page: they must hold `extensions.update`, the
+     * permission the panel's settings form requires, so a package page cannot
+     * widen who may change configuration. Leave it null for the package's own
+     * bookkeeping (a migration adopting old values, a calibration it records).
+     * Either way the change is written to the activity log -- the keys that
+     * changed, never their values, and `via` naming the package.
+     *
      * Declared flags are recomputed from this column on the next read, so a
      * save that flips `agent_enabled` is visible to the frontend's
      * `refreshExtensionFlags()` without a reload. Nothing is cached here.
      *
      * @param array<string, mixed> $changes
      *
-     * @throws DisplayException when the package is not in the runtime plan, or
-     *                          a key is undeclared or secret
+     * @throws DisplayException when the package is not in the runtime plan, a
+     *                          key is undeclared or secret, or the actor may
+     *                          not manage extensions
      * @throws \Illuminate\Validation\ValidationException on a value that fails its rule
      */
-    public function save(array $changes): void
+    public function save(array $changes, ?User $actor = null): void
     {
         $entry = app(ExtensionRuntimePlanService::class)->entry($this->extensionId);
 
@@ -175,12 +191,60 @@ final class PackageSettings
             throw new DisplayException(sprintf('The extension [%s] is not currently loadable, so its settings cannot be saved.', $this->extensionId));
         }
 
-        $merged = array_replace($this->values, $changes);
+        if ($actor !== null && !app(AdminAuthorizer::class)->hasCapability($actor, AdminRole::EXTENSIONS_UPDATE)) {
+            throw new DisplayException('Changing extension settings requires the extensions update permission.');
+        }
 
-        $validated = app(ExtensionSettingsValidator::class)->validate($entry->capabilities, $merged);
+        [$before, $validated] = DB::transaction(function () use ($entry, $changes): array {
+            $stored = ExtensionConfig::query()
+                ->where('extension_id', $this->extensionId)
+                ->lockForUpdate()
+                ->value('settings');
+            $stored = is_string($stored) ? json_decode($stored, true) : $stored;
+            $before = is_array($stored) ? $stored : [];
 
-        ExtensionConfig::updateOrCreateConfig($this->extensionId, ['settings' => $validated]);
+            $validated = app(ExtensionSettingsValidator::class)->validate(
+                $entry->capabilities,
+                array_replace($before, $changes),
+            );
+
+            ExtensionConfig::updateOrCreateConfig($this->extensionId, ['settings' => $validated]);
+
+            return [$before, $validated];
+        });
 
         $this->values = $validated;
+
+        // Against what was in effect, not what was stored: the validator fills
+        // an absent key from its declared default, and that is not a change
+        // anybody made.
+        $effective = $before;
+        foreach ($entry->capabilities->settings as $field) {
+            if (!array_key_exists($field->key, $effective) && $field->default !== null) {
+                $effective[$field->key] = $field->default;
+            }
+        }
+
+        $changed = array_keys(array_filter(
+            $validated,
+            fn (mixed $value, string $key): bool => !array_key_exists($key, $effective) || $effective[$key] !== $value,
+            ARRAY_FILTER_USE_BOTH,
+        ));
+
+        if ($changed === []) {
+            return;
+        }
+
+        sort($changed, SORT_STRING);
+
+        $event = Activity::event('admin:extensions:settings-update');
+        if ($actor !== null) {
+            $event->actor($actor);
+        }
+
+        $event->property('extension_id', $this->extensionId)
+            ->property('keys', $changed)
+            ->property('via', $this->extensionId)
+            ->log();
     }
 }

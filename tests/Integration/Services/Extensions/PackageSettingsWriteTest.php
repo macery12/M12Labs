@@ -2,6 +2,9 @@
 
 namespace Everest\Tests\Integration\Services\Extensions;
 
+use Everest\Models\User;
+use Everest\Models\AdminRole;
+use Everest\Models\ActivityLog;
 use Everest\Models\ExtensionConfig;
 use Everest\Extensions\Sdk\DisplayException;
 use Illuminate\Validation\ValidationException;
@@ -161,5 +164,104 @@ class PackageSettingsWriteTest extends IntegrationTestCase
         PackageSettings::for(self::ID)->save(['anything' => 'else']);
 
         $this->assertSame('else', PackageSettings::for(self::ID)->string('anything'));
+    }
+
+    /** @param array<int, string> $permissions */
+    private function admin(array $permissions): User
+    {
+        $role = AdminRole::query()->create(['name' => 'Settings ' . uniqid(), 'sort_id' => 99, 'permissions' => $permissions]);
+
+        $user = User::factory()->create();
+        $user->forceFill(['admin_role_id' => $role->id])->save();
+
+        return $user->refresh();
+    }
+
+    private function lastAudit(): ?ActivityLog
+    {
+        return ActivityLog::query()
+            ->where('event', 'admin:extensions:settings-update')
+            ->whereJsonContains('properties->extension_id', self::ID)
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * A package settings page acting for an administrator cannot widen who may
+     * change configuration: the actor needs what the panel's own form needs.
+     */
+    public function testAnActorWithoutTheExtensionsPermissionCannotSave(): void
+    {
+        $this->plan($this->fields());
+        $this->config(['provider' => 'ollama']);
+
+        try {
+            PackageSettings::for(self::ID)->save(['provider' => 'openai'], $this->admin([AdminRole::SERVERS_READ]));
+            $this->fail('Expected the save to be refused.');
+        } catch (DisplayException $exception) {
+            $this->assertStringContainsString('extensions update permission', $exception->getMessage());
+        }
+
+        $this->assertSame('ollama', PackageSettings::for(self::ID)->string('provider'));
+    }
+
+    /** The log names the administrator and the keys, never the values. */
+    public function testAnAdministratorsSaveIsAuditedByKey(): void
+    {
+        $this->plan($this->fields());
+        $this->config(['provider' => 'ollama', 'max_steps' => 12]);
+        $admin = $this->admin([AdminRole::EXTENSIONS_UPDATE]);
+
+        PackageSettings::for(self::ID)->save(['provider' => 'openai', 'max_steps' => 12], $admin);
+
+        $audit = $this->lastAudit();
+        $this->assertNotNull($audit);
+        $this->assertSame($admin->id, $audit->actor_id);
+        $this->assertSame(['provider'], $audit->properties->get('keys'));
+        $this->assertSame(self::ID, $audit->properties->get('via'));
+        $this->assertStringNotContainsString('openai', json_encode($audit->properties->all()));
+    }
+
+    /** The package's own bookkeeping is recorded too, with nobody as the actor. */
+    public function testASaveWithNoActorIsStillAudited(): void
+    {
+        $this->plan($this->fields());
+        $this->config(['max_steps' => 12]);
+
+        PackageSettings::for(self::ID)->save(['max_steps' => 20]);
+
+        $this->assertSame(['max_steps'], $this->lastAudit()?->properties->get('keys'));
+    }
+
+    public function testASaveThatChangesNothingWritesNoAuditRow(): void
+    {
+        $this->plan($this->fields());
+        $this->config(['provider' => 'openai', 'agent_enabled' => false, 'max_steps' => 12]);
+        $before = $this->lastAudit()?->id;
+
+        PackageSettings::for(self::ID)->save(['provider' => 'openai']);
+
+        $this->assertSame($before, $this->lastAudit()?->id);
+    }
+
+    /**
+     * Two pages of the same settings UI, each opened before the other saved.
+     * Merging over the snapshot each took at construction would let the second
+     * save undo the first; the merge reads what is stored now.
+     */
+    public function testASaveMergesOverWhatIsStoredNowNotWhatWasReadEarlier(): void
+    {
+        $this->plan($this->fields());
+        $this->config(['provider' => 'ollama', 'max_steps' => 12]);
+
+        $pageOne = PackageSettings::for(self::ID);
+        $pageTwo = PackageSettings::for(self::ID);
+
+        $pageOne->save(['provider' => 'openai']);
+        $pageTwo->save(['max_steps' => 30]);
+
+        $stored = PackageSettings::for(self::ID);
+        $this->assertSame('openai', $stored->string('provider'));
+        $this->assertSame(30, $stored->integer('max_steps'));
     }
 }
