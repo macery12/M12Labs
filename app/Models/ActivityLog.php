@@ -82,6 +82,28 @@ class ActivityLog extends Model
         self::EVENT_CHECKOUT_UPGRADED,
     ];
 
+    /**
+     * An administrator was let into a customer's server they could not
+     * otherwise reach, and then given write access to it. See
+     * {@see \Everest\Services\Access\DelegatedAccess}.
+     */
+    public const EVENT_DELEGATED_ACCESS_START = 'server:access.delegated.start';
+    public const EVENT_DELEGATED_ACCESS_ESCALATE = 'server:access.delegated.escalate';
+
+    /**
+     * Events the server's own feed always shows, whoever the actor was.
+     *
+     * These rows are part of the authorization they describe — a delegated
+     * grant is only honoured while the row that recorded it exists — and their
+     * whole purpose is that the customer can see staff went into their server.
+     * `hide_admin_activity` hiding them would turn support access back into
+     * surveillance.
+     */
+    public const DELEGATED_ACCESS_EVENTS = [
+        self::EVENT_DELEGATED_ACCESS_START,
+        self::EVENT_DELEGATED_ACCESS_ESCALATE,
+    ];
+
     public $timestamps = false;
 
     protected $guarded = [

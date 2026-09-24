@@ -6,6 +6,7 @@ use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Facades\Activity;
 use Everest\Models\AdminRole;
+use Everest\Models\ActivityLog;
 use Illuminate\Auth\Access\AuthorizationException;
 use Everest\Services\Authorization\AdminAuthorizer;
 
@@ -31,7 +32,12 @@ use Everest\Services\Authorization\AdminAuthorizer;
  * 3. Opening or widening writes an activity row against the server, landing in
  *    the customer's own feed. Support access a customer cannot see is
  *    surveillance, so the write is part of authorization: the grant is not
- *    returned unless the record exists.
+ *    returned unless the record exists, it is written even where the operator
+ *    has switched activity logging off, and the grant that comes back is
+ *    sealed to that row's id. A grant is only ever used — or widened — while
+ *    the row it is sealed to still exists and still describes it, so there is
+ *    no way to reach a customer's server that the customer cannot see, however
+ *    the grant value itself was put together.
  * 4. The window is open for one dispatched action, not for the request.
  *
  * Born inside the AI module, which is still its only caller. It lives in core
@@ -98,9 +104,7 @@ class DelegatedAccess
 
         $grant = DelegatedGrant::read($server->uuid, (string) $server->name, $reason, $ticketId);
 
-        $this->record($admin, $server, $grant, onBehalfOf: $onBehalfOf);
-
-        return $grant;
+        return $grant->sealedTo($this->record($admin, $server, $grant, onBehalfOf: $onBehalfOf));
     }
 
     /**
@@ -124,11 +128,16 @@ class DelegatedAccess
             throw new AuthorizationException('A delegated session cannot be escalated onto another server.');
         }
 
+        // Only a session that was actually opened, and recorded, can be
+        // widened. Without this a value that merely *describes* read access
+        // would be one approval away from write access.
+        $this->assertAudited($admin, $current);
+
         $escalated = $current->escalated();
 
-        $this->record($admin, $server, $escalated, escalation: true, onBehalfOf: $onBehalfOf);
-
-        return $escalated;
+        return $escalated->sealedTo(
+            $this->record($admin, $server, $escalated, escalation: true, onBehalfOf: $onBehalfOf),
+        );
     }
 
     /**
@@ -137,7 +146,8 @@ class DelegatedAccess
      * Asked here rather than of the session directly, so one object owns "may
      * they, and while they do" and the window stays as short as the call it
      * wraps. The capability is re-checked because time passes between opening a
-     * session and using it.
+     * session and using it, and the grant's audit row is re-read because the
+     * grant may have been stored and restored since, or never recorded at all.
      *
      * @template T
      *
@@ -150,6 +160,7 @@ class DelegatedAccess
     public function during(User $admin, DelegatedGrant $grant, callable $run): mixed
     {
         $this->assertPermitted($admin);
+        $this->assertAudited($admin, $grant);
 
         return $this->session->during($admin, $grant, $run);
     }
@@ -176,7 +187,13 @@ class DelegatedAccess
      * staff looked inside their server, when, and why.
      *
      * Failure here is authorization failure, which is why callers of `open()`
-     * and `escalate()` get an exception rather than a grant.
+     * and `escalate()` get an exception rather than a grant. Written with
+     * `logOrFail()`, so neither the operator's activity toggles nor a swallowed
+     * write error can let the grant out unrecorded.
+     *
+     * @return int the row's id, which the grant is sealed to
+     *
+     * @throws AuthorizationException
      */
     private function record(
         User $admin,
@@ -184,8 +201,26 @@ class DelegatedAccess
         DelegatedGrant $grant,
         bool $escalation = false,
         ?string $onBehalfOf = null,
-    ): void {
-        Activity::event($escalation ? 'server:access.delegated.escalate' : 'server:access.delegated.start')
+    ): int {
+        try {
+            $row = $this->recordRow($admin, $server, $grant, $escalation, $onBehalfOf);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            throw new AuthorizationException('Delegated access could not be recorded in the customer\'s activity feed, so it was not granted.');
+        }
+
+        return (int) $row->id;
+    }
+
+    private function recordRow(
+        User $admin,
+        Server $server,
+        DelegatedGrant $grant,
+        bool $escalation,
+        ?string $onBehalfOf,
+    ): ActivityLog {
+        return Activity::event($escalation ? ActivityLog::EVENT_DELEGATED_ACCESS_ESCALATE : ActivityLog::EVENT_DELEGATED_ACCESS_START)
             ->actor($admin)
             ->subject($server)
             ->property(array_merge([
@@ -201,7 +236,35 @@ class DelegatedAccess
                 // already exist keep their exact shape.
                 'via' => $onBehalfOf,
             ]))
-            ->log();
+            ->logOrFail();
+    }
+
+    /**
+     * Refuse a grant unless the row it is sealed to exists and records exactly
+     * this authority: the right event for its level, this administrator, this
+     * server, these abilities.
+     *
+     * Read fresh on every use rather than trusted from the value, because the
+     * value is the one part of this a caller can build, store, and restore.
+     * Deleting the row — which a customer-facing record should never be —
+     * revokes the grant rather than orphaning it.
+     *
+     * @throws AuthorizationException
+     */
+    private function assertAudited(User $admin, DelegatedGrant $grant): void
+    {
+        $record = $grant->auditId === null ? null : ActivityLog::query()
+            ->without('subjects')
+            ->whereKey($grant->auditId)
+            ->where('event', $grant->writable ? ActivityLog::EVENT_DELEGATED_ACCESS_ESCALATE : ActivityLog::EVENT_DELEGATED_ACCESS_START)
+            ->where('actor_type', $admin->getMorphClass())
+            ->where('actor_id', $admin->id)
+            ->whereIn('server_id', Server::query()->select('id')->where('uuid', $grant->serverUuid))
+            ->first();
+
+        if ($record === null || $record->properties?->get('abilities') !== $grant->abilities) {
+            throw new AuthorizationException('This delegated access was never recorded in the customer\'s activity feed, so it cannot be used. Ask for access again.');
+        }
     }
 
     /**

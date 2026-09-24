@@ -73,9 +73,9 @@ class ExtensionPhpSourceScanner
         'Everest\\Models\\ExtensionFileSnapshot',
 
         // Returned by Sdk\Services\DelegatedAccess and passed back to it.
-        // Inert on its own: holding one confers nothing, and it has no public
-        // constructor, so a package can carry the authority core issued and
-        // cannot describe any other.
+        // Inert on its own: a package can describe a grant (`read()`, for an
+        // approval card) but not seal one, and DelegatedAccess honours only a
+        // grant sealed to the customer-visible activity row that recorded it.
         'Everest\\Services\\Access\\DelegatedGrant',
 
         // The writer Sdk\Services\PackageStreams hands a stream's producer, so

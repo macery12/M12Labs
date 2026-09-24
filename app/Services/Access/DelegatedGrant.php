@@ -15,7 +15,12 @@ use Everest\Models\Permission;
  *
  * Holding one of these confers nothing on its own. It becomes authority only
  * while {@see DelegatedSession} has it in force, and only
- * {@see DelegatedAccess} opens that window.
+ * {@see DelegatedAccess} opens that window — and it opens it only for a grant
+ * *sealed* to the customer-visible activity row that recorded it. `read()` and
+ * `escalated()` describe authority; they cannot seal it, because the seal is the
+ * id of a row that exists, names this administrator and this server, and lists
+ * exactly these abilities. Minting an unsealed value is therefore harmless:
+ * it is what an approval card shows before anybody has approved anything.
  */
 final class DelegatedGrant
 {
@@ -54,7 +59,7 @@ final class DelegatedGrant
     ];
 
     /** The only keys a stored grant may carry. */
-    private const KEYS = ['server_uuid', 'server_name', 'reason', 'abilities', 'ticket_id', 'writable'];
+    private const KEYS = ['server_uuid', 'server_name', 'reason', 'abilities', 'ticket_id', 'writable', 'audit_id'];
 
     /**
      * @param string[] $abilities
@@ -66,6 +71,7 @@ final class DelegatedGrant
         public readonly array $abilities,
         public readonly ?int $ticketId,
         public readonly bool $writable,
+        public readonly ?int $auditId = null,
     ) {
     }
 
@@ -88,6 +94,10 @@ final class DelegatedGrant
 
     /**
      * The same grant with writes added.
+     *
+     * Unsealed, whatever this one was: the audit row that sealed the read-only
+     * grant records read-only access, so it cannot vouch for the wider one.
+     * {@see DelegatedAccess::escalate()} writes the row that can.
      */
     public function escalated(): self
     {
@@ -120,7 +130,56 @@ final class DelegatedGrant
         return in_array($ability, $this->abilities, true);
     }
 
+    /**
+     * Whether this grant carries the id of the audit row that recorded it.
+     *
+     * Says only that an id is present. Whether that row exists and describes
+     * this grant is {@see DelegatedAccess}'s to check, against the database,
+     * every time the grant is used.
+     */
+    public function sealed(): bool
+    {
+        return $this->auditId !== null;
+    }
+
     public function toArray(): array
+    {
+        return array_merge($this->authority(), $this->auditId === null ? [] : ['audit_id' => $this->auditId]);
+    }
+
+    /**
+     * Whether two values grant exactly the same target and authority.
+     *
+     * The seal is deliberately not compared: it says where the authority was
+     * recorded, not what it is, and a stored copy of a grant must still match
+     * the grant it was stored from.
+     */
+    public function sameAuthorityAs(self $other): bool
+    {
+        return $this->authority() === $other->authority();
+    }
+
+    /**
+     * The same authority, sealed to the audit row that recorded it. Core's to
+     * call — {@see DelegatedAccess} does, once the row is written.
+     *
+     * @internal
+     */
+    public function sealedTo(int $auditId): self
+    {
+        return new self(
+            $this->serverUuid,
+            $this->serverName,
+            $this->reason,
+            $this->abilities,
+            $this->ticketId,
+            $this->writable,
+            $auditId,
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private function authority(): array
     {
         return [
             'server_uuid' => $this->serverUuid,
@@ -130,12 +189,6 @@ final class DelegatedGrant
             'ticket_id' => $this->ticketId,
             'writable' => $this->writable,
         ];
-    }
-
-    /** Whether two values grant exactly the same target and authority. */
-    public function sameAuthorityAs(self $other): bool
-    {
-        return $this->toArray() === $other->toArray();
     }
 
     /**
@@ -165,6 +218,7 @@ final class DelegatedGrant
         $reason = $stored['reason'] ?? null;
         $writable = $stored['writable'] ?? null;
         $ticket = $stored['ticket_id'] ?? null;
+        $audit = $stored['audit_id'] ?? null;
 
         if (
             !is_string($uuid) || $uuid === ''
@@ -172,6 +226,7 @@ final class DelegatedGrant
             || !is_string($reason)
             || !is_bool($writable)
             || ($ticket !== null && !is_int($ticket))
+            || ($audit !== null && (!is_int($audit) || $audit < 1))
         ) {
             return null;
         }
@@ -183,6 +238,8 @@ final class DelegatedGrant
             return null;
         }
 
-        return new self($uuid, $name, $reason, $expected, $ticket, $writable);
+        // A stored seal is carried back, not believed: it is checked against
+        // the row it names on every use, so editing it gains nothing.
+        return new self($uuid, $name, $reason, $expected, $ticket, $writable, $audit);
     }
 }

@@ -8,6 +8,7 @@ use Everest\Tests\TestCase;
 use Everest\Facades\Activity;
 use Everest\Models\AdminRole;
 use Everest\Models\Permission;
+use Everest\Models\ActivityLog;
 use Everest\Services\Access\DelegatedGrant;
 use Everest\Services\Access\DelegatedAccess;
 use Everest\Services\Access\DelegatedSession;
@@ -52,6 +53,14 @@ class DelegatedAccessTest extends TestCase
         );
 
         return $writable ? $base->escalated() : $base;
+    }
+
+    private function row(int $id): ActivityLog
+    {
+        $row = new ActivityLog();
+        $row->id = $id;
+
+        return $row;
     }
 
     private function access(bool $permitted = true): DelegatedAccess
@@ -200,13 +209,33 @@ class DelegatedAccessTest extends TestCase
         Activity::shouldReceive('actor')->once()->with($admin)->andReturnSelf();
         Activity::shouldReceive('subject')->once()->with($server)->andReturnSelf();
         Activity::shouldReceive('property')->once()->andReturnSelf();
-        Activity::shouldReceive('log')->once()->andReturnNull();
+        // logOrFail, not log: the operator's activity toggles must not be able
+        // to let a grant out unrecorded.
+        Activity::shouldReceive('logOrFail')->once()->andReturn($this->row(91));
 
         $grant = $this->access()->open($admin, $server, 'Ticket #2 — server will not start', 2);
 
         $this->assertSame($server->uuid, $grant->serverUuid);
         $this->assertFalse($grant->writable);
         $this->assertSame(DelegatedGrant::READ_ABILITIES, $grant->abilities);
+        $this->assertSame(91, $grant->auditId, 'The grant is sealed to the row that recorded it.');
+    }
+
+    /**
+     * The record is part of the authorization. A write that fails is a refusal,
+     * not a grant with a missing footnote.
+     */
+    public function testOpeningIsRefusedWhenTheRecordCannotBeWritten(): void
+    {
+        Activity::shouldReceive('event')->andReturnSelf();
+        Activity::shouldReceive('actor')->andReturnSelf();
+        Activity::shouldReceive('subject')->andReturnSelf();
+        Activity::shouldReceive('property')->andReturnSelf();
+        Activity::shouldReceive('logOrFail')->once()->andThrow(new \RuntimeException('database went away'));
+
+        $this->expectException(AuthorizationException::class);
+
+        $this->access()->open(User::factory()->make(['id' => 7]), $this->server(), 'why');
     }
 
     public function testOpeningIsRefusedWithoutTheCapability(): void
@@ -251,6 +280,35 @@ class DelegatedAccessTest extends TestCase
             $this->binding(),
             fn () => $this->fail('The call should not have run.'),
         );
+    }
+
+    /**
+     * The hole the seal closes: a grant value put together by hand — the same
+     * call an approval card uses to preview one — never went through `open()`,
+     * so no customer-visible row exists for it, and it must open nothing.
+     */
+    public function testAGrantThatWasNeverRecordedOpensNothing(): void
+    {
+        $this->expectException(AuthorizationException::class);
+
+        $this->access()->during(
+            User::factory()->make(['id' => 7]),
+            $this->binding(writable: true),
+            fn () => $this->fail('An unrecorded grant must not reach dispatch.'),
+        );
+    }
+
+    /**
+     * Widening starts from a session that was really opened. Otherwise a value
+     * merely describing read access would be one approval away from writes.
+     */
+    public function testAGrantThatWasNeverRecordedCannotBeEscalated(): void
+    {
+        Activity::shouldReceive('event')->never();
+
+        $this->expectException(AuthorizationException::class);
+
+        $this->access()->escalate(User::factory()->make(['id' => 7]), $this->server(), $this->binding());
     }
 
     /*
@@ -312,6 +370,41 @@ class DelegatedAccessTest extends TestCase
         $stored['tools'] = ['files_read', 'files_write'];
 
         $this->assertNull(DelegatedGrant::fromArray($stored));
+    }
+
+    /**
+     * The seal travels with a stored grant, so a resumed session still names
+     * the row it must be checked against — and it is the only thing that
+     * differs between a sealed grant and the preview it was approved from.
+     */
+    public function testTheSealSurvivesStorageAndIsNotPartOfTheAuthority(): void
+    {
+        $sealed = $this->binding()->sealedTo(91);
+        $restored = DelegatedGrant::fromArray($sealed->toArray());
+
+        $this->assertNotNull($restored);
+        $this->assertSame(91, $restored->auditId);
+        $this->assertTrue($restored->sameAuthorityAs($this->binding()));
+        $this->assertArrayNotHasKey('audit_id', $this->binding()->toArray());
+    }
+
+    /**
+     * The row that recorded read access does not vouch for write access, so
+     * widening a grant drops its seal until `escalate()` records the new level.
+     */
+    public function testEscalatingAValueDropsItsSeal(): void
+    {
+        $this->assertNull($this->binding()->sealedTo(91)->escalated()->auditId);
+    }
+
+    public function testAMalformedSealIsRejected(): void
+    {
+        foreach (['91', 0, -3, 1.5, true] as $seal) {
+            $stored = $this->binding()->toArray();
+            $stored['audit_id'] = $seal;
+
+            $this->assertNull(DelegatedGrant::fromArray($stored), sprintf('audit_id %s', var_export($seal, true)));
+        }
     }
 
     public function testAGrantWithoutAServerUuidIsRejectedOutright(): void

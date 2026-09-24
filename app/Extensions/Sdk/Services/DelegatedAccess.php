@@ -33,8 +33,13 @@ use Everest\Exceptions\Service\Extension\PrivilegeNotGrantedException;
  *    A package cannot act on behalf of someone who could not act themselves.
  * 2. Opening or widening writes a row into the customer's own activity feed.
  *    It is part of authorization, not telemetry: no grant comes back if the
- *    record cannot be written. Support access a customer cannot see is
- *    surveillance.
+ *    record cannot be written, and it is written even where the operator has
+ *    switched activity logging off. Support access a customer cannot see is
+ *    surveillance. The grant is sealed to that row, and `during()` and
+ *    `escalate()` refuse any grant whose row does not exist or does not
+ *    describe it — so a `DelegatedGrant` built by hand, or edited in storage,
+ *    opens nothing. Build one with `DelegatedGrant::read()` only to show an
+ *    administrator what they are about to approve.
  * 3. The window is open for the callable passed to `during()` and shut
  *    immediately after, including when that callable throws. It is not open for
  *    the request.

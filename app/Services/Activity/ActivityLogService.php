@@ -158,35 +158,17 @@ class ActivityLogService
     {
         $activity = $this->getActivity();
 
-        if (config('modules.webhooks.enabled')) {
-            try {
-                $user = User::findOrFail($activity->actor_id);
-                $event = WebhookEvent::where('key', $activity->event)->first();
-
-                if ($event) {
-                    $this->webhook->send($user, $event);
-                }
-            } catch (\Exception $ex) {
-                // handle exception quietly
-            }
-        }
+        $this->sendWebhook($activity);
 
         if (!is_null($description)) {
             $activity->description = $description;
         }
 
-        // Checkout records are written with the customer as the actor but exist
-        // for operators, so they follow the admin toggle instead of the account
-        // one their actor type would otherwise select.
-        if (in_array($activity->event, ActivityLog::ADMIN_VISIBLE_EVENTS, true)) {
-            if (!config('activity.enabled.admin')) {
-                return null;
-            }
-        } elseif ($activity->is_admin && !config('activity.enabled.admin')) {
-            return null;
-        } elseif ($activity->actor_type === User::class && !config('activity.enabled.account')) {
-            return null;
-        } elseif ($activity->actor_type === Server::class && !config('activity.enabled.server')) {
+        if (!$this->enabledFor($activity)) {
+            // Dropped, and forgotten: left in place, this entry's properties
+            // and subjects would ride along on whatever is logged next.
+            $this->reset();
+
             return null;
         }
 
@@ -202,6 +184,33 @@ class ActivityLogService
         }
 
         return $activity;
+    }
+
+    /**
+     * Write this entry or throw, whatever the operator's activity toggles say.
+     *
+     * For the few records that are part of an authorization decision rather
+     * than a history of one — delegated server access is the case today. There
+     * "logging is switched off" and "the write failed" must both mean the
+     * action does not happen, where plain `log()` would let it happen unrecorded.
+     *
+     * @throws \Throwable when the entry could not be written
+     */
+    public function logOrFail(?string $description = null): ActivityLog
+    {
+        $activity = $this->getActivity();
+
+        $this->sendWebhook($activity);
+
+        if (!is_null($description)) {
+            $activity->description = $description;
+        }
+
+        try {
+            return $this->save();
+        } finally {
+            $this->reset();
+        }
     }
 
     /**
@@ -238,6 +247,47 @@ class ActivityLogService
     {
         $this->activity = null;
         $this->subjects = [];
+    }
+
+    /**
+     * Whether the operator's toggles let this entry be written.
+     */
+    protected function enabledFor(ActivityLog $activity): bool
+    {
+        // Checkout records are written with the customer as the actor but exist
+        // for operators, so they follow the admin toggle instead of the account
+        // one their actor type would otherwise select.
+        if (in_array($activity->event, ActivityLog::ADMIN_VISIBLE_EVENTS, true)) {
+            return (bool) config('activity.enabled.admin');
+        }
+
+        if ($activity->is_admin && !config('activity.enabled.admin')) {
+            return false;
+        }
+
+        if ($activity->actor_type === User::class && !config('activity.enabled.account')) {
+            return false;
+        }
+
+        return !($activity->actor_type === Server::class && !config('activity.enabled.server'));
+    }
+
+    protected function sendWebhook(ActivityLog $activity): void
+    {
+        if (!config('modules.webhooks.enabled')) {
+            return;
+        }
+
+        try {
+            $user = User::findOrFail($activity->actor_id);
+            $event = WebhookEvent::where('key', $activity->event)->first();
+
+            if ($event) {
+                $this->webhook->send($user, $event);
+            }
+        } catch (\Exception $ex) {
+            // handle exception quietly
+        }
     }
 
     /**
