@@ -212,6 +212,19 @@ class ExtensionRequirementService
             $composer += array_fill_keys(array_keys($requirements['composerPackages']), true);
         }
 
+        // Never core's own. Every requirement an extension may declare is, by
+        // the time it is satisfied, a direct dependency in core's manifests, so
+        // "nothing else asks for it" is not the same as "nothing uses it".
+        $core = $this->coreDependencies();
+        if ($core === null) {
+            // Without the baseline there is no telling core's packages from an
+            // extension's, and a wrong removal breaks the panel. Say nothing.
+            return $this->unusedPackageGuidance([], []);
+        }
+
+        $npm = array_diff_key($npm, array_fill_keys($core['npm'], true));
+        $composer = array_diff_key($composer, array_fill_keys($core['composer'], true));
+
         if ($npm === [] && $composer === []) {
             return $this->unusedPackageGuidance([], []);
         }
@@ -234,12 +247,38 @@ class ExtensionRequirementService
     }
 
     /**
-     * @param 'npm'|'composer' $manager
-     * @param array<string, string> $requirements
-     * @param array<string, string> $provided
-     *
      * @return array<int, array{type: 'frontend'|'backend', manager: 'npm'|'composer', package: string, required: string, installed: string|null, status: 'missing'|'incompatible'}>
      */
+    /**
+     * Core's own direct dependencies, as the repository declared them before
+     * any operator added an extension's — see
+     * scripts/extension-core-dependencies.php. Null when the baseline is
+     * missing or unreadable.
+     *
+     * @return array{npm: array<int, string>, composer: array<int, string>}|null
+     */
+    private function coreDependencies(): ?array
+    {
+        $path = base_path('resources/extensions/core-dependencies.json');
+
+        try {
+            $baseline = is_file($path)
+                ? json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR)
+                : null;
+        } catch (\JsonException) {
+            return null;
+        }
+
+        if (!is_array($baseline) || !is_array($baseline['npm'] ?? null) || !is_array($baseline['composer'] ?? null)) {
+            return null;
+        }
+
+        return [
+            'npm' => array_values(array_filter($baseline['npm'], 'is_string')),
+            'composer' => array_values(array_map('strtolower', array_filter($baseline['composer'], 'is_string'))),
+        ];
+    }
+
     private function packageProblems(string $manager, array $requirements, array $provided): array
     {
         $problems = [];
