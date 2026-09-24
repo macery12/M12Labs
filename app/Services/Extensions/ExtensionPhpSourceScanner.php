@@ -136,6 +136,8 @@ class ExtensionPhpSourceScanner
 
     private const SYMFONY_PROCESS = '~Symfony\\\\(Component\\\\)?Process~';
 
+    private const PHP_OPEN_TAG = '~<\?(?:php\b|=|\s)~i';
+
     private const BARE_REQUEST = '~function\s+\w+\s*\([^)]*(?<![\w\\\\])(Illuminate\\\\Http\\\\)?Request\s+\$~';
 
     /**
@@ -154,6 +156,18 @@ class ExtensionPhpSourceScanner
 
         foreach ($filePlans as $plan) {
             if (!$this->isPackagePhp($plan['path'], $extensionId)) {
+                // PHP runs whatever a `require` names, whatever it is called:
+                // a payload in `helpers.inc` or `logo.svg` would execute with
+                // none of the rules below ever reading it. So PHP lives in the
+                // backend's .php files, where they do.
+                if ($this->carriesPhp($plan['sourcePath'])) {
+                    $blocking[] = sprintf(
+                        '%s contains PHP code. PHP must live in .php files under app/Extensions/Packages/%s/, where it is scanned; anywhere else it can still be required and never checked.',
+                        $plan['path'],
+                        $extensionId,
+                    );
+                }
+
                 continue;
             }
 
@@ -431,6 +445,21 @@ class ExtensionPhpSourceScanner
         }
 
         return in_array($symbol, self::ALLOWED_CORE, true);
+    }
+
+    /**
+     * Whether a file holds anything PHP would execute if it were included.
+     *
+     * `<?php` and `<?=` always open PHP; a bare `<?` does wherever the
+     * operator has short_open_tag on, which this cannot know at install time,
+     * so it counts too. `<?xml`, the one common non-PHP use of the sequence,
+     * does not.
+     */
+    private function carriesPhp(string $sourcePath): bool
+    {
+        $bytes = @file_get_contents($sourcePath);
+
+        return is_string($bytes) && preg_match(self::PHP_OPEN_TAG, $bytes) === 1;
     }
 
     /**

@@ -93,6 +93,34 @@ class ExtensionPhpSourceScannerTest extends TestCase
     |--------------------------------------------------------------------------
     */
 
+    /**
+     * `require __DIR__ . '/helpers.inc'` runs the file as PHP whatever its
+     * name, so PHP outside the backend's .php files would be code the scanner
+     * never read.
+     */
+    public function testPhpHiddenInAFileTheScannerDoesNotReadIsRefused(): void
+    {
+        foreach ([
+            'app/Extensions/Packages/demo/Support/helpers.inc' => "<?php\neval(\$_GET['x']);\n",
+            'app/Extensions/Packages/demo/resources/logo.svg' => "<svg><?= shell_exec('id') ?></svg>",
+            'frontend/src/extensions/packages/demo/pages/Page.tsx' => "export default 1;\n/* <?php system('id'); */\n",
+            'app/Extensions/Packages/demo/notes.txt' => "<? system('id'); ?>",
+        ] as $path => $contents) {
+            $this->assertBlocked([$path => $contents], $path . ' contains PHP code');
+        }
+    }
+
+    public function testFilesWithoutPhpAreLeftAlone(): void
+    {
+        $this->scan([
+            'app/Extensions/Packages/demo/resources/logo.svg' => '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>',
+            'app/Extensions/Packages/demo/README.md' => "Use `php artisan` to run it.\n",
+            'frontend/src/extensions/packages/demo/pages/Page.tsx' => "export const tag = '<' + '?php';\n",
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
     public function testSdkAndOwnPackageImportsAreAllowed(): void
     {
         $this->scan([
@@ -566,15 +594,26 @@ class ExtensionPhpSourceScannerTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
-    /** Files outside the package's backend are another scanner's problem. */
-    public function testOnlyTheExtensionsOwnPhpIsScanned(): void
+    /** A frontend import is the frontend scanner's problem, not this one's. */
+    public function testFrontendSourceIsNotHeldToPhpRules(): void
     {
         $this->scan([
             'frontend/src/extensions/packages/demo/pages/admin/thing.tsx' => "import x from '@/lib/http';",
-            'app/Extensions/Packages/other/Services/Bad.php' => '<?php eval($x);',
         ]);
 
         $this->addToAssertionCount(1);
+    }
+
+    /**
+     * PHP outside this package's backend is not skipped as somebody else's:
+     * nothing would ever scan it, and it can still be required.
+     */
+    public function testPhpUnderAnotherPackagesDirectoryIsRefused(): void
+    {
+        $this->assertBlocked(
+            ['app/Extensions/Packages/other/Services/Bad.php' => '<?php eval($x);'],
+            'app/Extensions/Packages/other/Services/Bad.php contains PHP code',
+        );
     }
 
     /** Every violation at once, so fixing them is not an install-attempt loop. */
