@@ -46,6 +46,31 @@ class ExtensionPackageIntegrityService
 {
     private const QUARANTINE_PREFIX = '[runtime-integrity] ';
 
+    /**
+     * A file changed this recently is hashed every time rather than cached.
+     *
+     * PHP reports mtime and ctime in whole seconds, so two same-size writes in
+     * one second share a fingerprint. A digest cached from the first would
+     * vouch for the second. Refusing to cache anything that young — git's
+     * "racily clean" rule — means a cached fingerprint's second is over by the
+     * time it is trusted, and any later write carries a later ctime.
+     */
+    private const RACY_SECONDS = 2;
+
+    /**
+     * Digests of package files, keyed by path, each beside the stat
+     * fingerprint it was computed for.
+     *
+     * Every runtime-plan read re-verifies every enabled package's files, and
+     * hashing them is most of that cost. The fingerprint includes ctime, which
+     * the kernel sets on any write or rename and user space cannot set back,
+     * so a changed file never matches its old entry. Process-local on purpose:
+     * nothing outside this process can write it.
+     *
+     * @var array<string, array{0: string, 1: string}>
+     */
+    private static array $digests = [];
+
     public function __construct(
         private ExtensionManifestParser $parser,
         private ExtensionCapabilityFileValidator $capabilityFileValidator,
@@ -133,7 +158,7 @@ class ExtensionPackageIntegrityService
                     continue;
                 }
 
-                $actual = hash_file('sha256', $absolute);
+                $actual = $this->digest($absolute);
                 if (!is_string($actual) || !hash_equals((string) $file['sha256'], $actual)) {
                     $modified[] = $path;
                 }
@@ -163,6 +188,52 @@ class ExtensionPackageIntegrityService
         } catch (\Throwable $exception) {
             return $this->failure('The retained signed manifest is invalid: ' . $exception->getMessage());
         }
+    }
+
+    /**
+     * The file's sha256, reused while its stat fingerprint is unchanged and
+     * old enough to be trusted; see {@see RACY_SECONDS}.
+     */
+    private function digest(string $path): ?string
+    {
+        clearstatcache(true, $path);
+        $stat = @stat($path);
+        if ($stat === false) {
+            return null;
+        }
+
+        $fingerprint = implode(':', [$stat['dev'], $stat['ino'], $stat['size'], $stat['mtime'], $stat['ctime']]);
+        $cached = self::$digests[$path] ?? null;
+        if ($cached !== null && $cached[0] === $fingerprint) {
+            return $cached[1];
+        }
+
+        $digest = $this->hashFile($path);
+        if (!is_string($digest)) {
+            unset(self::$digests[$path]);
+
+            return null;
+        }
+
+        if (max($stat['mtime'], $stat['ctime']) <= $this->now() - self::RACY_SECONDS) {
+            self::$digests[$path] = [$fingerprint, $digest];
+        } else {
+            unset(self::$digests[$path]);
+        }
+
+        return $digest;
+    }
+
+    protected function hashFile(string $path): ?string
+    {
+        $digest = hash_file('sha256', $path);
+
+        return is_string($digest) ? $digest : null;
+    }
+
+    protected function now(): int
+    {
+        return time();
     }
 
     private function manifestDocument(ExtensionPackage $package): string
