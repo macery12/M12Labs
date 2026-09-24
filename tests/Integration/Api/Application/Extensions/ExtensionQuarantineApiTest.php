@@ -5,6 +5,7 @@ namespace Everest\Tests\Integration\Api\Application\Extensions;
 use Everest\Models\ExtensionConfig;
 use Everest\Models\ExtensionPackage;
 use Everest\Services\Extensions\ExtensionRuntimeGate;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 use Everest\Tests\Integration\Api\Application\ApplicationApiIntegrationTestCase;
 
 /**
@@ -71,7 +72,15 @@ class ExtensionQuarantineApiTest extends ApplicationApiIntegrationTestCase
 
     public function testToggleEnablesSupportedPackageAndAdvancesState(): void
     {
-        $this->package('ext_modern', 'installed_disabled', 3);
+        // A genuine signed package with its files on disk. Enabling one runs the
+        // runtime integrity check, which quarantines a manifest that names no
+        // files and verifies against no key — exactly what it should do to a
+        // package this panel could not actually have installed.
+        ExtensionPackage::create(array_merge(
+            $this->signedRuntimePackageAttributes('ext_modern', new ExtensionCapabilitySet()),
+            ['state' => 'installed_disabled'],
+        ));
+        ExtensionConfig::create(['extension_id' => 'ext_modern', 'enabled' => false]);
 
         $this->postJson('/api/application/extensions/ext_modern/toggle')->assertStatus(200);
 

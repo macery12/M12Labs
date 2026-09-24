@@ -57,7 +57,7 @@ class ExtensionFrontendFlagServiceTest extends IntegrationTestCase
             flags: [$flag],
         );
 
-        $plan = $this->createMock(ExtensionRuntimePlanService::class);
+        $plan = $this->createStub(ExtensionRuntimePlanService::class);
         $plan->method('plan')->willReturn([
             'assistant' => new ExtensionRuntimeEntry('assistant', '1.0.0', $capabilities),
             'plain' => new ExtensionRuntimeEntry('plain', '1.0.0', new ExtensionCapabilitySet()),
@@ -91,7 +91,7 @@ class ExtensionFrontendFlagServiceTest extends IntegrationTestCase
                 ]),
             ],
         );
-        $plan = $this->createMock(ExtensionRuntimePlanService::class);
+        $plan = $this->createStub(ExtensionRuntimePlanService::class);
         $plan->method('plan')->willReturn([
             'assistant_missing' => new ExtensionRuntimeEntry('assistant_missing', '1.0.0', $capabilities),
         ]);

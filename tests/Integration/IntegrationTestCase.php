@@ -38,6 +38,15 @@ abstract class IntegrationTestCase extends TestCase
 
     protected function tearDown(): void
     {
+        // Inside a DatabaseTransactions test the rollback already removed these.
+        // A test that commits for real — one that forks, or that needs a second
+        // connection to see its rows — would otherwise leave the key behind, and
+        // the next test to sign the same fixture id finds a key whose secret
+        // only ever lived in the previous test's memory.
+        if ($this->extensionSigningSecrets !== []) {
+            ExtensionTrustedKey::query()->whereIn('key_id', array_keys($this->extensionSigningSecrets))->delete();
+        }
+
         if ($this->extensionFixtureBasePath !== null) {
             File::deleteDirectory($this->extensionFixtureBasePath);
         }

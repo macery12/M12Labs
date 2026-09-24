@@ -32,7 +32,7 @@ class PackageSettingsWriteTest extends IntegrationTestCase
     /** @param array<int, SettingDefinition> $fields */
     private function plan(array $fields, string $id = self::ID): void
     {
-        $plan = $this->createMock(ExtensionRuntimePlanService::class);
+        $plan = $this->createStub(ExtensionRuntimePlanService::class);
         $plan->method('entry')->willReturnCallback(
             fn (string $requested) => $requested === $id
                 ? new ExtensionRuntimeEntry($id, '1.0.0', new ExtensionCapabilitySet(settings: $fields))
