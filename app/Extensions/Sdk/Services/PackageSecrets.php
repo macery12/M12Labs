@@ -7,6 +7,7 @@ use Everest\Facades\Activity;
 use Everest\Models\AdminRole;
 use Everest\Extensions\Sdk\DisplayException;
 use Everest\Services\Authorization\AdminAuthorizer;
+use Everest\Services\Extensions\ExtensionCallerGuard;
 use Everest\Services\Extensions\ExtensionSecretStore;
 
 /**
@@ -16,9 +17,10 @@ use Everest\Services\Extensions\ExtensionSecretStore;
  * this package never declared returns null rather than reaching another
  * extension's value. The extension id is bound at construction rather than
  * passed per call, which is what keeps `get()` from being an arbitrary lookup
- * across the whole table -- though note this is ergonomics and defence in
- * depth, not an identity boundary: package PHP is trusted code and the real
- * guarantees are review and signing.
+ * across the whole table, and `for()` refuses an id other than the calling
+ * package's own (see ExtensionCallerGuard). That is defence in depth, not a
+ * sandbox: package PHP is trusted code and the real guarantees are review and
+ * signing.
  *
  * ## Writing
  *
@@ -46,6 +48,8 @@ final class PackageSecrets
 
     public static function for(string $extensionId): self
     {
+        ExtensionCallerGuard::assertCallerIs($extensionId);
+
         return new self($extensionId, app(ExtensionSecretStore::class));
     }
 

@@ -6,6 +6,7 @@ use Everest\Facades\Activity;
 use Everest\Facades\LogBatch;
 use Everest\Models\ActivityLog;
 use Everest\Services\Activity\ActivityLogService;
+use Everest\Services\Extensions\ExtensionCallerGuard;
 
 /**
  * Writing to the panel's activity log, under the calling extension's own
@@ -60,6 +61,8 @@ final class PanelActivity
 
     public static function for(string $extensionId): self
     {
+        ExtensionCallerGuard::assertCallerIs($extensionId);
+
         return new self($extensionId);
     }
 

@@ -5,6 +5,7 @@ namespace Everest\Extensions\Sdk\Services;
 use Everest\Models\Server;
 use Everest\Models\ExtensionConfig;
 use Everest\Extensions\Sdk\DisplayException;
+use Everest\Services\Extensions\ExtensionCallerGuard;
 use Everest\Services\Extensions\ExtensionSettingsValidator;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
 
@@ -41,6 +42,8 @@ final class PackageSettings
 
     public static function for(string $extensionId): self
     {
+        ExtensionCallerGuard::assertCallerIs($extensionId);
+
         $config = ExtensionConfig::getByExtensionId($extensionId);
         $settings = $config?->settings;
 

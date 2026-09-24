@@ -4,6 +4,7 @@ namespace Everest\Extensions\Sdk\Services;
 
 use Everest\Services\Access\InternalRequest;
 use Everest\Extensions\Sdk\Http\InternalResponse;
+use Everest\Services\Extensions\ExtensionCallerGuard;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Exceptions\Service\Access\InternalDispatchException;
 use Everest\Services\Access\InternalDispatch as CoreInternalDispatch;
@@ -60,9 +61,12 @@ final class InternalDispatch
 
     /**
      * @throws PrivilegeNotGrantedException when the live runtime plan does not grant it
+     * @throws \Everest\Exceptions\Service\Extension\ForeignExtensionIdException when called from another package's code
      */
     public static function for(string $extensionId): self
     {
+        ExtensionCallerGuard::assertCallerIs($extensionId);
+
         $plan = app(ExtensionRuntimePlanService::class);
 
         if (!$plan->grantsPrivilege($extensionId, self::PRIVILEGE)) {

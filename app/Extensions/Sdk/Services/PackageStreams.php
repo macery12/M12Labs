@@ -5,6 +5,7 @@ namespace Everest\Extensions\Sdk\Services;
 use Everest\Services\Streaming\EventStream;
 use Everest\Services\Streaming\EventStreamLimits;
 use Everest\Services\Streaming\EventStreamWriter;
+use Everest\Services\Extensions\ExtensionCallerGuard;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Exceptions\Service\Extension\StreamNotDeclaredException;
@@ -73,6 +74,8 @@ final class PackageStreams
 
     public static function for(string $extensionId): self
     {
+        ExtensionCallerGuard::assertCallerIs($extensionId);
+
         return new self(
             $extensionId,
             app(ExtensionRuntimePlanService::class),

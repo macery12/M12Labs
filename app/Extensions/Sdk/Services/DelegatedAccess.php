@@ -5,6 +5,7 @@ namespace Everest\Extensions\Sdk\Services;
 use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Services\Access\DelegatedGrant;
+use Everest\Services\Extensions\ExtensionCallerGuard;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Services\Access\DelegatedAccess as CoreDelegatedAccess;
 use Everest\Exceptions\Service\Extension\PrivilegeNotGrantedException;
@@ -68,9 +69,12 @@ final class DelegatedAccess
 
     /**
      * @throws PrivilegeNotGrantedException when the live runtime plan does not grant it
+     * @throws \Everest\Exceptions\Service\Extension\ForeignExtensionIdException when called from another package's code
      */
     public static function for(string $extensionId): self
     {
+        ExtensionCallerGuard::assertCallerIs($extensionId);
+
         $plan = app(ExtensionRuntimePlanService::class);
 
         if (!$plan->grantsPrivilege($extensionId, self::PRIVILEGE)) {

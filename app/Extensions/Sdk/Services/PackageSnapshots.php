@@ -5,6 +5,7 @@ namespace Everest\Extensions\Sdk\Services;
 use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Models\ExtensionFileSnapshot;
+use Everest\Services\Extensions\ExtensionCallerGuard;
 use Everest\Services\Extensions\ExtensionFileSnapshotService;
 
 /**
@@ -19,7 +20,8 @@ use Everest\Services\Extensions\ExtensionFileSnapshotService;
  * *game server* files, captured over the daemon, not the extension's installed
  * code.
  *
- * The extension id is bound at construction so a package cannot read another's
+ * The extension id is bound at construction, and `for()` refuses an id other
+ * than the calling package's own, so a package cannot read another's
  * snapshots by passing a different id, which the underlying service would
  * otherwise allow.
  */
@@ -33,6 +35,8 @@ final class PackageSnapshots
 
     public static function for(string $extensionId): self
     {
+        ExtensionCallerGuard::assertCallerIs($extensionId);
+
         return new self($extensionId, app(ExtensionFileSnapshotService::class));
     }
 
