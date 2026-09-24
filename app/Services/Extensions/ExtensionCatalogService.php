@@ -691,7 +691,7 @@ class ExtensionCatalogService
      */
     private function adminSettingsPath(string $extensionId, ?ExtensionCapabilitySet $capabilities): ?string
     {
-        foreach ($capabilities?->adminPages ?? [] as $page) {
+        foreach ($capabilities->adminPages ?? [] as $page) {
             if ($page->slug === 'settings') {
                 return sprintf('extensions/ext/%s/settings', $extensionId);
             }

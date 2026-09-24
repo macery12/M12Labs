@@ -31,7 +31,8 @@ class ExtensionRemoteUrlGuard
             throw new DisplayException(sprintf('%s must not contain credentials.', $label));
         }
 
-        if (isset($parts['port']) && ((int) $parts['port'] < 1 || (int) $parts['port'] > 65535)) {
+        // parse_url() refuses a port above 65535 outright, and returns 0 as 0.
+        if (isset($parts['port']) && $parts['port'] < 1) {
             throw new DisplayException(sprintf('%s contains an invalid port.', $label));
         }
 
