@@ -6,6 +6,7 @@ use Everest\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 
 class AccountControllerTest extends ClientApiIntegrationTestCase
 {
@@ -40,7 +41,7 @@ class AccountControllerTest extends ClientApiIntegrationTestCase
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->putJson('/api/client/account/email', [
-            'email' => $email = Str::random() . '@example.com',
+            'email' => $email = Str::random() . '@m12labs.test-suite.net',
             'password' => 'password',
         ]);
 
@@ -93,7 +94,7 @@ class AccountControllerTest extends ClientApiIntegrationTestCase
 
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
         $response->assertJsonPath('errors.0.meta.rule', 'email');
-        $response->assertJsonPath('errors.0.detail', 'The email must be a valid email address.');
+        $response->assertJsonPath('errors.0.detail', 'Enter a valid email address.');
     }
 
     /**
@@ -105,6 +106,9 @@ class AccountControllerTest extends ClientApiIntegrationTestCase
         $user = User::factory()->create();
 
         $initialHash = $user->password;
+
+        // The password rule checks HIBP; an empty range response means "not breached".
+        Http::fake(['api.pwnedpasswords.com/*' => Http::response('')]);
 
         $response = $this->actingAs($user)->putJson('/api/client/account/password', [
             'current_password' => 'password',
@@ -161,7 +165,8 @@ class AccountControllerTest extends ClientApiIntegrationTestCase
             'password_confirmation' => 'pass',
         ])
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
-            ->assertJsonPath('errors.0.meta.rule', 'min');
+            ->assertJsonPath('errors.0.meta.source_field', 'password')
+            ->assertJsonPath('errors.0.meta.rule', 'password');
     }
 
     /**

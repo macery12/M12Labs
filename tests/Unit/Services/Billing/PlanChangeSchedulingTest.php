@@ -75,7 +75,7 @@ class PlanChangeSchedulingTest extends TestCase
             'node_id' => 1,
             'allocation_id' => 1,
             'billing_product_id' => 1,
-            'renewal_date' => now()->utc()->addDays(15)->toDateTimeString(),
+            'renewal_date' => now()->addDays(15)->toDateTimeString(),
             'billing_days' => 30,
             'billing_amount' => 30,
             'memory' => 100,
@@ -120,7 +120,7 @@ class PlanChangeSchedulingTest extends TestCase
     public function testProrationDoesNotCapPrepaidRemainingTimeToOneCycle(): void
     {
         DB::table('servers')->where('id', 1)->update([
-            'renewal_date' => now()->utc()->addDays(45)->toDateTimeString(),
+            'renewal_date' => now()->addDays(45)->toDateTimeString(),
         ]);
 
         $quote = $this->service()->quote($this->server(), Product::query()->findOrFail(2));
@@ -132,7 +132,7 @@ class PlanChangeSchedulingTest extends TestCase
     public function testPaidUpgradeIsRejectedInsideTheCaptureSafetyWindow(): void
     {
         DB::table('servers')->where('id', 1)->update([
-            'renewal_date' => now()->utc()->addMinutes(14)->toDateTimeString(),
+            'renewal_date' => now()->addMinutes(14)->toDateTimeString(),
         ]);
 
         $this->expectException(DisplayException::class);

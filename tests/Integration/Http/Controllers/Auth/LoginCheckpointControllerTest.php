@@ -120,7 +120,7 @@ class LoginCheckpointControllerTest extends IntegrationTestCase
 
         $this->assertGuest();
 
-        Event::assertDispatched(fn (Failed $event) => $event->guard === 'auth');
+        $this->assertAnonymousFailure();
     }
 
     public function testEndpointAppliesThrottling(): void
@@ -163,7 +163,7 @@ class LoginCheckpointControllerTest extends IntegrationTestCase
 
         $this->assertGuest();
 
-        Event::assertDispatched(Failed::class);
+        $this->assertAnonymousFailure();
     }
 
     public function testEndpointReturnsErrorIfUserDoesNotExist(): void
@@ -180,6 +180,8 @@ class LoginCheckpointControllerTest extends IntegrationTestCase
         ]))
             ->assertBadRequest()
             ->assertJsonPath('errors.0.detail', 'The authentication token provided has expired, please refresh the page and try again.');
+
+        $this->assertAnonymousFailure();
     }
 
     public function testEndpointAllowsRecoveryToken(): void
@@ -211,5 +213,16 @@ class LoginCheckpointControllerTest extends IntegrationTestCase
 
         Event::assertDispatched(ProvidedAuthenticationToken::class);
         Event::assertDispatched(DirectLogin::class);
+    }
+
+    /**
+     * A checkpoint failure that names no account is still audited, but with no
+     * subject and without the confirmation token or code, which are secrets.
+     */
+    private function assertAnonymousFailure(): void
+    {
+        Event::assertDispatched(
+            fn (Failed $event) => $event->guard === 'auth' && $event->user === null && $event->credentials === []
+        );
     }
 }

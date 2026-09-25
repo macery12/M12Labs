@@ -111,6 +111,13 @@ abstract class AbstractLoginController extends Controller
             $this->fireFailedLoginEvent($user, [
                 $this->getField($request->input('user')) => $request->input('user'),
             ]);
+        } elseif ($request->route()->named('auth.login-checkpoint')) {
+            // A missing, expired or mismatched 2FA confirmation token names no
+            // account, but it is still a failed second factor and belongs in the
+            // audit trail (with request IP/UA only). No credentials: the token
+            // and code are secrets. The password step stays user-gated so it
+            // never records what was typed into an unknown username.
+            $this->fireFailedLoginEvent();
         }
 
         if ($request->route()->named('auth.login-checkpoint')) {

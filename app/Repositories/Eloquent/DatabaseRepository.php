@@ -159,7 +159,9 @@ class DatabaseRepository extends EloquentRepository implements DatabaseRepositor
      */
     private function escapeIdentifier(string $identifier): string
     {
-        // Escape backticks and backslashes
-        return str_replace(['\\', '`'], ['\\\\', '\\`'], $identifier);
+        // MySQL/MariaDB escape a backtick inside a quoted identifier by doubling
+        // it. Backslash is literal there, so the old `\`` form closed the
+        // identifier and let the rest of the value run as SQL.
+        return str_replace('`', '``', $identifier);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Everest\Tests\Integration\Api\Application\Nests;
 
+use Everest\Models\AdminRole;
 use Illuminate\Http\Response;
 use Everest\Contracts\Repository\NestRepositoryInterface;
 use Everest\Transformers\Api\Application\NestTransformer;
@@ -118,6 +119,8 @@ class NestControllerTest extends ApplicationApiIntegrationTestCase
      */
     public function testErrorReturnedIfNoPermission()
     {
-        $this->markTestSkipped('todo: implement proper admin api key permissions system');
+        $this->createNewScopedApiKey([AdminRole::NODES_READ]);
+
+        $this->assertApiKeyDenied($this->getJson('/api/application/nests'));
     }
 }

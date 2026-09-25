@@ -27,11 +27,11 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 final class Handler extends ExceptionHandler
 {
     /**
-     * The validation parser in Laravel formats custom rules using the class name
-     * resulting in some weird rule names. This string will be parsed out and
-     * replaced with 'p_' in the response code.
+     * The panel's own rule objects are reported with a 'p_' prefix (e.g.
+     * 'p_username'), as upstream Pterodactyl did, so API clients can tell them
+     * apart from Laravel's built-in rules.
      */
-    private const PTERODACTYL_RULE_STRING = 'pterodactyl\_rules\_';
+    private const PANEL_RULE_NAMESPACE = 'Everest\\Rules\\';
 
     /**
      * A list of the exception types that should not be reported.
@@ -154,7 +154,7 @@ final class Handler extends ExceptionHandler
         $codes = Collection::make($exception->validator->failed())->mapWithKeys(function ($reasons, $field) {
             $cleaned = [];
             foreach ($reasons as $reason => $attrs) {
-                $cleaned[] = Str::snake($reason);
+                $cleaned[] = $this->validationRuleName($reason);
             }
 
             return [str_replace('.', '_', $field) => $cleaned];
@@ -165,10 +165,7 @@ final class Handler extends ExceptionHandler
             foreach ($errors as $key => $error) {
                 $meta = [
                     'source_field' => $field,
-                    'rule' => str_replace(self::PTERODACTYL_RULE_STRING, 'p_', Arr::get(
-                        $codes,
-                        str_replace('.', '_', $field) . '.' . $key
-                    )),
+                    'rule' => Arr::get($codes, str_replace('.', '_', $field) . '.' . $key),
                 ];
 
                 $converted = $this->convertExceptionToArray($exception)['errors'][0];
@@ -184,6 +181,25 @@ final class Handler extends ExceptionHandler
         })->toArray();
 
         return response()->json(['errors' => $errors], $exception->status);
+    }
+
+    /**
+     * Name a failed rule for the API's `meta.rule`.
+     *
+     * String rules arrive as StudlyCase ('RequiredUnless' -> 'required_unless').
+     * Rule objects arrive as their fully qualified class name, and snake-casing
+     * that whole leaked the namespace into the response, backslashes included
+     * ('illuminate\_validation\_rules\_password'). Use the class's own name.
+     */
+    private function validationRuleName(string $reason): string
+    {
+        if (!str_contains($reason, '\\')) {
+            return Str::snake($reason);
+        }
+
+        $name = Str::snake(class_basename($reason));
+
+        return str_starts_with($reason, self::PANEL_RULE_NAMESPACE) ? 'p_' . $name : $name;
     }
 
     /**

@@ -332,6 +332,7 @@ class UserSuspensionServiceTest extends TestCase
                 $table->unsignedInteger('admin_role_id')->nullable();
                 $table->string('state')->nullable();
                 $table->string('language')->nullable();
+                $table->rememberToken();
                 $table->timestamps();
             });
         }

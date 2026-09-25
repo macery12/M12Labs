@@ -282,6 +282,9 @@ abstract class EloquentRepository extends Repository implements RepositoryInterf
             case 'pgsql':
                 $statement = "insert into $table ($columns) values $parameters on conflict do nothing";
                 break;
+            case 'sqlite':
+                $statement = "insert or ignore into $table ($columns) values $parameters";
+                break;
             default:
                 throw new \RuntimeException("Unsupported database driver \"$driver\" for insert ignore.");
         }

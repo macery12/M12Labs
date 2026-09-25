@@ -6,3 +6,10 @@ enablePrePostScripts: true
 onlyBuiltDependencies:
   - '@swc/core'
   - esbuild
+
+# Security floors for dev-only transitive deps that @lhci/cli (latest 0.15.1)
+# pins below their patched releases. uuid stays on 11.x: 12+ is ESM-only and
+# lhci still require()s it.
+overrides:
+  'tmp@<0.2.6': ^0.2.6
+  'uuid@<11.1.1': ~11.1.1

@@ -43,7 +43,7 @@ class MakeUserCommandTest extends TestCase
         $this->app->instance(UserCreationService::class, $creation);
 
         $this->artisan('p:user:make', $this->arguments('false'))
-            ->expectsOutputToContain('Owner')
+            ->expectsOutputToContain('Root Admin')
             ->assertSuccessful();
     }
 
@@ -85,7 +85,7 @@ class MakeUserCommandTest extends TestCase
         $this->app->instance(UserCreationService::class, $creation);
 
         $this->artisan('p:user:make', $this->arguments('1'))
-            ->expectsOutputToContain('Owner access profile is missing')
+            ->expectsOutputToContain('Root Admin access profile is missing')
             ->assertFailed();
     }
 

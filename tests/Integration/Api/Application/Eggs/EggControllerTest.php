@@ -3,6 +3,7 @@
 namespace Everest\Tests\Integration\Api\Application\Eggs;
 
 use Illuminate\Support\Arr;
+use Everest\Models\AdminRole;
 use Illuminate\Http\Response;
 use Everest\Contracts\Repository\EggRepositoryInterface;
 use Everest\Transformers\Api\Application\EggTransformer;
@@ -123,7 +124,11 @@ class EggControllerTest extends ApplicationApiIntegrationTestCase
      */
     public function testErrorReturnedIfNoPermission()
     {
-        $this->markTestSkipped('todo: implement proper admin api key permissions system');
+        $this->createNewScopedApiKey([AdminRole::NESTS_READ]);
+
+        $egg = $this->repository->find(1);
+
+        $this->assertApiKeyDenied($this->getJson('/api/application/eggs/' . $egg->id));
     }
 
     /**

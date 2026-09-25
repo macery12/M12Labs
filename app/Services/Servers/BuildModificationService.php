@@ -110,8 +110,10 @@ class BuildModificationService
                 ->whereNull('server_id');
 
             // Keep track of all the allocations we're just now adding so that we can use the first
-            // one to reset the default allocation to.
-            $freshlyAllocated = $query->first()->id ?? null;
+            // one to reset the default allocation to. Cloned because first() sets
+            // LIMIT 1 on the builder, which the update below would then inherit
+            // and assign only one of several selected allocations.
+            $freshlyAllocated = (clone $query)->first()->id ?? null;
 
             $query->update(['server_id' => $server->id, 'notes' => null]);
         }

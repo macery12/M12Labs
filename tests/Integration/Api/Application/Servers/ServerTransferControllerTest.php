@@ -25,9 +25,9 @@ class ServerTransferControllerTest extends ApplicationApiIntegrationTestCase
 
         // Mock the JWT service
         $this->instance(NodeJWTService::class, $mock = \Mockery::mock(NodeJWTService::class));
-        $mock->expects('setExpiresAt->setSubject->setClaims->handle')
+        $mock->expects('setExpiresAt->setScope->setSubject->setClaims->handle')
             ->once()
-            ->andReturn(\Mockery::mock(\Lcobucci\JWT\Token\Plain::class));
+            ->andReturn(\Mockery::mock(\Lcobucci\JWT\UnencryptedToken::class));
 
         // Mock the daemon repository
         $this->instance(DaemonTransferRepository::class, $daemonMock = \Mockery::mock(DaemonTransferRepository::class));
@@ -65,7 +65,8 @@ class ServerTransferControllerTest extends ApplicationApiIntegrationTestCase
         ]);
 
         $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
-        $response->assertJsonValidationErrors(['node_id', 'allocation_id']);
+        $response->assertJsonPath('errors.0.meta.source_field', 'node_id')
+            ->assertJsonPath('errors.1.meta.source_field', 'allocation_id');
     }
 
     /**
