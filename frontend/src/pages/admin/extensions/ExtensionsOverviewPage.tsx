@@ -654,7 +654,14 @@ export default function ExtensionsOverviewPage() {
                     diff={pendingApproval.diff}
                     busy={install.isPending}
                     onClose={() => setPendingApproval(null)}
-                    onApprove={hash => install.mutate({ ext: pendingApproval.ext, approvedCapabilityHash: hash })}
+                    onApprove={hash => {
+                        // Close before retrying so the install's progress on the
+                        // card isn't hidden behind the modal. A refusal reopens
+                        // whichever modal it calls for; anything else toasts.
+                        const pending = pendingApproval;
+                        setPendingApproval(null);
+                        install.mutate({ ext: pending.ext, approvedCapabilityHash: hash });
+                    }}
                 />
             )}
 

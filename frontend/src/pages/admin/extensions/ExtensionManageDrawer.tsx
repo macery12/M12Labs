@@ -590,8 +590,13 @@ export function ExtensionManageDrawer({
                         busy={install.isPending || updatePkg.isPending}
                         onClose={() => setPendingApproval(null)}
                         onApprove={hash => {
+                            // Close before retrying so the operation's progress
+                            // isn't hidden behind the modal. A refusal reopens
+                            // whichever modal it calls for; anything else toasts.
                             const consent = { approvedCapabilityHash: hash };
-                            if (pendingApproval.operation === 'install') install.mutate(consent);
+                            const { operation } = pendingApproval;
+                            setPendingApproval(null);
+                            if (operation === 'install') install.mutate(consent);
                             else updatePkg.mutate(consent);
                         }}
                     />
