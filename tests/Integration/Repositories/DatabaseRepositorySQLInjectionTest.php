@@ -31,10 +31,9 @@ class DatabaseRepositorySQLInjectionTest extends IntegrationTestCase
         $connectionMock->shouldReceive('statement')
             ->once()
             ->with(\Mockery::on(function ($sql) {
-                // Verify that backticks are escaped
-                $this->assertStringContainsString('test\\`; DROP DATABASE panel; --', $sql);
-                // Verify the malicious SQL is not executable
-                $this->assertStringNotContainsString('`; DROP DATABASE panel;', $sql);
+                // MySQL escapes a backtick in a quoted identifier by doubling it, so
+                // the whole value stays one (odd) database name.
+                $this->assertSame('CREATE DATABASE IF NOT EXISTS `test``; DROP DATABASE panel; --`', $sql);
 
                 return true;
             }))
@@ -117,7 +116,10 @@ class DatabaseRepositorySQLInjectionTest extends IntegrationTestCase
             ->once()
             ->with(\Mockery::on(function ($sql) {
                 // Verify backticks in username are escaped
-                $this->assertStringContainsString('user\\`@\\`localhost\\`; DROP DATABASE panel; --', $sql);
+                $this->assertSame(
+                    "CREATE USER `user``@``localhost``; DROP DATABASE panel; --`@`%` IDENTIFIED BY 'password'",
+                    $sql
+                );
 
                 return true;
             }))
@@ -149,9 +151,10 @@ class DatabaseRepositorySQLInjectionTest extends IntegrationTestCase
             ->once()
             ->with(\Mockery::on(function ($sql) {
                 // Verify all parameters are escaped
-                $this->assertStringContainsString('db\\`; GRANT ALL ON *.* TO hacker; --', $sql);
-                $this->assertStringContainsString('user\\`; DROP USER admin; --', $sql);
-                $this->assertStringContainsString('%\\`; FLUSH PRIVILEGES; --', $sql);
+                $this->assertStringEndsWith(
+                    ' ON `db``; GRANT ALL ON *.* TO hacker; --`.* TO `user``; DROP USER admin; --`@`%``; FLUSH PRIVILEGES; --`',
+                    $sql
+                );
 
                 return true;
             }))
@@ -180,7 +183,7 @@ class DatabaseRepositorySQLInjectionTest extends IntegrationTestCase
         $connectionMock->shouldReceive('statement')
             ->once()
             ->with(\Mockery::on(function ($sql) {
-                $this->assertStringContainsString('test\\`; DROP DATABASE production; --', $sql);
+                $this->assertSame('DROP DATABASE IF EXISTS `test``; DROP DATABASE production; --`', $sql);
 
                 return true;
             }))
@@ -210,8 +213,7 @@ class DatabaseRepositorySQLInjectionTest extends IntegrationTestCase
         $connectionMock->shouldReceive('statement')
             ->once()
             ->with(\Mockery::on(function ($sql) {
-                $this->assertStringContainsString('user\\`; DROP DATABASE panel; --', $sql);
-                $this->assertStringContainsString('%\\`; FLUSH PRIVILEGES; --', $sql);
+                $this->assertSame('DROP USER IF EXISTS `user``; DROP DATABASE panel; --`@`%``; FLUSH PRIVILEGES; --`', $sql);
 
                 return true;
             }))
@@ -230,9 +232,10 @@ class DatabaseRepositorySQLInjectionTest extends IntegrationTestCase
     }
 
     /**
-     * Test that backslashes are also escaped to prevent bypassing backtick escaping.
+     * Backslash is literal inside a MySQL quoted identifier, so a leading one must
+     * not "consume" the backtick escape: the backtick is still doubled.
      */
-    public function testEscapeIdentifierEscapesBackslashes()
+    public function testEscapeIdentifierLeavesBackslashesLiteral()
     {
         $maliciousName = 'test\\`; DROP DATABASE panel; --';
 
@@ -240,8 +243,7 @@ class DatabaseRepositorySQLInjectionTest extends IntegrationTestCase
         $connectionMock->shouldReceive('statement')
             ->once()
             ->with(\Mockery::on(function ($sql) {
-                // Both backslashes and backticks should be escaped
-                $this->assertStringContainsString('test\\\\\\`; DROP DATABASE panel; --', $sql);
+                $this->assertSame('CREATE DATABASE IF NOT EXISTS `test\\``; DROP DATABASE panel; --`', $sql);
 
                 return true;
             }))

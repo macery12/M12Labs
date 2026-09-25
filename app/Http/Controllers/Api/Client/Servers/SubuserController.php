@@ -186,6 +186,8 @@ class SubuserController extends ClientApiController
 
         $cleaned = array_intersect($request->input('permissions') ?? [], $allowed);
 
-        return array_unique(array_merge($cleaned, [Permission::ACTION_WEBSOCKET_CONNECT]));
+        // array_values: array_intersect/array_unique keep keys, and a gapped
+        // array is stored by the JSON cast as an object instead of a list.
+        return array_values(array_unique(array_merge($cleaned, [Permission::ACTION_WEBSOCKET_CONNECT])));
     }
 }
