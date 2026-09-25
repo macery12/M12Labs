@@ -65,6 +65,16 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             ->name('api:client.account.update-password');
         Route::put('/language', [Client\AccountController::class, 'updateLanguage'])
             ->name('api:client.account.update-language');
+        // Sidebar pins and folded groups. `{area}` is constrained to the
+        // areas that keep preferences, so anything else 404s before the
+        // controller runs.
+        Route::get('/navigation/{area}', [Client\NavigationPreferenceController::class, 'index'])
+            ->whereIn('area', Everest\Models\UserNavigationPreference::AREAS)
+            ->name('api:client.account.navigation');
+        Route::put('/navigation/{area}', [Client\NavigationPreferenceController::class, 'update'])
+            ->whereIn('area', Everest\Models\UserNavigationPreference::AREAS)
+            ->middleware('throttle:60,1')
+            ->name('api:client.account.navigation.update');
         Route::post('/email/verification', [Client\EmailVerificationController::class, 'send'])
             ->name('api:client.account.email-verification')
             ->middleware('throttle:email-verification');

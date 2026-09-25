@@ -89,6 +89,7 @@ class ExtensionPageManifestServiceTest extends IntegrationTestCase
         $written = json_decode((string) file_get_contents($plan['targetPath']), true);
 
         $this->assertSame('pagedemo', $written['id']);
+        $this->assertSame('Page Demo', $written['name']);
         $this->assertSame('1.2.0', $written['version']);
         $this->assertCount(2, $written['server']);
         $this->assertSame(['overview', 'logs'], array_column($written['server'], 'slug'));

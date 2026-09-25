@@ -6,6 +6,10 @@ import { buildNav } from '@/routes/nav';
 import { useFlags } from '@/state/flags';
 import { useAdminHeld } from './heldPermissions';
 import { RequireAdminIdentity } from './RequireAdminIdentity';
+import { useNavigationPreferences } from './navigationPreferences';
+
+// Rarely visited tools start folded; an admin's own choice overrides this.
+const DEFAULT_COLLAPSED = ['group:system'];
 
 export default function AdminLayout() {
     const flags = useFlags(s => s.everest);
@@ -14,11 +18,12 @@ export default function AdminLayout() {
         () => buildNav(adminRoutes, { flags, held, basePath: '/admin' }),
         [flags, held],
     );
+    const sidebarPrefs = useNavigationPreferences('admin', DEFAULT_COLLAPSED);
 
     return (
         <RequireAuth>
             <RequireAdminIdentity>
-                <AppShell groups={groups} />
+                <AppShell groups={groups} sidebarPrefs={sidebarPrefs} />
             </RequireAdminIdentity>
         </RequireAuth>
     );

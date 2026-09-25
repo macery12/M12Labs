@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { TopNav } from './TopNav';
-import { Sidebar } from './Sidebar';
+import { Sidebar, type SidebarPrefs } from './Sidebar';
 import { FullPageSpinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/cn';
 import { td } from '@/i18n/messages';
@@ -20,15 +20,18 @@ const WIDTH_CLASS: Record<ContentWidth, string> = {
 // sidebar (desktop static, mobile drawer) + the routed content. An optional
 // `header` slot renders a sticky band above the routed content (the server
 // area uses it for the server-identity bar); `sidebarFooter` appends non-route
-// entries below the nav groups (the account area uses it for custom links).
+// entries below the nav groups (the account area uses it for custom links);
+// `sidebarPrefs` turns on foldable groups and pins (the admin area).
 export function AppShell({
     groups,
     header,
     beforeContent,
     sidebarFooter,
+    sidebarPrefs,
     loading = false,
 }: {
     groups: NavGroup[];
+    sidebarPrefs?: SidebarPrefs;
     header?: ReactNode;
     /** Content inside the active width container, immediately before the route. */
     beforeContent?: ReactNode;
@@ -53,7 +56,7 @@ export function AppShell({
             <div className="flex flex-1">
                 <aside className="hidden w-64 shrink-0 border-r border-[var(--color-border)] bg-[var(--sidebar)]/50 lg:block">
                     <div className="sticky top-16">
-                        <Sidebar groups={groups} footer={sidebarFooter} />
+                        <Sidebar groups={groups} footer={sidebarFooter} prefs={sidebarPrefs} />
                     </div>
                 </aside>
 
@@ -71,6 +74,7 @@ export function AppShell({
                                 groups={groups}
                                 onNavigate={() => setDrawerOpen(false)}
                                 footer={sidebarFooter}
+                                prefs={sidebarPrefs}
                             />
                         </Dialog.Content>
                     </Dialog.Portal>

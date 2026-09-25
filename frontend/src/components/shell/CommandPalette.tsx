@@ -6,7 +6,7 @@ import { m, td } from '@/i18n/messages';
 import { useFlags } from '@/state/flags';
 import { useAdminHeld } from '@/layouts/heldPermissions';
 import { adminRoutes } from '@/routes/admin.routes';
-import { buildNav } from '@/routes/nav';
+import { buildNav, flattenNav } from '@/routes/nav';
 import { COMMAND_ACTIONS, type CommandGroup } from './commandRegistry';
 import { can } from '@/lib/can';
 import { cn } from '@/lib/cn';
@@ -86,23 +86,23 @@ export function CommandPalette() {
         }
 
         // "Go to" is generated, so it tracks the route registry automatically.
-        for (const group of buildNav(adminRoutes, { flags, held, basePath: '/admin' })) {
-            for (const item of group.items) {
-                // Extension pages carry their label id explicitly; core routes
-                // are looked up from their English name under nav.items.*.
-                const label = item.labelKey
-                    ? td(item.labelKey, item.name)
-                    : td(`nav.items.${item.name}`, item.name);
-                const category = group.category ? td(`nav.category.${group.category}`, group.category) : '';
-                out.push({
-                    id: `goto:${item.to}`,
-                    label,
-                    icon: item.icon,
-                    to: item.to,
-                    group: 'goto',
-                    search: `${label} ${item.name} ${category}`.toLowerCase(),
-                });
-            }
+        // Extension pages are listed individually; their extension's name joins
+        // the search text so "ai" finds every AI page.
+        for (const { item, parent, group } of flattenNav(buildNav(adminRoutes, { flags, held, basePath: '/admin' }))) {
+            // Same precedence as the sidebar: a verbatim extension name, then
+            // an extension page's own label id, then nav.items.<English name>.
+            const label =
+                item.label ?? (item.labelKey ? td(item.labelKey, item.name) : td(`nav.items.${item.name}`, item.name));
+            const category = group.category ? td(`nav.category.${group.category}`, group.category) : '';
+            const parentLabel = parent ? (parent.label ?? (parent.labelKey ? td(parent.labelKey, parent.name) : '')) : '';
+            out.push({
+                id: `goto:${item.to}`,
+                label,
+                icon: item.icon,
+                to: item.to,
+                group: 'goto',
+                search: `${label} ${item.name} ${parentLabel} ${category}`.toLowerCase(),
+            });
         }
 
         return out;

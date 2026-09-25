@@ -109,6 +109,9 @@ class ExtensionPageManifestService
     {
         return [
             'id' => $manifest->id,
+            // The admin sidebar folds an extension's pages under one entry
+            // labelled with this name, so its pages read as one package.
+            'name' => $manifest->name,
             'version' => $manifest->version,
             'icon' => $manifest->icon,
             'server' => array_map(

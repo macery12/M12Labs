@@ -5,7 +5,11 @@ import type { EverestConfiguration } from '@/lib/globals';
 export type Flags = EverestConfiguration;
 
 export type ServerCategory = 'general' | 'data' | 'configuration' | 'extensions';
-export type AdminCategory = 'general' | 'access' | 'developers' | 'modules' | 'management' | 'extensions';
+// Admin groups, in the order the sidebar shows them: extensions first, then
+// the rest ordered by how often an admin reaches for them, so the rarely used
+// System tools sit last (and start collapsed). Overview has no category and
+// renders above every group without a header.
+export type AdminCategory = 'extensions' | 'operations' | 'storefront' | 'access' | 'configuration' | 'system';
 
 export interface RouteDef {
     /** Path relative to the area mount (e.g. '', 'credentials', 'files/*'). */
@@ -27,6 +31,15 @@ export interface RouteDef {
     icon?: LucideIcon;
     /** Sidebar grouping (server + admin areas). */
     category?: ServerCategory | AdminCategory;
+    /**
+     * The installed extension this page belongs to. `buildNav` folds every
+     * page sharing an id under one parent entry named after the extension, so
+     * a package with several admin pages reads as one thing in the sidebar
+     * rather than as unrelated rows. `name` is the manifest name, rendered
+     * verbatim (manifest copy is not catalogued); absent in page manifests the
+     * panel wrote before it carried one.
+     */
+    extension?: { id: string; name?: string; icon?: LucideIcon };
     /** Dotted permission(s) required to see/visit this route. */
     permission?: string | string[];
     /** Feature-flag gate; hidden when it returns false. */

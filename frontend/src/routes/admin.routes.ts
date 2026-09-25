@@ -60,23 +60,40 @@ const LinksSection = lazy(() => import('@/pages/admin/links/LinksSection'));
 const AdminIndexRedirect = lazy(() => import('@/pages/admin/overview/AdminIndexRedirect'));
 const QueuesPage = lazy(() => import('@/pages/admin/queues/QueuesPage'));
 
-// Admin area (/admin/*) — sidebar grouped by `category`.
-// Seeded from V1_UI_Map §3.4. All entries are placeholders for Phase 1.
+// Admin area (/admin/*) — sidebar grouped by `category`, in registry order.
+//
+// Ordered for how the panel is used rather than by what kind of page each
+// entry is: Overview, then Extensions (the panel's headline feature, which
+// used to sit sixteenth, inside Modules), then the pages an admin opens daily,
+// then setup, with the rarely visited System tools last and collapsed by
+// default (AdminLayout). The command palette reads the same registry, so it
+// follows this order too.
 export const adminRoutes: RouteDef[] = [
     route('', { element: AdminIndexRedirect }),
 
-    route('overview', { name: 'Overview', icon: LayoutDashboard, category: 'general', permission: 'overview.read', end: true, element: OverviewPage }),
-    route('settings/*', { name: 'Settings', icon: Settings, category: 'general', permission: 'settings.read', element: SettingsSection }),
-    route('features', { name: 'Features', icon: ToggleRight, category: 'general', permission: 'settings.read', element: FeaturesSection }),
-    route('landing/*', { name: 'Landing Page', icon: LayoutTemplate, category: 'general', permission: 'settings.read', element: LandingSection }),
-    route('activity', { name: 'Activity', icon: Activity, category: 'general', permission: 'activity.read', element: AdminActivityPage }),
-    route('theme', { name: 'Theme', icon: Palette, category: 'general', permission: 'theme.read', element: ThemeSection }),
+    route('overview', { name: 'Overview', icon: LayoutDashboard, permission: 'overview.read', end: true, element: OverviewPage }),
 
-    // Access Control — one sidebar entry per surface rather than a tab strip
-    // inside a single page. `buildNav` groups by category in registry order, so
-    // these form their own section directly under General, and the command
-    // palette (which reads the same registry) gains an entry for each.
-    route('access/users/*', { name: 'Users', icon: Users, category: 'access', permission: 'users.read', element: UsersSection }),
+    // Extensions: the management screen first, then one entry per installed
+    // extension. Their static extensions/ext/<id>/* paths outrank the
+    // extensions/* management splat whatever the registry order.
+    route('extensions/*', { name: 'Extensions', icon: Puzzle, category: 'extensions', permission: 'extensions.read', condition: f => f.extensions.enabled, element: ExtensionsSection }),
+    ...extensionAdminRoutes,
+
+    route('infrastructure/*', { name: 'Infrastructure', icon: Server, category: 'operations', permission: ['nodes.read', 'servers.read'], element: InfrastructureSection }),
+    route('access/users/*', { name: 'Users', icon: Users, category: 'operations', permission: 'users.read', element: UsersSection }),
+    route('tickets/*', { name: 'Tickets', icon: LifeBuoy, category: 'operations', permission: 'tickets.read', condition: f => f.tickets.enabled, element: TicketsSection }),
+    route('billing/*', { name: 'Billing', icon: CreditCard, category: 'operations', permission: 'billing.read', condition: f => f.billing.enabled, element: BillingSection }),
+
+    // What customers see: the public landing page, the mod marketplace, the
+    // banner alerts and the operator's links (no feature flag on Links — the
+    // per-link `visible` column is the off switch, V1 parity).
+    route('landing/*', { name: 'Landing Page', icon: LayoutTemplate, category: 'storefront', permission: 'settings.read', element: LandingSection }),
+    route('marketplace/*', { name: 'Marketplace', icon: Boxes, category: 'storefront', permission: 'mods.read', condition: f => f.mods.enabled, element: MarketplaceSection }),
+    route('alerts/*', { name: 'Alerts', icon: Bell, category: 'storefront', permission: 'alerts.read', element: AlertsSection }),
+    route('links', { name: 'Links', icon: Link2, category: 'storefront', permission: 'links.read', element: LinksSection }),
+
+    // Who may do what. Users moved up to Operations as a daily page; the paths
+    // keep their access/ prefix so bookmarks and the redirects below still hold.
     route('access/profiles/*', { name: 'Access Profiles', icon: UserCog, category: 'access', permission: 'roles.read', element: AccessProfilesSection }),
     route('access/api-keys/*', { name: 'API Keys', icon: KeyRound, category: 'access', permission: 'api.read', element: ApiKeysSection }),
     route('auth/*', { name: 'Auth', icon: ShieldCheck, category: 'access', permission: 'auth.read', element: AuthSection }),
@@ -84,26 +101,19 @@ export const adminRoutes: RouteDef[] = [
     // section the viewer may open.
     route('access', { element: AccessIndexRedirect }),
 
-    route('billing/*', { name: 'Billing', icon: CreditCard, category: 'modules', permission: 'billing.read', condition: f => f.billing.enabled, element: BillingSection }),
-    route('tickets/*', { name: 'Tickets', icon: LifeBuoy, category: 'modules', permission: 'tickets.read', condition: f => f.tickets.enabled, element: TicketsSection }),
-    route('marketplace/*', { name: 'Marketplace', icon: Boxes, category: 'modules', permission: 'mods.read', condition: f => f.mods.enabled, element: MarketplaceSection }),
-    route('email/*', { name: 'Email', icon: Mail, category: 'modules', permission: 'email.read', condition: f => !!f.email.module_enabled, element: EmailSection }),
-    route('webhooks/*', { name: 'Webhooks', icon: Webhook, category: 'modules', permission: 'webhooks.read', condition: f => f.webhooks.enabled, element: WebhooksSection }),
-    route('extensions/*', { name: 'Extensions', icon: Puzzle, category: 'modules', permission: 'extensions.read', condition: f => f.extensions.enabled, element: ExtensionsSection }),
-    route('alerts/*', { name: 'Alerts', icon: Bell, category: 'modules', permission: 'alerts.read', element: AlertsSection }),
-    // V1 filed Links under its 'appearance' category alongside Theme and Alerts;
-    // V2 has no such category, so it joins the other feature modules here. No
-    // feature flag — the per-link `visible` column is the operator's off switch
-    // (V1 parity).
-    route('links', { name: 'Links', icon: Link2, category: 'modules', permission: 'links.read', element: LinksSection }),
+    route('settings/*', { name: 'Settings', icon: Settings, category: 'configuration', permission: 'settings.read', element: SettingsSection }),
+    route('features', { name: 'Features', icon: ToggleRight, category: 'configuration', permission: 'settings.read', element: FeaturesSection }),
+    route('theme', { name: 'Theme', icon: Palette, category: 'configuration', permission: 'theme.read', element: ThemeSection }),
+    route('email/*', { name: 'Email', icon: Mail, category: 'configuration', permission: 'email.read', condition: f => !!f.email.module_enabled, element: EmailSection }),
+    route('webhooks/*', { name: 'Webhooks', icon: Webhook, category: 'configuration', permission: 'webhooks.read', condition: f => f.webhooks.enabled, element: WebhooksSection }),
+    route('nests/*', { name: 'Nests', icon: Egg, category: 'configuration', permission: 'nests.read', element: NestsSection }),
+    route('databases/*', { name: 'Databases', icon: Database, category: 'configuration', permission: 'databases.read', element: DatabasesSection }),
 
-    route('databases/*', { name: 'Databases', icon: Database, category: 'management', permission: 'databases.read', element: DatabasesSection }),
-    route('infrastructure/*', { name: 'Infrastructure', icon: Server, category: 'management', permission: ['nodes.read', 'servers.read'], element: InfrastructureSection }),
-    route('nests/*', { name: 'Nests', icon: Egg, category: 'management', permission: 'nests.read', element: NestsSection }),
+    // Audit trail, background machinery and API reference: occasional visits.
+    route('activity', { name: 'Activity', icon: Activity, category: 'system', permission: 'activity.read', element: AdminActivityPage }),
+    route('queues', { name: 'Queues', icon: ListOrdered, category: 'system', permission: 'queues.read', end: true, element: QueuesPage }),
+    route('developers/api-docs', { name: 'API Docs', icon: BookOpen, category: 'system', permission: 'api.read', element: ApiDocsPage }),
 
-    // Background work. Sits under Management rather than General because it is
-    // about the machinery, not the panel's own settings.
-    route('queues', { name: 'Queues', icon: ListOrdered, category: 'management', permission: 'queues.read', end: true, element: QueuesPage }),
     // Legacy paths redirect into the merged Infrastructure section (hidden from nav).
     route('nodes/*', { element: NodesRedirect }),
     route('servers/*', { element: ServersRedirect }),
@@ -114,13 +124,4 @@ export const adminRoutes: RouteDef[] = [
     route('roles/*', { element: RolesAccessRedirect }),
     route('api/*', { element: ApiKeysAccessRedirect }),
     route('access/people/*', { element: PeopleAccessRedirect }),
-
-    // Admin pages contributed by installed extension packages. Appended here so
-    // they group into their own trailing sidebar section; their static
-    // extensions/<route>/* paths outrank the extensions/* management splat.
-    ...extensionAdminRoutes,
-
-    // Developers stays a single-item category on purpose, pinned below the
-    // extension sections at the very bottom of the sidebar.
-    route('developers/api-docs', { name: 'API Docs', icon: BookOpen, category: 'developers', permission: 'api.read', element: ApiDocsPage }),
 ];

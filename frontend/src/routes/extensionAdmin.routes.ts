@@ -23,7 +23,8 @@ import { resolveExtensionIcon } from '@/pages/admin/extensions/extMeta';
 // Extensions category regardless of the category its manifest declares, so
 // installing an extension never interleaves third-party screens with the
 // panel's own. The manifest field survives as ordering metadata within that
-// section.
+// section. Each page also carries its extension's identity, which buildNav
+// uses to fold a package's pages under one entry named after the package.
 //
 // Page bodies use the Paraglide catalog: a package ships messages/<locale>.json
 // fragments keyed `ext.<id>.*`, which scripts/merge-extension-messages.mjs
@@ -61,6 +62,7 @@ export const extensionAdminRoutes: RouteDef[] = pageManifests(manifests)
                     labelKey: page.labelKey,
                     icon: resolveExtensionIcon(page.icon),
                     category: 'extensions',
+                    extension: { id, name: manifest.name, icon: resolveExtensionIcon(manifest.icon) },
                     // The full ext.<id>.admin.<action> identifier, expanded
                     // server-side when the manifest was written.
                     permission: page.requiredPermission ?? 'extensions.read',

@@ -36,6 +36,8 @@ export interface ExtensionPage {
 
 export interface ExtensionPageManifest {
     id: string;
+    /** Manifest display name, shown verbatim. Absent in files written before it was added. */
+    name?: string;
     version: string;
     icon: string;
     server: ExtensionPage[];
