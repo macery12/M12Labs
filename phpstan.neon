@@ -10,7 +10,8 @@ parameters:
     # Level 9 is the highest level
     level: 4
 
-    reportUnmatchedIgnoredErrors: false
+    # Stale baseline entries fail the run, so the hand-kept baseline cannot rot.
+    reportUnmatchedIgnoredErrors: true
 
     ignoreErrors:
         # Ignore repository interface missing methods

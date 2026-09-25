@@ -48,64 +48,12 @@ parameters:
 			count: 2
 			path: app/Http/Controllers/Api/Application/EmailTemplateController.php
 
-		# Defensive ?? / ?-> on aggregates and relations larastan types non-null.
-		-
-			message: '#^Expression on left side of \?\? is not nullable\.$#'
-			identifier: nullCoalesce.expr
-			count: 1
-			path: app/Http/Controllers/Api/Application/IntelligenceController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Api/Application/IntelligenceController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Api/Application/IntelligenceController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Http/Controllers/Api/Application/IntelligenceController.php
-
-		-
-			message: '#^Using nullsafe property access on non\-nullable type Everest\\Models\\User\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 3
-			path: app/Http/Controllers/Api/Application/IntelligenceController.php
-
 		# Payment path belt-and-braces: Stripe SDK types retrieve() non-null (throws instead of returning null); guards kept deliberately.
 		-
 			message: '#^Negated boolean expression is always false\.$#'
 			identifier: booleanNot.alwaysFalse
-			count: 2
-			path: app/Http/Controllers/Api/Client/Billing/CheckoutController.php
-
-		# False positive: Stripe's magic setter accepts arrays for metadata; SDK docblock is too narrow.
-		-
-			message: '#^Property Stripe\\PaymentIntent\:\:\$metadata \(Stripe\\StripeObject\) does not accept array\<string, string\|false\>\.$#'
-			identifier: assign.propertyType
 			count: 1
 			path: app/Http/Controllers/Api/Client/Billing/CheckoutController.php
-
-		# Explicit re-check before capture after the early-throw above; kept for safety in the money path.
-		-
-			message: '#^Strict comparison using \=\=\= between ''requires_capture'' and ''requires_capture'' will always evaluate to true\.$#'
-			identifier: identical.alwaysTrue
-			count: 1
-			path: app/Http/Controllers/Api/Client/Billing/CheckoutController.php
-
-		# Defensive ?-> on $server->egg; relation typed non-null but egg can be missing.
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Api/Client/Servers/AIController.php
 
 		# join+select hydration, same as the application ActivityLogController above.
 		-
@@ -196,13 +144,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Extensions/ExtensionCatalogService.php
-
-		# Belt-and-braces hunk normalization; PHPStan proves the nulls impossible via array shapes.
-		-
-			message: '#^Strict comparison using \=\=\= between mixed and null will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 2
-			path: app/Services/Files/FileDiffService.php
 
 		# Defensive parsing of external version manifests (Mojang/Paper/etc.); redundant per types but guards malformed remote data.
 		-
