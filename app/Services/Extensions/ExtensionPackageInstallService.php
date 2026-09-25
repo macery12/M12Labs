@@ -233,7 +233,7 @@ class ExtensionPackageInstallService
         // disk for the migrator to resolve their down() methods.
         if (!empty($prepared['appliedMigrations'])) {
             try {
-                $this->migrationService->rollbackLastBatch($prepared['extensionId']);
+                $this->migrationService->rollbackApplied($prepared['extensionId'], $prepared['appliedMigrations']);
             } catch (\Throwable $exception) {
                 report($exception);
                 $this->migrationService->writeMigrationLog(
@@ -536,6 +536,10 @@ class ExtensionPackageInstallService
         $this->progressService->report($action, $extensionId, 'migrating');
         $this->migrationService->assertMigrationConventions($extensionId, $migrationFiles);
 
+        // What was recorded before this run, so a failure reverts only what it
+        // added: the migrator writes no record for the migration that throws.
+        $ranBefore = $this->migrationService->ranMigrationNames($extensionId);
+
         try {
             $this->operationLockService->checkpoint();
             $result = $this->migrationService->run($extensionId);
@@ -546,7 +550,10 @@ class ExtensionPackageInstallService
             }
 
             try {
-                $this->migrationService->rollbackLastBatch($extensionId);
+                $this->migrationService->rollbackApplied(
+                    $extensionId,
+                    array_diff($this->migrationService->ranMigrationNames($extensionId), $ranBefore)
+                );
             } catch (\Throwable $rollbackException) {
                 report($rollbackException);
             }

@@ -217,6 +217,73 @@ class ExtensionMigrationSourceParserTest extends TestCase
         $this->assertSame([], $changes['create']);
     }
 
+    /**
+     * Reinstalling `ai` over its kept tables was previewed as deleting all
+     * eight of them, row counts included: the `dropIfExists` calls it listed
+     * were its `down()`, which neither an install nor an update runs.
+     */
+    public function testARollbackMethodIsNotPartOfThePlan(): void
+    {
+        $path = $this->tempRoot . '/with_down.php';
+        File::put($path, <<<'PHP'
+            <?php
+            return new class extends Migration {
+                public function up(): void
+                {
+                    if (!Schema::hasTable('ext_demo_a')) {
+                        Schema::create('ext_demo_a', function ($t) { $t->id(); });
+                    }
+                }
+
+                public function down(): void
+                {
+                    // Closing brace in a string: '}'
+                    Schema::dropIfExists('ext_demo_a');
+                    DB::statement("DROP TABLE IF EXISTS ext_demo_b");
+                }
+            };
+            PHP);
+
+        $changes = (new ExtensionMigrationService())->parseSchemaChanges([$path]);
+
+        $this->assertSame(['ext_demo_a'], $changes['create']);
+        $this->assertSame([], $changes['drop']);
+        $this->assertSame(0, $changes['rawStatements']);
+    }
+
+    /** The gate still reads it: a down() naming a core table is refused. */
+    public function testTheInstallGateStillReadsTheRollbackMethod(): void
+    {
+        $path = $this->tempRoot . '/down_core.php';
+        File::put($path, "<?php\nreturn new class extends Migration {\n    public function up(): void {}\n    public function down(): void { Schema::dropIfExists('users'); }\n};\n");
+
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('Schema::dropIfExists on the table "users"');
+
+        (new ExtensionMigrationService())->assertTablePrefixConvention('demo', [$path]);
+    }
+
+    /** A body-less declaration must not swallow the next method's body. */
+    public function testADeclarationWithoutABodyBlanksNothing(): void
+    {
+        $source = "<?php\nabstract class A {\n    abstract public function down(): void;\n    public function up(): void { Schema::dropIfExists('ext_demo_old'); }\n}\n";
+
+        $this->assertSame($source, $this->parser->withoutRollback($source));
+    }
+
+    public function testBlankingPreservesLengthAndLines(): void
+    {
+        $source = "<?php\nfunction down() {\n    Schema::drop('ext_demo_a');\n}\nSchema::drop('ext_demo_b');\n";
+        $stripped = $this->parser->withoutRollback($source);
+
+        $this->assertSame(strlen($source), strlen($stripped));
+        $this->assertSame(substr_count($source, "\n"), substr_count($stripped, "\n"));
+        $this->assertSame(
+            [['verb' => 'drop', 'table' => 'ext_demo_b', 'renameTo' => null]],
+            $this->parser->operations($stripped),
+        );
+    }
+
     public function testAMissingFileIsSkippedRatherThanFatal(): void
     {
         $changes = (new ExtensionMigrationService())->parseSchemaChanges([$this->tempRoot . '/nope.php']);

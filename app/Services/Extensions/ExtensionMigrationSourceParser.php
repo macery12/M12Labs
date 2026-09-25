@@ -40,6 +40,59 @@ class ExtensionMigrationSourceParser
     /** Blueprint calls which create a foreign-key constraint. */
     private const FOREIGN = '~->\s*(foreignIdFor|foreignUuidFor|foreignUlidFor|foreignId|foreignUuid|foreignUlid|foreign)\s*\(~';
 
+    /** A migration's rollback method, located in the blanked view. */
+    private const DOWN = '~\bfunction\s+down\s*\(~i';
+
+    /**
+     * The source with every `down()` body blanked, at the same length.
+     *
+     * For the operator's preview only. An install or update runs `up()`;
+     * `down()` runs when that same operation fails and is reverted, or through
+     * the audited uninstall-and-drop-data flow, which has its own preview. Read
+     * as part of the forward plan, a conventional `down()` — `dropIfExists` for
+     * every table `up()` creates — turned reinstalling `ai` over its kept data
+     * into a screen listing all eight tables, with row counts, as "to be
+     * deleted by this update". The install gate keeps reading the whole file: a
+     * `down()` that names a core table is refused whether or not it ever runs.
+     *
+     * Only the body goes, so anything outside it — a helper `up()` calls
+     * included — is still read. A body whose braces cannot be matched is left
+     * alone, because over-reporting is the safe way for a preview to be wrong.
+     */
+    public function withoutRollback(string $source): string
+    {
+        $bare = ExtensionPhpSourceView::of($source)->bare;
+
+        if (!preg_match_all(self::DOWN, $bare, $matches, PREG_OFFSET_CAPTURE)) {
+            return $source;
+        }
+
+        foreach ($matches[0] as [$signature, $offset]) {
+            $open = strpos($bare, '{', $offset + strlen($signature));
+            $semicolon = strpos($bare, ';', $offset);
+
+            // An abstract or interface declaration has no body, and the next
+            // brace belongs to some other method.
+            if ($open === false || ($semicolon !== false && $semicolon < $open)) {
+                continue;
+            }
+
+            $close = self::closingBrace($bare, $open);
+
+            if ($close === null) {
+                continue;
+            }
+
+            for ($i = $open + 1; $i < $close; ++$i) {
+                if ($source[$i] !== "\n") {
+                    $source[$i] = ' ';
+                }
+            }
+        }
+
+        return $source;
+    }
+
     /**
      * Schema operations in source order.
      *
@@ -252,6 +305,23 @@ class ExtensionMigrationSourceParser
         foreach (['cascade' => 'cascade', 'null' => 'set null', 'restrict' => 'restrict', 'noAction' => 'no action'] as $method => $action) {
             if (preg_match(sprintf('~->\s*%sOnDelete\s*\(\s*\)~', $method), $chain)) {
                 return $action;
+            }
+        }
+
+        return null;
+    }
+
+    /** Offset of the brace closing the one at $open, in a strings-blanked view. */
+    private static function closingBrace(string $bare, int $open): ?int
+    {
+        $depth = 0;
+        $length = strlen($bare);
+
+        for ($i = $open; $i < $length; ++$i) {
+            if ($bare[$i] === '{') {
+                ++$depth;
+            } elseif ($bare[$i] === '}' && --$depth === 0) {
+                return $i;
             }
         }
 

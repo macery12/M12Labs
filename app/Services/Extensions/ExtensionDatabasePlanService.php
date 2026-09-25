@@ -77,9 +77,9 @@ class ExtensionDatabasePlanService
 
     /**
      * Install / update preview by parsing the package archive's migrations.
-     * For an update, only migrations not already recorded as ran are counted
-     * (Laravel skips already-applied filenames), and the extension's current
-     * tables are surfaced as unchanged.
+     * Only migrations not already recorded as ran are counted (Laravel skips
+     * already-applied filenames), and the extension's current tables are
+     * surfaced as unchanged.
      *
      * @return array<string, mixed>
      */
@@ -108,11 +108,13 @@ class ExtensionDatabasePlanService
                 $this->migrationService->migrationPath($extensionId)
             )) ?: [];
 
-            $ranMigrations = $operation === 'update'
-                ? $this->migrationService->ranMigrationNames($extensionId)
-                : [];
+            // Only files the panel hasn't already run will execute — for an
+            // install too. A keep-data uninstall leaves the migration records
+            // behind with the tables, so a reinstall runs none of the files it
+            // ships again; previewing them as pending listed every table the
+            // first install created as one this install would create.
+            $ranMigrations = $this->migrationService->recordedAsRan($migrationFiles);
 
-            // For an update, only files the panel hasn't already run will execute.
             $pendingFiles = array_values(array_filter(
                 $migrationFiles,
                 fn (string $file) => !in_array(basename($file, '.php'), $ranMigrations, true)
@@ -123,25 +125,23 @@ class ExtensionDatabasePlanService
             // Only tables that survive the operation are "unchanged". One this
             // update drops or renames away is listed under its own heading, and
             // showing it in both places would let an operator read the calmer
-            // one and stop.
+            // one and stop. An install has them too when it is a reinstall over
+            // kept data, and they are the tables it reattaches to.
             $touched = array_merge($changes['drop'], array_column($changes['rename'], 'from'));
-            $unchanged = $operation === 'update'
-                ? array_values(array_diff($this->migrationService->listExtensionTables($extensionId), $touched))
-                : [];
+            $unchanged = array_values(array_diff($this->migrationService->listExtensionTables($extensionId), $touched));
 
             return [
                 'operation' => $operation,
                 'extensionId' => $extensionId,
                 'tablePrefix' => $this->migrationService->tablePrefix($extensionId),
-                'hasDatabase' => $pendingFiles !== [],
+                'hasDatabase' => $pendingFiles !== [] || $unchanged !== [],
                 'version' => $release['version'] ?? $version,
                 'tablesToCreate' => $changes['create'],
                 'tablesToAlter' => $changes['alter'],
                 'tablesToDrop' => $changes['drop'],
                 'tablesToRename' => $changes['rename'],
                 // What a drop would actually cost, for the tables that exist
-                // right now. An install's migration cannot drop anything that
-                // is already there, so this is empty for one.
+                // right now.
                 'rowCounts' => $this->migrationService->rowCountsFor(
                     $extensionId,
                     array_merge($changes['drop'], $changes['alter'], array_column($changes['rename'], 'from')),

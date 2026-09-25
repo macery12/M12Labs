@@ -60,23 +60,59 @@ class ExtensionMigrationService
     }
 
     /**
-     * Roll back the most recent batch, scoped to the extension's migration
-     * files. Only used to revert migrations applied by a failed install or
-     * update; migrations from other batches are never touched.
+     * Roll back exactly the named migrations — the ones a failed install or
+     * update applied itself. Names may carry the `.php` extension.
+     *
+     * This used to roll back "the last batch", but the last batch is only this
+     * operation's when this operation wrote one. A first migration that throws
+     * writes no record, so the last batch was whichever came before it; after
+     * a keep-data uninstall and a reinstall that is the extension's own earlier
+     * batch, and its down() drops the tables the uninstall kept. A batch run by
+     * anything else in between had the opposite effect, leaving this
+     * operation's migrations applied.
+     *
+     * @param array<int, string> $migrations
      *
      * @return array{rolledBack: array<int, string>, output: string}
      */
-    public function rollbackLastBatch(string $extensionId): array
+    public function rollbackApplied(string $extensionId, array $migrations): array
     {
-        $lastBatch = array_map(
-            fn ($migration) => (string) ((object) $migration)->migration,
-            $this->migrator()->getRepository()->getLast()
-        );
+        $names = array_map(fn (string $migration) => basename($migration, '.php'), $migrations);
 
         return $this->rollbackMigrations(
             $extensionId,
-            array_values(array_intersect($this->ranMigrationNames($extensionId), $lastBatch))
+            array_values(array_intersect($this->ranMigrationNames($extensionId), $names))
         );
+    }
+
+    /**
+     * Which of these migration names the migrations table already records.
+     *
+     * Unlike ranMigrationNames() this does not start from the extension's
+     * files on disk, so it answers for a package that is not installed — the
+     * case after a keep-data uninstall, where the files are gone and the
+     * records are not. Names may carry the `.php` extension; they are returned
+     * without it.
+     *
+     * @param array<int, string> $migrations
+     *
+     * @return array<int, string>
+     */
+    public function recordedAsRan(array $migrations): array
+    {
+        $names = array_map(fn (string $migration) => basename($migration, '.php'), $migrations);
+
+        if ($names === []) {
+            return [];
+        }
+
+        try {
+            $ran = $this->migrator()->getRepository()->getRan();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return array_values(array_intersect($names, $ran));
     }
 
     /**
@@ -221,6 +257,8 @@ class ExtensionMigrationService
      *
      * Files may be on disk (an installed extension) or freshly extracted from
      * an archive (a not-yet-installed one). Distinct names, in file order.
+     * `down()` bodies are not read: this describes what running the files
+     * does, and running them never calls `down()`.
      *
      * `rawStatements` counts the calls whose effect cannot be read from the
      * source at all. It is reported rather than ignored because the useful
@@ -240,7 +278,7 @@ class ExtensionMigrationService
                 continue;
             }
 
-            $source = (string) file_get_contents($filePath);
+            $source = $this->sourceParser->withoutRollback((string) file_get_contents($filePath));
             $changes['rawStatements'] += $this->sourceParser->rawStatementCount($source);
 
             foreach ($this->sourceParser->operations($source) as $operation) {

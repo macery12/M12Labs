@@ -484,8 +484,9 @@ export interface DatabasePlan {
     // so an incomplete list is not read as an exhaustive one.
     unanalysedStatements?: number;
     migrations?: string[];
-    // update — tables the extension already owns that stay in place. Excludes
-    // any this update drops or renames away; those have their own heading.
+    // install / update — tables the extension already owns that stay in place
+    // (for an install, ones a keep-data uninstall left behind). Excludes any
+    // this operation drops or renames away; those have their own heading.
     unchangedTables?: string[];
     // uninstall — tables/migrations the extension currently owns (dropped when
     // drop-data is confirmed, otherwise preserved) + manual cleanup SQL.

@@ -362,13 +362,13 @@ class ExtensionPackageUpdateService
     {
         $this->operationLockService->checkpoint();
 
-        // Only migrations applied by THIS update are reverted (they form the
-        // newest batch); the previous version's migrations must survive. Runs
+        // Only migrations applied by THIS update are reverted, by name; the
+        // previous version's migrations must survive. Runs
         // before the file snapshot restore so the new migration files are
         // still on disk for their down() methods.
         if (!empty($prepared['appliedMigrations'])) {
             try {
-                $this->migrationService->rollbackLastBatch($prepared['extensionId']);
+                $this->migrationService->rollbackApplied($prepared['extensionId'], $prepared['appliedMigrations']);
             } catch (\Throwable $exception) {
                 report($exception);
                 $this->migrationService->writeMigrationLog(
@@ -854,6 +854,10 @@ class ExtensionPackageUpdateService
         $this->progressService->report('update', $extensionId, 'migrating');
         $this->migrationService->assertMigrationConventions($extensionId, $migrationFiles);
 
+        // What was recorded before this run, so a failure reverts only what it
+        // added: the migrator writes no record for the migration that throws.
+        $ranBefore = $this->migrationService->ranMigrationNames($extensionId);
+
         try {
             $this->operationLockService->checkpoint();
             $result = $this->migrationService->run($extensionId);
@@ -864,7 +868,10 @@ class ExtensionPackageUpdateService
             }
 
             try {
-                $this->migrationService->rollbackLastBatch($extensionId);
+                $this->migrationService->rollbackApplied(
+                    $extensionId,
+                    array_diff($this->migrationService->ranMigrationNames($extensionId), $ranBefore)
+                );
             } catch (\Throwable $rollbackException) {
                 report($rollbackException);
             }
