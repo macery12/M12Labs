@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Bot, Globe, Puzzle, Server, Sparkles } from 'lucide-react';
-import { buildNav, flattenNav } from './nav';
+import { applyNavLayout, buildNav, flattenNav } from './nav';
 import { route, type Flags, type RouteDef } from './registry';
 
 const Page = () => null;
@@ -84,5 +84,59 @@ describe('flattenNav', () => {
         ]);
         expect(flat[3]?.parent?.key).toBe('ext:ai');
         expect(flat[4]?.parent).toBeNull();
+    });
+});
+
+describe('applyNavLayout', () => {
+    const opts = { defaultCollapsed: ['operations'], unhideable: ['extensions'] };
+    const groups = () => buildNav(routes, { flags, held: ['*'], basePath: '/admin' });
+
+    it('keeps the registry order and marks default-folded groups when there is no layout', () => {
+        const out = applyNavLayout(groups(), null, opts);
+
+        expect(out.map(g => g.category)).toEqual([null, 'extensions', 'operations']);
+        expect(out[2]?.defaultCollapsed).toBe(true);
+        expect(out[1]?.defaultCollapsed).toBe(false);
+    });
+
+    it('reorders, renames, moves extension entries, hides, and sends unmentioned entries home', () => {
+        const out = applyNavLayout(
+            groups(),
+            {
+                groups: [
+                    { key: 'custom-daily', label: 'Daily', collapsed: false, items: ['infrastructure', 'ext:ai', 'ext:gone'] },
+                    { key: 'extensions', label: null, collapsed: true, items: ['extensions'] },
+                ],
+                hidden: ['ext:custom_domains'],
+            },
+            opts,
+        );
+
+        // Overview stays on top, outside the layout.
+        expect(out[0]?.items.map(i => i.id)).toEqual(['overview']);
+        expect(out[1]).toMatchObject({ category: 'custom-daily', label: 'Daily', defaultCollapsed: false });
+        expect(out[1]?.items.map(i => i.id)).toEqual(['infrastructure', 'ext:ai']);
+        expect(out[2]).toMatchObject({ category: 'extensions', label: undefined, defaultCollapsed: true });
+        expect(out[2]?.items.map(i => i.id)).toEqual(['extensions']);
+        // Operations lost its only entry to Daily, so it's dropped as empty.
+        expect(out).toHaveLength(3);
+    });
+
+    it('never surfaces an entry the viewer cannot see, and ignores hiding the unhideable', () => {
+        const visible = buildNav(routes, { flags, held: [], basePath: '/admin' });
+        const out = applyNavLayout(
+            visible,
+            { groups: [{ key: 'custom-a', label: 'A', collapsed: false, items: ['infrastructure', 'extensions'] }], hidden: ['extensions'] },
+            opts,
+        );
+
+        expect(out[1]?.items.map(i => i.id)).toEqual(['extensions']);
+    });
+
+    it('recreates a default group the layout dropped for an entry it never mentions', () => {
+        const out = applyNavLayout(groups(), { groups: [{ key: 'extensions', label: null, collapsed: false, items: [] }], hidden: [] }, opts);
+
+        expect(out.map(g => g.category)).toEqual([null, 'extensions', 'operations']);
+        expect(out[2]?.defaultCollapsed).toBe(true);
     });
 });

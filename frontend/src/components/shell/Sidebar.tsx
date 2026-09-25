@@ -1,7 +1,8 @@
 import { useMemo, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Pin, PinOff } from 'lucide-react';
-import { m, td } from '@/i18n/messages';
+import { m } from '@/i18n/messages';
+import { navCategoryLabel, navItemLabel } from './navLabels';
 import { flattenNav, type NavGroup, type NavItem } from '@/routes/nav';
 import { cn } from '@/lib/cn';
 
@@ -20,17 +21,6 @@ export interface SidebarPrefs {
 }
 
 const PINNED_GROUP = 'pinned';
-
-// Nav labels come from the route registry (dynamic English strings); look each
-// up under nav.items.* with the English name as the fallback so an
-// unregistered route still renders. An item carrying an explicit labelKey —
-// extension pages, whose labels live in the package's own ext.<id>.* catalog
-// rather than under nav.items.* — is resolved from that id instead, and an
-// extension's manifest name (`label`) renders verbatim. Categories are a fixed
-// set.
-const itemLabel = (item: NavItem) =>
-    item.label ?? (item.labelKey ? td(item.labelKey, item.name) : td(`nav.items.${item.name}`, item.name));
-const categoryLabel = (cat: string) => td(`nav.category.${cat}`, cat);
 
 // `footer` renders below the registry-driven groups, for nav entries that
 // aren't routes (the account area passes operator-defined external links).
@@ -81,7 +71,7 @@ export function Sidebar({
             if (!hit) return [];
             // A nested extension page may carry a short label ("Settings")
             // that only makes sense under its parent; pinned, it stands alone.
-            const label = hit.parent ? `${itemLabel(hit.parent)} · ${itemLabel(hit.item)}` : undefined;
+            const label = hit.parent ? `${navItemLabel(hit.parent)} · ${navItemLabel(hit.item)}` : undefined;
             return [{ ...hit.item, key: `pin:${to}`, label: label ?? hit.item.label }];
         });
         return items.length > 0 ? { category: PINNED_GROUP, items } : null;
@@ -105,7 +95,7 @@ export function Sidebar({
     const renderLink = (item: NavItem, nested = false) => {
         const isActive = item.to === activePath;
         const pinned = pinnedSet.has(item.to);
-        const label = itemLabel(item);
+        const label = navItemLabel(item);
 
         return (
             <div key={item.key} className="group/row relative">
@@ -154,7 +144,7 @@ export function Sidebar({
                     className={cn(linkClass(collapsed && holdsActive(item)), 'text-left disabled:cursor-default')}
                 >
                     {item.icon && <item.icon className="h-[18px] w-[18px] shrink-0" />}
-                    <span className="flex-1 truncate">{itemLabel(item)}</span>
+                    <span className="flex-1 truncate">{navItemLabel(item)}</span>
                     {prefs &&
                         (collapsed ? (
                             <ChevronRight className="h-4 w-4 shrink-0 text-[var(--color-ink-faint)]" />
@@ -190,7 +180,7 @@ export function Sidebar({
                                     onClick={() => prefs.toggleCollapsed(groupKey)}
                                     className="group/h flex items-center gap-2 rounded-md px-3 pb-1 text-left text-xs font-medium uppercase tracking-wider text-[var(--color-ink-faint)] hover:text-[var(--color-ink-muted)]"
                                 >
-                                    <span className="flex-1 truncate">{categoryLabel(group.category)}</span>
+                                    <span className="flex-1 truncate">{group.label ?? navCategoryLabel(group.category)}</span>
                                     {collapsed && (
                                         <span className="font-mono normal-case tracking-normal">{group.items.length}</span>
                                     )}
@@ -202,7 +192,7 @@ export function Sidebar({
                                 </button>
                             ) : (
                                 <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-[var(--color-ink-faint)]">
-                                    {categoryLabel(group.category)}
+                                    {group.label ?? navCategoryLabel(group.category)}
                                 </p>
                             ))}
                         {items.map(renderItem)}

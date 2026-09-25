@@ -56,6 +56,19 @@ Route::middleware([AdminSubject::class])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Admin Navigation Layout Routes
+    |--------------------------------------------------------------------------
+    |
+    | Endpoint: /api/application/navigation
+    |
+    */
+    Route::group(['prefix' => '/navigation'], function () {
+        Route::get('/', [Application\Navigation\NavigationController::class, 'index']);
+        Route::put('/', [Application\Navigation\NavigationController::class, 'update']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | Auth Settings Controller Routes
     |--------------------------------------------------------------------------
     |

@@ -8,6 +8,12 @@ export interface NavItem {
      * extension's parent entry. Collapse state is keyed on it.
      */
     key: string;
+    /**
+     * Base-path-free id the operator's layout refers to: the route path for a
+     * core page (`infrastructure`, `access/users`), `ext:<id>` for an
+     * extension's entry whether it has one page or several.
+     */
+    id: string;
     to: string;
     name: string;
     /** Message id for the label; preferred over `name` when present. */
@@ -24,6 +30,14 @@ export interface NavItem {
 export interface NavGroup {
     category: string | null;
     items: NavItem[];
+    /** Operator-chosen name, rendered verbatim instead of nav.category.<category>. */
+    label?: string;
+    /** Whether the group starts folded for an admin who has not chosen. */
+    defaultCollapsed?: boolean;
+}
+
+function routeId(routePath: string): string {
+    return routePath.replace(/\/?\*$/, '');
 }
 
 function toPath(basePath: string, routePath: string): string {
@@ -64,6 +78,7 @@ export function buildNav(
         const to = toPath(opts.basePath, r.path);
         const item: NavItem = {
             key: to,
+            id: routeId(r.path),
             to,
             name: r.name,
             labelKey: r.labelKey,
@@ -88,6 +103,7 @@ export function buildNav(
         // what the sidebar showed for that page before pages were grouped.
         const created: NavItem = {
             key,
+            id: key,
             to,
             name: r.name,
             label: r.extension.name,
@@ -107,7 +123,13 @@ export function buildNav(
             const only = item.children?.length === 1 ? item.children[0] : undefined;
             if (!only) return item;
 
-            return { ...only, label: item.label, labelKey: item.label ? undefined : only.labelKey, icon: item.icon ?? only.icon };
+            return {
+                ...only,
+                id: item.id,
+                label: item.label,
+                labelKey: item.label ? undefined : only.labelKey,
+                icon: item.icon ?? only.icon,
+            };
         });
     }
 
@@ -130,4 +152,82 @@ export function flattenNav(groups: NavGroup[]): FlatNavEntry[] {
                 : [{ item, parent: null, group }],
         ),
     );
+}
+
+/** The operator's admin sidebar layout, as the Navigation editor saves it. */
+export interface NavLayoutGroup {
+    /** A built-in category, or `custom-<id>` for a group the operator added. */
+    key: string;
+    /** Rename; null keeps the built-in (translated) name. Required for custom groups. */
+    label: string | null;
+    /** Whether the group starts folded for admins who have not chosen. */
+    collapsed: boolean;
+    /** Entry ids (NavItem.id), in order. */
+    items: string[];
+}
+
+export interface NavLayout {
+    groups: NavLayoutGroup[];
+    hidden: string[];
+}
+
+/**
+ * Rearrange buildNav's groups by an operator layout.
+ *
+ * The layout only moves, renames and hides what buildNav already let through,
+ * so it can never surface an entry the viewer's permissions or the feature
+ * flags hide. Entries it doesn't mention (an extension installed since, a page
+ * a panel update added) land in their default group, created at the end if
+ * the layout dropped it. Header-less entries (Overview) stay on top, outside
+ * the layout. `unhideable` ids ignore `hidden`, so the editor itself can't be
+ * hidden away.
+ */
+export function applyNavLayout(
+    groups: NavGroup[],
+    layout: NavLayout | null | undefined,
+    opts: { defaultCollapsed: string[]; unhideable: string[] },
+): NavGroup[] {
+    const withDefaults = (group: NavGroup): NavGroup => ({
+        ...group,
+        defaultCollapsed: group.category !== null && opts.defaultCollapsed.includes(group.category),
+    });
+
+    if (!layout) return groups.map(withDefaults);
+
+    const head = groups.filter(g => g.category === null);
+    const byId = new Map<string, NavItem>();
+    for (const group of groups) {
+        if (group.category === null) continue;
+        for (const item of group.items) byId.set(item.id, item);
+    }
+
+    const hidden = new Set(layout.hidden.filter(id => !opts.unhideable.includes(id)));
+    const placed = new Set<string>();
+
+    const out: NavGroup[] = layout.groups.map(lg => ({
+        category: lg.key,
+        label: lg.label ?? undefined,
+        defaultCollapsed: lg.collapsed,
+        items: lg.items.flatMap(id => {
+            const item = byId.get(id);
+            if (!item || placed.has(id)) return [];
+            placed.add(id);
+            return hidden.has(id) ? [] : [item];
+        }),
+    }));
+
+    for (const group of groups) {
+        if (group.category === null) continue;
+        for (const item of group.items) {
+            if (placed.has(item.id) || hidden.has(item.id)) continue;
+            let target = out.find(g => g.category === group.category);
+            if (!target) {
+                target = withDefaults({ category: group.category, items: [] });
+                out.push(target);
+            }
+            target.items.push(item);
+        }
+    }
+
+    return [...head, ...out.filter(g => g.items.length > 0)];
 }

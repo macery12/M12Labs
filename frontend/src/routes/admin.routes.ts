@@ -22,6 +22,7 @@ import {
     Users,
     UserCog,
     ListOrdered,
+    PanelLeft,
 } from 'lucide-react';
 import { lazy } from 'react';
 import { route, type RouteDef } from './registry';
@@ -59,6 +60,15 @@ const FeaturesSection = lazy(() => import('@/pages/admin/features/FeaturesSectio
 const LinksSection = lazy(() => import('@/pages/admin/links/LinksSection'));
 const AdminIndexRedirect = lazy(() => import('@/pages/admin/overview/AdminIndexRedirect'));
 const QueuesPage = lazy(() => import('@/pages/admin/queues/QueuesPage'));
+const NavigationSection = lazy(() => import('@/pages/admin/navigation/NavigationSection'));
+
+// How the built-in admin layout behaves before an operator customises it in
+// Navigation: which groups start folded, and which entries a saved layout may
+// not hide (the editor itself, or an operator could hide the way back).
+export const ADMIN_NAV_DEFAULTS = {
+    defaultCollapsed: ['system'],
+    unhideable: ['navigation'],
+};
 
 // Admin area (/admin/*) — sidebar grouped by `category`, in registry order.
 //
@@ -67,7 +77,8 @@ const QueuesPage = lazy(() => import('@/pages/admin/queues/QueuesPage'));
 // used to sit sixteenth, inside Modules), then the pages an admin opens daily,
 // then setup, with the rarely visited System tools last and collapsed by
 // default (AdminLayout). The command palette reads the same registry, so it
-// follows this order too.
+// follows this order too. An operator can rearrange all of it (Navigation);
+// that layout is applied over this order in AdminLayout.
 export const adminRoutes: RouteDef[] = [
     route('', { element: AdminIndexRedirect }),
 
@@ -104,6 +115,7 @@ export const adminRoutes: RouteDef[] = [
     route('settings/*', { name: 'Settings', icon: Settings, category: 'configuration', permission: 'settings.read', element: SettingsSection }),
     route('features', { name: 'Features', icon: ToggleRight, category: 'configuration', permission: 'settings.read', element: FeaturesSection }),
     route('theme', { name: 'Theme', icon: Palette, category: 'configuration', permission: 'theme.read', element: ThemeSection }),
+    route('navigation', { name: 'Navigation', icon: PanelLeft, category: 'configuration', permission: 'settings.read', element: NavigationSection }),
     route('email/*', { name: 'Email', icon: Mail, category: 'configuration', permission: 'email.read', condition: f => !!f.email.module_enabled, element: EmailSection }),
     route('webhooks/*', { name: 'Webhooks', icon: Webhook, category: 'configuration', permission: 'webhooks.read', condition: f => f.webhooks.enabled, element: WebhooksSection }),
     route('nests/*', { name: 'Nests', icon: Egg, category: 'configuration', permission: 'nests.read', element: NestsSection }),

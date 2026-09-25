@@ -11,6 +11,7 @@ use Everest\Services\Billing\InvoiceSettingsService;
 use Everest\Services\Billing\PaymentWebhookRegistry;
 use Everest\Services\Billing\PaymentProcessorConfigService;
 use Everest\Services\Extensions\ExtensionFrontendFlagService;
+use Everest\Services\Navigation\AdminNavigationLayoutService;
 
 class EverestComposer
 {
@@ -21,6 +22,7 @@ class EverestComposer
         private StoreConfigService $storeConfigService,
         private PaymentWebhookRegistry $paymentWebhookRegistry,
         private ExtensionFrontendFlagService $extensionFrontendFlags,
+        private AdminNavigationLayoutService $navigationLayouts,
     ) {
     }
 
@@ -165,6 +167,11 @@ class EverestComposer
         $invoiceSettings = $this->invoiceSettingsService->get();
 
         return [
+            // The operator's sidebar layout, injected rather than fetched so the
+            // admin sidebar never paints in the default order first.
+            'navigation' => [
+                'admin' => $this->navigationLayouts->get(),
+            ],
             'billing' => [
                 'webhook_setup' => $this->paymentWebhookRegistry->adminConfiguration(),
                 'keys' => [

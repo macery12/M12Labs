@@ -2,6 +2,8 @@
 // wrapper.blade.php + the *-bound view composers). These are the bootstrap
 // contract the v2 UI reads — identical to what V1 consumes.
 
+import type { NavLayout } from '@/routes/nav';
+
 export interface PterodactylUser {
     uuid: string;
     username: string;
@@ -187,6 +189,8 @@ export interface EverestConfiguration {
         active?: string[];
         flags?: Record<string, Record<string, boolean>>;
     };
+    // Admins only: the operator's sidebar layout, null until customised.
+    navigation?: { admin: NavLayout | null };
     [k: string]: unknown;
 }
 

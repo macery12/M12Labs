@@ -7,6 +7,7 @@ import { useFlags } from '@/state/flags';
 import { useAdminHeld } from '@/layouts/heldPermissions';
 import { adminRoutes } from '@/routes/admin.routes';
 import { buildNav, flattenNav } from '@/routes/nav';
+import { navCategoryLabel, navItemLabel } from './navLabels';
 import { COMMAND_ACTIONS, type CommandGroup } from './commandRegistry';
 import { can } from '@/lib/can';
 import { cn } from '@/lib/cn';
@@ -89,12 +90,10 @@ export function CommandPalette() {
         // Extension pages are listed individually; their extension's name joins
         // the search text so "ai" finds every AI page.
         for (const { item, parent, group } of flattenNav(buildNav(adminRoutes, { flags, held, basePath: '/admin' }))) {
-            // Same precedence as the sidebar: a verbatim extension name, then
-            // an extension page's own label id, then nav.items.<English name>.
-            const label =
-                item.label ?? (item.labelKey ? td(item.labelKey, item.name) : td(`nav.items.${item.name}`, item.name));
-            const category = group.category ? td(`nav.category.${group.category}`, group.category) : '';
-            const parentLabel = parent ? (parent.label ?? (parent.labelKey ? td(parent.labelKey, parent.name) : '')) : '';
+            // Same label resolution as the sidebar.
+            const label = navItemLabel(item);
+            const category = group.category ? navCategoryLabel(group.category) : '';
+            const parentLabel = parent ? navItemLabel(parent) : '';
             out.push({
                 id: `goto:${item.to}`,
                 label,
