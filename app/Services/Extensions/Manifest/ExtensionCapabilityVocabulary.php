@@ -43,6 +43,7 @@ final class ExtensionCapabilityVocabulary
         'streams',
         'slots',
         'flags',
+        'nav',
     ];
 
     /** Maximum named frontend flags one package may publish. */

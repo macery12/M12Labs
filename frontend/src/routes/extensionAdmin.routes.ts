@@ -6,6 +6,7 @@ import {
     byDeclaredOrder,
     extensionFlagsSatisfied,
     type ExtensionPage,
+    type ExtensionPageManifest,
 } from '@/extensions-sdk/pages';
 import { route, type RouteDef } from './registry';
 import { resolveExtensionIcon } from '@/pages/admin/extensions/extMeta';
@@ -41,7 +42,13 @@ const pageModules = import.meta.glob('../extensions/packages/*/pages/admin/*.tsx
 
 // Mounted as siblings of the admin `extensions/*` management splat; the static
 // segments make React Router rank these above it.
+// Packages order among themselves by their declared nav order, then name, so
+// the Extensions group reads the same on every install instead of following
+// directory order.
+const navOrder = (manifest: ExtensionPageManifest) => manifest.nav?.admin?.order ?? 100;
+
 export const extensionAdminRoutes: RouteDef[] = pageManifests(manifests)
+    .sort((a, b) => navOrder(a.manifest) - navOrder(b.manifest) || (a.manifest.name ?? a.manifest.id).localeCompare(b.manifest.name ?? b.manifest.id))
     .flatMap(({ dir, manifest }) =>
         [...manifest.admin].sort(byDeclaredOrder).flatMap((page: ExtensionPage) => {
             const loader = pageModules[`${dir}pages/admin/${page.slug}.tsx`];
@@ -62,7 +69,12 @@ export const extensionAdminRoutes: RouteDef[] = pageManifests(manifests)
                     labelKey: page.labelKey,
                     icon: resolveExtensionIcon(page.icon),
                     category: 'extensions',
-                    extension: { id, name: manifest.name, icon: resolveExtensionIcon(manifest.icon) },
+                    extension: {
+                        id,
+                        name: manifest.name,
+                        labelKey: manifest.nav?.admin?.labelKey,
+                        icon: resolveExtensionIcon(manifest.nav?.admin?.icon ?? manifest.icon),
+                    },
                     // The full ext.<id>.admin.<action> identifier, expanded
                     // server-side when the manifest was written.
                     permission: page.requiredPermission ?? 'extensions.read',

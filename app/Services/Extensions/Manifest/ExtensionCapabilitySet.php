@@ -8,6 +8,7 @@ use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\NavEntryDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PackageFlagDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
@@ -57,6 +58,8 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         public array $streams = [],
         public array $slots = [],
         public array $flags = [],
+        /** The admin sidebar entry the package's admin pages fold under. */
+        public ?NavEntryDefinition $adminNav = null,
     ) {
     }
 
@@ -190,6 +193,9 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         }
         if ($this->flags !== []) {
             $projection['flags'] = array_map(fn (PackageFlagDefinition $f): array => $f->jsonSerialize(), $this->flags);
+        }
+        if ($this->adminNav !== null) {
+            $projection['nav'] = ['admin' => $this->adminNav->jsonSerialize()];
         }
 
         return $projection;

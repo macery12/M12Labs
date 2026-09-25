@@ -132,6 +132,31 @@ class ExtensionPageManifestServiceTest extends IntegrationTestCase
         $this->assertSame('modules', $written['admin'][0]['category']);
     }
 
+    public function testItWritesTheAdminNavEntryOnlyWhenDeclared(): void
+    {
+        $pages = ['admin' => [[
+            'slug' => 'dashboard',
+            'labelKey' => 'ext.pagedemo.nav.dashboard',
+            'icon' => 'server',
+            'category' => 'modules',
+            'order' => 5,
+        ]]];
+        $files = ['frontend/src/extensions/packages/pagedemo/pages/admin/dashboard.tsx'];
+
+        $declared = $this->manifest(
+            ['pages' => $pages, 'nav' => ['admin' => ['labelKey' => 'ext.pagedemo.nav.group', 'icon' => 'sparkles', 'order' => 15]]],
+            $files,
+        );
+        $written = json_decode((string) file_get_contents($this->service->write($declared, $this->workspace . '/backups')['targetPath']), true);
+
+        $this->assertSame(['labelKey' => 'ext.pagedemo.nav.group', 'icon' => 'sparkles', 'order' => 15], $written['nav']['admin']);
+
+        $undeclared = $this->manifest(['pages' => $pages], $files);
+        $written = json_decode((string) file_get_contents($this->service->write($undeclared, $this->workspace . '/backups')['targetPath']), true);
+
+        $this->assertArrayNotHasKey('nav', $written);
+    }
+
     public function testItWritesVerifiedFrontendSlotsForTheLazyRegistry(): void
     {
         $manifest = $this->manifest(

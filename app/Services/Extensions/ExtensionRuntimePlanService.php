@@ -14,6 +14,7 @@ use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilityVocabulary;
+use Everest\Services\Extensions\Manifest\Definitions\NavEntryDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\VisibilityCondition;
 use Everest\Services\Extensions\Manifest\Definitions\PackageFlagPredicate;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
@@ -649,7 +650,32 @@ class ExtensionRuntimePlanService
                 (array) ($capabilities['slots'] ?? [])
             ))),
             flags: $hydratedFlags,
+            adminNav: $this->hydrateNav($capabilities['nav']['admin'] ?? null),
         );
+    }
+
+    /**
+     * Only a nav entry the parser could have produced survives. Anything else
+     * drops out, which changes the recomputed hash and makes a tampered
+     * package inert, the same as the other re-checked fields.
+     */
+    private function hydrateNav(mixed $nav): ?NavEntryDefinition
+    {
+        if (!is_array($nav)) {
+            return null;
+        }
+
+        $labelKey = $nav['labelKey'] ?? null;
+        $icon = $nav['icon'] ?? null;
+        $order = $nav['order'] ?? null;
+
+        if (!is_string($labelKey) || !preg_match('/^ext\.[a-z0-9_]+\.[a-zA-Z0-9._-]{1,120}$/', $labelKey)
+            || !is_string($icon) || !in_array($icon, ExtensionCapabilityVocabulary::ICONS, true)
+            || !is_int($order) || $order < 0 || $order > 1000) {
+            return null;
+        }
+
+        return new NavEntryDefinition(labelKey: $labelKey, icon: $icon, order: $order);
     }
 
     /**

@@ -58,6 +58,16 @@ describe('buildNav', () => {
         expect(parent?.labelKey).toBe('ext.ai.nav.adminAssistant');
     });
 
+    it("prefers the package's own label for its entry over the manifest name", () => {
+        const labelled = routes.map(r =>
+            r.extension?.id === 'ai' ? { ...r, extension: { ...ai, labelKey: 'ext.ai.nav.group' } } : r,
+        );
+        const parent = buildNav(labelled, { flags, held: ['*'], basePath: '/admin' })[1]?.items[1];
+
+        expect(parent?.labelKey).toBe('ext.ai.nav.group');
+        expect(parent?.label).toBeUndefined();
+    });
+
     it('gates each page before grouping, so a parent never holds a page the viewer cannot open', () => {
         const gated = routes.map(r => (r.path.startsWith('extensions/ext/ai/settings') ? { ...r, permission: 'ext.ai.admin.write' } : r));
         const extensions = buildNav(gated, { flags, held: ['nodes.read'], basePath: '/admin' })[1];

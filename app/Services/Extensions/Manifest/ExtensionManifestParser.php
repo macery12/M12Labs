@@ -13,6 +13,7 @@ use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\NavEntryDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\VisibilityCondition;
 use Everest\Services\Extensions\Manifest\Definitions\PackageFlagPredicate;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
@@ -148,12 +149,13 @@ class ExtensionManifestParser
         $secrets = $this->parseSecrets($capabilities['secrets'] ?? [], $extensionId, $settings);
         $flags = $this->parsePackageFlags($capabilities['flags'] ?? [], $settings, $secrets);
         $flagNames = array_map(fn (PackageFlagDefinition $flag): string => $flag->name, $flags);
+        $adminPages = $this->parsePages($pages['admin'] ?? [], 'admin', $extensionId, $adminPermissions, $flagNames);
 
         return new ExtensionCapabilitySet(
             clientRoutes: (bool) ($routes['client'] ?? false),
             adminRoutes: (bool) ($routes['admin'] ?? false),
             serverPages: $this->parsePages($pages['server'] ?? [], 'server', $extensionId, $adminPermissions, $flagNames),
-            adminPages: $this->parsePages($pages['admin'] ?? [], 'admin', $extensionId, $adminPermissions, $flagNames),
+            adminPages: $adminPages,
             adminPermissions: $adminPermissions,
             migrations: (bool) ($database['migrations'] ?? false),
             tables: $this->parseTables($database['tables'] ?? [], $extensionId),
@@ -168,6 +170,52 @@ class ExtensionManifestParser
             streams: $this->parseStreams($capabilities['streams'] ?? []),
             slots: $this->parseFrontendSlots($capabilities['slots'] ?? [], $flagNames),
             flags: $flags,
+            adminNav: $this->parseNav($capabilities['nav'] ?? null, $extensionId, $adminPages !== []),
+        );
+    }
+
+    /**
+     * How the package's entry reads in the admin sidebar: label, icon and its
+     * order among installed extensions. There is no placement field on
+     * purpose -- which group an extension sits in is the panel's and the
+     * operator's call -- so an unknown key such as `category` is refused
+     * rather than silently ignored.
+     */
+    private function parseNav($nav, string $extensionId, bool $hasAdminPages): ?NavEntryDefinition
+    {
+        if ($nav === null) {
+            return null;
+        }
+
+        if (!is_array($nav) || ($nav !== [] && array_is_list($nav))) {
+            throw new DisplayException('The manifest "capabilities.nav" section must be an object.');
+        }
+        $this->assertKnownKeys($nav, ['admin'], 'capabilities.nav');
+
+        $admin = $nav['admin'] ?? null;
+        if ($admin === null) {
+            return null;
+        }
+
+        if (!is_array($admin) || ($admin !== [] && array_is_list($admin))) {
+            throw new DisplayException('The manifest "capabilities.nav.admin" section must be an object.');
+        }
+        $this->assertKnownKeys($admin, ['labelKey', 'icon', 'order'], 'capabilities.nav.admin');
+
+        // An entry with nothing under it would be an empty sidebar row.
+        if (!$hasAdminPages) {
+            throw new DisplayException('capabilities.nav.admin needs at least one entry in capabilities.pages.admin.');
+        }
+
+        $order = $admin['order'] ?? 100;
+        if (!is_int($order) || $order < 0 || $order > 1000) {
+            throw new DisplayException('capabilities.nav.admin.order must be a whole number from 0 to 1000.');
+        }
+
+        return new NavEntryDefinition(
+            labelKey: $this->labelKey($admin['labelKey'] ?? '', $extensionId, 'capabilities.nav.admin.labelKey'),
+            icon: $this->icon($admin['icon'] ?? 'puzzle', 'capabilities.nav.admin.icon'),
+            order: $order,
         );
     }
 

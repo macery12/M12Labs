@@ -44,6 +44,18 @@ export interface ExtensionPageManifest {
     admin: ExtensionPage[];
     /** Panel-verified non-page contributions. Absent on older generated files. */
     slots?: ExtensionFrontendSlot[];
+    /** How the entry the admin pages fold under reads. Absent unless declared. */
+    nav?: { admin?: ExtensionNavEntry };
+}
+
+/**
+ * Label, icon and order of an extension's admin sidebar entry. No placement:
+ * which group the entry sits in is the panel's and the operator's call.
+ */
+export interface ExtensionNavEntry {
+    labelKey: string;
+    icon: string;
+    order: number;
 }
 
 export interface ExtensionFrontendSlot {

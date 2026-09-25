@@ -126,7 +126,10 @@ class ExtensionPageManifestService
                 fn (FrontendSlotDefinition $slot): array => $slot->jsonSerialize(),
                 $manifest->capabilities->slots
             ),
-        ];
+        ] + ($manifest->capabilities->adminNav === null ? [] : [
+            // Label, icon and order of the entry the admin pages fold under.
+            'nav' => ['admin' => $manifest->capabilities->adminNav->jsonSerialize()],
+        ]);
     }
 
     /**

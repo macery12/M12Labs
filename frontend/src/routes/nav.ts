@@ -99,15 +99,18 @@ export function buildNav(
             continue;
         }
 
-        // Without a manifest name the first page's label stands in, which is
-        // what the sidebar showed for that page before pages were grouped.
+        // The package's own catalogued label wins, then its manifest name.
+        // With neither (a page manifest written before names were carried),
+        // the first page's label stands in, which is what the sidebar showed
+        // for that page before pages were grouped.
+        const labelKey = r.extension.labelKey ?? (r.extension.name ? undefined : r.labelKey);
         const created: NavItem = {
             key,
             id: key,
             to,
             name: r.name,
-            label: r.extension.name,
-            labelKey: r.extension.name ? undefined : r.labelKey,
+            label: labelKey ? undefined : r.extension.name,
+            labelKey,
             icon: r.extension.icon ?? r.icon,
             category: r.category,
             children: [item],
@@ -123,13 +126,7 @@ export function buildNav(
             const only = item.children?.length === 1 ? item.children[0] : undefined;
             if (!only) return item;
 
-            return {
-                ...only,
-                id: item.id,
-                label: item.label,
-                labelKey: item.label ? undefined : only.labelKey,
-                icon: item.icon ?? only.icon,
-            };
+            return { ...only, id: item.id, label: item.label, labelKey: item.labelKey, icon: item.icon ?? only.icon };
         });
     }
 

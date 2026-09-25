@@ -37,9 +37,11 @@ export interface RouteDef {
      * a package with several admin pages reads as one thing in the sidebar
      * rather than as unrelated rows. `name` is the manifest name, rendered
      * verbatim (manifest copy is not catalogued); absent in page manifests the
-     * panel wrote before it carried one.
+     * panel wrote before it carried one. `labelKey` is the package's own
+     * catalogued label for that entry (manifest `capabilities.nav.admin`),
+     * preferred over the name when declared.
      */
-    extension?: { id: string; name?: string; icon?: LucideIcon };
+    extension?: { id: string; name?: string; labelKey?: string; icon?: LucideIcon };
     /** Dotted permission(s) required to see/visit this route. */
     permission?: string | string[];
     /** Feature-flag gate; hidden when it returns false. */
