@@ -47,9 +47,9 @@ class ServerTransferServiceTest extends IntegrationTestCase
             'server_id' => null,
         ]);
 
-        $this->jwtService->expects('setExpiresAt->setSubject->setClaims->handle')
+        $this->jwtService->expects('setExpiresAt->setScope->setSubject->setClaims->handle')
             ->once()
-            ->andReturn(\Mockery::mock(\Lcobucci\JWT\Token\Plain::class));
+            ->andReturn(\Mockery::mock(\Lcobucci\JWT\UnencryptedToken::class));
 
         $this->daemonTransferRepository->expects('setServer->notify')
             ->once()
@@ -111,7 +111,7 @@ class ServerTransferServiceTest extends IntegrationTestCase
         $targetNode = Node::factory()->create();
         $targetAllocation = Allocation::factory()->create([
             'node_id' => $targetNode->id,
-            'server_id' => Server::factory()->create()->id, // Already assigned
+            'server_id' => $this->createServerModel()->id, // Already assigned
         ]);
 
         $this->expectException(DisplayException::class);
@@ -136,9 +136,9 @@ class ServerTransferServiceTest extends IntegrationTestCase
             'server_id' => null,
         ]);
 
-        $this->jwtService->expects('setExpiresAt->setSubject->setClaims->handle')
+        $this->jwtService->expects('setExpiresAt->setScope->setSubject->setClaims->handle')
             ->once()
-            ->andReturn(\Mockery::mock(\Lcobucci\JWT\Token\Plain::class));
+            ->andReturn(\Mockery::mock(\Lcobucci\JWT\UnencryptedToken::class));
 
         $this->daemonTransferRepository->expects('setServer->notify')
             ->once()

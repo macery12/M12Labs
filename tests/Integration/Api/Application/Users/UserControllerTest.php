@@ -3,6 +3,7 @@
 namespace Everest\Tests\Integration\Api\Application\Users;
 
 use Everest\Models\User;
+use Everest\Models\AdminRole;
 use Illuminate\Http\Response;
 use Everest\Events\ActivityLogged;
 use Illuminate\Support\Facades\Event;
@@ -155,7 +156,17 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
      */
     public function testKeyWithoutPermissionCannotLoadRelationship()
     {
-        $this->markTestSkipped('todo: implement proper admin api key permissions system');
+        $this->createNewScopedApiKey([AdminRole::USERS_READ]);
+
+        $user = User::factory()->create();
+        $this->createServerModel(['owner_id' => $user->id]);
+
+        $response = $this->getJson('/api/application/users/' . $user->id . '?include=servers');
+        $response->assertStatus(Response::HTTP_OK);
+
+        // The include is answered with a null resource rather than the servers.
+        $response->assertJsonPath('attributes.relationships.servers.object', 'null_resource');
+        $response->assertJsonPath('attributes.relationships.servers.attributes', null);
     }
 
     /**
@@ -173,7 +184,9 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
      */
     public function testErrorReturnedIfNoPermission()
     {
-        $this->markTestSkipped('todo: implement proper admin api key permissions system');
+        $this->createNewScopedApiKey([AdminRole::NODES_READ]);
+
+        $this->assertApiKeyDenied($this->getJson('/api/application/users'));
     }
 
     /**
@@ -319,7 +332,11 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
     #[DataProvider('userWriteEndpointsDataProvider')]
     public function testApiKeyWithoutWritePermissions(string $method, string $url)
     {
-        $this->markTestSkipped('todo: implement proper admin api key permissions system');
+        $this->createNewScopedApiKey([AdminRole::USERS_READ]);
+
+        $user = User::factory()->create();
+
+        $this->assertApiKeyDenied($this->{$method}(str_replace('{id}', (string) $user->id, $url)));
     }
 
     /**

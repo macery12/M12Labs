@@ -4,6 +4,7 @@ namespace Everest\Tests\Integration\Api\Application\Users;
 
 use Everest\Models\User;
 use Illuminate\Support\Str;
+use Everest\Models\AdminRole;
 use Illuminate\Http\Response;
 use Everest\Tests\Integration\Api\Application\ApplicationApiIntegrationTestCase;
 
@@ -59,6 +60,10 @@ class ExternalUserControllerTest extends ApplicationApiIntegrationTestCase
      */
     public function testErrorReturnedIfNoPermission()
     {
-        $this->markTestSkipped('todo: implement proper admin api key permissions system');
+        $this->createNewScopedApiKey([AdminRole::NODES_READ]);
+
+        $user = User::factory()->create(['external_id' => Str::random()]);
+
+        $this->assertApiKeyDenied($this->getJson('/api/application/users/external/' . $user->external_id));
     }
 }

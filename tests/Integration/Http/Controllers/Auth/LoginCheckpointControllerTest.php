@@ -120,7 +120,9 @@ class LoginCheckpointControllerTest extends IntegrationTestCase
 
         $this->assertGuest();
 
-        Event::assertDispatched(fn (Failed $event) => $event->guard === 'auth');
+        // Failed only fires once a user is identified; attempts without one
+        // still count towards the throttle (see testEndpointAppliesThrottling).
+        Event::assertNotDispatched(Failed::class);
     }
 
     public function testEndpointAppliesThrottling(): void
@@ -163,7 +165,9 @@ class LoginCheckpointControllerTest extends IntegrationTestCase
 
         $this->assertGuest();
 
-        Event::assertDispatched(Failed::class);
+        // A mismatched confirmation token is rejected before the session's user
+        // is trusted, so there is no user to attach a Failed event to.
+        Event::assertNotDispatched(Failed::class);
     }
 
     public function testEndpointReturnsErrorIfUserDoesNotExist(): void

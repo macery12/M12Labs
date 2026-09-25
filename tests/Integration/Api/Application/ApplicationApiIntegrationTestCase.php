@@ -5,6 +5,7 @@ namespace Everest\Tests\Integration\Api\Application;
 use Everest\Models\User;
 use Everest\Models\ApiKey;
 use Everest\Models\AdminRole;
+use Illuminate\Testing\TestResponse;
 use Everest\Services\Acl\Api\AdminAcl;
 use Everest\Tests\Integration\IntegrationTestCase;
 use Everest\Tests\Traits\Integration\CreatesTestModels;
@@ -61,6 +62,32 @@ abstract class ApplicationApiIntegrationTestCase extends IntegrationTestCase
     }
 
     /**
+     * Replace the default API key with one bound to an Access Profile holding
+     * only the given capabilities. A key takes its authority solely from its
+     * profile, never from the user who created it, so this is how a narrowly
+     * scoped key is expressed.
+     *
+     * @param list<string> $capabilities
+     */
+    protected function createNewScopedApiKey(array $capabilities): ApiKey
+    {
+        return $this->createNewDefaultApiKey($this->getApiUser(), [
+            'admin_role_id' => $this->createApiProfile($capabilities)->id,
+        ]);
+    }
+
+    /**
+     * Assert the key was refused by its Access Profile, rather than by some
+     * other 403 path, such as a missing action declaration.
+     */
+    protected function assertApiKeyDenied(TestResponse $response): void
+    {
+        $response->assertForbidden()
+            ->assertJsonPath('errors.0.code', 'AccessDeniedHttpException')
+            ->assertJsonPath('errors.0.detail', 'This API key does not have permission to perform this action.');
+    }
+
+    /**
      * Create an administrative user.
      */
     protected function createApiUser(): User
@@ -82,16 +109,7 @@ abstract class ApplicationApiIntegrationTestCase extends IntegrationTestCase
         unset($permissions['admin_role_id']);
 
         if ($profileId === null) {
-            $profileId = AdminRole::query()->forceCreate([
-                'name' => 'Integration API ' . bin2hex(random_bytes(6)),
-                'description' => 'Application API integration test profile.',
-                'sort_id' => 999,
-                'permissions' => app(AdminCapabilityRegistry::class)->all(),
-                'color' => null,
-                'is_system' => false,
-                'is_owner' => false,
-                'api_eligible' => true,
-            ])->id;
+            $profileId = $this->createApiProfile(app(AdminCapabilityRegistry::class)->all())->id;
         }
 
         return ApiKey::factory()->create(array_merge([
@@ -109,5 +127,22 @@ abstract class ApplicationApiIntegrationTestCase extends IntegrationTestCase
             'r_database_hosts' => AdminAcl::READ | AdminAcl::WRITE,
             'r_server_databases' => AdminAcl::READ | AdminAcl::WRITE,
         ], $permissions));
+    }
+
+    /**
+     * @param list<string> $capabilities
+     */
+    private function createApiProfile(array $capabilities): AdminRole
+    {
+        return AdminRole::query()->forceCreate([
+            'name' => 'Integration API ' . bin2hex(random_bytes(6)),
+            'description' => 'Application API integration test profile.',
+            'sort_id' => 999,
+            'permissions' => $capabilities,
+            'color' => null,
+            'is_system' => false,
+            'is_owner' => false,
+            'api_eligible' => true,
+        ]);
     }
 }

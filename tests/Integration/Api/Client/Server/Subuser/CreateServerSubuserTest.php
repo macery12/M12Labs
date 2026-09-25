@@ -16,15 +16,16 @@ class CreateServerSubuserTest extends ClientApiIntegrationTestCase
     use WithFaker;
 
     /**
-     * Test that a subuser can be created for a server.
+     * Test that an existing account can be added as a subuser for a server.
      */
     #[DataProvider('permissionsDataProvider')]
     public function testSubuserCanBeCreated(array $permissions)
     {
         [$user, $server] = $this->generateTestAccount($permissions);
+        $email = User::factory()->create(['email' => $this->faker->email])->email;
 
         $response = $this->actingAs($user)->postJson($this->link($server) . '/users', [
-            'email' => $email = $this->faker->email,
+            'email' => $email,
             'permissions' => [
                 Permission::ACTION_USER_CREATE,
             ],
@@ -80,7 +81,10 @@ class CreateServerSubuserTest extends ClientApiIntegrationTestCase
     {
         [$user, $server] = $this->generateTestAccount();
 
-        $email = str_repeat(Str::random(20), 9) . '1@gmail.com'; // 191 is the hard limit for the column in MySQL.
+        // 191 is the hard limit for the column in MySQL. The local part stays within
+        // RFC 5321's 64 characters so the service still treats it as an email.
+        $email = Str::lower(Str::random(64)) . '@' . Str::lower(Str::random(61)) . '.' . Str::lower(Str::random(60)) . '.com';
+        User::factory()->create(['email' => $email]);
 
         $response = $this->actingAs($user)->postJson($this->link($server) . '/users', [
             'email' => $email,
@@ -133,9 +137,10 @@ class CreateServerSubuserTest extends ClientApiIntegrationTestCase
     public function testAddingSubuserThatAlreadyIsAssignedReturnsError()
     {
         [$user, $server] = $this->generateTestAccount();
+        $email = User::factory()->create(['email' => $this->faker->email])->email;
 
         $response = $this->actingAs($user)->postJson($this->link($server) . '/users', [
-            'email' => $email = $this->faker->email,
+            'email' => $email,
             'permissions' => [
                 Permission::ACTION_USER_CREATE,
             ],
