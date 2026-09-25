@@ -230,7 +230,6 @@ class PayPalNegativeEventServiceTest extends TestCase
             $table->timestamp('paypal_captured_at')->nullable();
             $table->string('paypal_payer_id')->nullable();
             $table->string('paypal_payer_email')->nullable();
-            $table->json('domain_payload')->nullable();
             $table->string('payment_intent_id')->nullable();
             $table->timestamps();
         });

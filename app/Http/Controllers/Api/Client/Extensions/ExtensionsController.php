@@ -61,6 +61,12 @@ class ExtensionsController extends ClientApiController
                     'icon' => $extensionDef['icon'],
                     'version' => $extensionDef['version'] ?? ($extensionDef['latestVersion'] ?? '1.0.0'),
                     'route' => $extensionDef['route'] ?? $config->extension_id,
+                    // The real destination. A v3 package's pages are mounted by
+                    // the loader at extensions/ext/<id>/<slug>; `route` above is
+                    // the v2 shape and is kept only for legacy core extensions,
+                    // which have no capability projection to derive a path from.
+                    'path' => $extensionDef['serverPagePath']
+                        ?? 'extensions/' . ($extensionDef['route'] ?? $config->extension_id),
                     'settings' => $config->settings ?? [],
                 ];
             }

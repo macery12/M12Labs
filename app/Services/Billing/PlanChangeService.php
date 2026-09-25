@@ -632,7 +632,6 @@ class PlanChangeService
             'backup_limit' => $targetProduct->backup_limit,
             'database_limit' => $targetProduct->database_limit,
             'allocation_limit' => $targetProduct->allocation_limit,
-            'subdomain_limit' => $targetProduct->subdomain_limit,
         ];
 
         return $this->buildModificationService->handle($server, $buildData);
@@ -691,15 +690,6 @@ class PlanChangeService
             }
         }
 
-        $currentSubdomains = $server->customDomains()->count();
-        if ($newProduct->subdomain_limit !== null && $currentSubdomains > $newProduct->subdomain_limit) {
-            $violations['subdomains'] = [
-                'current' => $currentSubdomains,
-                'limit' => $newProduct->subdomain_limit,
-                'unit' => 'subdomains',
-            ];
-        }
-
         return $violations;
     }
 
@@ -710,11 +700,7 @@ class PlanChangeService
             || $newProduct->cpu_limit < $server->cpu
             || $newProduct->database_limit < $server->database_limit
             || $newProduct->backup_limit < $server->backup_limit
-            || $newProduct->allocation_limit < $server->allocation_limit
-            || (
-                $newProduct->subdomain_limit !== null
-                && ($server->subdomain_limit === null || $newProduct->subdomain_limit < $server->subdomain_limit)
-            );
+            || $newProduct->allocation_limit < $server->allocation_limit;
     }
 
     /**
@@ -798,9 +784,6 @@ class PlanChangeService
             'backup_limit' => (int) $targetState['backup_limit'],
             'database_limit' => (int) $targetState['database_limit'],
             'allocation_limit' => (int) $targetState['allocation_limit'],
-            'subdomain_limit' => $targetState['subdomain_limit'] === null
-                ? null
-                : (int) $targetState['subdomain_limit'],
         ]);
         $snapshotProduct->exists = true;
 
@@ -876,7 +859,6 @@ class PlanChangeService
             'backup_limit',
             'database_limit',
             'allocation_limit',
-            'subdomain_limit',
             'billing_days',
             'node_id',
             'cycle_minor',
@@ -972,7 +954,6 @@ class PlanChangeService
             'backup_limit' => (int) $product->backup_limit,
             'database_limit' => (int) $product->database_limit,
             'allocation_limit' => (int) $product->allocation_limit,
-            'subdomain_limit' => $product->subdomain_limit === null ? null : (int) $product->subdomain_limit,
             'billing_days' => (int) $server->billing_days,
             'node_id' => (int) $server->node_id,
             'cycle_minor' => $cycleMinor ?? $this->cyclePriceMinor(

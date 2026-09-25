@@ -15,7 +15,8 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { Spinner } from '@/components/ui/Spinner';
-import { getFileContents, saveFileContents } from '@/api/files';
+import { fileExists, getFileContents, saveFileContents } from '@/api/files';
+import { validateFileName } from './Modals';
 import { dirname, encodePathSegments } from '../paths';
 import { EDITOR_LANGUAGES, loadEditorLanguage, matchEditorLanguage } from '@/lib/editorLanguages';
 
@@ -79,6 +80,11 @@ export default function FileEditor({ action }: { action: 'edit' | 'new' }) {
     const [langExt, setLangExt] = useState<Extension | null>(null);
     const [showNameModal, setShowNameModal] = useState(false);
     const [newName, setNewName] = useState('');
+    const [nameError, setNameError] = useState<string | undefined>();
+    // Set once we know the typed name already exists, so the create step can ask
+    // before replacing it — the daemon's write has no exclusive-create mode.
+    const [overwriteTarget, setOverwriteTarget] = useState<{ path: string; name: string } | null>(null);
+    const [checkingName, setCheckingName] = useState(false);
 
     // Load existing content.
     useEffect(() => {
@@ -135,7 +141,13 @@ export default function FileEditor({ action }: { action: 'edit' | 'new' }) {
     const doSave = async (targetName: string, isNew: boolean) => {
         setSaving(true);
         try {
-            await saveFileContents(uuid, targetName, content, isNew ? '' : originalRef.current);
+            // A brand-new file has no original to compare against, so it must go
+            // through the plain write endpoint. Passing '' here instead routed it
+            // to write-with-diff, whose compare-and-swap reads the live file —
+            // which does not exist yet — and whose `original_content` rule the
+            // empty string could never satisfy ("The original content must be a
+            // string", after ConvertEmptyStringsToNull turned it into null).
+            await saveFileContents(uuid, targetName, content, isNew ? undefined : originalRef.current);
             originalRef.current = content;
             setOriginalContent(content);
             push({ type: 'success', message: m['server.files.editor.saved']() });
@@ -153,11 +165,29 @@ export default function FileEditor({ action }: { action: 'edit' | 'new' }) {
         else void doSave(filename, false);
     };
 
-    const confirmNewName = () => {
+    const confirmNewName = async () => {
         const trimmed = newName.trim();
-        if (!trimmed) return;
+        // Same rules as the new-directory and rename dialogs, which this modal
+        // never applied — an illegal name used to fail opaquely at the daemon.
+        const err = validateFileName(trimmed, true);
+        if (err) {
+            setNameError(err);
+            return;
+        }
+
         const target = `${directory.replace(/\/+$/, '')}/${trimmed}`.replace(/\/{2,}/g, '/');
+
+        setCheckingName(true);
+        const exists = await fileExists(uuid, dirname(target), trimmed.split('/').pop() ?? trimmed);
+        setCheckingName(false);
+
         setShowNameModal(false);
+
+        if (exists) {
+            setOverwriteTarget({ path: target, name: trimmed });
+            return;
+        }
+
         void doSave(target, true);
     };
 
@@ -247,7 +277,12 @@ export default function FileEditor({ action }: { action: 'edit' | 'new' }) {
                         <Button variant="ghost" size="sm" onClick={() => setShowNameModal(false)}>
                             {m['common.actions.cancel']()}
                         </Button>
-                        <Button size="sm" onClick={confirmNewName} disabled={!newName.trim()}>
+                        <Button
+                            size="sm"
+                            onClick={() => void confirmNewName()}
+                            disabled={!newName.trim() || checkingName}
+                        >
+                            {checkingName && <Spinner className="h-4 w-4" />}
                             {m['common.actions.create']()}
                         </Button>
                     </>
@@ -259,10 +294,45 @@ export default function FileEditor({ action }: { action: 'edit' | 'new' }) {
                 <Input
                     autoFocus
                     value={newName}
-                    onChange={e => setNewName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && confirmNewName()}
+                    onChange={e => {
+                        setNewName(e.target.value);
+                        setNameError(undefined);
+                    }}
+                    onKeyDown={e => e.key === 'Enter' && void confirmNewName()}
+                    invalid={!!nameError}
                     placeholder="config.yml"
                 />
+                {nameError && <p className="mt-1.5 text-xs text-[var(--color-danger)]">{nameError}</p>}
+            </Modal>
+
+            {/* ── Overwrite confirmation ── */}
+            <Modal
+                open={overwriteTarget !== null}
+                onClose={() => setOverwriteTarget(null)}
+                title={m['server.files.editor.overwriteTitle']()}
+                size="sm"
+                footer={
+                    <>
+                        <Button variant="ghost" size="sm" onClick={() => setOverwriteTarget(null)}>
+                            {m['common.actions.cancel']()}
+                        </Button>
+                        <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => {
+                                const target = overwriteTarget;
+                                setOverwriteTarget(null);
+                                if (target) void doSave(target.path, true);
+                            }}
+                        >
+                            {m['server.files.editor.overwriteConfirm']()}
+                        </Button>
+                    </>
+                }
+            >
+                <p className="text-sm text-[var(--color-ink-muted)]">
+                    {m['server.files.editor.overwriteBody']({ name: overwriteTarget?.name ?? '' })}
+                </p>
             </Modal>
         </div>
     );

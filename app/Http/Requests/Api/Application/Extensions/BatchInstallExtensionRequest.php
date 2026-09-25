@@ -11,9 +11,10 @@ class BatchInstallExtensionRequest extends ApplicationApiRequest
     {
         return [
             'extensions'                  => 'required|array|min:1|max:50',
-            'extensions.*.extension_id'   => 'required|string|max:191',
+            'extensions.*.extension_id'   => 'required|string|max:191|distinct',
             'extensions.*.repository_id'  => 'required|integer|exists:extension_repositories,id',
             'extensions.*.version'        => 'nullable|string|max:191',
+            'extensions.*.approved_capability_hash' => 'nullable|string|size:64',
         ];
     }
 

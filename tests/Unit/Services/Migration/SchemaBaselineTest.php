@@ -4,6 +4,7 @@ namespace Everest\Tests\Unit\Services\Migration;
 
 use Everest\Tests\TestCase;
 use Everest\Services\Migration\SchemaBaseline;
+use Everest\Services\Extensions\ExtensionMigrationSourceParser;
 
 /**
  * Guards the one artifact the upgrade path cannot recover from being wrong.
@@ -102,29 +103,44 @@ class SchemaBaselineTest extends TestCase
     private function tablesCreatedByMigrations(): array
     {
         $created = [];
+        $parser = new ExtensionMigrationSourceParser();
 
         foreach (glob(database_path('migrations') . '/*.php') ?: [] as $file) {
-            $source = (string) file_get_contents($file);
-
-            preg_match_all("/Schema::create\(\s*'([^']+)'/", $source, $matches);
-
-            foreach ($matches[1] as $table) {
-                $created[$table] = basename($file);
-            }
-        }
-
-        // Dropped again by a later migration in the same chain, so a fresh
-        // install never ends up with it.
-        foreach (glob(database_path('migrations') . '/*.php') ?: [] as $file) {
-            preg_match_all("/Schema::dropIfExists\(\s*'([^']+)'/", (string) file_get_contents($file), $matches);
-
-            foreach ($matches[1] as $table) {
-                if (isset($created[$table]) && basename($file) > $created[$table]) {
-                    unset($created[$table]);
+            foreach ($parser->operations($this->upBody($file)) as $operation) {
+                if ($operation['verb'] === 'create') {
+                    $created[$operation['table']] = basename($file);
+                } elseif (in_array($operation['verb'], ['drop', 'dropIfExists'], true)) {
+                    unset($created[$operation['table']]);
+                } elseif ($operation['verb'] === 'rename' && $operation['renameTo'] !== null && isset($created[$operation['table']])) {
+                    $created[$operation['renameTo']] = $created[$operation['table']];
+                    unset($created[$operation['table']]);
                 }
             }
         }
 
         return $created;
+    }
+
+    /**
+     * The forward half of a migration.
+     *
+     * Only up() describes the schema a fresh install ends with. A migration that
+     * drops a table and offers to recreate it in down() would otherwise read as
+     * one that creates a table the baseline has never heard of — the create and
+     * the drop sit in the same file, so the later-drop rule above cannot cancel
+     * them out.
+     */
+    private function upBody(string $file): string
+    {
+        $source = (string) file_get_contents($file);
+
+        $start = strpos($source, 'function up(');
+        if ($start === false) {
+            return $source;
+        }
+
+        $end = strpos($source, 'function down(', $start);
+
+        return $end === false ? substr($source, $start) : substr($source, $start, $end - $start);
     }
 }

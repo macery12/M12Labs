@@ -11,14 +11,16 @@ class BatchUpdateExtensionRequest extends ApplicationApiRequest
     {
         return [
             'extensions'                  => 'required|array|min:1|max:50',
-            'extensions.*.extension_id'   => 'required|string|max:191',
+            'extensions.*.extension_id'   => 'required|string|max:191|distinct',
             'extensions.*.repository_id'  => 'required|integer|exists:extension_repositories,id',
             'extensions.*.version'        => 'nullable|string|max:191',
+            'extensions.*.approved_capability_hash' => 'nullable|string|size:64',
+            'extensions.*.acknowledge_modified_files' => 'sometimes|boolean',
         ];
     }
 
     public function permission(): string
     {
-        return AdminRole::EXTENSIONS_INSTALL;
+        return AdminRole::EXTENSIONS_UPDATE;
     }
 }

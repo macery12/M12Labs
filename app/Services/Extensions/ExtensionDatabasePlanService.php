@@ -16,8 +16,14 @@ use Everest\Exceptions\DisplayException;
  *   owned tables (ext_<id>_ prefix) and ran migrations are read directly.
  * - install / update: the migration files aren't local yet, so the package
  *   archive is downloaded and extracted to a temp dir and its migration
- *   sources are parsed for Schema::create() table names. The temp dir is
- *   always cleaned up.
+ *   sources are parsed. The temp dir is always cleaned up.
+ *
+ * The parse reads every schema verb, not just `Schema::create`. It used to read
+ * only that one, which meant an update whose migration dropped a table showed
+ * the operator a list of tables to add and nothing else — the preview was
+ * reassuring about precisely the operation that loses data. Anything the parse
+ * cannot account for is counted and reported as such, so an incomplete list
+ * does not read as an exhaustive one.
  */
 class ExtensionDatabasePlanService
 {
@@ -25,6 +31,7 @@ class ExtensionDatabasePlanService
         private ExtensionCatalogService $catalogService,
         private ExtensionPackageArtifactService $artifactService,
         private ExtensionMigrationService $migrationService,
+        private ExtensionPermissionRegistry $permissionRegistry,
     ) {
     }
 
@@ -61,14 +68,18 @@ class ExtensionDatabasePlanService
             'manualCleanup' => $existingTables === [] && $ranMigrations === []
                 ? []
                 : $this->migrationService->manualCleanupStatements($extensionId, $ranMigrations),
+            // Uninstalling strips this extension's permissions from every role
+            // that holds them. Reinstalling brings the permissions back but not
+            // the grants, so the count is shown before the operation runs.
+            'roleAssignments' => $this->permissionRegistry->assignmentCount($extensionId),
         ];
     }
 
     /**
      * Install / update preview by parsing the package archive's migrations.
-     * For an update, only migrations not already recorded as ran are counted
-     * (Laravel skips already-applied filenames), and the extension's current
-     * tables are surfaced as unchanged.
+     * Only migrations not already recorded as ran are counted (Laravel skips
+     * already-applied filenames), and the extension's current tables are
+     * surfaced as unchanged.
      *
      * @return array<string, mixed>
      */
@@ -84,6 +95,7 @@ class ExtensionDatabasePlanService
         File::ensureDirectoryExists($extractPath);
 
         try {
+            $this->catalogService->assertRepositoryEnabled($package['repository']->id);
             $this->artifactService->downloadArchive($release['archiveUrl'], $archivePath);
             if (!empty($release['archiveChecksum'])) {
                 $this->artifactService->verifyChecksum($archivePath, $release['archiveChecksum'], 'archive');
@@ -96,27 +108,47 @@ class ExtensionDatabasePlanService
                 $this->migrationService->migrationPath($extensionId)
             )) ?: [];
 
-            $ranMigrations = $operation === 'update'
-                ? $this->migrationService->ranMigrationNames($extensionId)
-                : [];
+            // Only files the panel hasn't already run will execute — for an
+            // install too. A keep-data uninstall leaves the migration records
+            // behind with the tables, so a reinstall runs none of the files it
+            // ships again; previewing them as pending listed every table the
+            // first install created as one this install would create.
+            $ranMigrations = $this->migrationService->recordedAsRan($migrationFiles);
 
-            // For an update, only files the panel hasn't already run will execute.
             $pendingFiles = array_values(array_filter(
                 $migrationFiles,
                 fn (string $file) => !in_array(basename($file, '.php'), $ranMigrations, true)
             ));
 
+            $changes = $this->migrationService->parseSchemaChanges($pendingFiles);
+
+            // Only tables that survive the operation are "unchanged". One this
+            // update drops or renames away is listed under its own heading, and
+            // showing it in both places would let an operator read the calmer
+            // one and stop. An install has them too when it is a reinstall over
+            // kept data, and they are the tables it reattaches to.
+            $touched = array_merge($changes['drop'], array_column($changes['rename'], 'from'));
+            $unchanged = array_values(array_diff($this->migrationService->listExtensionTables($extensionId), $touched));
+
             return [
                 'operation' => $operation,
                 'extensionId' => $extensionId,
                 'tablePrefix' => $this->migrationService->tablePrefix($extensionId),
-                'hasDatabase' => $pendingFiles !== [],
+                'hasDatabase' => $pendingFiles !== [] || $unchanged !== [],
                 'version' => $release['version'] ?? $version,
-                'tablesToCreate' => $this->migrationService->parseCreatedTables($pendingFiles),
+                'tablesToCreate' => $changes['create'],
+                'tablesToAlter' => $changes['alter'],
+                'tablesToDrop' => $changes['drop'],
+                'tablesToRename' => $changes['rename'],
+                // What a drop would actually cost, for the tables that exist
+                // right now.
+                'rowCounts' => $this->migrationService->rowCountsFor(
+                    $extensionId,
+                    array_merge($changes['drop'], $changes['alter'], array_column($changes['rename'], 'from')),
+                ),
+                'unanalysedStatements' => $changes['rawStatements'],
                 'migrations' => array_map(fn (string $file) => basename($file, '.php'), $pendingFiles),
-                'unchangedTables' => $operation === 'update'
-                    ? $this->migrationService->listExtensionTables($extensionId)
-                    : [],
+                'unchangedTables' => $unchanged,
             ];
         } catch (\Throwable $exception) {
             if ($exception instanceof DisplayException) {

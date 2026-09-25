@@ -7,12 +7,15 @@ export function Switch({
     onChange,
     disabled,
     label,
+    title,
     className,
 }: {
     checked: boolean;
     onChange: (next: boolean) => void;
     disabled?: boolean;
     label?: string;
+    // Native tooltip, used to explain why a switch is disabled.
+    title?: string;
     className?: string;
 }) {
     return (
@@ -21,6 +24,7 @@ export function Switch({
             role="switch"
             aria-checked={checked}
             aria-label={label}
+            title={title}
             disabled={disabled}
             onClick={() => onChange(!checked)}
             className={cn(

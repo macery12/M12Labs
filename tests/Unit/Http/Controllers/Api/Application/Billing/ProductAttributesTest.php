@@ -89,7 +89,6 @@ class ProductAttributesTest extends TestCase
         $attributes = $this->attributes([
             'description' => null,
             'price' => 0,
-            'subdomain_limit' => null,
             'backup_limit' => 0,
         ], null);
 
@@ -97,7 +96,6 @@ class ProductAttributesTest extends TestCase
             'description' => null,
             'price' => 0.0,
             'backup_limit' => 0,
-            'subdomain_limit' => null,
         ], $attributes);
     }
 
@@ -125,7 +123,6 @@ class ProductAttributesTest extends TestCase
             'backup_limit' => 2,
             'database_limit' => 3,
             'allocation_limit' => 4,
-            'subdomain_limit' => 5,
         ]);
 
         $this->assertSame(200, $attributes['cpu_limit']);
@@ -134,7 +131,6 @@ class ProductAttributesTest extends TestCase
         $this->assertSame(2, $attributes['backup_limit']);
         $this->assertSame(3, $attributes['database_limit']);
         $this->assertSame(4, $attributes['allocation_limit']);
-        $this->assertSame(5, $attributes['subdomain_limit']);
     }
 
     public function testNestedLimitsWin(): void
@@ -144,14 +140,15 @@ class ProductAttributesTest extends TestCase
         $this->assertSame(100, $attributes['cpu_limit']);
     }
 
-    public function testSubdomainLimitDefaultsToOne(): void
+    public function testLimitsDefaultToZeroOnCreate(): void
     {
         $attributes = $this->attributes([
             'name' => 'Example',
             'price' => 5.0,
         ]);
 
-        $this->assertSame(1, $attributes['subdomain_limit']);
-        $this->assertSame(0, $attributes['cpu_limit']);
+        foreach (['cpu', 'memory', 'disk', 'backup', 'database', 'allocation'] as $limit) {
+            $this->assertSame(0, $attributes["{$limit}_limit"]);
+        }
     }
 }

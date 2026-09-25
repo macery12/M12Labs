@@ -5,10 +5,16 @@ namespace Everest\Services\Extensions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Everest\Models\ExtensionConfig;
+use Illuminate\Support\Facades\Log;
 use Everest\Models\ExtensionPackage;
 use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
+use Everest\Services\Extensions\Manifest\ExtensionManifest;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilityDiff;
+use Everest\Exceptions\Service\Extension\ExtensionLockLostException;
+use Everest\Exceptions\Service\Extension\CapabilityApprovalRequiredException;
 
 class ExtensionPackageUpdateService
 {
@@ -21,18 +27,27 @@ class ExtensionPackageUpdateService
         private ExtensionPackageArtifactService $artifactService,
         private ExtensionPackageFileService $fileService,
         private ExtensionMigrationService $migrationService,
+        private ExtensionPackageIntegrityService $integrityService,
+        private ExtensionPermissionRegistry $permissionRegistry,
+        private ExtensionJobDrainService $drainService,
+        private ExtensionPageManifestService $pageManifestService,
+        private ExtensionSignatureService $signatureService,
+        private ExtensionPackageSourceScanner $sourceScanner,
+        private ExtensionRequirementService $requirementService,
     ) {
     }
 
     /**
      * Update an extension from a configured repository.
      */
-    public function update(string $extensionId, int $repositoryId, ?string $version = null): ExtensionPackage
+    public function update(string $extensionId, int $repositoryId, ?string $version = null, ?string $approvedCapabilityHash = null, bool $acknowledgeModified = false): ExtensionPackage
     {
-        return $this->operationLockService->withinLock('update', $extensionId, function () use ($extensionId, $repositoryId, $version) {
+        return $this->operationLockService->withinLock('update', $extensionId, function () use ($extensionId, $repositoryId, $version, $approvedCapabilityHash, $acknowledgeModified) {
             $prepared = null;
+            $packageModel = null;
+            $committed = false;
             try {
-                $prepared = $this->prepareUpdate($extensionId, $repositoryId, $version);
+                $prepared = $this->prepareUpdate($extensionId, $repositoryId, $version, $approvedCapabilityHash, $acknowledgeModified);
 
                 $this->rebuildService->rebuild(
                     sprintf('Update extension %s', $prepared['extensionId']),
@@ -47,10 +62,22 @@ class ExtensionPackageUpdateService
 
                 $this->progressService->report('update', $prepared['extensionId'], 'registering');
                 $packageModel = $this->finalizeUpdate($prepared);
+                $committed = true;
+                $this->completeUpdate($prepared);
                 $this->progressService->report('update', $prepared['extensionId'], 'completed');
 
-                return $packageModel->fresh(['repository', 'files']);
+                return $packageModel;
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
+                if ($committed && $packageModel instanceof ExtensionPackage) {
+                    $this->reportPostCommitFailure($exception);
+
+                    return $packageModel;
+                }
+
                 if ($prepared !== null) {
                     $this->rollbackUpdate($prepared);
                     $this->attemptRollbackRebuild($prepared['extensionId'], 'update rollback');
@@ -64,6 +91,7 @@ class ExtensionPackageUpdateService
             } finally {
                 $this->progressService->clear();
                 if ($prepared !== null) {
+                    $this->operationLockService->checkpoint();
                     $this->ownershipService->repairStandardPaths($prepared['extensionId']);
                     $this->cleanupPreparedUpdate($prepared);
                 }
@@ -74,15 +102,18 @@ class ExtensionPackageUpdateService
     /**
      * Update an extension from a local .M12LabsExtension archive.
      */
-    public function updateFromArchive(string $archivePath, ?string $sourceLabel = null): ExtensionPackage
+    public function updateFromArchive(string $archivePath, ?string $sourceLabel = null, ?string $approvedCapabilityHash = null, bool $acknowledgeModified = false, bool $acknowledgeUnsigned = false): ExtensionPackage
     {
         $resolvedPath = $this->artifactService->resolveArchivePath($archivePath);
         $this->assertSupportedArchiveArtifact($resolvedPath);
 
-        return $this->operationLockService->withinLock('update', basename($resolvedPath), function () use ($resolvedPath, $sourceLabel) {
+        return $this->operationLockService->withinLock('update', basename($resolvedPath), function () use ($resolvedPath, $sourceLabel, $approvedCapabilityHash, $acknowledgeModified, $acknowledgeUnsigned) {
             $prepared = null;
+            $packageModel = null;
+            $committed = false;
             try {
                 $prepared = $this->performUpdateFileOps(
+                    approvedCapabilityHash: $approvedCapabilityHash,
                     archiveLocation: $resolvedPath,
                     extensionId: null,
                     expectedVersion: null,
@@ -93,6 +124,9 @@ class ExtensionPackageUpdateService
                     sourceRegistryUrl: null,
                     sourceArchiveUrl: 'file://' . $resolvedPath,
                     fallbackPackageMetadata: [],
+                    acknowledgeModified: $acknowledgeModified,
+                    acknowledgeUnsigned: $acknowledgeUnsigned,
+                    allowLocalArchive: true,
                 );
 
                 $this->rebuildService->rebuild(
@@ -108,10 +142,22 @@ class ExtensionPackageUpdateService
 
                 $this->progressService->report('update', $prepared['extensionId'], 'registering');
                 $packageModel = $this->finalizeUpdate($prepared);
+                $committed = true;
+                $this->completeUpdate($prepared);
                 $this->progressService->report('update', $prepared['extensionId'], 'completed');
 
-                return $packageModel->fresh(['repository', 'files']);
+                return $packageModel;
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
+                if ($committed && $packageModel instanceof ExtensionPackage) {
+                    $this->reportPostCommitFailure($exception);
+
+                    return $packageModel;
+                }
+
                 if ($prepared !== null) {
                     $this->rollbackUpdate($prepared);
                     $this->attemptRollbackRebuild($prepared['extensionId'], 'update rollback');
@@ -125,6 +171,7 @@ class ExtensionPackageUpdateService
             } finally {
                 $this->progressService->clear();
                 if ($prepared !== null) {
+                    $this->operationLockService->checkpoint();
                     $this->ownershipService->repairStandardPaths($prepared['extensionId']);
                     $this->cleanupPreparedUpdate($prepared);
                 }
@@ -142,12 +189,13 @@ class ExtensionPackageUpdateService
      *
      * @return array<string, mixed> opaque prepared state; pass to finalizeUpdate() and rollbackUpdate()
      */
-    public function prepareUpdate(string $extensionId, int $repositoryId, ?string $version = null): array
+    public function prepareUpdate(string $extensionId, int $repositoryId, ?string $version = null, ?string $approvedCapabilityHash = null, bool $acknowledgeModified = false): array
     {
         $package = $this->catalogService->findRepositoryPackage($extensionId, $repositoryId, $version);
         $release = $package['latestRelease'];
 
         return $this->performUpdateFileOps(
+            approvedCapabilityHash: $approvedCapabilityHash,
             archiveLocation: $release['archiveUrl'],
             extensionId: $extensionId,
             expectedVersion: $release['version'],
@@ -158,6 +206,7 @@ class ExtensionPackageUpdateService
             sourceRegistryUrl: $package['repository']->manifest_url,
             sourceArchiveUrl: $release['archiveUrl'],
             fallbackPackageMetadata: $package,
+            acknowledgeModified: $acknowledgeModified,
         );
     }
 
@@ -169,49 +218,79 @@ class ExtensionPackageUpdateService
      */
     public function finalizeUpdate(array $prepared): ExtensionPackage
     {
+        $this->operationLockService->checkpoint();
+
         $existingPackage = $prepared['existingPackage'];
-        $normalizedManifest = $prepared['normalizedManifest'];
+        $parsedManifest = $prepared['parsedManifest'];
         $fallbackPackageMetadata = $prepared['fallbackPackageMetadata'];
         $newFilePlans = $prepared['newFilePlans'];
-        $oldOnlyFiles = $prepared['oldOnlyFiles'];
         $resolvedExtensionId = $prepared['extensionId'];
         $archiveChecksum = $prepared['archiveChecksum'];
         $sourceRepositoryId = $prepared['sourceRepositoryId'];
         $sourceRepositoryName = $prepared['sourceRepositoryName'];
         $sourceRegistryUrl = $prepared['sourceRegistryUrl'];
         $sourceArchiveUrl = $prepared['sourceArchiveUrl'];
+        $signature = $prepared['signature'] ?? ['state' => 'unsigned', 'keyId' => null, 'verifiedAt' => null];
+        $signedManifest = $prepared['signedManifest'];
+        $manifestHash = $prepared['manifestHash'];
+        $approvedCapabilityHash = $prepared['approvedCapabilityHash'] ?? null;
 
-        DB::transaction(function () use (
+        return DB::transaction(function () use (
             $archiveChecksum,
             $existingPackage,
             $fallbackPackageMetadata,
             $newFilePlans,
-            $normalizedManifest,
-            $oldOnlyFiles,
+            $parsedManifest,
             $resolvedExtensionId,
             $sourceArchiveUrl,
             $sourceRegistryUrl,
             $sourceRepositoryId,
-            $sourceRepositoryName
-        ) {
+            $sourceRepositoryName,
+            $signature,
+            $signedManifest,
+            $manifestHash,
+            $approvedCapabilityHash
+        ): ExtensionPackage {
             ExtensionPackageFile::query()
                 ->where('extension_package_id', $existingPackage->id)
                 ->delete();
 
             $existingPackage->update([
-                'package_id'             => Arr::get($normalizedManifest, 'package.id', Arr::get($fallbackPackageMetadata, 'id', $resolvedExtensionId)),
-                'name'                   => Arr::get($normalizedManifest, 'extension.name', Arr::get($fallbackPackageMetadata, 'name', $resolvedExtensionId)),
-                'description'            => Arr::get($normalizedManifest, 'extension.description', Arr::get($fallbackPackageMetadata, 'description', '')),
-                'author'                 => Arr::get($normalizedManifest, 'extension.author', Arr::get($fallbackPackageMetadata, 'author', 'M12Labs')),
-                'icon'                   => Arr::get($normalizedManifest, 'extension.icon', Arr::get($fallbackPackageMetadata, 'icon', 'puzzle')),
-                'route'                  => Arr::get($normalizedManifest, 'extension.route', Arr::get($fallbackPackageMetadata, 'route', $resolvedExtensionId)),
-                'installed_version'      => Arr::get($normalizedManifest, 'package.version'),
+                'package_id'             => $parsedManifest->packageId,
+                'name'                   => $parsedManifest->name,
+                'description'            => $parsedManifest->description,
+                'author'                 => $parsedManifest->publisher ?? Arr::get($fallbackPackageMetadata, 'author', 'M12Labs'),
+                'icon'                   => $parsedManifest->icon,
+                'route'                  => $resolvedExtensionId,
+                'previous_version'       => $existingPackage->installed_version,
+                'installed_version'      => $parsedManifest->version,
                 'source_repository_id'   => $sourceRepositoryId ?? $existingPackage->source_repository_id,
                 'source_repository_name' => $sourceRepositoryName ?? $existingPackage->source_repository_name,
                 'source_registry_url'    => $sourceRegistryUrl ?? $existingPackage->source_registry_url,
                 'source_archive_url'     => $sourceArchiveUrl,
                 'package_checksum'       => is_string($archiveChecksum) ? $archiveChecksum : null,
-                'manifest'               => $normalizedManifest,
+                'manifest'               => $parsedManifest->jsonSerialize(),
+                'manifest_version'       => ExtensionManifest::VERSION,
+                'capabilities'           => $parsedManifest->capabilities->jsonSerialize(),
+                'capability_hash'        => $parsedManifest->capabilities->hash(),
+                // The set an administrator consented to. Recording it is what
+                // stops the next update re-prompting for privileges that were
+                // already granted.
+                'approved_capability_hash' => $approvedCapabilityHash,
+                'manifest_hash'          => $manifestHash,
+                'signed_manifest'        => $signedManifest,
+                'publisher'              => $parsedManifest->publisher,
+                'signature_state'        => $signature['state'],
+                'signature_key_id'       => $signature['keyId'],
+                'signature_verified_at'  => $signature['verifiedAt'],
+                // Lifecycle state is re-derived rather than carried over. A
+                // package quarantined as 'unsupported' for its manifest version
+                // has just been replaced by one this panel accepts, and leaving
+                // the old state (and its now-false reason) would keep it inert
+                // with no way back — which made updating out of v2 pointless.
+                // An already-runnable package keeps its enabled flag.
+                'state'                  => $this->stateAfterUpdate($resolvedExtensionId),
+                'state_reason'           => null,
                 'installed_at'           => now(),
             ]);
 
@@ -226,14 +305,52 @@ class ExtensionPackageUpdateService
                 ]);
             }
 
-            foreach ($oldOnlyFiles as $oldFile) {
-                if ($oldFile->operation === 'updated' && $oldFile->backup_path && is_file($oldFile->backup_path)) {
-                    File::delete($oldFile->backup_path);
-                }
-            }
-        });
+            // Permissions the new version dropped are removed from every role
+            // here rather than left dangling; ones it added were part of the
+            // approved capability diff.
+            $this->permissionRegistry->sync(
+                $resolvedExtensionId,
+                $parsedManifest->capabilities,
+                approved: true,
+                approvedBy: auth()->id(),
+            );
 
-        return $existingPackage->fresh(['repository', 'files']);
+            // Refresh before the transaction commits. If this read fails, the
+            // transaction still rolls back and the caller may safely restore
+            // the old files. Refreshing after commit created an uncertainty
+            // window where a read error triggered compensation against an
+            // already-committed package row.
+            return $existingPackage->fresh(['repository', 'files']);
+        });
+    }
+
+    /**
+     * Remove backups made obsolete by a committed update.
+     *
+     * This deliberately runs after the database transaction (and, for a batch,
+     * after the outer transaction containing every item). A failed finalizer
+     * must leave the old backups intact so filesystem compensation can restore
+     * the version still recorded in the database.
+     *
+     * @param array<string, mixed> $prepared
+     */
+    public function completeUpdate(array $prepared): void
+    {
+        foreach ($prepared['oldOnlyFiles'] ?? [] as $oldFile) {
+            if ($oldFile->operation !== 'updated' || !$oldFile->backup_path || !is_file($oldFile->backup_path)) {
+                continue;
+            }
+
+            try {
+                $this->operationLockService->checkpoint();
+                File::delete($oldFile->backup_path);
+            } catch (\Throwable $exception) {
+                // The update is already committed. A stale backup is safe and
+                // can be pruned later; turning cleanup into a rollback here
+                // would make the database and installed files disagree.
+                report($exception);
+            }
+        }
     }
 
     /**
@@ -243,13 +360,15 @@ class ExtensionPackageUpdateService
      */
     public function rollbackUpdate(array $prepared): void
     {
-        // Only migrations applied by THIS update are reverted (they form the
-        // newest batch); the previous version's migrations must survive. Runs
+        $this->operationLockService->checkpoint();
+
+        // Only migrations applied by THIS update are reverted, by name; the
+        // previous version's migrations must survive. Runs
         // before the file snapshot restore so the new migration files are
         // still on disk for their down() methods.
         if (!empty($prepared['appliedMigrations'])) {
             try {
-                $this->migrationService->rollbackLastBatch($prepared['extensionId']);
+                $this->migrationService->rollbackApplied($prepared['extensionId'], $prepared['appliedMigrations']);
             } catch (\Throwable $exception) {
                 report($exception);
                 $this->migrationService->writeMigrationLog(
@@ -261,8 +380,17 @@ class ExtensionPackageUpdateService
             }
         }
 
+        $this->rollbackNewFilePlans(
+            $prepared['existingPackage'],
+            $prepared['newFilePlans'] ?? []
+        );
+
         if ($prepared['existingPackage']) {
             $this->fileService->restoreRollbackSnapshot($prepared['existingPackage']->files->all(), $prepared['rollbackRoot']);
+        }
+
+        if (!empty($prepared['newBackupRoot'])) {
+            File::deleteDirectory($prepared['newBackupRoot']);
         }
 
         $this->ownershipService->repairStandardPaths($prepared['extensionId']);
@@ -275,6 +403,13 @@ class ExtensionPackageUpdateService
      */
     public function cleanupPreparedUpdate(array $prepared): void
     {
+        // Reached from update() and from the batch service alike, on success
+        // and on rollback. The extension must stop refusing dispatches either
+        // way — after a rollback it is still installed and expected to work.
+        if (isset($prepared['extensionId'])) {
+            $this->drainService->endDrain($prepared['extensionId']);
+        }
+
         if (!empty($prepared['tempRoot'])) {
             File::deleteDirectory($prepared['tempRoot']);
         }
@@ -294,6 +429,7 @@ class ExtensionPackageUpdateService
      * @return array<string, mixed>
      */
     private function performUpdateFileOps(
+        ?string $approvedCapabilityHash,
         string $archiveLocation,
         ?string $extensionId,
         ?string $expectedVersion,
@@ -304,6 +440,9 @@ class ExtensionPackageUpdateService
         ?string $sourceRegistryUrl,
         string $sourceArchiveUrl,
         array $fallbackPackageMetadata,
+        bool $acknowledgeModified = false,
+        bool $acknowledgeUnsigned = false,
+        bool $allowLocalArchive = false,
     ): array {
         $tempRoot = storage_path('app/extensions/tmp/' . Str::uuid()->toString());
         $archivePath = $tempRoot . '/' . ExtensionPackageArtifactService::PACKAGE_ARTIFACT_FILENAME;
@@ -311,6 +450,9 @@ class ExtensionPackageUpdateService
         $rollbackRoot = storage_path('app/extensions/tmp-update/' . Str::uuid()->toString());
         $resolvedExtensionId = $extensionId;
         $existingPackage = null;
+        $newFilePlans = [];
+        $newBackupRoot = null;
+        $targetMutationStarted = false;
 
         File::ensureDirectoryExists($tempRoot);
         File::ensureDirectoryExists($extractPath);
@@ -318,7 +460,13 @@ class ExtensionPackageUpdateService
 
         try {
             $this->progressService->report('update', $resolvedExtensionId ?? 'unknown', 'downloading');
-            $this->artifactService->downloadArchive($archiveLocation, $archivePath);
+            if ($sourceRepositoryId !== null) {
+                // Capability approval and batch preparation can introduce a
+                // delay after catalog resolution. A disabled source must not
+                // get one final request merely because its model was stale.
+                $this->catalogService->assertRepositoryEnabled($sourceRepositoryId);
+            }
+            $this->artifactService->downloadArchive($archiveLocation, $archivePath, $allowLocalArchive);
 
             $this->progressService->report('update', $resolvedExtensionId ?? 'unknown', 'extracting');
             $archiveChecksum = hash_file('sha256', $archivePath);
@@ -328,9 +476,11 @@ class ExtensionPackageUpdateService
             $this->artifactService->extractArchive($archivePath, $extractPath);
 
             $this->progressService->report('update', $resolvedExtensionId ?? 'unknown', 'validating');
-            $manifest = $this->artifactService->readPackageManifest($extractPath);
-            $normalizedManifest = $this->artifactService->normalizeManifest($manifest, $extensionId, $expectedVersion);
-            $resolvedExtensionId = (string) Arr::get($normalizedManifest, 'extension.id');
+            $manifestDocument = $this->artifactService->readPackageManifestDocument($extractPath);
+            $manifest = $manifestDocument['manifest'];
+            $parsedManifest = $this->artifactService->parseManifest($manifest, $extensionId, $expectedVersion);
+            $resolvedExtensionId = $parsedManifest->id;
+            $this->requirementService->assertSatisfied($parsedManifest);
 
             $existingPackage = ExtensionPackage::query()
                 ->with('files')
@@ -342,23 +492,70 @@ class ExtensionPackageUpdateService
             }
 
             $this->artifactService->assertCompatiblePanelVersions($compatiblePanelVersions);
-            $this->artifactService->assertCompatiblePanelVersions(Arr::get($normalizedManifest, 'compatiblePanelVersions', []));
-            $this->ownershipService->repairStandardPaths($resolvedExtensionId);
+            $this->artifactService->assertCompatiblePanelVersions($parsedManifest->compatiblePanelVersions);
 
-            $this->fileService->assertFilesUnmodified($existingPackage->files->all(), 'updated');
-            $this->fileService->createRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
+            // Verify who signed the NEW release, exactly as an install does.
+            // Without this an update inherited whatever signature state the
+            // previous version happened to carry: a package updated to a signed
+            // release still read as unsigned, and — worse — an unsigned or
+            // untrusted release could be installed over a verified one without
+            // the panel ever checking.
+            $signature = $this->signatureService->verify(
+                $parsedManifest,
+                $manifest,
+                (string) $archiveChecksum,
+                $acknowledgeUnsigned && $sourceRepositoryId === null,
+                auth()->user()?->email,
+                $manifestDocument['canonical'],
+            );
 
+            if ($signature['state'] !== 'verified' && $this->signatureService->signingRequired()) {
+                $this->signatureService->assertCapabilitiesAllowedUnverified($parsedManifest);
+            }
+
+            $this->assertCapabilitiesApproved($existingPackage, $parsedManifest, $approvedCapabilityHash);
+
+            // Build and scan the complete, checksum-verified artifact before
+            // draining jobs or touching an installed target. Repository and
+            // local archive updates must enforce the same frontend and PHP
+            // gates as a fresh install.
             $newBackupRoot = storage_path('app/extensions/backups/' . $resolvedExtensionId . '/' . Str::uuid()->toString());
-
             $newFilePlans = $this->prepareUpdateFilePlans(
                 $extractPath,
-                $normalizedManifest,
+                $parsedManifest,
                 $newBackupRoot,
                 $resolvedExtensionId,
                 $existingPackage
             );
+            $this->sourceScanner->assertSafe(
+                $resolvedExtensionId,
+                $newFilePlans,
+                (array) ($parsedManifest->requirements['npmPackages'] ?? []),
+            );
 
-            $newFilePaths = array_column($newFilePlans, 'path');
+            $this->operationLockService->checkpoint();
+            $this->ownershipService->repairStandardPaths($resolvedExtensionId);
+
+            // An update replaces the very class files a queued job names, so
+            // the queue is emptied first for the same reason an uninstall does
+            // it: a payload deserialized against the new code is a job running
+            // with arguments the old version built.
+            $this->progressService->report('update', $resolvedExtensionId, 'draining');
+            $this->drainService->beginDrain($resolvedExtensionId);
+            $this->drainService->waitForDrain($resolvedExtensionId, (int) config('extensions.queues.drain_timeout_seconds', 60));
+            $this->drainService->assertSafeToRemove($resolvedExtensionId);
+
+            $discarded = $this->fileService->assertFilesUnmodified($existingPackage->files->all(), 'updated', $acknowledgeModified, (string) $resolvedExtensionId);
+            if ($discarded !== []) {
+                Log::warning('Updating an extension whose files were modified after installation.', [
+                    'extension' => $resolvedExtensionId,
+                    'modified' => $discarded,
+                ]);
+            }
+            $this->fileService->createRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
+
+            $generatedPath = $this->pageManifestService->relativePath($resolvedExtensionId);
+            $newFilePaths = [...array_column($newFilePlans, 'path'), $generatedPath];
             /** @var array<int, ExtensionPackageFile> $oldOnlyFiles */
             $oldOnlyFiles = $existingPackage->files
                 ->filter(fn (ExtensionPackageFile $f) => !in_array($f->path, $newFilePaths, true))
@@ -366,9 +563,12 @@ class ExtensionPackageUpdateService
                 ->all();
 
             $this->assertWritableUpdateTargets($newFilePlans, $oldOnlyFiles);
+            $this->ownershipService->ensureWritablePath(base_path($generatedPath), $generatedPath);
 
             $this->progressService->report('update', $resolvedExtensionId, 'removing');
+            $targetMutationStarted = true;
             foreach ($oldOnlyFiles as $oldFile) {
+                $this->operationLockService->checkpoint();
                 $targetPath = base_path($oldFile->path);
 
                 if ($oldFile->operation === 'updated') {
@@ -383,9 +583,22 @@ class ExtensionPackageUpdateService
 
             $this->progressService->report('update', $resolvedExtensionId, 'copying');
             foreach ($newFilePlans as $plan) {
+                $this->operationLockService->checkpoint();
                 File::ensureDirectoryExists(dirname($plan['targetPath']));
                 File::copy($plan['sourcePath'], $plan['targetPath']);
             }
+
+            // Regenerated from the new manifest, so a version that changes a
+            // page or named frontend slot takes effect on this rebuild rather
+            // than at the next install.
+            /** @var ExtensionPackageFile|null $previousGeneratedFile */
+            $previousGeneratedFile = $existingPackage->files->firstWhere('path', $generatedPath);
+            $this->operationLockService->checkpoint();
+            $newFilePlans[] = $this->pageManifestService->write(
+                $parsedManifest,
+                $newBackupRoot,
+                $previousGeneratedFile,
+            );
 
             $appliedMigrations = $this->runNewMigrations($resolvedExtensionId, $newFilePlans);
 
@@ -393,26 +606,53 @@ class ExtensionPackageUpdateService
                 'extensionId'             => $resolvedExtensionId,
                 'appliedMigrations'       => $appliedMigrations,
                 'existingPackage'         => $existingPackage,
-                'normalizedManifest'      => $normalizedManifest,
+                'parsedManifest'          => $parsedManifest,
+                'signedManifest'          => $manifestDocument['json'],
+                'manifestHash'            => hash('sha256', $manifestDocument['canonical']),
                 'fallbackPackageMetadata' => $fallbackPackageMetadata,
                 'newFilePlans'            => $newFilePlans,
                 'oldOnlyFiles'            => $oldOnlyFiles,
                 'archiveChecksum'         => is_string($archiveChecksum) ? $archiveChecksum : null,
+                // Who signed THIS release, and the capability set the operator
+                // consented to. Both are re-derived per update: carrying the
+                // previous version's forward would let an unsigned release
+                // inherit a verified badge, and would re-prompt for privileges
+                // that were already granted.
+                'signature'               => $signature,
+                'approvedCapabilityHash'  => $parsedManifest->capabilities->hash(),
                 'sourceRepositoryId'      => $sourceRepositoryId,
                 'sourceRepositoryName'    => $sourceRepositoryName,
                 'sourceRegistryUrl'       => $sourceRegistryUrl,
                 'sourceArchiveUrl'        => $sourceArchiveUrl,
                 'rollbackRoot'            => $rollbackRoot,
+                'newBackupRoot'           => $newBackupRoot,
                 'tempRoot'                => $tempRoot,
             ];
         } catch (\Throwable $exception) {
-            if ($existingPackage) {
+            if ($exception instanceof ExtensionLockLostException) {
+                File::deleteDirectory($tempRoot);
+
+                throw $exception;
+            }
+
+            if ($existingPackage && $targetMutationStarted) {
+                $this->rollbackNewFilePlans($existingPackage, $newFilePlans);
                 $this->fileService->restoreRollbackSnapshot($existingPackage->files->all(), $rollbackRoot);
+            }
+
+            // Nothing was prepared, so cleanupPreparedUpdate() will never run
+            // for this attempt; the drain has to be lifted here or the still
+            // installed extension keeps refusing jobs until the flag expires.
+            if ($resolvedExtensionId !== null) {
+                $this->drainService->endDrain($resolvedExtensionId);
             }
 
             $this->ownershipService->repairStandardPaths($resolvedExtensionId);
             File::deleteDirectory($tempRoot);
             File::deleteDirectory($rollbackRoot);
+            if ($newBackupRoot !== null) {
+                File::deleteDirectory($newBackupRoot);
+            }
 
             if ($exception instanceof DisplayException) {
                 throw $exception;
@@ -423,40 +663,111 @@ class ExtensionPackageUpdateService
     }
 
     /**
+     * Undo paths introduced by the new release before restoring the snapshot of
+     * the old tracked set. Snapshot restoration alone cannot remove a newly
+     * created path, nor restore an untracked panel file that this version
+     * temporarily replaced.
+     *
+     * @param array<int, array<string, mixed>> $newFilePlans
+     */
+    private function rollbackNewFilePlans(ExtensionPackage $existingPackage, array $newFilePlans): void
+    {
+        $oldPaths = array_fill_keys($existingPackage->files->pluck('path')->all(), true);
+
+        foreach (array_reverse($newFilePlans) as $plan) {
+            $this->operationLockService->checkpoint();
+
+            $path = (string) ($plan['path'] ?? '');
+            $targetPath = $plan['targetPath'] ?? null;
+
+            if ($path === '' || !is_string($targetPath) || isset($oldPaths[$path])) {
+                continue;
+            }
+
+            $backupPath = $plan['backupPath'] ?? null;
+            if (($plan['operation'] ?? null) === 'updated' && is_string($backupPath) && is_file($backupPath)) {
+                $this->ownershipService->ensureWritablePath($targetPath, $path);
+                File::ensureDirectoryExists(dirname($targetPath));
+                File::copy($backupPath, $targetPath);
+
+                continue;
+            }
+
+            if (is_file($targetPath)) {
+                $this->ownershipService->ensureRemovablePath($targetPath, $path);
+                File::delete($targetPath);
+            }
+        }
+    }
+
+    /**
+     * The lifecycle state a freshly updated package should hold.
+     *
+     * Derived from the operator's enable flag rather than from the previous
+     * state, so a package rehabilitated out of 'unsupported' lands somewhere
+     * runnable instead of keeping a quarantine that no longer applies.
+     */
+    private function stateAfterUpdate(string $extensionId): string
+    {
+        $enabled = ExtensionConfig::query()
+            ->where('extension_id', $extensionId)
+            ->value('enabled');
+
+        return $enabled ? 'enabled' : 'installed_disabled';
+    }
+
+    /**
+     * An update must never silently widen what a package can do.
+     *
+     * The diff is taken against the capabilities in the authenticated retained
+     * manifest. A release that only narrows or keeps them proceeds untouched;
+     * one that adds a privilege needs the administrator to consent to that
+     * specific set. The adjacent stored projection and digest are not an
+     * authority: a database writer can change both.
+     */
+    public function assertCapabilitiesApproved(ExtensionPackage $existingPackage, ExtensionManifest $manifest, ?string $approvedCapabilityHash): void
+    {
+        $inspection = $this->integrityService->inspect($existingPackage);
+        $installed = $inspection->manifestAuthentic
+            ? $inspection->manifest?->capabilities
+            : null;
+
+        $diff = ExtensionCapabilityDiff::between($installed, $manifest->capabilities);
+
+        if (!$diff->isEscalation()) {
+            return;
+        }
+
+        if ($approvedCapabilityHash !== null && hash_equals($diff->hash, $approvedCapabilityHash)) {
+            return;
+        }
+
+        throw new CapabilityApprovalRequiredException($manifest->id, $diff);
+    }
+
+    /**
      * Build the file plans for the new version, inheriting pre-extension backups
      * from the current install for any paths that were already tracked.
-     *
-     * @param array<string, mixed> $manifest
      *
      * @return array<int, array<string, mixed>>
      */
     private function prepareUpdateFilePlans(
         string $extractPath,
-        array $manifest,
+        ExtensionManifest $manifest,
         string $newBackupRoot,
         string $extensionId,
         ExtensionPackage $existingPackage,
     ): array {
         $plans = [];
-        $files = Arr::get($manifest, 'files', []);
-        if (!is_array($files) || $files === []) {
-            throw new DisplayException('The extension package manifest does not declare any installable files.');
-        }
 
         /** @var array<string, ExtensionPackageFile> $oldFilesByPath */
         $oldFilesByPath = $existingPackage->files->keyBy('path')->all();
 
-        foreach ($files as $file) {
-            if (!is_array($file)) {
-                continue;
-            }
-
-            $path = $this->artifactService->normalizeTargetPath((string) ($file['path'] ?? ''), $extensionId);
-            $checksum = trim((string) ($file['sha256'] ?? ''));
-
-            if ($path === '' || $checksum === '') {
-                throw new DisplayException('The extension package manifest contains an invalid file entry.');
-            }
+        foreach ($manifest->files as $file) {
+            // The parser has already validated the shape; this re-checks that
+            // the path stays inside the two install roots for this extension.
+            $path = $this->artifactService->normalizeTargetPath($file['path'], $extensionId);
+            $checksum = $file['sha256'];
 
             $sourcePath = $extractPath . '/' . $path;
             if (!is_file($sourcePath)) {
@@ -541,13 +852,26 @@ class ExtensionPackageUpdateService
         }
 
         $this->progressService->report('update', $extensionId, 'migrating');
-        $this->migrationService->assertTablePrefixConvention($extensionId, $migrationFiles);
+        $this->migrationService->assertMigrationConventions($extensionId, $migrationFiles);
+
+        // What was recorded before this run, so a failure reverts only what it
+        // added: the migrator writes no record for the migration that throws.
+        $ranBefore = $this->migrationService->ranMigrationNames($extensionId);
 
         try {
+            $this->operationLockService->checkpoint();
             $result = $this->migrationService->run($extensionId);
+            $this->operationLockService->checkpoint();
         } catch (\Throwable $exception) {
+            if ($exception instanceof ExtensionLockLostException) {
+                throw $exception;
+            }
+
             try {
-                $this->migrationService->rollbackLastBatch($extensionId);
+                $this->migrationService->rollbackApplied(
+                    $extensionId,
+                    array_diff($this->migrationService->ranMigrationNames($extensionId), $ranBefore)
+                );
             } catch (\Throwable $rollbackException) {
                 report($rollbackException);
             }
@@ -601,6 +925,16 @@ class ExtensionPackageUpdateService
             $this->rebuildService->rebuild(sprintf('%s for %s', $reason, $extensionId));
         } catch (\Throwable $exception) {
             report($exception);
+        }
+    }
+
+    private function reportPostCommitFailure(\Throwable $exception): void
+    {
+        try {
+            report($exception);
+        } catch (\Throwable) {
+            // Never compensate files after the database has committed merely
+            // because progress reporting or backup cleanup failed.
         }
     }
 }

@@ -44,7 +44,6 @@ interface FormShape {
     backups: number;
     databases: number;
     subusers: number;
-    subdomains: number;
 }
 
 interface VarDef {
@@ -89,7 +88,6 @@ function formFrom(s: ServerView): FormShape {
         backups: s.featureLimits.backups,
         databases: s.featureLimits.databases,
         subusers: s.featureLimits.subusers,
-        subdomains: s.featureLimits.subdomains,
     };
 }
 
@@ -192,7 +190,6 @@ export function ServerEditor() {
                     backups: Number(v.backups),
                     databases: Number(v.databases),
                     subusers: Number(v.subusers),
-                    subdomains: Number(v.subdomains),
                 },
                 allocation_id: alloc.primaryId ?? undefined,
                 add_allocations: alloc.addIds,
@@ -396,9 +393,6 @@ export function ServerEditor() {
                                 <FieldRow label={m['admin.infrastructure.serverDetail.field.backups']()}><Input type="number" {...register('backups', num)} /></FieldRow>
                                 <FieldRow label={m['admin.infrastructure.serverDetail.field.databases']()}><Input type="number" {...register('databases', num)} /></FieldRow>
                                 <FieldRow label={m['admin.infrastructure.serverDetail.field.subusers']()}><Input type="number" {...register('subusers', num)} /></FieldRow>
-                                <FieldRow label={m['admin.infrastructure.serverDetail.field.subdomains']()} desc={m['admin.infrastructure.serverDetail.field.subdomainsDesc']()}>
-                                    <Input type="number" {...register('subdomains', num)} />
-                                </FieldRow>
                             </div>
                         </div>
                     </div>

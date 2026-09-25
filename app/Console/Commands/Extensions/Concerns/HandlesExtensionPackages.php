@@ -6,6 +6,7 @@ use Illuminate\Support\Str;
 use Everest\Models\ExtensionRepository;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Extensions\ExtensionPackageArtifactService;
+use Everest\Exceptions\Service\Extension\CapabilityApprovalRequiredException;
 
 /**
  * Shared helpers for the install and update Artisan commands.
@@ -298,8 +299,84 @@ trait HandlesExtensionPackages
         }
     }
 
+    /**
+     * Run an install or update, prompting for capability approval if the
+     * package asks for privileges the panel has not consented to.
+     *
+     * The API answers a capability escalation with 409 plus the diff and its
+     * hash, and the client re-submits carrying that hash. The CLI had no
+     * equivalent, which meant no package declaring routes, permissions, hooks,
+     * queues, secrets, commands, migrations or a schedule could be installed or
+     * updated from the command line at all.
+     *
+     * The hash is what makes consent specific: it covers the exact capability
+     * set that was displayed, so a package that changes between the prompt and
+     * the retry fails rather than inheriting approval it was not given.
+     *
+     * @template T
+     *
+     * @param callable(?string): T $operation receives the approved hash, or null on the first attempt
+     *
+     * @return T
+     */
+    protected function withCapabilityApproval(callable $operation): mixed
+    {
+        try {
+            return $operation(null);
+        } catch (CapabilityApprovalRequiredException $exception) {
+            $diff = $exception->diff;
+
+            $this->newLine();
+            $this->components->warn(sprintf('"%s" requests privileges this panel has not approved:', $exception->extensionId));
+            foreach ($diff->escalations as $capability) {
+                $this->line('  + ' . $capability);
+            }
+
+            if ($diff->removed !== []) {
+                $this->newLine();
+                $this->line('No longer requested:');
+                foreach ($diff->removed as $capability) {
+                    $this->line('  - ' . $capability);
+                }
+            }
+
+            $this->newLine();
+
+            if (!$this->packageOption('approve-capabilities') && !$this->confirm('Grant these privileges?', false)) {
+                $this->components->warn('Cancelled. Nothing was changed.');
+
+                throw $exception;
+            }
+
+            return $operation($diff->hash);
+        }
+    }
+
     protected function isDebug(): bool
     {
         return (bool) $this->option('debug');
+    }
+
+    /**
+     * Put Horizon's supervisors right after a lifecycle change commits.
+     *
+     * The change's own frontend build restarted Horizon before the package was
+     * committed, so a lane the change made necessary is not staffed yet. The
+     * scheduler would notice within a couple of minutes; a command the operator
+     * is watching should not leave that gap.
+     */
+    protected function reconcileHorizon(): void
+    {
+        try {
+            $missing = app(\Everest\Services\Queue\HorizonProvisioningReconciler::class)->reconcileNow();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return;
+        }
+
+        if ($missing !== null) {
+            $this->components->info(sprintf('Restarting Horizon to staff %s.', $missing));
+        }
     }
 }

@@ -16,14 +16,11 @@ use Everest\Http\Requests\Api\Application\Alerts\GetAlertsRequest;
 use Everest\Http\Controllers\Api\Application\PermissionsController;
 use Everest\Http\Requests\Api\Application\Theme\UpdateThemeRequest;
 use Everest\Http\Controllers\Api\Application\Alerts\AlertController;
-use Everest\Http\Controllers\Api\Application\IntelligenceController;
 use Everest\Services\Authorization\ApplicationApiPermissionResolver;
 use Everest\Http\Controllers\Api\Application\Billing\StoreController;
 use Everest\Http\Requests\Api\Application\Servers\ServerWriteRequest;
 use Everest\Http\Requests\Api\Application\Settings\FinishSetupRequest;
 use Everest\Http\Controllers\Api\Application\Billing\InvoiceController;
-use Everest\Http\Requests\Api\Application\Intelligence\ProbeToolCallingRequest;
-use Everest\Http\Requests\Api\Application\Billing\CustomDomains\UpdateCustomDomainRequest;
 
 class ApplicationApiPermissionResolverTest extends TestCase
 {
@@ -32,8 +29,8 @@ class ApplicationApiPermissionResolverTest extends TestCase
      *
      * The invariant below exists to catch a capability that can be granted in
      * the UI and then does nothing — an orphan. `servers.assist` is not one: it
-     * gates whether the AI assistant may open an audited session inside a
-     * customer's server, which is enforced in `AssistAuthorizer` and consulted by
+     * gates whether an extension may open an audited session inside a
+     * customer's server, which is enforced in `DelegatedAccess` and consulted by
      * `AuthenticateServerAccess` and `ServerPolicy`. There is no endpoint behind
      * it because it does not add an endpoint; it decides whether the client API
      * routes that already exist will admit somebody who is neither the owner nor
@@ -106,10 +103,6 @@ class ApplicationApiPermissionResolverTest extends TestCase
             $resolver->permissionFor($this->route(InvoiceController::class, 'void', 'POST'))
         );
         $this->assertSame(
-            AdminRole::AI_READ,
-            $resolver->permissionFor($this->route(IntelligenceController::class, 'recentLogs'))
-        );
-        $this->assertSame(
             AdminRole::ALERTS_UPDATE,
             $resolver->permissionFor($this->route(AlertController::class, 'searchUsers'))
         );
@@ -118,12 +111,10 @@ class ApplicationApiPermissionResolverTest extends TestCase
     public function testCorrectedActionRequestsUseTheirDedicatedPermissions(): void
     {
         $this->assertSame(AdminRole::SETTINGS_UPDATE, (new FinishSetupRequest())->permission());
-        $this->assertSame(AdminRole::CUSTOM_DOMAINS_UPDATE, (new UpdateCustomDomainRequest())->permission());
         $this->assertSame(AdminRole::ALERTS_READ, (new GetAlertsRequest())->permission());
         $this->assertSame(AdminRole::THEME_READ, (new GetThemeRequest())->permission());
         $this->assertSame(AdminRole::THEME_UPDATE, (new UpdateThemeRequest())->permission());
         $this->assertSame(AdminRole::SERVERS_UPDATE, (new ServerWriteRequest())->permission());
-        $this->assertSame(AdminRole::AI_UPDATE, (new ProbeToolCallingRequest())->permission());
     }
 
     public function testPlainRequestActionFailsClosed(): void

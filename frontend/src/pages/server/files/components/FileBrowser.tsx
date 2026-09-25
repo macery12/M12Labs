@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { isAxiosError } from 'axios';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
 import {
     ArrowDownUp,
@@ -74,10 +75,24 @@ import { ChmodModal } from './ChmodModal';
 import { ChecksumModal } from './ChecksumModal';
 import { ArchiveActionModal } from './ArchiveActionModal';
 import { PullModal } from './PullModal';
+import { PullProgressTray } from './PullProgressTray';
 
 type SortField = 'name' | 'size' | 'modified' | 'type';
 type SortDirection = 'asc' | 'desc';
-const DISPLAY_CAP = 250;
+// Row and card heights are uniform, so these estimates only have to be close —
+// each mounted element is measured for real. Matches Row's py-3.5 and
+// GridCard's p-4.
+const ROW_HEIGHT = 53;
+const CARD_ROW_HEIGHT = 132;
+
+// Column counts mirror the Tailwind breakpoints the grid used before
+// virtualization (grid-cols-2 / sm:3 / lg:5), derived from the scroll
+// container so the virtualizer and the layout can never disagree.
+function gridColumnsFor(width: number): number {
+    if (width >= 1024) return 5;
+    if (width >= 640) return 3;
+    return 2;
+}
 
 // Extension used only for the "type" sort — groups like-typed files together.
 function fileExtension(name: string): string {
@@ -131,6 +146,12 @@ export default function FileBrowser() {
 
     const canCreate = can(held, 'file.create');
     const canUpdate = can(held, 'file.update');
+    // Upload, pull, write and extract all hit daemon endpoints that cannot tell
+    // creating a new path from replacing an existing one, so the backend
+    // (OverwriteCapableFileRequest) demands file.create *and* file.update.
+    // Gating their buttons on file.create alone showed them to create-only
+    // subusers, who then got a bare 403 on click.
+    const canOverwrite = canCreate && canUpdate;
     const canDelete = can(held, 'file.delete');
     const canSftp = can(held, 'file.sftp');
     const canArchive = can(held, 'file.archive');
@@ -153,6 +174,8 @@ export default function FileBrowser() {
     const [checksum, setChecksum] = useState<string[] | null>(null);
     const [archiveAction, setArchiveAction] = useState<FileObject | null>(null);
     const [showPull, setShowPull] = useState(false);
+    // True while a background pull is being followed; see PullProgressTray.
+    const [pullActive, setPullActive] = useState(false);
     const [busy, setBusy] = useState<string | null>(null);
     const supercharged = server.isNodeSupercharged;
     // Non-null while browsing inside a zip/7z/ddup — everything here is read-only.
@@ -165,19 +188,50 @@ export default function FileBrowser() {
 
     // Reset transient state whenever the directory changes.
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional effect: syncs state to prop/query/filter changes
         setSelected([]);
         setSearchTerm('');
     }, [directory]);
 
-    const { filtered, display } = useMemo(() => {
-        if (!files) return { filtered: [] as FileObject[], display: [] as FileObject[] };
+    // Every matching entry, in sort order. Nothing is truncated: the list used
+    // to be sliced to a display cap, which left Select All acting on rows that
+    // were never rendered and the footer total counting only the visible slice.
+    const filtered = useMemo(() => {
+        if (!files) return [] as FileObject[];
         const term = searchTerm.trim().toLowerCase();
-        const f = term ? files.filter(x => x.name.toLowerCase().includes(term)) : files;
-        return { filtered: f, display: sortFiles(f, sortField, sortDirection).slice(0, DISPLAY_CAP) };
+        const matching = term ? files.filter(x => x.name.toLowerCase().includes(term)) : files;
+        return sortFiles(matching, sortField, sortDirection);
     }, [files, searchTerm, sortField, sortDirection]);
 
-    const totalSize = useMemo(() => display.reduce((acc, f) => acc + (f.isFile ? f.size : 0), 0), [display]);
+    const totalSize = useMemo(() => filtered.reduce((acc, f) => acc + (f.isFile ? f.size : 0), 0), [filtered]);
+
+    // ── Virtualized rendering ──
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [gridColumns, setGridColumns] = useState(5);
+
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const update = () => setGridColumns(gridColumnsFor(el.clientWidth));
+        update();
+        const observer = new ResizeObserver(update);
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [gridView, isLoading, isError]);
+
+    const virtualCount = gridView ? Math.ceil(filtered.length / gridColumns) : filtered.length;
+
+    // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual opts out of the react compiler
+    const virtualizer = useVirtualizer({
+        count: virtualCount,
+        getScrollElement: () => scrollRef.current,
+        estimateSize: () => (gridView ? CARD_ROW_HEIGHT : ROW_HEIGHT),
+        overscan: 8,
+    });
+
+    const virtualRows = virtualizer.getVirtualItems();
+    const paddingTop = virtualRows[0]?.start ?? 0;
+    const paddingBottom =
+        virtualRows.length > 0 ? virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end ?? 0) : 0;
 
     const toggleSort = (field: SortField) => {
         if (sortField === field) setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -200,7 +254,7 @@ export default function FileBrowser() {
             // download-only formats (.tar.gz, .rar, …), and offers Extract. Only
             // open it when at least one action is actually available to the user.
             const openable = supercharged && isVirtualArchive(file);
-            if (openable || canCreate || canReadContent) setArchiveAction(file);
+            if (openable || canOverwrite || canReadContent) setArchiveAction(file);
         } else if (isEditable(file) && canReadContent) {
             navigate(`/server/${id}/files/edit/${encodePathSegments(join(directory, file.name))}`);
         } else if (canReadContent) {
@@ -304,7 +358,7 @@ export default function FileBrowser() {
 
     // Per-file action handlers, shared by the list-row and grid-card menus so the
     // two views expose exactly the same options.
-    const caps: FileCaps = { canUpdate, canCreate, canDelete, canArchive, canReadContent, supercharged };
+    const caps: FileCaps = { canUpdate, canCreate, canOverwrite, canDelete, canArchive, canReadContent, supercharged };
     const actions: FileActions = {
         edit: f => navigate(`/server/${id}/files/edit/${encodePathSegments(join(directory, f.name))}`),
         rename: f => setRename({ files: [f.name], mode: 'rename' }),
@@ -344,12 +398,14 @@ export default function FileBrowser() {
                         />
                     </div>
                     {canCreate && (
+                        <Button variant="secondary" size="sm" onClick={() => setShowNewDir(true)}>
+                            <FolderPlus className="h-4 w-4" />
+                            {m['server.files.newDirectory']()}
+                        </Button>
+                    )}
+                    {canOverwrite && (
                         <>
-                            <Button variant="secondary" size="sm" onClick={() => setShowNewDir(true)}>
-                                <FolderPlus className="h-4 w-4" />
-                                {m['server.files.newDirectory']()}
-                            </Button>
-                            <UploadButton uuid={uuid} directory={directory} />
+                            <UploadButton uuid={uuid} directory={directory} uploadLimitMib={server.nodeUploadSize} />
                             <Button variant="secondary" size="sm" onClick={() => setShowPull(true)}>
                                 <DownloadCloud className="h-4 w-4" />
                                 {m['server.files.pull.action']()}
@@ -414,15 +470,6 @@ export default function FileBrowser() {
                 </div>
             )}
 
-            {/* ── Over-cap warning ── */}
-            {filtered.length > DISPLAY_CAP && (
-                <div className="mb-3 rounded-[var(--radius-card)] border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-3 py-2 text-center text-xs text-[var(--color-warning)]">
-                    {searchTerm
-                        ? m['server.files.matchesCapped']({ count: filtered.length, cap: DISPLAY_CAP })
-                        : m['server.files.directoryCapped']({ cap: DISPLAY_CAP })}
-                </div>
-            )}
-
             <div>
                 <div className="min-w-0">
                     {isError ? (
@@ -436,23 +483,51 @@ export default function FileBrowser() {
                             {searchTerm ? m['server.files.noMatches']() : m['server.files.emptyDirectory']()}
                         </p>
                     ) : gridView ? (
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                            {display.map(file => (
-                                <GridCard
-                                    key={file.key}
-                                    file={file}
-                                    selected={selected.includes(file.name)}
-                                    onOpen={() => openEntry(file)}
-                                    onToggle={() => toggleSelect(file.name)}
-                                    caps={caps}
-                                    actions={actions}
-                                />
-                            ))}
+                        <div ref={scrollRef} className="max-h-[calc(100vh-20rem)] overflow-y-auto pr-1">
+                            <div style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}>
+                                {virtualRows.map(virtualRow => {
+                                    const start = virtualRow.index * gridColumns;
+                                    return (
+                                        <div
+                                            key={virtualRow.key}
+                                            data-index={virtualRow.index}
+                                            ref={virtualizer.measureElement}
+                                            style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                width: '100%',
+                                                transform: `translateY(${virtualRow.start}px)`,
+                                            }}
+                                        >
+                                            <div
+                                                className="grid gap-2 pb-2"
+                                                style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+                                            >
+                                                {filtered.slice(start, start + gridColumns).map(file => (
+                                                    <GridCard
+                                                        key={file.key}
+                                                        file={file}
+                                                        selected={selected.includes(file.name)}
+                                                        onOpen={() => openEntry(file)}
+                                                        onToggle={() => toggleSelect(file.name)}
+                                                        caps={caps}
+                                                        actions={actions}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     ) : (
-                        <div className="overflow-hidden rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70">
+                        <div
+                            ref={scrollRef}
+                            className="max-h-[calc(100vh-20rem)] overflow-y-auto rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70"
+                        >
                             <table className="w-full border-collapse text-sm">
-                                <thead>
+                                <thead className="sticky top-0 z-10 bg-[var(--color-surface)]">
                                     <tr className="border-b border-[var(--color-border-strong)] text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
                                         <th className="w-10 px-3 py-3">
                                             <input
@@ -487,17 +562,37 @@ export default function FileBrowser() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {display.map(file => (
-                                        <Row
-                                            key={file.key}
-                                            file={file}
-                                            selected={selected.includes(file.name)}
-                                            onToggle={() => toggleSelect(file.name)}
-                                            onOpen={() => openEntry(file)}
-                                            caps={caps}
-                                            actions={actions}
-                                        />
-                                    ))}
+                                    {/* Spacer rows stand in for the unmounted
+                                        rows above and below the window, so the
+                                        scrollbar still reflects the whole
+                                        directory. */}
+                                    {paddingTop > 0 && (
+                                        <tr aria-hidden="true">
+                                            <td colSpan={5} style={{ height: paddingTop, padding: 0, border: 0 }} />
+                                        </tr>
+                                    )}
+                                    {virtualRows.map(virtualRow => {
+                                        const file = filtered[virtualRow.index];
+                                        if (!file) return null;
+                                        return (
+                                            <Row
+                                                key={file.key}
+                                                ref={virtualizer.measureElement}
+                                                dataIndex={virtualRow.index}
+                                                file={file}
+                                                selected={selected.includes(file.name)}
+                                                onToggle={() => toggleSelect(file.name)}
+                                                onOpen={() => openEntry(file)}
+                                                caps={caps}
+                                                actions={actions}
+                                            />
+                                        );
+                                    })}
+                                    {paddingBottom > 0 && (
+                                        <tr aria-hidden="true">
+                                            <td colSpan={5} style={{ height: paddingBottom, padding: 0, border: 0 }} />
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -507,10 +602,9 @@ export default function FileBrowser() {
                     {files && filtered.length > 0 && (
                         <div className="mt-3 flex items-center justify-between px-1 text-xs text-[var(--color-ink-faint)]">
                             <span>
-                                {m['server.files.itemCount']({ count: display.length })}
+                                {m['server.files.itemCount']({ count: filtered.length })}
                                 {totalSize > 0 && ` · ${formatBytes(totalSize)}`}
                             </span>
-                            {filtered.length > DISPLAY_CAP && <span>{m['server.files.showingFirst']({ cap: DISPLAY_CAP })}</span>}
                         </div>
                     )}
                 </div>
@@ -587,7 +681,21 @@ export default function FileBrowser() {
 
             {/* ── Modals ── */}
             <NewDirectoryModal uuid={uuid} directory={directory} open={showNewDir} onClose={() => setShowNewDir(false)} />
-            {canCreate && <PullModal uuid={uuid} directory={directory} open={showPull} onClose={() => setShowPull(false)} />}
+            {canOverwrite && (
+                <PullModal
+                    uuid={uuid}
+                    directory={directory}
+                    open={showPull}
+                    onClose={() => setShowPull(false)}
+                    onStarted={() => setPullActive(true)}
+                />
+            )}
+            <PullProgressTray
+                uuid={uuid}
+                directory={directory}
+                active={pullActive}
+                onIdle={() => setPullActive(false)}
+            />
             {rename && (
                 <RenameMoveModal
                     uuid={uuid}
@@ -632,7 +740,7 @@ export default function FileBrowser() {
                 <ArchiveActionModal
                     name={archiveAction.name}
                     openable={supercharged && isVirtualArchive(archiveAction)}
-                    canExtract={canCreate}
+                    canExtract={canOverwrite}
                     canDownload={canReadContent}
                     open
                     onOpen={() => openArchiveInline(archiveAction)}
@@ -774,6 +882,8 @@ function SortMenu({
 interface FileCaps {
     canUpdate: boolean;
     canCreate: boolean;
+    /** file.create AND file.update — see the note where it is derived. */
+    canOverwrite: boolean;
     canDelete: boolean;
     canArchive: boolean;
     canReadContent: boolean;
@@ -801,6 +911,8 @@ function Row({
     onOpen,
     caps,
     actions,
+    ref,
+    dataIndex,
 }: {
     file: FileObject;
     selected: boolean;
@@ -808,9 +920,14 @@ function Row({
     onOpen: () => void;
     caps: FileCaps;
     actions: FileActions;
+    /** Wired to the virtualizer so each mounted row reports its real height. */
+    ref?: React.Ref<HTMLTableRowElement>;
+    dataIndex?: number;
 }) {
     return (
         <tr
+            ref={ref}
+            data-index={dataIndex}
             onClick={onOpen}
             className="group cursor-pointer border-b border-[var(--color-border)] transition-colors last:border-0 hover:bg-[var(--color-surface-2)]/40"
         >
@@ -862,7 +979,7 @@ function FileActionsMenu({
     actions: FileActions;
     align?: 'start' | 'end';
 }) {
-    const { canUpdate, canCreate, canDelete, canArchive, canReadContent, supercharged } = caps;
+    const { canUpdate, canCreate, canOverwrite, canDelete, canArchive, canReadContent, supercharged } = caps;
     const archived = isArchive(file);
     return (
         <Dropdown.Root>
@@ -896,7 +1013,7 @@ function FileActionsMenu({
                     )}
                     {/* Extract runs against /files/decompress, which both the Go
                         daemon and wings-rs implement — one action, either daemon. */}
-                    {archived && canCreate && (
+                    {archived && canOverwrite && (
                         <>
                             <MenuItem
                                 icon={PackageOpen}

@@ -175,23 +175,18 @@ export interface EverestConfiguration {
     };
     tickets: { enabled: boolean; maxCount: number };
     billing: BillingConfig;
-    ai: {
-        enabled: boolean;
-        /** The customer-facing tool-calling agent. */
-        feature_agent: boolean;
-        /** The admin assistant, which also requires feature_agent. */
-        feature_admin_agent: boolean;
-        [k: string]: unknown;
-    };
     mods: { enabled: boolean; [k: string]: unknown };
     webhooks: { enabled: boolean; [k: string]: unknown };
     // `enabled` = mail delivery is configured; `module_enabled` = admin has
     // surfaced the Email admin module (the feature toggle drives the latter).
     email: { enabled: boolean; module_enabled?: boolean; [k: string]: unknown };
-    // `active` (enabled extension ids) is only present in admin sessions; it
-    // gates extension-contributed admin nav entries.
-    extensions: { enabled: boolean; active?: string[] };
-    custom_domains: { enabled: boolean };
+    // Enabled, runtime-eligible package ids for authenticated sessions. Used
+    // by pages and global slots; backend middleware remains authoritative.
+    extensions: {
+        enabled: boolean;
+        active?: string[];
+        flags?: Record<string, Record<string, boolean>>;
+    };
     [k: string]: unknown;
 }
 

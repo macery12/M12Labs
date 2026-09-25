@@ -12,17 +12,20 @@ import { join } from '../paths';
 
 // Client-side name validation, mirroring V1's RenameFileModal + the backend
 // RenameFileRequest rules. `allowNested` permits `/` (move into subfolders).
-function validateFileName(value: string, allowNested: boolean): string | undefined {
+export function validateFileName(value: string, allowNested: boolean): string | undefined {
     const trimmed = value.trim();
     if (!trimmed) return m['server.files.errors.nameRequired']();
     if (trimmed.startsWith('/') || trimmed.startsWith('\\')) return m['server.files.errors.leadingSlash']();
     if (/^[A-Za-z]:/.test(trimmed) || trimmed.split('/').some(seg => /^[A-Za-z]:/.test(seg)))
         return m['server.files.errors.driveLetter']();
     if (trimmed.includes('\0')) return m['server.files.errors.invalidChars']();
-    if (trimmed.split('/').some(seg => seg === '..')) return m['server.files.errors.traversal']();
+    if (trimmed.split('/').some(seg => seg === '..' || seg === '.')) return m['server.files.errors.traversal']();
     if (!allowNested && trimmed.includes('/')) return m['server.files.errors.noNested']();
-    const segmentPattern = /^[A-Za-z0-9._ -]+$/;
-    if (trimmed.split('/').some(seg => !segmentPattern.test(seg))) return m['server.files.errors.invalidChars']();
+    // Mirrors the backend: reject control characters rather than allowlisting a
+    // narrow ASCII set, which used to turn away ordinary names like
+    // "map (1).zip", "café.txt" or "a+b.cfg".
+    // eslint-disable-next-line no-control-regex -- deliberately matching control chars
+    if (/[\x00-\x1F\x7F]/.test(trimmed)) return m['server.files.errors.invalidChars']();
     return undefined;
 }
 

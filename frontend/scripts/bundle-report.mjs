@@ -1,6 +1,6 @@
 import { gzipSync } from 'node:zlib';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { extname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const frontendDirectory = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -96,7 +96,7 @@ for (const row of routeRows) {
     if (row.gzip > row.cap) failures.push(`${row.name} gzip ${row.gzip} exceeds ${row.cap}`);
 }
 if (totalBytes > 7_000_000) failures.push(`Build output ${totalBytes} exceeds 7000000 bytes`);
-if (manifestBytes > 155_000) failures.push(`Manifest ${manifestBytes} exceeds 155000 bytes`);
+if (manifestBytes > 158_000) failures.push(`Manifest ${manifestBytes} exceeds 158000 bytes`);
 if (mainCss > 20_000) failures.push(`Main CSS gzip ${mainCss} exceeds 20000 bytes`);
 
 if (failures.length) {

@@ -11,7 +11,6 @@ use Everest\Models\Database;
 use Everest\Models\Schedule;
 use Illuminate\Http\Request;
 use Everest\Models\Allocation;
-use Everest\Models\ServerCustomDomain;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -53,7 +52,6 @@ class ResourceBelongsToServer
                 case Database::class:
                 case Schedule::class:
                 case Subuser::class:
-                case ServerCustomDomain::class:
                     if ($model->server_id !== $server->id) {
                         throw $exception;
                     }
@@ -79,6 +77,28 @@ class ResourceBelongsToServer
                     }
                     break;
                 default:
+                    // A model belonging to an installed extension package. The
+                    // loader applies this middleware to every extension client
+                    // route, so without this branch a package binding its own
+                    // model 500s on every request — an InvalidArgumentException,
+                    // not even a 404.
+                    //
+                    // The contract is the same one every case above relies on: a
+                    // server-scoped resource carries server_id. A package model
+                    // without it still falls through to the throw, because there
+                    // is then no way to tell which server it belongs to and
+                    // guessing is how cross-server access happens.
+                    if (str_starts_with(get_class($model), 'Everest\\Extensions\\Packages\\')) {
+                        if ($model->getAttribute('server_id') === null) {
+                            throw new \InvalidArgumentException(sprintf('Extension model %s is bound on a server-scoped route but has no server_id to scope it by.', get_class($model)));
+                        }
+
+                        if ((int) $model->getAttribute('server_id') !== (int) $server->id) {
+                            throw $exception;
+                        }
+                        break;
+                    }
+
                     // Don't return a 404 here since we want to make sure no one relies
                     // on this middleware in a context in which it will not work. Fail safe.
                     throw new \InvalidArgumentException('There is no handler configured for a resource of this type: ' . get_class($model));

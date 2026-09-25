@@ -11,7 +11,7 @@ return [
     | change this value if you are not maintaining your own internal versions.
     */
 
-    'version' => 'Alpha 3.0',
+    'version' => 'Alpha 4.2',
 
     /*
     |--------------------------------------------------------------------------
@@ -257,6 +257,9 @@ return [
         Everest\Providers\EventServiceProvider::class,
         Everest\Providers\HashidsServiceProvider::class,
         Everest\Providers\QueueServiceProvider::class,
+        // Between the queue and the routes: it must boot after Queue::route()
+        // is applied and before the route files load.
+        Everest\Providers\ExtensionServiceProvider::class,
         Everest\Providers\RouteServiceProvider::class,
         Everest\Providers\RepositoryServiceProvider::class,
         Everest\Providers\ViewComposerServiceProvider::class,

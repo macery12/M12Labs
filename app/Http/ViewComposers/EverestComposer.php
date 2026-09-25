@@ -4,13 +4,13 @@ namespace Everest\Http\ViewComposers;
 
 use Illuminate\View\View;
 use Everest\Models\Setting;
-use Everest\Models\ExtensionConfig;
 use Everest\Services\Email\EmailManager;
 use Everest\Services\Billing\StoreConfigService;
 use Everest\Services\Email\EmailVerificationGate;
 use Everest\Services\Billing\InvoiceSettingsService;
 use Everest\Services\Billing\PaymentWebhookRegistry;
 use Everest\Services\Billing\PaymentProcessorConfigService;
+use Everest\Services\Extensions\ExtensionFrontendFlagService;
 
 class EverestComposer
 {
@@ -20,6 +20,7 @@ class EverestComposer
         private InvoiceSettingsService $invoiceSettingsService,
         private StoreConfigService $storeConfigService,
         private PaymentWebhookRegistry $paymentWebhookRegistry,
+        private ExtensionFrontendFlagService $extensionFrontendFlags,
     ) {
     }
 
@@ -104,16 +105,6 @@ class EverestComposer
                 ],
                 'verification_rules' => $this->emailVerificationGate->getRules(),
             ],
-            'ai' => [
-                'enabled' => boolval(config('modules.ai.enabled', false)),
-                // The agent is gated separately from the assistant: it can act
-                // on a server, so turning chat on must not turn it on too.
-                'feature_agent' => boolval(config('modules.ai.agent.enabled', false)),
-                // And the admin assistant separately again, because it acts on
-                // the panel itself rather than on one customer's server.
-                'feature_admin_agent' => boolval(config('modules.ai.agent.enabled', false))
-                    && boolval(config('modules.ai.agent.admin_enabled', false)),
-            ],
             'webhooks' => [
                 'enabled' => boolval(config('modules.webhooks.enabled', false)),
                 'url' => !empty(config('modules.webhooks.url')),
@@ -144,13 +135,20 @@ class EverestComposer
             'extensions' => [
                 'enabled' => boolval(config('modules.extensions.enabled', false)),
             ],
-            'custom_domains' => [
-                'enabled' => boolval(config('modules.custom_domains.enabled', false)),
-            ],
         ];
 
         // Merge admin-only configuration if user is authenticated admin
         $user = auth()->user();
+        if ($user) {
+            // Pages and global slots must use the same evaluated state as the
+            // backend loaders: enabled alone is insufficient when a package is
+            // quarantined, unsigned, incompatible or has a capability-hash
+            // mismatch. This list is safe for every authenticated user and is
+            // needed by server-scoped slots, not only by administrators.
+            $extensionState = $this->extensionFrontendFlags->snapshot();
+            $configuration['extensions']['active'] = $extensionState['active'];
+            $configuration['extensions']['flags'] = $extensionState['flags'];
+        }
         if ($user && $user->isAdministrator()) {
             $configuration = array_merge_recursive($configuration, $this->getAdminConfiguration());
         }
@@ -198,26 +196,7 @@ class EverestComposer
                 'plan_change_cooldown_hours' => config('modules.billing.plan_change_cooldown_hours', 72),
                 'require_billing_address' => (bool) $invoiceSettings->require_billing_address,
             ],
-            // Enabled extension ids gate extension-contributed admin nav/routes;
-            // non-admins never receive the list. The extensions.admin middleware
-            // enforces the same state server-side regardless.
-            'extensions' => [
-                'active' => $this->enabledExtensionIds(),
-            ],
         ];
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function enabledExtensionIds(): array
-    {
-        try {
-            return ExtensionConfig::query()->where('enabled', true)->pluck('extension_id')->all();
-        } catch (\Throwable) {
-            // Fresh installs may render views before migrations exist.
-            return [];
-        }
     }
 
     private function emailEnabled(): bool

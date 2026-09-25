@@ -68,7 +68,21 @@ function mapRole(row: { attributes?: RawRoleAttributes } & Partial<RawRoleAttrib
 
 // The permission catalog: namespace -> { human description, key -> description }.
 // Rendered as grouped cards, with each permission id formed as `${group}.${key}`.
-export type AdminPermissionGroups = Record<string, { description: string; keys: Record<string, string> }>;
+//
+// Groups named `ext.<id>.admin` are contributed by an installed extension. Their
+// copy lives in the extension's own translation catalog rather than core's, so
+// they carry key names for the frontend to resolve through `td()`; the
+// `description` values stay populated as the fallback.
+export type AdminPermissionGroups = Record<
+    string,
+    {
+        description: string;
+        keys: Record<string, string>;
+        labelKeys?: Record<string, string>;
+        descriptionKeys?: Record<string, string>;
+        extensionId?: string;
+    }
+>;
 
 export interface AdminRoleQuery {
     page?: number;

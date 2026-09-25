@@ -5,6 +5,7 @@ namespace Everest\Services\Extensions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Everest\Exceptions\DisplayException;
 use Illuminate\Database\Migrations\Migrator;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -23,6 +24,12 @@ use Symfony\Component\Console\Output\BufferedOutput;
 class ExtensionMigrationService
 {
     public const MIGRATIONS_DIR = 'database/migrations';
+
+    public function __construct(
+        private ExtensionMigrationSourceParser $sourceParser = new ExtensionMigrationSourceParser(),
+        private ExtensionForeignKeyPolicy $foreignKeyPolicy = new ExtensionForeignKeyPolicy(),
+    ) {
+    }
 
     public function migrationPath(string $extensionId): string
     {
@@ -53,23 +60,59 @@ class ExtensionMigrationService
     }
 
     /**
-     * Roll back the most recent batch, scoped to the extension's migration
-     * files. Only used to revert migrations applied by a failed install or
-     * update; migrations from other batches are never touched.
+     * Roll back exactly the named migrations — the ones a failed install or
+     * update applied itself. Names may carry the `.php` extension.
+     *
+     * This used to roll back "the last batch", but the last batch is only this
+     * operation's when this operation wrote one. A first migration that throws
+     * writes no record, so the last batch was whichever came before it; after
+     * a keep-data uninstall and a reinstall that is the extension's own earlier
+     * batch, and its down() drops the tables the uninstall kept. A batch run by
+     * anything else in between had the opposite effect, leaving this
+     * operation's migrations applied.
+     *
+     * @param array<int, string> $migrations
      *
      * @return array{rolledBack: array<int, string>, output: string}
      */
-    public function rollbackLastBatch(string $extensionId): array
+    public function rollbackApplied(string $extensionId, array $migrations): array
     {
-        $lastBatch = array_map(
-            fn ($migration) => (string) ((object) $migration)->migration,
-            $this->migrator()->getRepository()->getLast()
-        );
+        $names = array_map(fn (string $migration) => basename($migration, '.php'), $migrations);
 
         return $this->rollbackMigrations(
             $extensionId,
-            array_values(array_intersect($this->ranMigrationNames($extensionId), $lastBatch))
+            array_values(array_intersect($this->ranMigrationNames($extensionId), $names))
         );
+    }
+
+    /**
+     * Which of these migration names the migrations table already records.
+     *
+     * Unlike ranMigrationNames() this does not start from the extension's
+     * files on disk, so it answers for a package that is not installed — the
+     * case after a keep-data uninstall, where the files are gone and the
+     * records are not. Names may carry the `.php` extension; they are returned
+     * without it.
+     *
+     * @param array<int, string> $migrations
+     *
+     * @return array<int, string>
+     */
+    public function recordedAsRan(array $migrations): array
+    {
+        $names = array_map(fn (string $migration) => basename($migration, '.php'), $migrations);
+
+        if ($names === []) {
+            return [];
+        }
+
+        try {
+            $ran = $this->migrator()->getRepository()->getRan();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return array_values(array_intersect($names, $ran));
     }
 
     /**
@@ -151,16 +194,30 @@ class ExtensionMigrationService
      */
     public function listExtensionTables(string $extensionId): array
     {
+        $prefix = $this->tablePrefix($extensionId);
+
         try {
-            $rows = DB::select(
-                'SELECT TABLE_NAME AS name FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE ?',
-                [str_replace('_', '\\_', $this->tablePrefix($extensionId)) . '%']
-            );
+            // Through the schema builder rather than information_schema: that
+            // table exists only on MySQL, so the previous query silently
+            // returned nothing on any other driver — including the one the test
+            // suite runs on, which left the uninstall preview and the drop
+            // warning unexercised.
+            $tables = Schema::getTables();
         } catch (\Throwable) {
             return [];
         }
 
-        return array_map(fn ($row) => (string) $row->name, $rows);
+        $names = [];
+
+        foreach ($tables as $table) {
+            $name = (string) ($table['name'] ?? '');
+
+            if ($name !== '' && str_starts_with($name, $prefix)) {
+                $names[] = $name;
+            }
+        }
+
+        return $names;
     }
 
     /**
@@ -191,48 +248,119 @@ class ExtensionMigrationService
     }
 
     /**
-     * Parse the table names a set of migration files create via Schema::create.
+     * The schema changes a set of migration files describe.
      *
-     * A source-level regex — it only detects CREATEs (not ALTER/DROP/index
-     * changes), which is enough for the namespace check and for previewing the
-     * tables an install/update will add. Files may be on disk (an installed
-     * extension) or freshly extracted from an archive (a not-yet-installed one).
+     * This used to find `Schema::create` and nothing else, which made it honest
+     * about what an install would *add* and silent about everything it would
+     * alter, rename or destroy. An operator approving an update was shown a
+     * list of new tables while a migration in the same set dropped one.
+     *
+     * Files may be on disk (an installed extension) or freshly extracted from
+     * an archive (a not-yet-installed one). Distinct names, in file order.
+     * `down()` bodies are not read: this describes what running the files
+     * does, and running them never calls `down()`.
+     *
+     * `rawStatements` counts the calls whose effect cannot be read from the
+     * source at all. It is reported rather than ignored because the useful
+     * thing to tell an operator is that the list is incomplete, not to let them
+     * read it as exhaustive.
      *
      * @param array<int, string> $migrationFilePaths absolute paths
      *
-     * @return array<int, string> distinct created table names, in file order
+     * @return array{create: array<int, string>, alter: array<int, string>, drop: array<int, string>, rename: array<int, array{from: string, to: string}>, rawStatements: int}
      */
-    public function parseCreatedTables(array $migrationFilePaths): array
+    public function parseSchemaChanges(array $migrationFilePaths): array
     {
-        $tables = [];
+        $changes = ['create' => [], 'alter' => [], 'drop' => [], 'rename' => [], 'rawStatements' => 0];
 
         foreach ($migrationFilePaths as $filePath) {
             if (!is_file($filePath)) {
                 continue;
             }
 
-            $source = (string) file_get_contents($filePath);
-            preg_match_all("/Schema::create\\(\\s*['\"]([^'\"]+)['\"]/", $source, $matches);
+            $source = $this->sourceParser->withoutRollback((string) file_get_contents($filePath));
+            $changes['rawStatements'] += $this->sourceParser->rawStatementCount($source);
 
-            foreach ($matches[1] as $table) {
-                if (!in_array($table, $tables, true)) {
-                    $tables[] = $table;
+            foreach ($this->sourceParser->operations($source) as $operation) {
+                if ($operation['verb'] === 'rename') {
+                    $rename = ['from' => $operation['table'], 'to' => (string) ($operation['renameTo'] ?? '')];
+
+                    if ($rename['to'] !== '' && !in_array($rename, $changes['rename'], true)) {
+                        $changes['rename'][] = $rename;
+                    }
+
+                    continue;
+                }
+
+                $bucket = match ($operation['verb']) {
+                    'create' => 'create',
+                    'table' => 'alter',
+                    default => 'drop',
+                };
+
+                if (!in_array($operation['table'], $changes[$bucket], true)) {
+                    $changes[$bucket][] = $operation['table'];
                 }
             }
         }
 
-        return $tables;
+        return $changes;
     }
 
     /**
-     * Reject migrations that create tables outside the extension's ext_<id>_
-     * namespace. A source-level regex, so it is defense-in-depth against
-     * accidents — deliberate evasion is equivalent to shipping malicious PHP,
-     * which manual review owns.
+     * Approximate row counts for tables that exist right now.
+     *
+     * Only for showing an operator what a drop would cost, so a table that does
+     * not exist yet is absent rather than zero — "0 rows" and "this table is
+     * not there" should not read the same on a confirmation screen.
+     *
+     * The names are matched against what information_schema actually reports
+     * before being interpolated, because a table name cannot be a bound
+     * parameter and nothing else here is a safe source for one.
+     *
+     * @param array<int, string> $tables
+     *
+     * @return array<string, int>
+     */
+    public function rowCountsFor(string $extensionId, array $tables): array
+    {
+        $existing = $this->listExtensionTables($extensionId);
+        $counts = [];
+
+        foreach (array_intersect($tables, $existing) as $table) {
+            try {
+                // Already narrowed to names information_schema reports, so
+                // this is the second lock rather than the first. MySQL does
+                // permit a backtick inside a quoted identifier, by doubling
+                // it, and a table created through raw SQL is not bound by the
+                // manifest's naming rules.
+                $counts[$table] = (int) DB::scalar(sprintf('SELECT COUNT(*) FROM `%s`', str_replace('`', '``', $table)));
+            } catch (\Throwable) {
+                // A table that vanished between the two reads, or a driver that
+                // refused. An absent count degrades to "no number shown", which
+                // is the same as a table this panel has never seen.
+                continue;
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Enforce table ownership and cross-boundary foreign-key rules before a
+     * package migration executes.
+     *
+     * A source-level read, so it is defense-in-depth against accidents —
+     * deliberate evasion is equivalent to shipping malicious PHP, which manual
+     * review owns. It overlaps with ExtensionPhpSourceScanner deliberately:
+     * this runs against the migration set specifically, on every install and
+     * update path. Both the table check and foreign-key policy share their
+     * parsers with the scanner so the two gates cannot disagree about what a
+     * file says.
      *
      * @param array<int, string> $migrationFilePaths absolute paths
      */
-    public function assertTablePrefixConvention(string $extensionId, array $migrationFilePaths): void
+    public function assertMigrationConventions(string $extensionId, array $migrationFilePaths): void
     {
         $prefix = $this->tablePrefix($extensionId);
 
@@ -242,14 +370,32 @@ class ExtensionMigrationService
             }
 
             $source = (string) file_get_contents($filePath);
-            preg_match_all("/Schema::create\\(\\s*['\"]([^'\"]+)['\"]/", $source, $matches);
 
-            foreach ($matches[1] as $table) {
-                if (!str_starts_with($table, $prefix)) {
-                    throw new DisplayException(sprintf('The migration "%s" creates the table "%s", which is outside the extension\'s allowed "%s" table namespace.', basename($filePath), $table, $prefix));
+            foreach ($this->sourceParser->operations($source) as $operation) {
+                // Both names. A rename is the one verb that can move a table
+                // *out* of the namespace while starting inside it.
+                foreach ($this->sourceParser->tablesTouchedBy($operation) as $table) {
+                    if (!str_starts_with($table, $prefix)) {
+                        throw new DisplayException(sprintf('The migration "%s" calls Schema::%s on the table "%s", which is outside the extension\'s allowed "%s" table namespace.', basename($filePath), $operation['verb'], $table, $prefix));
+                    }
                 }
             }
+
+            foreach ($this->foreignKeyPolicy->violations($extensionId, $source) as $violation) {
+                throw new DisplayException(sprintf('The migration "%s" %s', basename($filePath), $violation));
+            }
         }
+    }
+
+    /**
+     * @deprecated use assertMigrationConventions(); retained for callers built
+     *             against the earlier public service name
+     *
+     * @param array<int, string> $migrationFilePaths absolute paths
+     */
+    public function assertTablePrefixConvention(string $extensionId, array $migrationFilePaths): void
+    {
+        $this->assertMigrationConventions($extensionId, $migrationFilePaths);
     }
 
     public function tablePrefix(string $extensionId): string

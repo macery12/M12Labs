@@ -1,6 +1,8 @@
 import { m, td } from '@/i18n/messages';
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { refreshExtensionFlags } from '@/extensions-sdk/flags';
+import { Link } from 'react-router-dom';
 import { X, ExternalLink, Download, ArrowUpCircle, Trash2, AlertTriangle, Settings2, ShieldCheck } from 'lucide-react';
 import {
     type Extension,
@@ -9,6 +11,12 @@ import {
     type EggOption,
     updateExtension,
     installExtension,
+    CapabilityApprovalRequired,
+    PackageRequirementsNotSatisfied,
+    ModifiedFilesRequireAcknowledgement,
+    type CapabilityDiff,
+    type PackageRequirementFailure,
+    type PossiblyUnusedPackages,
     updateExtensionPackage,
     uninstallExtension,
 } from '@/api/extensions';
@@ -16,8 +24,17 @@ import { Switch } from '@/components/ui/Switch';
 import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
+import { firstError } from '@/lib/apiError';
 import { cn } from '@/lib/cn';
 import { resolveExtensionIcon, extensionTone, toneVar, toneLabelKey } from './extMeta';
+import { ExtensionTypeBadge } from './ExtensionTypeBadge';
+import { CapabilityApprovalModal } from './CapabilityApprovalModal';
+import { ModifiedFilesModal } from './ModifiedFilesModal';
+import { PackageRequirementsModal } from './PackageRequirementsModal';
+import { UnusedPackagesModal, hasPossiblyUnusedPackages } from './UnusedPackagesModal';
+import { ExtensionSecretsPanel } from './ExtensionSecretsPanel';
+import { isVisible } from './settingVisibility';
+import { ExtensionHealthPanel, ExtensionHealthIcon } from './ExtensionHealthPanel';
 import { DatabaseChangesModal } from './DatabaseChangesModal';
 import type { DatabasePlanOperation } from '@/api/extensions';
 
@@ -26,6 +43,18 @@ const tint = (v: string, pct: number) => `color-mix(in srgb, ${v} ${pct}%, trans
 // Toggle a numeric id within a selection list (immutable).
 const toggleId = (list: number[], id: number) =>
     list.includes(id) ? list.filter(x => x !== id) : [...list, id];
+
+/**
+ * Consent an install or update carries. Both tokens are optional and
+ * independent: the panel can refuse once for privileges and again for locally
+ * modified files, and the second refusal must not lose the first approval.
+ */
+interface Consent {
+    approvedCapabilityHash?: string;
+    acknowledgeModifiedFiles?: boolean;
+    dropData?: boolean;
+    confirm?: string;
+}
 
 export function ExtensionManageDrawer({
     ext,
@@ -51,6 +80,19 @@ export function ExtensionManageDrawer({
     // update, and uninstall actions all route through it before committing.
     const [dbModal, setDbModal] = useState<DatabasePlanOperation | null>(null);
 
+    // Each refusal keeps the exact operation and consent needed to retry after
+    // the operator resolves it.
+    const [pendingApproval, setPendingApproval] = useState<{ operation: 'install' | 'update'; diff: CapabilityDiff } | null>(
+        null,
+    );
+    const [pendingModifiedFiles, setPendingModifiedFiles] = useState<
+        { operation: 'update' | 'uninstall'; verb: string; paths: string[]; consent: Consent } | null
+    >(null);
+    const [pendingRequirements, setPendingRequirements] = useState<
+        { operation: 'install' | 'update'; requirements: PackageRequirementFailure; consent: Consent } | null
+    >(null);
+    const [possiblyUnused, setPossiblyUnused] = useState<PossiblyUnusedPackages | null>(null);
+
     // Re-seed local form state whenever a different extension is opened.
     useEffect(() => {
         if (!ext) return;
@@ -60,10 +102,18 @@ export function ExtensionManageDrawer({
         setAllowedNests([...ext.allowedNests]);
         setAllowedEggs([...ext.allowedEggs]);
         setDbModal(null);
+        setPendingApproval(null);
+        setPendingModifiedFiles(null);
+        setPendingRequirements(null);
+        setPossiblyUnused(null);
     }, [ext]);
 
-    const invalidate = () => qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
-    const fail = () => push({ type: 'error', message: m['common.states.genericError']() });
+    const invalidate = () => {
+        void qc.invalidateQueries({ queryKey: ['admin', 'extensions'] });
+        void refreshExtensionFlags().catch(() => undefined);
+    };
+    const fail = (error: unknown) =>
+        push({ type: 'error', message: firstError(error) ?? m['common.states.genericError']() });
 
     const save = useMutation({
         mutationFn: () => updateExtension(ext!.id, { enabled, allowedNests, allowedEggs, settings }),
@@ -74,30 +124,62 @@ export function ExtensionManageDrawer({
         onError: fail,
     });
 
+    const conflictAware =
+        (operation: 'install' | 'update' | 'uninstall', consent: Consent, onOther: (error: unknown) => void) =>
+        (error: unknown) => {
+            if (error instanceof PackageRequirementsNotSatisfied && operation !== 'uninstall') {
+                setPendingRequirements({ operation, requirements: error.requirements, consent });
+                return;
+            }
+            if (error instanceof CapabilityApprovalRequired && operation !== 'uninstall') {
+                setPendingRequirements(null);
+                setPendingApproval({ operation, diff: error.diff });
+                return;
+            }
+            if (error instanceof ModifiedFilesRequireAcknowledgement && operation !== 'install') {
+                setPendingModifiedFiles({ operation, verb: error.verb, paths: error.paths, consent });
+                return;
+            }
+            onOther(error);
+        };
+
     const install = useMutation({
-        mutationFn: () => installExtension(ext!.id, ext!.source.repositoryId!, ext!.latestVersion),
+        mutationFn: (vars: Consent = {}) =>
+            installExtension(ext!.id, ext!.source.repositoryId!, ext!.latestVersion, vars.approvedCapabilityHash),
         onSuccess: e => {
+            setPendingApproval(null);
+            setPendingRequirements(null);
             push({ type: 'success', message: m['extensions.toast.installed']({ name: e.name }) });
             invalidate();
             onClose();
         },
-        onError: fail,
+        onError: (error, vars) => conflictAware('install', vars ?? {}, fail)(error),
     });
 
     const updatePkg = useMutation({
-        mutationFn: () => updateExtensionPackage(ext!.id, ext!.source.repositoryId!, ext!.latestVersion),
+        mutationFn: (vars: Consent = {}) =>
+            updateExtensionPackage(
+                ext!.id,
+                ext!.source.repositoryId!,
+                ext!.latestVersion,
+                vars.approvedCapabilityHash,
+                vars.acknowledgeModifiedFiles,
+            ),
         onSuccess: e => {
+            setPendingApproval(null);
+            setPendingRequirements(null);
             push({ type: 'success', message: m['extensions.toast.updated']({ name: e.name }) });
             invalidate();
             onClose();
         },
-        onError: fail,
+        onError: (error, vars) => conflictAware('update', vars ?? {}, fail)(error),
     });
 
     const remove = useMutation({
-        mutationFn: (vars: { dropData: boolean; confirm?: string }) =>
-            uninstallExtension(ext!.id, vars.dropData, vars.confirm),
+        mutationFn: (vars: { dropData: boolean; confirm?: string; acknowledgeModifiedFiles?: boolean }) =>
+            uninstallExtension(ext!.id, vars.dropData, vars.confirm, vars.acknowledgeModifiedFiles),
         onSuccess: res => {
+            setDbModal(null);
             push({ type: 'success', message: m['extensions.toast.uninstalled']({ name: res.extension.name ?? ext!.id }) });
             if (res.dataDropped) {
                 push({ type: 'success', message: m['extensions.toast.dataDropped']() });
@@ -105,9 +187,14 @@ export function ExtensionManageDrawer({
                 push({ type: 'info', message: m['extensions.toast.dataPreserved']({ tables: res.preservedTables.join(', ') }) });
             }
             invalidate();
-            onClose();
+            if (hasPossiblyUnusedPackages(res.possiblyUnusedPackages)) {
+                setPossiblyUnused(res.possiblyUnusedPackages);
+            } else {
+                onClose();
+            }
         },
-        onError: fail,
+        onError: (error, vars) =>
+            conflictAware('uninstall', { dropData: vars.dropData, confirm: vars.confirm }, fail)(error),
     });
 
     const eggsByNest = useMemo(() => {
@@ -181,9 +268,7 @@ export function ExtensionManageDrawer({
                             <span className="text-[var(--color-ink-faint)]">·</span>
                             <span style={{ color: accent }}>{td(`extensions.${toneLabelKey(tone)}`)}</span>
                             <span className="text-[var(--color-ink-faint)]">·</span>
-                            <span className="rounded border border-[var(--color-border)] px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-                                {td(`extensions.type.${e.type}`)}
-                            </span>
+                            <ExtensionTypeBadge type={e.type} />
                         </p>
                     </div>
                     <button
@@ -250,23 +335,61 @@ export function ExtensionManageDrawer({
                         </div>
                     )}
 
+                    {e.canEnable === false && (
+                        <div
+                            className="flex gap-2 rounded-lg border px-3 py-2.5 text-xs leading-relaxed"
+                            style={{
+                                background: tint('var(--color-danger)', 10),
+                                borderColor: tint('var(--color-danger)', 30),
+                                color: 'var(--color-danger)',
+                            }}
+                        >
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <span>{e.stateReason || m['extensions.unsupported.blocked']()}</span>
+                        </div>
+                    )}
+
                     {e.installable ? null : (
                         <>
                             {/* enable */}
                             <Section icon={Settings2} title={m['extensions.drawer.enableTitle']()}>
                                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-3 py-2.5">
                                     <span className="text-xs text-[var(--color-ink-muted)]">{m['extensions.drawer.enableHint']()}</span>
-                                    <Switch checked={enabled} onChange={setEnabled} disabled={busy} />
+                                    <Switch
+                                        checked={enabled}
+                                        onChange={setEnabled}
+                                        disabled={busy || e.canEnable === false}
+                                        title={e.canEnable === false ? m['extensions.unsupported.blocked']() : undefined}
+                                    />
                                 </div>
                             </Section>
 
                             {/* settings schema */}
                             <Section title={m['extensions.drawer.settings']()}>
+                                {/* A package with its own settings page owns the full
+                                    form; the fields below are the same values. */}
+                                {e.adminSettingsPath && (
+                                    <Link
+                                        to={`/admin/${e.adminSettingsPath}`}
+                                        onClick={onClose}
+                                        className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-[var(--brand)]/30 bg-[var(--brand)]/[0.06] px-3 py-2.5 text-xs text-[var(--color-ink)] transition-colors hover:bg-[var(--brand)]/10"
+                                    >
+                                        <span className="min-w-0">
+                                            <span className="block font-medium">{m['extensions.drawer.fullSettings']()}</span>
+                                            <span className="block text-[11px] text-[var(--color-ink-faint)]">
+                                                {m['extensions.drawer.fullSettingsHint']()}
+                                            </span>
+                                        </span>
+                                        <Settings2 className="h-4 w-4 shrink-0 text-[var(--brand)]" />
+                                    </Link>
+                                )}
                                 {e.settingsSchema.length === 0 ? (
                                     <p className="text-xs text-[var(--color-ink-faint)]">{m['extensions.drawer.noSettings']()}</p>
                                 ) : (
                                     <div className="space-y-3">
-                                        {e.settingsSchema.map(field => (
+                                        {e.settingsSchema
+                                            .filter(field => isVisible(field.visibleWhen, e.settingsSchema, settings))
+                                            .map(field => (
                                             <SettingFieldRow
                                                 key={field.key}
                                                 field={field}
@@ -277,6 +400,24 @@ export function ExtensionManageDrawer({
                                         ))}
                                     </div>
                                 )}
+                            </Section>
+
+                            {/* diagnostics — computed on read, see ExtensionHealthPanel */}
+                            <Section icon={ExtensionHealthIcon} title={m['extensions.health.title']()}>
+                                <ExtensionHealthPanel extensionId={e.id} />
+                            </Section>
+
+                            {/* credentials — write-only; see ExtensionSecretsPanel */}
+                            <Section icon={ShieldCheck} title={m['extensions.secrets.title']()}>
+                                <p className="-mt-1 mb-2 text-[11px] text-[var(--color-ink-faint)]">
+                                    {m['extensions.secrets.hint']()}
+                                </p>
+                                <ExtensionSecretsPanel
+                                    extensionId={e.id}
+                                    disabled={busy}
+                                    schema={e.settingsSchema}
+                                    settings={settings}
+                                />
                             </Section>
 
                             {/* access control — only meaningful for extensions with a
@@ -431,9 +572,88 @@ export function ExtensionManageDrawer({
                         ]}
                         onClose={() => setDbModal(null)}
                         onConfirm={drops => {
-                            if (dbModal === 'install') install.mutate();
-                            else if (dbModal === 'update') updatePkg.mutate();
+                            if (dbModal === 'install') install.mutate({});
+                            else if (dbModal === 'update') updatePkg.mutate({});
                             else remove.mutate({ dropData: drops.length > 0, confirm: drops[0]?.confirm });
+                        }}
+                    />
+                )}
+
+                {/* Consent step for privileges the release asks for. Approving
+                    retries the same operation with the hash, which changes
+                    whenever the capabilities do. */}
+                {pendingApproval && (
+                    <CapabilityApprovalModal
+                        open
+                        extensionName={e.name}
+                        diff={pendingApproval.diff}
+                        busy={install.isPending || updatePkg.isPending}
+                        onClose={() => setPendingApproval(null)}
+                        onApprove={hash => {
+                            // Close before retrying so the operation's progress
+                            // isn't hidden behind the modal. A refusal reopens
+                            // whichever modal it calls for; anything else toasts.
+                            const consent = { approvedCapabilityHash: hash };
+                            const { operation } = pendingApproval;
+                            setPendingApproval(null);
+                            if (operation === 'install') install.mutate(consent);
+                            else updatePkg.mutate(consent);
+                        }}
+                    />
+                )}
+
+                {pendingRequirements && (
+                    <PackageRequirementsModal
+                        open
+                        extensionName={e.name}
+                        requirements={pendingRequirements.requirements}
+                        operation={pendingRequirements.operation}
+                        busy={install.isPending || updatePkg.isPending}
+                        onClose={() => setPendingRequirements(null)}
+                        onRetry={() => {
+                            const pending = pendingRequirements;
+                            setPendingRequirements(null);
+                            if (pending.operation === 'install') install.mutate(pending.consent);
+                            else updatePkg.mutate(pending.consent);
+                        }}
+                    />
+                )}
+
+                {possiblyUnused && (
+                    <UnusedPackagesModal
+                        open
+                        packages={possiblyUnused}
+                        onClose={() => {
+                            setPossiblyUnused(null);
+                            onClose();
+                        }}
+                    />
+                )}
+
+                {/* Consent step for discarding local edits to installed files.
+                    Carries forward any capability approval already given, so a
+                    package that trips both checks is not asked twice. */}
+                {pendingModifiedFiles && (
+                    <ModifiedFilesModal
+                        open
+                        extensionName={e.name}
+                        verb={pendingModifiedFiles.verb}
+                        paths={pendingModifiedFiles.paths}
+                        busy={updatePkg.isPending || remove.isPending}
+                        onClose={() => setPendingModifiedFiles(null)}
+                        onAcknowledge={() => {
+                            const { operation, consent } = pendingModifiedFiles;
+                            setPendingModifiedFiles(null);
+
+                            if (operation === 'update') {
+                                updatePkg.mutate({ ...consent, acknowledgeModifiedFiles: true });
+                            } else {
+                                remove.mutate({
+                                    dropData: Boolean(consent.dropData),
+                                    confirm: consent.confirm,
+                                    acknowledgeModifiedFiles: true,
+                                });
+                            }
                         }}
                     />
                 )}
@@ -501,14 +721,18 @@ function SettingFieldRow({
     onChange: (v: unknown) => void;
 }) {
     const type = field.type.toLowerCase();
+    // A v3 package's copy lives in its own catalog under `ext.<id>.`; core has
+    // only the key. `label` is the server-supplied fallback.
+    const label = field.labelKey ? td(field.labelKey, field.label) : field.label;
+    const description = field.helpKey ? td(field.helpKey, field.description ?? '') : field.description;
 
     if (type === 'boolean' || type === 'bool' || type === 'toggle') {
         return (
             <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-3 py-2.5">
                 <div className="min-w-0">
-                    <p className="text-xs font-medium text-[var(--color-ink)]">{field.label}</p>
-                    {field.description && (
-                        <p className="mt-0.5 text-[11px] text-[var(--color-ink-faint)]">{field.description}</p>
+                    <p className="text-xs font-medium text-[var(--color-ink)]">{label}</p>
+                    {description && (
+                        <p className="mt-0.5 text-[11px] text-[var(--color-ink-faint)]">{description}</p>
                     )}
                 </div>
                 <Switch checked={Boolean(value)} disabled={disabled} onChange={onChange} />
@@ -518,7 +742,7 @@ function SettingFieldRow({
 
     return (
         <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-[var(--color-ink-muted)]">{field.label}</label>
+            <label className="text-xs font-medium text-[var(--color-ink-muted)]">{label}</label>
             {type === 'textarea' ? (
                 <textarea
                     rows={3}
@@ -537,21 +761,25 @@ function SettingFieldRow({
                 >
                     {field.options.map(o => (
                         <option key={o.value} value={o.value}>
-                            {o.label}
+                            {/* `<labelKey>.option.<value>` in the package's own
+                                catalog; the raw value when it has none. */}
+                            {field.labelKey ? td(`${field.labelKey}.option.${o.value}`, o.label) : o.label}
                         </option>
                     ))}
                 </select>
             ) : (
                 <Input
                     type={type === 'number' ? 'number' : type === 'password' ? 'password' : 'text'}
+                    min={type === 'number' ? field.min : undefined}
+                    max={type === 'number' ? field.max : undefined}
                     disabled={disabled}
                     value={String(value ?? '')}
                     placeholder={field.placeholder}
                     onChange={ev => onChange(type === 'number' ? Number(ev.target.value) : ev.target.value)}
                 />
             )}
-            {field.description && type !== 'boolean' && (
-                <span className="text-[11px] text-[var(--color-ink-faint)]">{field.description}</span>
+            {description && type !== 'boolean' && (
+                <span className="text-[11px] text-[var(--color-ink-faint)]">{description}</span>
             )}
         </div>
     );

@@ -23,17 +23,16 @@ return [
         // extension, stacked inside the global application limit above.
         'ext_admin_period' => 1,
         'ext_admin' => env('APP_API_EXT_ADMIN_RATELIMIT', 60),
+        // Per-extension client budget. Higher than the admin one: a server
+        // extension page is user-facing and may poll, where an admin page is
+        // opened deliberately.
+        'ext_client_period' => 1,
+        'ext_client' => env('APP_API_EXT_CLIENT_RATELIMIT', 120),
 
         // File diffing is CPU work in the Panel process, so it has a tighter
         // per-user budget in addition to the global client API limiter.
         'file_diff_period' => 1,
         'file_diff' => env('APP_API_FILE_DIFF_RATELIMIT', 10),
-
-        // Starting a turn performs admission and persistence before inference
-        // begins, so cap starts separately from transcript/status polling.
-        'ai_agent_period' => 1,
-        'ai_agent' => env('APP_API_AI_AGENT_RATELIMIT', 10),
-        'ai_agent_retry' => env('APP_API_AI_AGENT_RETRY_RATELIMIT', 120),
 
         // Daemons batch activity events. Keep a per-node budget so one
         // compromised or malfunctioning node cannot exhaust Panel workers.

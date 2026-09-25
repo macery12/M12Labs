@@ -6,8 +6,8 @@ import { td } from '@/i18n/messages';
 
 // A small "?" help affordance for a page header. Opens a themed modal with a
 // free-form guide (passed as children). Kept generic so any page can drop in a
-// plain-language walkthrough — used by the custom-domains pages, which are a
-// mildly confusing, operator-facing feature.
+// plain-language walkthrough. Shared, and exported through the extension SDK:
+// an operator-facing feature that needs explaining is not only a core concern.
 export function HelpButton({
     title,
     label,

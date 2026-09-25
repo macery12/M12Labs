@@ -60,7 +60,10 @@
     "autoload-dev": {
         "psr-4": {
             "Everest\\Tests\\": "tests/"
-        }
+        },
+        "classmap": [
+            "tests/Fixtures/Extensions"
+        ]
     },
     "scripts": {
         "cs:fix": "php-cs-fixer fix",

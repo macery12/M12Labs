@@ -71,7 +71,24 @@ echo "Project root: $ROOT_DIR"
 
 pushd "$ROOT_DIR" >/dev/null
 
-run_cmd "php artisan optimize:clear"
+# Compiled artifacts only. This was `optimize:clear`, which also runs
+# `cache:clear` -- and the application cache is not a build artifact. Things
+# the panel is actively using live there: extension lifecycle leases, queue
+# admissions, rate limiter state, resolved settings.
+#
+# That made this script destructive in a way its name does not suggest, and it
+# broke extension installs outright. `ExtensionPanelRebuildService` takes a
+# lease, holds it across the frontend build, and re-checks it every 250ms; the
+# build is `pnpm build` at the repo root, whose postbuild hook is this file. So
+# the install wiped the lease it was holding and then failed on the next check
+# with "The extension panel rebuild lease was lost" -- no log line, because
+# nothing had gone wrong anywhere that could report it. The rebuild service
+# already avoids `optimize:clear` in its own clear stage, for exactly this
+# reason; the precaution just could not survive a hook two levels down.
+run_cmd "php artisan config:clear"
+run_cmd "php artisan route:clear"
+run_cmd "php artisan view:clear"
+run_cmd "php artisan event:clear"
 
 ARTISAN_COMMANDS="$(php artisan list --raw | awk '{print $1}')"
 

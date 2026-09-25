@@ -30,9 +30,9 @@ type DropState = Record<string, { drop: boolean; confirm: string }>;
  * Pre-flight "this will modify your database" review shown before an install,
  * update, or uninstall (single or batch). It fetches a read-only plan per
  * extension — showing the tables that will be added, dropped, or preserved —
- * and, for uninstall, hosts the per-extension opt-in data drop with the same
- * typed-id confirmation the CLI requires. Confirming hands the parent the list
- * of extensions whose data should be dropped.
+ * and, for an individual uninstall, hosts the opt-in data drop with the same
+ * typed-id confirmation the CLI requires. A multi-extension uninstall always
+ * preserves data because a later batch failure cannot restore dropped rows.
  */
 export function DatabaseChangesModal({
     open,
@@ -140,6 +140,7 @@ export function DatabaseChangesModal({
                         onToggleDrop={next => setDrop(ext.id, { drop: next, confirm: next ? drops[ext.id]?.confirm ?? '' : '' })}
                         onConfirmChange={v => setDrop(ext.id, { confirm: v })}
                         showName={extensions.length > 1}
+                        allowDataDrop={extensions.length === 1}
                         busy={busy}
                     />
                 ))}
@@ -157,6 +158,7 @@ function ExtensionPlan({
     onToggleDrop,
     onConfirmChange,
     showName,
+    allowDataDrop,
     busy,
 }: {
     ext: DbModalExtension;
@@ -167,6 +169,7 @@ function ExtensionPlan({
     onToggleDrop: (next: boolean) => void;
     onConfirmChange: (v: string) => void;
     showName: boolean;
+    allowDataDrop: boolean;
     busy: boolean;
 }) {
     const plan = query.data;
@@ -200,32 +203,97 @@ function ExtensionPlan({
                     confirm={confirm}
                     onToggleDrop={onToggleDrop}
                     onConfirmChange={onConfirmChange}
+                    allowDataDrop={allowDataDrop}
                     busy={busy}
                 />
             ) : (
                 <AddPlan plan={plan} />
             )}
+
+            {/* Losing a role grant is not undone by reinstalling, so the count
+                is shown whether or not the extension owns any tables — the
+                no-database branch above would otherwise hide it. */}
+            {operation === 'uninstall' && !query.isLoading && (plan?.roleAssignments ?? 0) > 0 && (
+                <p className="mt-2 flex items-start gap-1.5 text-xs text-[var(--color-warning)]">
+                    <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                    {m['extensions.dbchanges.roleAssignments']({ count: plan!.roleAssignments! })}
+                </p>
+            )}
         </section>
     );
 }
 
-// install / update — tables that will be created plus (for update) the ones
-// that stay in place.
+// install / update — everything the pending migrations say they will do.
+//
+// Drops lead. They are the only entry here that destroys data an operator
+// cannot get back, and they used to be absent entirely: the plan parsed
+// Schema::create and nothing else, so an update that deleted a table was
+// previewed as a list of tables it would add.
 function AddPlan({ plan }: { plan: DatabasePlan }) {
     const creates = plan.tablesToCreate ?? [];
+    const alters = plan.tablesToAlter ?? [];
+    const drops = plan.tablesToDrop ?? [];
+    const renames = plan.tablesToRename ?? [];
     const unchanged = plan.unchangedTables ?? [];
+    const rowCounts = plan.rowCounts ?? {};
+    const unanalysed = plan.unanalysedStatements ?? 0;
     const migrationCount = (plan.migrations ?? []).length;
+    const nothingListed = creates.length + alters.length + drops.length + renames.length === 0;
 
     return (
         <div className="space-y-2">
+            {drops.length > 0 && (
+                <div>
+                    <TableList
+                        label={m['extensions.dbchanges.willDropOnUpdate']()}
+                        tables={drops.map(table => label(table, rowCounts[table]))}
+                        tone="drop"
+                    />
+                    <p className="mt-1 flex items-start gap-1.5 text-xs text-[var(--color-danger)]">
+                        <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                        {m['extensions.dbchanges.dropsData']()}
+                    </p>
+                </div>
+            )}
+
+            {renames.length > 0 && (
+                <TableList
+                    label={m['extensions.dbchanges.willRename']()}
+                    tables={renames.map(({ from, to }) => `${label(from, rowCounts[from])} → ${to}`)}
+                    tone="muted"
+                />
+            )}
+
             {creates.length > 0 ? (
                 <TableList label={m['extensions.dbchanges.willAdd']()} tables={creates} tone="add" />
             ) : (
-                <p className="text-xs text-[var(--color-ink-faint)]">{m['extensions.dbchanges.noNewTables']()}</p>
+                nothingListed && (
+                    <p className="text-xs text-[var(--color-ink-faint)]">{m['extensions.dbchanges.noNewTables']()}</p>
+                )
             )}
+
+            {alters.length > 0 && (
+                <TableList
+                    label={m['extensions.dbchanges.willAlter']()}
+                    tables={alters.map(table => label(table, rowCounts[table]))}
+                    tone="muted"
+                />
+            )}
+
             {unchanged.length > 0 && (
                 <TableList label={m['extensions.dbchanges.unchanged']()} tables={unchanged} tone="muted" />
             )}
+
+            {/* The list above is a source-level read, so raw SQL is opaque to
+                it. Saying so is the honest alternative to letting the absence
+                of a heading read as an absence of the operation. */}
+            {unanalysed > 0 && (
+                <p className="flex items-start gap-1.5 text-xs text-[var(--color-warning)]">
+                    <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                    {m['extensions.dbchanges.unanalysed']({ count: unanalysed })}
+                </p>
+            )}
+
             {migrationCount > 0 && (
                 <p className="text-[11px] text-[var(--color-ink-faint)]">
                     {m['extensions.dbchanges.migrations']({ count: migrationCount })}
@@ -234,6 +302,12 @@ function AddPlan({ plan }: { plan: DatabasePlan }) {
         </div>
     );
 }
+
+// A table, with what dropping it would cost when the panel can see the table.
+// No count means the table does not exist yet, which must not render as "0
+// rows" — those say opposite things on a confirmation screen.
+const label = (table: string, rows?: number) =>
+    rows === undefined ? table : `${table} (${m['extensions.dbchanges.rows']({ count: rows })})`;
 
 // uninstall — tables the extension owns, preserved by default, dropped only on
 // an explicit typed confirmation.
@@ -244,6 +318,7 @@ function UninstallPlan({
     confirm,
     onToggleDrop,
     onConfirmChange,
+    allowDataDrop,
     busy,
 }: {
     ext: DbModalExtension;
@@ -252,6 +327,7 @@ function UninstallPlan({
     confirm: string;
     onToggleDrop: (next: boolean) => void;
     onConfirmChange: (v: string) => void;
+    allowDataDrop: boolean;
     busy: boolean;
 }) {
     const tables = plan.existingTables ?? [];
@@ -266,7 +342,7 @@ function UninstallPlan({
                 />
             )}
 
-            <label className="flex cursor-pointer items-start gap-2 text-xs text-[var(--color-ink-muted)]">
+            {allowDataDrop && <label className="flex cursor-pointer items-start gap-2 text-xs text-[var(--color-ink-muted)]">
                 <input
                     type="checkbox"
                     checked={drop}
@@ -278,9 +354,9 @@ function UninstallPlan({
                     {m['extensions.dbchanges.dropLabel']()}{' '}
                     <span className="text-[var(--color-danger)]">{m['extensions.dbchanges.dropWarning']()}</span>
                 </span>
-            </label>
+            </label>}
 
-            {drop ? (
+            {allowDataDrop && drop ? (
                 <Input
                     value={confirm}
                     disabled={busy}

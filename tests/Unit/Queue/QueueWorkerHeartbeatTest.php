@@ -31,13 +31,13 @@ class QueueWorkerHeartbeatTest extends TestCase
 
     public function testConsumedQueuesAreCollectedAcrossWorkers(): void
     {
-        $this->heartbeat()->beat('redis', 'mail,dns');
+        $this->heartbeat()->beat('redis', 'mail,standard');
         $this->heartbeat()->beat('redis-long', 'mods');
 
         $consumed = $this->heartbeat()->consumedQueues();
 
         sort($consumed);
-        $this->assertSame(['dns', 'mail', 'mods'], $consumed);
+        $this->assertSame(['mail', 'mods', 'standard'], $consumed);
     }
 
     /**

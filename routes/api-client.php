@@ -24,6 +24,10 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
     Route::get('/permissions', [Client\ClientController::class, 'permissions']);
     Route::get('links', [Client\LinkController::class, 'index']);
     Route::get('/alerts', [Client\AlertController::class, 'index']);
+    // Authenticated refresh of the same boolean-only package state embedded in
+    // the page bootstrap. Extension settings pages use this after a save so
+    // navigation and global slots update without a full reload.
+    Route::get('/extensions/flags', Client\Extensions\ExtensionFlagsController::class);
 
     Route::prefix('/groups')->group(function () {
         Route::get('/', [Client\ServerGroupController::class, 'index']);
@@ -128,9 +132,6 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
     });
 
     Route::prefix('/billing')->group(function () {
-        Route::get('/custom-domains/options', [Client\Billing\CustomDomainOptionsController::class, 'index'])
-            ->middleware('throttle:custom-domains-billing-options');
-
         Route::middleware('verified.view:billing')->group(function () {
             Route::post('/nodes/{product:id}', [Client\Billing\NodesController::class, 'index']);
             Route::get('/categories', [Client\Billing\CategoryController::class, 'index']);
@@ -219,31 +220,6 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
 
         Route::post('/command', [Client\Servers\CommandController::class, 'index']);
         Route::post('/power', [Client\Servers\PowerController::class, 'index']);
-        // The tool-calling agent. `decide` resolves an action the turn
-        // suspended on — approvals arrive on a fresh request because the
-        // stream that asked for one closes when the turn suspends.
-        Route::post('/ai/agent', [Client\Servers\AgentController::class, 'start'])
-            ->middleware('throttle:ai.agent');
-        Route::post('/ai/agent/decide', [Client\Servers\AgentController::class, 'decide']);
-        Route::get('/ai/agent/turns/{turnId}', [Client\Servers\AgentController::class, 'turnStatus']);
-        // Rejoining a durable turn. `active` is what a freshly loaded page asks
-        // to discover there is one at all; `stream` replays from the cursor the
-        // client presents and then follows the turn live.
-        Route::get('/ai/agent/active', [Client\Servers\AgentController::class, 'activeTurn']);
-        Route::get('/ai/agent/turns/{turnId}/stream', [Client\Servers\AgentController::class, 'stream']);
-        // Stopping a turn and giving up a queue place are separate because the
-        // two states are: a queued turn has a ticket and no turn id, and
-        // nothing of it has run.
-        Route::post('/ai/agent/turns/{turnId}/cancel', [Client\Servers\AgentController::class, 'cancelTurn']);
-        Route::delete('/ai/agent/queue/{ticket}', [Client\Servers\AgentController::class, 'releaseQueue']);
-
-        Route::prefix('/ai/conversations')->group(function () {
-            Route::get('/', [Client\Servers\AIConversationController::class, 'index']);
-            Route::get('/{conversationId}', [Client\Servers\AIConversationController::class, 'show']);
-            Route::delete('/{conversationId}', [Client\Servers\AIConversationController::class, 'destroy']);
-            Route::patch('/{conversationId}/save', [Client\Servers\AIConversationController::class, 'toggleSave']);
-        });
-
         Route::group(['prefix' => '/databases'], function () {
             Route::get('/', [Client\Servers\DatabaseController::class, 'index']);
             Route::post('/', [Client\Servers\DatabaseController::class, 'store']);
@@ -267,6 +243,13 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             Route::post('/create-folder', [Client\Servers\FileController::class, 'create']);
             Route::post('/chmod', [Client\Servers\FileController::class, 'chmod']);
             Route::post('/pull', [Client\Servers\FileController::class, 'pull'])->middleware(['throttle:10,5']);
+            // Polled while a background pull runs. Its own throttle: the write
+            // limiter above is deliberately tight, and a read-only progress
+            // check must not consume the budget for starting pulls.
+            Route::get('/pull', [Client\Servers\FileController::class, 'pullStatus'])->middleware(['throttle:120,1']);
+            Route::delete('/pull/{identifier}', [Client\Servers\FileController::class, 'cancelPull'])
+                ->where('identifier', '[0-9a-fA-F-]{36}')
+                ->middleware(['throttle:10,5']);
             Route::get('/upload', Client\Servers\FileUploadController::class);
         });
 
@@ -319,16 +302,6 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             Route::post('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'update']);
             Route::post('/allocations/{allocation}/primary', [Client\Servers\NetworkAllocationController::class, 'setPrimary']);
             Route::delete('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'delete']);
-        });
-
-        Route::group(['prefix' => '/custom-domains'], function () {
-            Route::get('/', [Client\Servers\CustomDomainController::class, 'index']);
-            Route::get('/options', [Client\Servers\CustomDomainController::class, 'options']);
-            Route::post('/', [Client\Servers\CustomDomainController::class, 'store'])
-                ->middleware('throttle:custom-domains-create');
-            Route::post('/sync', [Client\Servers\CustomDomainController::class, 'sync'])
-                ->middleware('throttle:custom-domains-sync');
-            Route::delete('/{customDomain:id}', [Client\Servers\CustomDomainController::class, 'destroy']);
         });
 
         Route::group(['prefix' => '/users'], function () {
@@ -403,32 +376,38 @@ Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::c
             // List enabled extensions for this server
             Route::get('/', [Client\Extensions\ExtensionsController::class, 'index']);
 
-            // Extension-specific routes (must come before the wildcard route)
-            foreach ((glob(__DIR__ . '/extensions/client/*.php') ?: []) as $extensionRoutes) {
-                require $extensionRoutes;
-            }
-
-            // Package-contributed server routes. Only enabled extensions are
-            // require()'d, so a disabled extension's route file (and any
-            // top-level code in it) never loads — enabled state is enforced at
-            // load time, not just by request-time middleware.
+            // Package-contributed server routes.
             //
-            // Every route the file registers is audited immediately afterwards
-            // (ExtensionRouteGuardService): a route that strips inherited
-            // middleware via withoutMiddleware() is dropped to a 404.
-            $enabledExtensionIds = Everest\Services\Extensions\ExtensionRuntimeGate::enabledExtensionIds();
+            // Loading is driven by the declared capability, not by a filesystem
+            // glob: a package that ships routes/client.php without declaring
+            // capabilities.routes.client is rejected at install, and one that
+            // slipped through would still never be require()'d here. Only
+            // enabled extensions are loaded at boot, and the access middleware
+            // re-checks the live runtime plan so a route retained by a cached
+            // table or long-lived worker becomes unreachable after disablement.
+            //
+            // The prefix and the access gate are BOTH loader-owned, derived
+            // from the package directory. A package therefore cannot choose its
+            // own URL namespace, claim another extension's, or remove its gate;
+            // ExtensionRouteGuardService audits every route the file registers
+            // and drops violations to a 404, and that verdict is baked into
+            // route:cache.
+            $extensionPlan = app(Everest\Services\Extensions\ExtensionRuntimePlanService::class);
             $extensionRouteGuard = app(Everest\Services\Extensions\ExtensionRouteGuardService::class);
-            foreach ((glob(app_path('Extensions/Packages/*/routes/client.php')) ?: []) as $extensionRoutes) {
-                $extensionRouteId = basename(dirname(dirname($extensionRoutes)));
-                if (!in_array($extensionRouteId, $enabledExtensionIds, true)) {
+            foreach ($extensionPlan->withCapability('routes.client') as $extensionRouteId => $extensionEntry) {
+                $extensionRoutes = app_path(sprintf('Extensions/Packages/%s/routes/client.php', $extensionRouteId));
+                if (!is_file($extensionRoutes)) {
                     continue;
                 }
 
                 $extensionRouteGuard->registerAndAudit(
                     $extensionRouteId,
-                    ['extensions.access:' . $extensionRouteId],
+                    ['extensions.access:' . $extensionRouteId, 'throttle:api.ext-client'],
                     function () use ($extensionRoutes, $extensionRouteId) {
-                        Route::middleware('extensions.access:' . $extensionRouteId)->group(function () use ($extensionRoutes) {
+                        Route::group([
+                            'prefix' => 'ext/' . $extensionRouteId,
+                            'middleware' => ['extensions.access:' . $extensionRouteId, 'throttle:api.ext-client'],
+                        ], function () use ($extensionRoutes) {
                             require $extensionRoutes;
                         });
                     }

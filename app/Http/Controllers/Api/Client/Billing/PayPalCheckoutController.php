@@ -102,7 +102,6 @@ class PayPalCheckoutController extends ClientApiController
             'plan_change_snapshot' => $attributes['plan_change_snapshot'] ?? null,
             'billing_days' => $attributes['billing_days'],
             'variables' => $attributes['variables'],
-            'domain_payload' => $attributes['domain_payload'],
             'multiplier_used' => $attributes['multiplier_used'],
             'node_multiplier_used' => $attributes['node_multiplier_used'],
             'checkout_nonce' => $request->input('checkout_nonce'),

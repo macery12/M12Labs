@@ -11,6 +11,8 @@ class EasyInstallCommand extends InstallExtensionCommand
                             {--release= : Specific repository version to install}
                             {--file : Prefer local package-file install mode}
                             {--label= : Stored source label for manual file installs}
+                            {--acknowledge-unsigned= : Type the extension id to install an unsigned local archive}
+                            {--approve-capabilities : Grant the privileges the package declares without prompting}
                             {--yes : Skip interactive prompts when possible}
                             {--debug : Show detailed install diagnostics}';
 

@@ -30,7 +30,6 @@ class UpdateCheckoutRequest extends ClientApiRequest
             'plan_change'    => ['nullable', 'boolean'],
             'server_id'      => [Rule::requiredIf($isPlanChange), 'nullable', 'integer', 'exists:servers,id'],
             'variables'      => [Rule::prohibitedIf($isPlanChange), 'nullable', 'array'],
-            'domain_payload' => [Rule::prohibitedIf($isPlanChange), 'nullable', 'array'],
             'return_url'     => ['nullable', 'url', 'max:2048'],
             'cancel_url'     => ['nullable', 'url', 'max:2048'],
         ];

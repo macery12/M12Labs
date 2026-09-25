@@ -89,7 +89,6 @@ class PlanChangeSchedulingTest extends TestCase
             'backup_limit' => 1,
             'database_limit' => 1,
             'allocation_limit' => 1,
-            'subdomain_limit' => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -388,7 +387,6 @@ class PlanChangeSchedulingTest extends TestCase
             'backup_limit' => 1,
             'database_limit' => 1,
             'allocation_limit' => 1,
-            'subdomain_limit' => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -427,10 +425,6 @@ class PlanChangeSchedulingTest extends TestCase
             $table->unsignedInteger('server_id');
             $table->softDeletes();
         });
-        Schema::create('server_custom_domains', function (Blueprint $table): void {
-            $table->increments('id');
-            $table->unsignedInteger('server_id');
-        });
         Schema::create('products', function (Blueprint $table): void {
             $table->increments('id');
             $table->string('uuid');
@@ -444,7 +438,6 @@ class PlanChangeSchedulingTest extends TestCase
             $table->unsignedInteger('backup_limit');
             $table->unsignedInteger('database_limit');
             $table->unsignedInteger('allocation_limit');
-            $table->unsignedInteger('subdomain_limit')->nullable();
             $table->timestamps();
         });
         Schema::create('billing_cycles', function (Blueprint $table): void {
@@ -515,7 +508,6 @@ class PlanChangeSchedulingTest extends TestCase
             $table->unsignedInteger('backup_limit');
             $table->unsignedInteger('database_limit');
             $table->unsignedInteger('allocation_limit');
-            $table->unsignedInteger('subdomain_limit')->nullable();
             $table->timestamps();
         });
     }

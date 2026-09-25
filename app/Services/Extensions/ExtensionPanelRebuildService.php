@@ -2,66 +2,353 @@
 
 namespace Everest\Services\Extensions;
 
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 use Everest\Exceptions\DisplayException;
 use Symfony\Component\Process\ExecutableFinder;
 
+/**
+ * Rebuilds the panel after an extension changes files on disk.
+ *
+ * Extension pages are compiled into the panel bundle, so every install, update
+ * and uninstall pays for a frontend build on the panel host. That build is the
+ * single most failure-prone step in the lifecycle — it needs Node, RAM and
+ * several minutes — so it is bounded here: pinned toolchain, capped wall clock
+ * and heap, capped output, and a hardlink snapshot of the previous assets that
+ * is restored if anything goes wrong.
+ *
+ * Vite is configured with `emptyOutDir: true`, so it wipes public/build before
+ * it writes. A build that fails partway therefore leaves the panel with no
+ * usable assets unless the previous set can be put back — which is exactly what
+ * the snapshot is for. Hardlinks make it cheap and, because they keep the
+ * inodes alive, immune to Vite deleting the originals.
+ */
 class ExtensionPanelRebuildService
 {
+    /**
+     * Serializes builds independently of the lifecycle operation lock, so a
+     * manually triggered rebuild cannot run concurrently with an install.
+     */
+    private const BUILD_LOCK = 'm12labs:extensions:build';
+    private const BUILD_CONTEXT = 'm12labs:extensions:build-context';
+    private const BUILD_GENERATION = 'm12labs:extensions:build-generation';
+
+    /**
+     * Compiled artifacts that must be discarded once a package's files change.
+     *
+     * Deliberately *not* `optimize:clear`, which also runs `cache:clear`. On a
+     * Redis cache store that is a `flushdb()`, and this rebuild always runs
+     * inside ExtensionOperationLockService::withinLock() — so clearing the
+     * cache here deletes the lifecycle lock, its context row, this service's
+     * own BUILD_LOCK, and the ExtensionQueueRegistry drain flag, all during the
+     * longest step of an install or uninstall. A second lifecycle operation
+     * could then start alongside this one, and a package being uninstalled
+     * would start accepting queued work again mid-uninstall.
+     *
+     * The cache holds no compiled artifact, so nothing here needs it cleared.
+     *
+     * @var array<int, array<int, string>>
+     */
+    private const CLEAR_COMMANDS = [
+        ['php', 'artisan', 'config:clear'],
+        ['php', 'artisan', 'route:clear'],
+        ['php', 'artisan', 'view:clear'],
+        ['php', 'artisan', 'event:clear'],
+    ];
+
     public function __construct(
         private ExtensionFilesystemOwnershipService $ownershipService,
+        private ExtensionOperationLockService $operationLockService,
     ) {
     }
 
     /**
      * Run the fixed rebuild hooks required after filesystem changes.
      *
-     * An optional callback receives the zero-based command index just before
-     * each command runs, allowing callers to report progress stages at the
-     * correct moment (e.g. 'optimizing' before optimize:clear, 'building'
-     * before the frontend build).
+     * An optional callback receives the zero-based stage index just before each
+     * stage runs, allowing callers to report progress at the correct moment:
+     * stage 0 clears the compiled artifacts, stage 1 builds the frontend.
      *
-     * @return array<int, array{command: string, output: string}>
+     * @return array<int, array{command: string, output: string, durationMs: int}>
      */
     public function rebuild(string $reason, ?callable $onCommandStart = null): array
     {
-        $commands = [
-            ['php', 'artisan', 'optimize:clear'],
-            $this->getFrontendBuildCommand(),
+        $lease = ExtensionLockLease::acquire(
+            self::BUILD_LOCK,
+            self::BUILD_CONTEXT,
+            self::BUILD_GENERATION,
+            'panel rebuild',
+            $this->lockTtlSeconds(),
+            ['reason' => $reason, 'started_at' => now()->toIso8601String()],
+        );
+
+        if ($lease === null) {
+            throw new DisplayException('Another panel rebuild is already running. Wait for it to finish before starting a new one.');
+        }
+
+        try {
+            return $this->runRebuild($reason, $lease, $onCommandStart);
+        } finally {
+            $lease->release();
+        }
+    }
+
+    /**
+     * @return array<int, array{command: string, output: string, durationMs: int}>
+     */
+    private function runRebuild(string $reason, ExtensionLockLease $lease, ?callable $onCommandStart): array
+    {
+        // Two stages, not two commands: stage 0 clears several compiled
+        // artifacts. Callers map the stage index to a progress label, so the
+        // grouping keeps that contract while the clear step grew.
+        $stages = [
+            self::CLEAR_COMMANDS,
+            [$this->getFrontendBuildCommand()],
         ];
 
         $output = [];
         $environment = $this->getProcessEnvironment($reason);
+        $snapshot = null;
 
-        foreach ($commands as $index => $command) {
+        foreach ($stages as $index => $commands) {
+            $this->checkpoint($lease);
+
             if ($onCommandStart !== null) {
                 $onCommandStart($index);
             }
 
-            // Before the frontend build, validate (and auto-repair when root)
-            // filesystem ownership so permission problems produce a clear error
-            // instead of a cryptic mid-build failure.
+            // A progress callback can perform I/O of its own. Fence again at
+            // the last instant before snapshotting or starting a command.
+            $this->checkpoint($lease);
+
             if ($index === 1) {
+                // Validate (and auto-repair when root) filesystem ownership so
+                // permission problems produce a clear error instead of a
+                // cryptic mid-build failure.
                 $this->ownershipService->validateBuildWorkspaceOwnership();
+                $snapshot = $this->snapshotAssets();
             }
 
-            $process = new Process($command, base_path(), $environment);
-            $process->setTimeout(1800);
-            $process->run();
+            foreach ($commands as $command) {
+                $startedAt = microtime(true);
+                $process = new Process($command, base_path(), $environment);
+                $process->setTimeout($index === 1 ? (float) config('extensions.build.timeout_seconds', 900) : 300.0);
+                $this->runProcess($process, $lease);
+                $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
 
-            $combinedOutput = trim($process->getOutput() . "\n" . $process->getErrorOutput());
-            $output[] = [
-                'command' => implode(' ', $command),
-                'output' => $combinedOutput,
-            ];
+                $combinedOutput = trim($process->getOutput() . "\n" . $process->getErrorOutput());
+                $output[] = [
+                    'command' => implode(' ', $command),
+                    'output' => $combinedOutput,
+                    'durationMs' => $durationMs,
+                ];
 
-            if (!$process->isSuccessful()) {
-                throw new DisplayException(sprintf('M12Labs rebuild failed while running "%s".', implode(' ', $command)), new \RuntimeException($combinedOutput));
+                if (!$process->isSuccessful()) {
+                    $this->checkpoint($lease);
+                    $this->restoreAssets($snapshot);
+
+                    throw new DisplayException(sprintf('M12Labs rebuild failed while running "%s".', implode(' ', $command)), new \RuntimeException($combinedOutput));
+                }
             }
         }
 
+        try {
+            $this->checkpoint($lease);
+            $this->assertOutputWithinBudget();
+        } catch (DisplayException $exception) {
+            $this->checkpoint($lease);
+            $this->restoreAssets($snapshot);
+
+            throw $exception;
+        }
+
+        $this->checkpoint($lease);
+        $this->pruneSnapshots();
+        $this->pruneStore($environment);
+
         return $output;
+    }
+
+    /**
+     * Poll rather than blocking in Process::run(), renewing both leases while
+     * a command is alive. If either fence is lost, stop the child before it can
+     * publish more output and abort the lifecycle.
+     */
+    private function runProcess(Process $process, ExtensionLockLease $lease): void
+    {
+        $process->start();
+
+        try {
+            while ($process->isRunning()) {
+                $this->checkpoint($lease);
+                $process->checkTimeout();
+                usleep(250_000);
+            }
+
+            $this->checkpoint($lease);
+        } catch (\Throwable $exception) {
+            if ($process->isRunning()) {
+                $process->stop(0);
+            }
+
+            throw $exception;
+        }
+    }
+
+    private function checkpoint(ExtensionLockLease $lease): void
+    {
+        $lease->checkpoint();
+        $this->operationLockService->checkpoint();
+    }
+
+    /**
+     * Covers every bounded stage even if a worker is descheduled between
+     * checkpoints: four cache clears, snapshot creation, the frontend build,
+     * store pruning, and a conservative handoff margin.
+     */
+    private function lockTtlSeconds(): int
+    {
+        return max(60, (int) config('extensions.build.timeout_seconds', 900) + 1800);
+    }
+
+    /**
+     * Copy the current assets into a hardlink tree so a failed build can be
+     * rolled back. Returns null when there is nothing to preserve (a first
+     * build, or a host without a usable `cp -al`), which simply means a failure
+     * has nothing to restore rather than that the build is blocked.
+     */
+    private function snapshotAssets(): ?string
+    {
+        $buildPath = public_path('build');
+        if (!File::isDirectory($buildPath)) {
+            return null;
+        }
+
+        $snapshotRoot = storage_path('app/extensions/asset-snapshots');
+        File::ensureDirectoryExists($snapshotRoot);
+        $snapshot = $snapshotRoot . '/' . now()->format('Ymd-His') . '-' . Str::random(8);
+
+        // -a preserves modes/timestamps, -l hardlinks rather than copying, so a
+        // 6 MB asset tree costs directory entries rather than 6 MB of disk.
+        $process = new Process(['cp', '-al', $buildPath, $snapshot], base_path());
+        $process->setTimeout(120);
+        $process->run();
+
+        if (!$process->isSuccessful() || !File::isDirectory($snapshot)) {
+            File::deleteDirectory($snapshot);
+
+            return null;
+        }
+
+        return $snapshot;
+    }
+
+    /**
+     * Put the previous assets back after a failed build, keeping the broken
+     * output for diagnosis. Both moves are renames within the same filesystem,
+     * so the window in which public/build does not exist is as short as
+     * possible.
+     */
+    private function restoreAssets(?string $snapshot): void
+    {
+        if ($snapshot === null || !File::isDirectory($snapshot)) {
+            return;
+        }
+
+        $buildPath = public_path('build');
+        $failedPath = $buildPath . '.failed.' . now()->format('Ymd-His');
+
+        try {
+            if (File::isDirectory($buildPath)) {
+                @rename($buildPath, $failedPath);
+            }
+
+            if (!@rename($snapshot, $buildPath)) {
+                // The snapshot is the only remaining copy; leave it in place
+                // rather than losing it, and put the failed output back so the
+                // panel is at least serving something.
+                if (File::isDirectory($failedPath) && !File::isDirectory($buildPath)) {
+                    @rename($failedPath, $buildPath);
+                }
+            }
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+    }
+
+    /**
+     * A build that produced an implausibly large asset tree is treated as a
+     * failure: it is far more likely to be a package inlining something huge
+     * than a legitimate panel bundle.
+     */
+    private function assertOutputWithinBudget(): void
+    {
+        $budget = (int) config('extensions.build.max_output_bytes', 0);
+        if ($budget <= 0) {
+            return;
+        }
+
+        $buildPath = public_path('build');
+        if (!File::isDirectory($buildPath)) {
+            throw new DisplayException('The frontend build reported success but produced no assets.');
+        }
+
+        $bytes = 0;
+        foreach (File::allFiles($buildPath) as $file) {
+            $bytes += $file->getSize();
+
+            if ($bytes > $budget) {
+                throw new DisplayException(sprintf('The frontend build produced more than the permitted %s of assets. Review the extension\'s bundled files.', $this->formatBytes($budget)));
+            }
+        }
+    }
+
+    /**
+     * Keep the most recent snapshot (the previous good asset set) for the
+     * configured window so in-flight browsers can still fetch old chunks, and
+     * drop everything older.
+     */
+    private function pruneSnapshots(): void
+    {
+        $snapshotRoot = storage_path('app/extensions/asset-snapshots');
+        if (!File::isDirectory($snapshotRoot)) {
+            return;
+        }
+
+        $cutoff = now()->subHours(max(1, (int) config('extensions.build.snapshot_retention_hours', 24)));
+
+        $directories = collect(File::directories($snapshotRoot))
+            ->sortByDesc(fn (string $path): int => (int) File::lastModified($path))
+            ->values();
+
+        // Index 0 is the set this rebuild just replaced — always retained.
+        foreach ($directories->slice(1) as $directory) {
+            if (File::lastModified($directory) < $cutoff->getTimestamp()) {
+                File::deleteDirectory($directory);
+            }
+        }
+    }
+
+    /**
+     * @param array<string, string> $environment
+     */
+    private function pruneStore(array $environment): void
+    {
+        if (!config('extensions.build.prune_store', true)) {
+            return;
+        }
+
+        $pnpm = (new ExecutableFinder())->find('pnpm');
+        if (!$pnpm) {
+            return;
+        }
+
+        // Best effort: a store that could not be pruned is a disk-usage
+        // concern, never a reason to fail an otherwise successful install.
+        $process = new Process([$pnpm, 'store', 'prune'], base_path(), $environment);
+        $process->setTimeout(300);
+        $process->run();
     }
 
     /**
@@ -69,19 +356,85 @@ class ExtensionPanelRebuildService
      */
     private function getFrontendBuildCommand(): array
     {
-        $finder = new ExecutableFinder();
+        $pnpm = (new ExecutableFinder())->find('pnpm');
 
-        $pnpm = $finder->find('pnpm');
-        if (File::exists(base_path('pnpm-lock.yaml')) && $pnpm) {
-            return [$pnpm, 'build'];
+        if (!$pnpm) {
+            throw new DisplayException('Unable to rebuild M12Labs because pnpm is not available on this host. Install the pnpm version pinned in package.json.');
         }
 
-        $npm = $finder->find('npm');
-        if ($npm) {
-            return [$npm, 'run', 'build'];
+        // Deliberately no npm fallback: pnpm-lock.yaml is the only lockfile in
+        // this repo, and npm would resolve a different dependency tree than the
+        // one the panel is tested against.
+        if (!File::exists(base_path('pnpm-lock.yaml'))) {
+            throw new DisplayException('Unable to rebuild M12Labs because pnpm-lock.yaml is missing from the panel root.');
         }
 
-        throw new DisplayException('Unable to rebuild M12Labs because neither pnpm nor npm is available on this host.');
+        $this->assertToolchainVersions($pnpm);
+
+        return [$pnpm, 'build'];
+    }
+
+    /**
+     * Verify the host toolchain matches what the repo pins. A pnpm major other
+     * than the pinned one resolves the lockfile differently, and a Node below
+     * the engines floor fails deep inside the build with an unhelpful error.
+     */
+    private function assertToolchainVersions(string $pnpm): void
+    {
+        if (!config('extensions.build.enforce_toolchain', true)) {
+            return;
+        }
+
+        $manifest = json_decode((string) File::get(base_path('package.json')), true);
+        if (!is_array($manifest)) {
+            return;
+        }
+
+        $pinnedPnpm = (string) ($manifest['packageManager'] ?? '');
+        if (preg_match('/^pnpm@(\d+)\./', $pinnedPnpm, $matches)) {
+            $actual = $this->probeVersion([$pnpm, '--version']);
+
+            if ($actual !== null && !str_starts_with($actual, $matches[1] . '.')) {
+                throw new DisplayException(sprintf('This panel pins %s but the host has pnpm %s. Install the pinned major version before installing extensions.', $pinnedPnpm, $actual));
+            }
+        }
+
+        $requiredNode = (string) ($manifest['engines']['node'] ?? '');
+        if (preg_match('/>=\s*(\d+)\.(\d+)\.(\d+)/', $requiredNode, $matches)) {
+            $node = (new ExecutableFinder())->find('node');
+            $actual = $node ? $this->probeVersion([$node, '--version']) : null;
+
+            if ($actual !== null) {
+                $required = sprintf('%d.%d.%d', (int) $matches[1], (int) $matches[2], (int) $matches[3]);
+
+                if (version_compare(ltrim($actual, 'v'), $required, '<')) {
+                    throw new DisplayException(sprintf('This panel requires Node %s or newer but the host has %s. Upgrade Node before installing extensions.', $required, ltrim($actual, 'v')));
+                }
+            }
+        }
+    }
+
+    /**
+     * @param array<int, string> $command
+     */
+    private function probeVersion(array $command): ?string
+    {
+        $process = new Process($command, base_path());
+        $process->setTimeout(30);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            return null;
+        }
+
+        return trim($process->getOutput()) ?: null;
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        return $bytes >= 1024 * 1024
+            ? round($bytes / 1024 / 1024) . ' MB'
+            : round($bytes / 1024) . ' KB';
     }
 
     /**
@@ -111,6 +464,16 @@ class ExtensionPanelRebuildService
             'CI' => 'true',
             'PNPM_CONFIG_CONFIRM_MODULES_PURGE' => 'false',
             'npm_config_confirm_modules_purge' => 'false',
+            // Node sizes its heap from total system memory, which on a host
+            // shared with game servers leads to the build being OOM-killed
+            // rather than failing cleanly. Bound it explicitly.
+            'NODE_OPTIONS' => sprintf('--max-old-space-size=%d', max(512, (int) config('extensions.build.node_max_old_space_mb', 3072))),
+            // Applies only if this service ever runs an install: pnpm does not
+            // honour it for `pnpm run`, so it does not suppress the build or its
+            // postbuild hook. The real protection for this code path is that no
+            // dependency install is ever performed here.
+            'NPM_CONFIG_IGNORE_SCRIPTS' => 'true',
+            'npm_config_ignore_scripts' => 'true',
             'HOME' => $home,
             'PATH' => (string) (getenv('PATH') ?: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'),
             'XDG_CACHE_HOME' => $cache,

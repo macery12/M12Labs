@@ -9,8 +9,14 @@ use Everest\Facades\Activity;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\ExtensionConfig;
+use Everest\Models\ExtensionPackage;
 use Everest\Models\ExtensionRepository;
+use Everest\Services\Extensions\ExtensionHealthService;
 use Everest\Services\Extensions\ExtensionCatalogService;
+use Everest\Services\Queue\HorizonProvisioningReconciler;
+use Everest\Services\Extensions\ExtensionSettingsValidator;
+use Everest\Services\Extensions\ExtensionPermissionRegistry;
+use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Services\Extensions\ExtensionDatabasePlanService;
 use Everest\Services\Extensions\ExtensionPackageBatchService;
 use Everest\Traits\Controllers\RespondsWithExtensionEnvelope;
@@ -26,6 +32,7 @@ use Everest\Http\Requests\Api\Application\Extensions\InstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\UninstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\BatchUpdateExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\BatchInstallExtensionRequest;
+use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionPackageRequest;
 use Everest\Http\Requests\Api\Application\Extensions\BatchUninstallExtensionRequest;
 use Everest\Http\Requests\Api\Application\Extensions\UpdateExtensionSettingsRequest;
 use Everest\Http\Requests\Api\Application\Extensions\StoreExtensionRepositoryRequest;
@@ -44,6 +51,9 @@ class ExtensionsController extends ApplicationApiController
         private ExtensionPackageBatchService $batchService,
         private ExtensionInstallProgressService $progressService,
         private ExtensionDatabasePlanService $databasePlanService,
+        private ExtensionPermissionRegistry $permissionRegistry,
+        private ExtensionSettingsValidator $settingsValidator,
+        private ExtensionHealthService $healthService,
     ) {
         parent::__construct();
     }
@@ -131,7 +141,11 @@ class ExtensionsController extends ApplicationApiController
         $payload = [
             'allowed_nests' => $request->input('allowed_nests', []),
             'allowed_eggs' => $request->input('allowed_eggs', []),
-            'settings' => $request->input('settings', []),
+            // Validated against what the package declared, with unknown keys
+            // rejected: extension_configs.settings used to accept anything, so
+            // a typo became silent permanent configuration and every package
+            // had to defend against every value an admin could type.
+            'settings' => $this->validatedSettings($extensionId, (array) $request->input('settings', [])),
         ];
 
         if ($request->has('enabled')) {
@@ -140,7 +154,12 @@ class ExtensionsController extends ApplicationApiController
             $payload['enabled'] = (bool) $existing->enabled;
         }
 
+        if (($payload['enabled'] ?? false) && $blocked = $this->blockedByLifecycleState($extensionId)) {
+            return $blocked;
+        }
+
         $config = ExtensionConfig::updateOrCreateConfig($extensionId, $payload);
+        $this->applyEnabledState($extensionId, (bool) $config->enabled);
 
         Activity::event('admin:extensions:update')
             ->property('extension_id', $extensionId)
@@ -156,6 +175,49 @@ class ExtensionsController extends ApplicationApiController
     }
 
     /**
+     * Apply the package's declared settings schema, when it has one.
+     *
+     * A package with no schema keeps the old free-form behaviour — tightening
+     * that would break every already-installed package on upgrade rather than
+     * at its next release.
+     *
+     * @param array<string, mixed> $settings
+     *
+     * @return array<string, mixed>
+     */
+    private function validatedSettings(string $extensionId, array $settings): array
+    {
+        $entry = app(ExtensionRuntimePlanService::class)->entry($extensionId);
+
+        if ($entry === null) {
+            return $settings;
+        }
+
+        return $this->settingsValidator->validate($entry->capabilities, $settings);
+    }
+
+    /**
+     * Refuse to enable a package whose lifecycle state forbids execution — one
+     * built for an unsupported manifest version, or left failed by a rolled back
+     * operation. ExtensionRuntimeGate would decline to load it regardless; this
+     * returns the reason rather than leaving the operator with an extension that
+     * reads as enabled but does nothing.
+     */
+    private function blockedByLifecycleState(string $extensionId): ?JsonResponse
+    {
+        $package = ExtensionPackage::query()->where('extension_id', $extensionId)->first();
+
+        if (!$package || in_array($package->state, ['enabled', 'installed_disabled'], true)) {
+            return null;
+        }
+
+        return new JsonResponse([
+            'error' => $package->state_reason ?: 'This extension cannot be enabled in its current state.',
+            'state' => $package->state,
+        ], 422);
+    }
+
+    /**
      * Toggle an extension's enabled state.
      */
     public function toggle(UpdateExtensionRequest $request, string $extensionId): JsonResponse
@@ -168,9 +230,14 @@ class ExtensionsController extends ApplicationApiController
         $dbConfig = ExtensionConfig::getByExtensionId($extensionId);
         $newEnabled = $dbConfig ? !$dbConfig->enabled : true;
 
+        if ($newEnabled && $blocked = $this->blockedByLifecycleState($extensionId)) {
+            return $blocked;
+        }
+
         $config = ExtensionConfig::updateOrCreateConfig($extensionId, [
             'enabled' => $newEnabled,
         ]);
+        $this->applyEnabledState($extensionId, (bool) $config->enabled);
 
         Activity::event('admin:extensions:toggle')
             ->property('extension_id', $extensionId)
@@ -192,10 +259,13 @@ class ExtensionsController extends ApplicationApiController
     {
         $this->abortIfOperationRunning();
 
+        // A missing or stale approval hash raises CapabilityApprovalRequired,
+        // which renders the diff as a 409 for the client to consent to.
         $package = $this->installService->install(
             $extensionId,
             (int) $request->input('repository_id'),
-            $request->input('version')
+            $request->input('version'),
+            $request->input('approved_capability_hash')
         );
 
         Activity::event('admin:extensions:install')
@@ -227,7 +297,8 @@ class ExtensionsController extends ApplicationApiController
         $result = $this->uninstallService->uninstall(
             $extensionId,
             $dropData,
-            sprintf('admin:%s', $request->user()->email)
+            sprintf('admin:%s', $request->user()->email),
+            $request->boolean('acknowledge_modified_files')
         );
 
         Activity::event('admin:extensions:uninstall')
@@ -254,8 +325,38 @@ class ExtensionsController extends ApplicationApiController
                 'data_dropped' => $result['dataDropped'],
                 'preserved_tables' => $result['preservedTables'],
                 'manual_cleanup' => $result['manualCleanup'],
+                'possibly_unused_packages' => [
+                    'npm_packages' => $result['possiblyUnusedPackages']['npmPackages'] ?? [],
+                    'composer_packages' => $result['possiblyUnusedPackages']['composerPackages'] ?? [],
+                    'commands' => $result['possiblyUnusedPackages']['commands'] ?? [],
+                ],
             ],
         ]);
+    }
+
+    /**
+     * The computed runtime state of one extension.
+     *
+     * Answers the question the admin page could not: an extension can read as
+     * enabled and still not load, because loading also requires an executable
+     * lifecycle state, an intact capability projection and an acceptable
+     * signature. This says which of those is failing.
+     */
+    public function health(GetExtensionsRequest $request, string $extensionId): JsonResponse
+    {
+        return new JsonResponse([
+            'object' => 'extension_health',
+            'attributes' => $this->healthService->forExtension($extensionId),
+        ]);
+    }
+
+    /**
+     * The same report, as a redacted export an operator can share. Carries key
+     * names and whether they are configured, never a credential value.
+     */
+    public function exportHealth(GetExtensionsRequest $request, string $extensionId): JsonResponse
+    {
+        return new JsonResponse($this->healthService->export($extensionId));
     }
 
     /**
@@ -272,19 +373,58 @@ class ExtensionsController extends ApplicationApiController
         if (app()->routesAreCached()) {
             \Illuminate\Support\Facades\Artisan::call('route:clear');
         }
+
+        // These calls remain part of the lifecycle contract for compatibility
+        // with older implementations. Runtime and permission state are now
+        // read live; health still owns a real cache.
+        ExtensionRuntimePlanService::flush();
+        ExtensionPermissionRegistry::flush();
+        $this->healthService->flush();
+
+        // Horizon sized its lanes when it started, and an install's own
+        // frontend build restarted it before this change committed. Put the
+        // supervisors right now rather than on the next scheduled check.
+        try {
+            app(HorizonProvisioningReconciler::class)->reconcileNow();
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+    }
+
+    /**
+     * Carry an enabled/disabled decision through to everything derived from it.
+     *
+     * The lifecycle state and the permission suspension have to move together:
+     * a disabled extension whose permissions still authorize would keep its
+     * admin API reachable with its routes gone, and suspending rather than
+     * deleting is what stops the grant disappearing from every role the moment
+     * an operator toggles the extension off.
+     */
+    private function applyEnabledState(string $extensionId, bool $enabled): void
+    {
+        ExtensionPackage::query()
+            ->where('extension_id', $extensionId)
+            ->whereIn('state', ['enabled', 'installed_disabled'])
+            ->update(['state' => $enabled ? 'enabled' : 'installed_disabled']);
+
+        $enabled
+            ? $this->permissionRegistry->resume($extensionId)
+            : $this->permissionRegistry->suspend($extensionId);
     }
 
     /**
      * Update an already-installed repository-backed extension package to a newer version.
      */
-    public function updatePackage(InstallExtensionRequest $request, string $extensionId): JsonResponse
+    public function updatePackage(UpdateExtensionPackageRequest $request, string $extensionId): JsonResponse
     {
         $this->abortIfOperationRunning();
 
         $package = $this->updateService->update(
             $extensionId,
             (int) $request->input('repository_id'),
-            $request->input('version')
+            $request->input('version'),
+            $request->input('approved_capability_hash'),
+            $request->boolean('acknowledge_modified_files')
         );
 
         Activity::event('admin:extensions:update-package')
@@ -292,6 +432,11 @@ class ExtensionsController extends ApplicationApiController
             ->property('version', $package->installed_version)
             ->property('repository', $package->source_repository_name)
             ->log();
+
+        // An update can change which routes a package registers, and the route
+        // table may be cached. This was missing here while every other
+        // lifecycle action flushed it.
+        $this->flushExtensionRouteCache();
 
         return new JsonResponse([
             'object' => 'extension',
@@ -479,6 +624,7 @@ class ExtensionsController extends ApplicationApiController
             'extensionId'  => $item['extension_id'],
             'repositoryId' => (int) $item['repository_id'],
             'version'      => $item['version'] ?? null,
+            'approvedCapabilityHash' => $item['approved_capability_hash'] ?? null,
         ], $request->input('extensions', []));
 
         $this->batchService->batchInstall($items);
@@ -548,6 +694,13 @@ class ExtensionsController extends ApplicationApiController
         return new JsonResponse([
             'object' => 'list',
             'data'   => $this->catalogService->getCatalog()['extensions'],
+            'meta' => [
+                'possibly_unused_packages' => [
+                    'npm_packages' => $results[0]['possiblyUnusedPackages']['npmPackages'] ?? [],
+                    'composer_packages' => $results[0]['possiblyUnusedPackages']['composerPackages'] ?? [],
+                    'commands' => $results[0]['possiblyUnusedPackages']['commands'] ?? [],
+                ],
+            ],
         ]);
     }
 
@@ -562,6 +715,8 @@ class ExtensionsController extends ApplicationApiController
             'extensionId'  => $item['extension_id'],
             'repositoryId' => (int) $item['repository_id'],
             'version'      => $item['version'] ?? null,
+            'approvedCapabilityHash' => $item['approved_capability_hash'] ?? null,
+            'acknowledgeModified' => (bool) ($item['acknowledge_modified_files'] ?? false),
         ], $request->input('extensions', []));
 
         $this->batchService->batchUpdate($items);

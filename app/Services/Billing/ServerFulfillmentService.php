@@ -12,8 +12,6 @@ use Illuminate\Support\Facades\Log;
 use Everest\Models\Billing\CouponUsage;
 use Everest\Exceptions\DisplayException;
 use Everest\Jobs\Billing\GenerateInvoiceJob;
-use Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob;
-use Everest\Services\CustomDomains\CustomDomainProvisioningService;
 
 /**
  * Central server fulfillment service for paid orders.
@@ -32,7 +30,6 @@ class ServerFulfillmentService
     public function __construct(
         private CreateServerService $serverCreation,
         private OrderProcessorService $processorService,
-        private CustomDomainProvisioningService $customDomainProvisioning,
         private CreateOrderService $orderService,
         private CheckoutReservationService $reservationService,
         private PlanChangeService $planChangeService,
@@ -402,19 +399,6 @@ class ServerFulfillmentService
         // Create the server using the centralized creation service
         $server = $this->serverCreation->process($request, $product, $metadata, $order);
 
-        try {
-            $this->customDomainProvisioning->syncFromOrder($server, $order);
-            ProvisionServerCustomDomainsJob::dispatch($server->id);
-        } catch (\Throwable $exception) {
-            // Optional domain setup must not roll back a captured core server
-            // entitlement. Operators can retry domain provisioning separately.
-            Log::warning('Custom domain provisioning deferred after server fulfillment', [
-                'order_id' => $order->id,
-                'server_id' => $server->id,
-                'error' => $exception->getMessage(),
-            ]);
-        }
-
         Log::info("Created new server {$server->id} for order {$order->id}");
 
         return $server;
@@ -484,7 +468,6 @@ class ServerFulfillmentService
         ?string $paymentIntentId = null,
         ?string $serverName = null,
         int $billingDays = 0,
-        array $domainPayload = [],
     ): array {
         if ($billingDays <= 0) {
             $billingDays = BillingDefaults::defaultBillingDays();
@@ -499,9 +482,8 @@ class ServerFulfillmentService
             $couponId,
             $eggId,
             [
-                'billing_days'   => $billingDays,
-                'name'           => $serverName,
-                'domain_payload' => $domainPayload,
+                'billing_days' => $billingDays,
+                'name'         => $serverName,
             ]
         );
 
@@ -543,19 +525,6 @@ class ServerFulfillmentService
         }
 
         $this->checkoutActivity->recordFulfilled($order->refresh(), $server);
-
-        try {
-            $this->customDomainProvisioning->syncFromOrder($server, $order);
-            ProvisionServerCustomDomainsJob::dispatch($server->id);
-        } catch (\Throwable $exception) {
-            // Custom domains are an optional post-provisioning feature. They
-            // cannot make a successfully created free server re-claimable.
-            Log::warning('Custom domain provisioning deferred after free server fulfillment', [
-                'order_id' => $order->id,
-                'server_id' => $server->id,
-                'error' => $exception->getMessage(),
-            ]);
-        }
 
         return ['server' => $server, 'order' => $order];
     }

@@ -5,10 +5,12 @@ namespace Everest\Services\Extensions;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Everest\Models\ExtensionConfig;
+use Illuminate\Support\Facades\Log;
 use Everest\Models\ExtensionPackage;
 use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
+use Everest\Exceptions\Service\Extension\ExtensionLockLostException;
 
 class ExtensionPackageUninstallService
 {
@@ -19,6 +21,10 @@ class ExtensionPackageUninstallService
         private ExtensionInstallProgressService $progressService,
         private ExtensionPackageFileService $fileService,
         private ExtensionMigrationService $migrationService,
+        private ExtensionPermissionRegistry $permissionRegistry,
+        private ExtensionJobDrainService $drainService,
+        private ExtensionSecretStore $secretStore,
+        private ExtensionRequirementService $requirementService,
     ) {
     }
 
@@ -27,14 +33,16 @@ class ExtensionPackageUninstallService
      * are PRESERVED by default; passing $dropData = true rolls back its
      * migrations (dropping the tables) as a closely audited operation.
      *
-     * @return array{dataDropped: bool, preservedTables: array<int, string>, manualCleanup: array<int, string>, migrationLog: ?string}
+     * @return array{dataDropped: bool, preservedTables: array<int, string>, manualCleanup: array<int, string>, migrationLog: ?string, possiblyUnusedPackages: array<string, mixed>}
      */
-    public function uninstall(string $extensionId, bool $dropData = false, ?string $initiator = null): array
+    public function uninstall(string $extensionId, bool $dropData = false, ?string $initiator = null, bool $acknowledgeModified = false): array
     {
-        return $this->operationLockService->withinLock('uninstall', $extensionId, function () use ($extensionId, $dropData, $initiator) {
+        return $this->operationLockService->withinLock('uninstall', $extensionId, function () use ($extensionId, $dropData, $initiator, $acknowledgeModified) {
             $prepared = null;
+            $committed = false;
+            $possiblyUnusedPackages = ['npmPackages' => [], 'composerPackages' => [], 'commands' => []];
             try {
-                $prepared = $this->prepareUninstall($extensionId, $dropData, $initiator);
+                $prepared = $this->prepareUninstall($extensionId, $dropData, $initiator, $acknowledgeModified);
 
                 $this->rebuildService->rebuild(
                     sprintf('Uninstall extension %s', $extensionId),
@@ -49,6 +57,16 @@ class ExtensionPackageUninstallService
 
                 $this->progressService->report('uninstall', $extensionId, 'registering');
                 $this->finalizeUninstall($prepared);
+                $committed = true;
+                try {
+                    $possiblyUnusedPackages = $this->possiblyUnusedPackages([$prepared['package']]);
+                } catch (\Throwable $exception) {
+                    // Dependency cleanup is optional advice. A reporting
+                    // failure must not strand recovery backups after the
+                    // uninstall itself has committed successfully.
+                    report($exception);
+                }
+                $this->completeUninstall($prepared);
                 $this->progressService->report('uninstall', $extensionId, 'completed');
 
                 return [
@@ -56,8 +74,25 @@ class ExtensionPackageUninstallService
                     'preservedTables' => $prepared['preservedTables'] ?? [],
                     'manualCleanup' => $prepared['manualCleanup'] ?? [],
                     'migrationLog' => $prepared['migrationLog'] ?? null,
+                    'possiblyUnusedPackages' => $possiblyUnusedPackages,
                 ];
             } catch (\Throwable $exception) {
+                if ($exception instanceof ExtensionLockLostException) {
+                    throw $exception;
+                }
+
+                if ($committed) {
+                    $this->reportPostCommitFailure($exception);
+
+                    return [
+                        'dataDropped' => (bool) ($prepared['resetMigrations'] ?? false),
+                        'preservedTables' => $prepared['preservedTables'] ?? [],
+                        'manualCleanup' => $prepared['manualCleanup'] ?? [],
+                        'migrationLog' => $prepared['migrationLog'] ?? null,
+                        'possiblyUnusedPackages' => $possiblyUnusedPackages,
+                    ];
+                }
+
                 if ($prepared !== null) {
                     $this->rollbackUninstall($prepared);
                     $this->attemptRollbackRebuild($extensionId, 'uninstall rollback');
@@ -69,6 +104,11 @@ class ExtensionPackageUninstallService
 
                 throw new DisplayException('Failed to uninstall the selected extension package.', $exception);
             } finally {
+                $this->operationLockService->checkpoint();
+                // Whether the uninstall completed or rolled back, the extension
+                // must stop refusing dispatches: on a rollback it is still
+                // installed and expected to work.
+                $this->drainService->endDrain($extensionId);
                 $this->progressService->clear();
                 $this->ownershipService->repairStandardPaths($extensionId);
                 if ($prepared !== null) {
@@ -76,6 +116,16 @@ class ExtensionPackageUninstallService
                 }
             }
         });
+    }
+
+    /**
+     * @param iterable<int, ExtensionPackage> $removedPackages
+     *
+     * @return array{npmPackages: array<int, string>, composerPackages: array<int, string>, commands: array<string, string>}
+     */
+    public function possiblyUnusedPackages(iterable $removedPackages): array
+    {
+        return $this->requirementService->possiblyUnusedPackages($removedPackages);
     }
 
     /**
@@ -88,20 +138,37 @@ class ExtensionPackageUninstallService
      *
      * @return array<string, mixed> opaque prepared state; pass to finalizeUninstall() and rollbackUninstall()
      */
-    public function prepareUninstall(string $extensionId, bool $dropData = false, ?string $initiator = null): array
+    public function prepareUninstall(string $extensionId, bool $dropData = false, ?string $initiator = null, bool $acknowledgeModified = false): array
     {
         $package = ExtensionPackage::query()->with('files')->where('extension_id', $extensionId)->first();
         if (!$package) {
             throw new DisplayException('That extension is not installed through the repository system.');
         }
 
+        // Drain before anything else touches the filesystem. Removing a
+        // package's class files while a worker holds one of its jobs leaves a
+        // payload that can never be deserialized, so the job can neither
+        // succeed nor be retried, and its failed-job row names a class that no
+        // longer exists.
+        $this->progressService->report('uninstall', $extensionId, 'draining');
+        $this->drainService->beginDrain($extensionId);
+        $this->drainService->waitForDrain($extensionId, (int) config('extensions.queues.drain_timeout_seconds', 60));
+        $this->drainService->assertSafeToRemove($extensionId);
+
         $files = $package->files->sortByDesc(fn (ExtensionPackageFile $file) => substr_count($file->path, '/'))->values();
         $rollbackRoot = storage_path('app/extensions/tmp-uninstall/' . Str::uuid()->toString());
         File::ensureDirectoryExists($rollbackRoot);
+        $this->operationLockService->checkpoint();
         $this->ownershipService->repairStandardPaths($extensionId);
 
         $this->progressService->report('uninstall', $extensionId, 'validating');
-        $this->fileService->assertFilesUnmodified($files->all(), 'uninstalled');
+        $discarded = $this->fileService->assertFilesUnmodified($files->all(), 'uninstalled', $acknowledgeModified, $extensionId);
+        if ($discarded !== []) {
+            Log::warning('Uninstalling an extension whose files were modified after installation.', [
+                'extension' => $extensionId,
+                'modified' => $discarded,
+            ]);
+        }
         $this->fileService->createRollbackSnapshot($files->all(), $rollbackRoot);
         $this->assertWritableUninstallTargets($files->all());
 
@@ -110,6 +177,7 @@ class ExtensionPackageUninstallService
 
             $this->progressService->report('uninstall', $extensionId, 'removing');
             foreach ($files as $file) {
+                $this->operationLockService->checkpoint();
                 $targetPath = base_path($file->path);
 
                 if ($file->operation === 'updated') {
@@ -135,8 +203,18 @@ class ExtensionPackageUninstallService
                 'rollbackRoot' => $rollbackRoot,
             ], $migrationState);
         } catch (\Throwable $exception) {
+            if ($exception instanceof ExtensionLockLostException) {
+                File::deleteDirectory($rollbackRoot);
+
+                throw $exception;
+            }
+
             $this->fileService->restoreRollbackSnapshot($files->all(), $rollbackRoot);
             File::deleteDirectory($rollbackRoot);
+            // Nothing was prepared, so cleanupPreparedUninstall() will never run
+            // for this attempt and the still installed extension would keep
+            // refusing jobs until the drain flag expired.
+            $this->drainService->endDrain($extensionId);
             $this->ownershipService->repairStandardPaths($extensionId);
 
             if ($exception instanceof DisplayException) {
@@ -155,21 +233,49 @@ class ExtensionPackageUninstallService
      */
     public function finalizeUninstall(array $prepared): void
     {
+        $this->operationLockService->checkpoint();
+
         $package = $prepared['package'];
-        $files = $prepared['files'];
         $extensionId = $prepared['extensionId'];
 
-        DB::transaction(function () use ($package, $files, $extensionId) {
-            foreach ($files as $file) {
-                if ($file->backup_path && is_file($file->backup_path)) {
-                    File::delete($file->backup_path);
-                }
-            }
+        DB::transaction(function () use ($package, $extensionId) {
+            // The permission rows go with the package, and every role holding
+            // one is stripped in the same transaction — a role must never carry
+            // an identifier that no longer resolves to anything.
+            $this->permissionRegistry->purge($extensionId);
+
+            // Unconditionally, whatever the drop-data choice: a credential
+            // outliving the extension that used it is a standing liability
+            // nobody is watching, and reinstalling asks for it again anyway.
+            $this->secretStore->purge($extensionId);
 
             $package->delete();
 
             ExtensionConfig::query()->where('extension_id', $extensionId)->update(['enabled' => false]);
         });
+    }
+
+    /**
+     * Remove pre-extension backups only after the package deletion commits.
+     *
+     * @param array<string, mixed> $prepared
+     */
+    public function completeUninstall(array $prepared): void
+    {
+        foreach ($prepared['files'] ?? [] as $file) {
+            if (!$file->backup_path || !is_file($file->backup_path)) {
+                continue;
+            }
+
+            try {
+                $this->operationLockService->checkpoint();
+                File::delete($file->backup_path);
+            } catch (\Throwable $exception) {
+                // The uninstall is committed; retaining a now-orphaned backup
+                // is safer than attempting an impossible transactional rollback.
+                report($exception);
+            }
+        }
     }
 
     /**
@@ -181,6 +287,8 @@ class ExtensionPackageUninstallService
      */
     public function rollbackUninstall(array $prepared): void
     {
+        $this->operationLockService->checkpoint();
+
         $this->fileService->restoreRollbackSnapshot($prepared['files']->all(), $prepared['rollbackRoot']);
         $this->ownershipService->repairStandardPaths($prepared['extensionId']);
 
@@ -239,11 +347,17 @@ class ExtensionPackageUninstallService
         ];
 
         try {
+            $this->operationLockService->checkpoint();
             $result = $this->migrationService->reset($extensionId);
+            $this->operationLockService->checkpoint();
             $auditContext['rolled_back'] = $result['rolledBack'];
             $auditContext['migrator_output'] = $result['output'];
             $logPath = $this->migrationService->writeMigrationLog($extensionId, 'uninstall-drop-data', $auditContext);
         } catch (\Throwable $exception) {
+            if ($exception instanceof ExtensionLockLostException) {
+                throw $exception;
+            }
+
             $logPath = $this->migrationService->writeMigrationLog($extensionId, 'uninstall-drop-data', $auditContext, $exception);
 
             throw new DisplayException(sprintf("Dropping the extension's database tables failed, so the uninstall was aborted. Details: %s. Manual cleanup, if you still want the data removed:\n%s", $logPath, implode("\n", $manualCleanup)), $exception);
@@ -264,6 +378,13 @@ class ExtensionPackageUninstallService
      */
     public function cleanupPreparedUninstall(array $prepared): void
     {
+        // Every path out of a prepared uninstall runs through here, including
+        // the batch service, which drives prepare/finalize/rollback itself. The
+        // drain must be lifted from all of them, not just from uninstall().
+        if (isset($prepared['extensionId'])) {
+            $this->drainService->endDrain($prepared['extensionId']);
+        }
+
         if (!empty($prepared['rollbackRoot'])) {
             File::deleteDirectory($prepared['rollbackRoot']);
         }
@@ -293,6 +414,16 @@ class ExtensionPackageUninstallService
             $this->rebuildService->rebuild(sprintf('%s for %s', $reason, $extensionId));
         } catch (\Throwable $exception) {
             report($exception);
+        }
+    }
+
+    private function reportPostCommitFailure(\Throwable $exception): void
+    {
+        try {
+            report($exception);
+        } catch (\Throwable) {
+            // Never compensate files after the database has committed merely
+            // because progress reporting or backup cleanup failed.
         }
     }
 }

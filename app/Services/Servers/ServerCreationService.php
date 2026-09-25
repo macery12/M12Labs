@@ -16,8 +16,10 @@ use Everest\Models\Objects\DeploymentObject;
 use Illuminate\Database\ConnectionInterface;
 use Everest\Models\Billing\FreeProductEntitlement;
 use Everest\Repositories\Eloquent\ServerRepository;
+use Everest\Extensions\Hooks\Events\ServerCreatedHook;
 use Everest\Repositories\Wings\DaemonServerRepository;
 use Everest\Services\Deployment\FindViableNodesService;
+use Everest\Services\Extensions\ExtensionHookDispatcher;
 use Everest\Repositories\Eloquent\ServerVariableRepository;
 use Everest\Services\Deployment\AllocationSelectionService;
 use Everest\Exceptions\Http\Connection\DaemonConnectionException;
@@ -36,6 +38,7 @@ class ServerCreationService
         private ServerDeletionService $serverDeletionService,
         private ServerVariableRepository $serverVariableRepository,
         private VariableValidatorService $validatorService,
+        private ExtensionHookDispatcher $hooks,
     ) {
     }
 
@@ -176,6 +179,11 @@ class ServerCreationService
             throw $exception;
         }
 
+        // Only once the server genuinely exists on both sides. Dispatching
+        // after the transaction but before the daemon call would announce a
+        // server that the compensating delete above is about to remove again.
+        $this->hooks->dispatch(ServerCreatedHook::fromServer($server));
+
         return $server;
     }
 
@@ -241,7 +249,6 @@ class ServerCreationService
             'allocation_limit' => Arr::get($data, 'allocation_limit') ?? 0,
             'backup_limit' => Arr::get($data, 'backup_limit') ?? 0,
             'subuser_limit' => Arr::get($data, 'subuser_limit') ?? 0,
-            'subdomain_limit' => Arr::get($data, 'subdomain_limit', 1),
         ]);
 
         return $model;

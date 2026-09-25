@@ -24,11 +24,14 @@ const WIDTH_CLASS: Record<ContentWidth, string> = {
 export function AppShell({
     groups,
     header,
+    beforeContent,
     sidebarFooter,
     loading = false,
 }: {
     groups: NavGroup[];
     header?: ReactNode;
+    /** Content inside the active width container, immediately before the route. */
+    beforeContent?: ReactNode;
     sidebarFooter?: ReactNode;
     loading?: boolean;
 }) {
@@ -81,6 +84,7 @@ export function AppShell({
                     )}
                     <div className="px-5 py-6 sm:px-8">
                         <div className={cn('mx-auto w-full', WIDTH_CLASS[width])}>
+                            {beforeContent}
                             {loading ? (
                                 <FullPageSpinner />
                             ) : (

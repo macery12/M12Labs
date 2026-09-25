@@ -4,13 +4,14 @@ namespace Everest\Models;
 
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Everest\Services\Extensions\ExtensionPermissionRegistry;
 
 /**
  * @property int $id
  * @property string $name
  * @property string|null $description
  * @property int $sort_id
- * @property array $permissions
+ * @property array|null $permissions
  * @property bool $is_system
  * @property bool $is_owner
  * @property bool $api_eligible
@@ -106,9 +107,6 @@ class AdminRole extends Model
     public const TICKETS_UPDATE = 'tickets.update';
     public const TICKETS_DELETE = 'tickets.delete';
     public const TICKETS_MESSAGE = 'tickets.message';
-
-    public const AI_READ = 'ai.read';
-    public const AI_UPDATE = 'ai.update';
 
     public const MODS_READ = 'mods.read';
     public const MODS_UPDATE = 'mods.update';
@@ -207,10 +205,6 @@ class AdminRole extends Model
     public const EXTENSIONS_DELETE = 'extensions.delete';
     public const EXTENSIONS_REPOSITORIES = 'extensions.repositories';
 
-    public const CUSTOM_DOMAINS_READ = 'custom-domains.read';
-    public const CUSTOM_DOMAINS_CREATE = 'custom-domains.create';
-    public const CUSTOM_DOMAINS_UPDATE = 'custom-domains.update';
-    public const CUSTOM_DOMAINS_DELETE = 'custom-domains.delete';
 
     /**
      * All the permissions available on the system. You should use self::permissions()
@@ -289,13 +283,6 @@ class AdminRole extends Model
                 'update' => 'Update an existing ticket.',
                 'delete' => 'Delete an existing ticket.',
                 'message' => 'Send a message in a ticket.',
-            ],
-        ],
-        'ai' => [
-            'description' => 'Permissions to configure the AI module.',
-            'keys' => [
-                'read' => 'View the Admin AI console.',
-                'update' => 'Control the AI settings.',
             ],
         ],
         'mods' => [
@@ -445,23 +432,38 @@ class AdminRole extends Model
                 'repositories' => 'Add, edit, or remove extension repositories.',
             ],
         ],
-        'custom-domains' => [
-            'description' => 'Permissions to configure the Custom Domains module.',
-            'keys' => [
-                'read' => 'View custom domains, Cloudflare API keys, and settings.',
-                'create' => 'Create a new custom domain.',
-                'update' => 'Update a custom domain, API key, or module settings.',
-                'delete' => 'Delete a custom domain or API key.',
-            ],
-        ],
     ];
 
     /**
      * Gets the permissions associated with an admin role.
      */
+    /**
+     * The human-facing capability catalog: core's static namespaces plus the
+     * ones installed extensions contribute.
+     *
+     * Merging here rather than at each consumer is deliberate — every place
+     * that decides whether a capability exists (role validation, the
+     * authorizer, the Application API access profile, the permission matrix)
+     * already reads this one method, so extension permissions become real
+     * capabilities everywhere at once instead of in whichever call sites
+     * somebody remembered.
+     *
+     * Contributed groups can never collide with core's: they are namespaced
+     * ext.<id>.admin, and core declares no namespace containing a dot.
+     */
     public static function permissions(): Collection
     {
-        return Collection::make(self::$permissions);
+        $contributed = [];
+
+        try {
+            $contributed = app(ExtensionPermissionRegistry::class)->groups();
+        } catch (\Throwable) {
+            // The catalog must resolve before the container is fully booted and
+            // on installs where the extension tables do not exist yet. Core's
+            // own permissions are never allowed to depend on that working.
+        }
+
+        return Collection::make(self::$permissions + $contributed);
     }
 
     /**

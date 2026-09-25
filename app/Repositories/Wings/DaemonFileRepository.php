@@ -329,6 +329,52 @@ class DaemonFileRepository extends DaemonRepository
      *
      * @throws DaemonConnectionException
      */
+    /**
+     * List the pulls currently in flight for this server.
+     *
+     * The daemon answers { downloads: [{ identifier, destination, progress,
+     * total }] }. Used to follow a background pull to completion, since the
+     * pull request itself only acknowledges that one started.
+     *
+     * @return array<int, array{identifier: string, destination: string, progress: int, total: int}>
+     *
+     * @throws DaemonConnectionException
+     */
+    public function pulls(): array
+    {
+        Assert::isInstanceOf($this->server, Server::class);
+
+        try {
+            $response = $this->getHttpClient()->get(
+                sprintf('/api/servers/%s/files/pull', $this->server->uuid)
+            );
+        } catch (TransferException $exception) {
+            throw new DaemonConnectionException($exception);
+        }
+
+        $decoded = json_decode($response->getBody()->__toString(), true);
+
+        return is_array($decoded) ? Arr::get($decoded, 'downloads', []) : [];
+    }
+
+    /**
+     * Abort one in-flight pull.
+     *
+     * @throws DaemonConnectionException
+     */
+    public function cancelPull(string $identifier): ResponseInterface
+    {
+        Assert::isInstanceOf($this->server, Server::class);
+
+        try {
+            return $this->getHttpClient()->delete(
+                sprintf('/api/servers/%s/files/pull/%s', $this->server->uuid, $identifier)
+            );
+        } catch (TransferException $exception) {
+            throw new DaemonConnectionException($exception);
+        }
+    }
+
     public function pull(string $url, ?string $directory, array $params = []): ResponseInterface
     {
         Assert::isInstanceOf($this->server, Server::class);

@@ -12,10 +12,10 @@ use Illuminate\Database\Connection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Auth\AuthenticationException;
+use Everest\Services\Access\InternalDispatch;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
-use Everest\Services\AI\Tools\InternalToolCall;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -251,7 +251,7 @@ final class Handler extends ExceptionHandler
 
         $request = $container->make('request');
 
-        return !InternalToolCall::matches($request->attributes->get(InternalToolCall::ATTRIBUTE));
+        return !InternalDispatch::isInternal($request);
     }
 
     /**

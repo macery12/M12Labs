@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Route;
 use Everest\Http\Middleware\TrimStrings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Everest\Http\Middleware\ApiDocsAccess;
-use Everest\Services\AI\Tools\ToolExecutor;
 use Illuminate\Support\Facades\RateLimiter;
+use Everest\Services\Access\InternalDispatch;
 use Everest\Http\Middleware\AdminAuthenticate;
 use Everest\Http\Middleware\RequireTwoFactorAuthentication;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
@@ -121,14 +121,12 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api.client', function (Request $request) {
             $key = optional($request->user())->uuid ?: $request->ip();
 
-            // A single agent turn fans out into many sub-requests. Charging
-            // them to the human's budget would let one AI question exhaust the
-            // allowance their browser session is also spending. Agent traffic
-            // gets its own bounded budget instead — bounded, not unlimited, so
-            // internal amplification stays capped.
-            if (ToolExecutor::isInternal($request)) {
-                return Limit::perMinute(config('modules.ai.agent.tool_rate_limit', 240))
-                    ->by('ai-tools:' . $key);
+            // Internal sub-requests spend from their own bucket rather than
+            // the human's — see internalRateLimitKey() for why, and for how it
+            // is split per extension.
+            if (InternalDispatch::isInternal($request)) {
+                return Limit::perMinute(config('extensions.internal_rate_limit', 240))
+                    ->by($this->internalRateLimitKey($request, $key));
             }
 
             return Limit::perMinutes(
@@ -140,9 +138,9 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api.application', function (Request $request) {
             $key = optional($request->user())->uuid ?: $request->ip();
 
-            if (ToolExecutor::isInternal($request)) {
-                return Limit::perMinute(config('modules.ai.agent.tool_rate_limit', 240))
-                    ->by('ai-tools:' . $key);
+            if (InternalDispatch::isInternal($request)) {
+                return Limit::perMinute(config('extensions.internal_rate_limit', 240))
+                    ->by($this->internalRateLimitKey($request, $key));
             }
 
             return Limit::perMinutes(
@@ -168,6 +166,27 @@ class RouteServiceProvider extends ServiceProvider
             )->by('ext-admin:' . $extensionId . ':' . $key);
         });
 
+        // Per-extension client budget, mirroring api.ext-admin. Keyed per user,
+        // per server AND per extension: a chatty extension page cannot exhaust
+        // the global client limit (which still applies on top), and one
+        // extension hitting its limit never 429s another on the same server.
+        RateLimiter::for('api.ext-client', function (Request $request) {
+            $key = optional($request->user())->uuid ?: $request->ip();
+
+            $extensionId = preg_match('~extensions/ext/([^/]+)~', $request->path(), $matches) === 1
+                ? $matches[1]
+                : 'unknown';
+
+            $server = preg_match('~servers/([^/]+)~', $request->path(), $serverMatches) === 1
+                ? $serverMatches[1]
+                : 'unknown';
+
+            return Limit::perMinutes(
+                config('http.rate_limit.ext_client_period'),
+                config('http.rate_limit.ext_client')
+            )->by('ext-client:' . $extensionId . ':' . $server . ':' . $key);
+        });
+
         RateLimiter::for('file.diff', function (Request $request) {
             $key = optional($request->user())->uuid ?: $request->ip();
 
@@ -181,31 +200,6 @@ class RouteServiceProvider extends ServiceProvider
                             'code' => 'ThrottleRequestsException',
                             'status' => '429',
                             'detail' => 'Too many file diff requests. Please wait before saving again.',
-                        ],
-                    ],
-                ], 429);
-            });
-        });
-
-        RateLimiter::for('ai.agent', function (Request $request) {
-            $key = optional($request->user())->uuid ?: $request->ip();
-            $retrying = is_string($request->input('ticket')) && trim($request->input('ticket')) !== '';
-
-            return Limit::perMinutes(
-                max(1, (int) config('http.rate_limit.ai_agent_period', 1)),
-                max(1, (int) config(
-                    $retrying ? 'http.rate_limit.ai_agent_retry' : 'http.rate_limit.ai_agent',
-                    $retrying ? 120 : 10,
-                ))
-            )->by(($retrying ? 'ai-agent-retry:' : 'ai-agent:') . $key)->response(function () use ($retrying) {
-                return response()->json([
-                    'errors' => [
-                        [
-                            'code' => 'ThrottleRequestsException',
-                            'status' => '429',
-                            'detail' => $retrying
-                                ? 'Too many AI queue checks. Please wait before checking again.'
-                                : 'Too many AI agent requests. Please wait before starting another turn.',
                         ],
                     ],
                 ], 429);
@@ -238,26 +232,6 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinutes(5, 20)->by($email !== '' ? $email : $request->ip());
         });
 
-        RateLimiter::for('custom-domains-create', function (Request $request) {
-            $key = optional($request->user())->uuid ?: $request->ip();
-            $limit = max(1, (int) config('modules.custom_domains.rate_limits.create_per_minute', 10));
-
-            return Limit::perMinute($limit)->by($key);
-        });
-
-        RateLimiter::for('custom-domains-sync', function (Request $request) {
-            $key = optional($request->user())->uuid ?: $request->ip();
-            $limit = max(1, (int) config('modules.custom_domains.rate_limits.sync_per_minute', 5));
-
-            return Limit::perMinute($limit)->by($key);
-        });
-
-        RateLimiter::for('custom-domains-billing-options', function (Request $request) {
-            $key = optional($request->user())->uuid ?: $request->ip();
-            $limit = max(1, (int) config('modules.custom_domains.rate_limits.billing_options_per_minute', 20));
-
-            return Limit::perMinute($limit)->by($key);
-        });
         RateLimiter::for('email-verification', function (Request $request) {
             $key = optional($request->user())->id ?: $request->ip();
 
@@ -353,6 +327,23 @@ class RouteServiceProvider extends ServiceProvider
                 ], 429);
             });
         });
+    }
+
+    /**
+     * The bucket an internal sub-request spends from.
+     *
+     * Internal traffic gets its own bounded budget — bounded, not unlimited, so
+     * internal amplification stays capped — because a single agent turn fans
+     * out into many sub-requests, and charging those to the human would let one
+     * AI question exhaust the allowance their browser session is also spending.
+     *
+     * Split per extension for the same reason `api.ext-admin` is: a package
+     * dispatching internally is spending somebody's budget, and one package
+     * hitting its limit must not 429 another, or core's own agent.
+     */
+    protected function internalRateLimitKey(Request $request, string $key): string
+    {
+        return 'internal:' . (InternalDispatch::originOf($request) ?? 'core') . ':' . $key;
     }
 
     private function apiDocsMiddleware(): array

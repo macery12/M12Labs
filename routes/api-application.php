@@ -128,13 +128,6 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::get('/{order:id}/threat', [Application\Billing\OrderController::class, 'threat']);
         });
 
-        Route::group(['prefix' => '/custom-domains'], function () {
-            Route::get('/', [Application\Billing\CustomDomainController::class, 'index']);
-            Route::post('/', [Application\Billing\CustomDomainController::class, 'store']);
-            Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
-            Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
-        });
-
         Route::group(['prefix' => '/coupons'], function () {
             Route::get('/', [Application\Billing\CouponController::class, 'index']);
             Route::post('/', [Application\Billing\CouponController::class, 'store']);
@@ -186,74 +179,6 @@ Route::middleware([AdminSubject::class])->group(function () {
 
         // Get suggested multiplier ranges
         Route::get('/multiplier-ranges', [Application\Billing\BillingCycleController::class, 'multiplierRanges']);
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Custom Domains Module Routes
-    |--------------------------------------------------------------------------
-    |
-    | Endpoint: /api/application/custom-domains
-    |
-    */
-    Route::group(['prefix' => '/custom-domains'], function () {
-        Route::get('/', [Application\Billing\CustomDomainController::class, 'index']);
-        Route::post('/', [Application\Billing\CustomDomainController::class, 'store']);
-        Route::patch('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'update']);
-        Route::delete('/{customDomain:id}', [Application\Billing\CustomDomainController::class, 'destroy']);
-
-        Route::get('/options', [Application\Billing\CustomDomainController::class, 'options']);
-        Route::get('/api-keys', [Application\Billing\CustomDomainController::class, 'apiKeys']);
-        Route::post('/api-keys', [Application\Billing\CustomDomainController::class, 'storeApiKey']);
-        Route::patch('/api-keys/{apiKey:id}', [Application\Billing\CustomDomainController::class, 'updateApiKey']);
-        Route::delete('/api-keys/{apiKey:id}', [Application\Billing\CustomDomainController::class, 'deleteApiKey']);
-
-        Route::get('/settings', [Application\CustomDomains\SettingsController::class, 'index']);
-        Route::put('/settings', [Application\CustomDomains\SettingsController::class, 'update']);
-        Route::delete('/settings/cloudflare-token', [Application\CustomDomains\SettingsController::class, 'clearToken']);
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | AI Controller Routes
-    |--------------------------------------------------------------------------
-    |
-    | Endpoint: /api/application/ai
-    |
-    */
-    Route::group(['prefix' => '/ai'], function () {
-        Route::get('/settings', [Application\IntelligenceController::class, 'index']);
-        Route::put('/settings', [Application\IntelligenceController::class, 'update']);
-        Route::get('/test', [Application\IntelligenceController::class, 'testConnection']);
-        Route::post('/test-tools', [Application\IntelligenceController::class, 'probeToolCalling']);
-        Route::get('/models', [Application\IntelligenceController::class, 'models']);
-        Route::get('/stats', [Application\IntelligenceController::class, 'stats']);
-        Route::get('/logs', [Application\IntelligenceController::class, 'recentLogs']);
-
-        // The agent's tool policy and the live state of the inference backend.
-        Route::get('/tools', [Application\AiAgentController::class, 'tools']);
-        Route::put('/tools', [Application\AiAgentController::class, 'updateTools']);
-        Route::get('/inference', [Application\AiAgentController::class, 'inference']);
-
-        // The admin assistant. `decide` resolves an approval or a question the
-        // turn suspended on — both arrive on a fresh request, because the stream
-        // that asked closes when the turn suspends.
-        Route::post('/agent', [Application\AiAgentController::class, 'start'])
-            ->middleware('throttle:ai.agent');
-        Route::post('/agent/decide', [Application\AiAgentController::class, 'decide']);
-        Route::get('/agent/turns/{turnId}', [Application\AiAgentController::class, 'turnStatus']);
-        // Stopping a turn and giving up a queue place are separate because the
-        // two states are: a queued turn has a ticket and no turn id, and
-        // nothing of it has run.
-        Route::post('/agent/turns/{turnId}/cancel', [Application\AiAgentController::class, 'cancelTurn']);
-        Route::delete('/agent/queue/{ticket}', [Application\AiAgentController::class, 'releaseQueue']);
-
-        Route::prefix('/agent/conversations')->group(function () {
-            Route::get('/', [Application\AiAgentController::class, 'conversations']);
-            Route::get('/{conversationId}', [Application\AiAgentController::class, 'conversation']);
-            Route::delete('/{conversationId}/assist', [Application\AiAgentController::class, 'endAssist']);
-            Route::delete('/{conversationId}', [Application\AiAgentController::class, 'deleteConversation']);
-        });
     });
 
     /*
@@ -404,18 +329,21 @@ Route::middleware([AdminSubject::class])->group(function () {
         // is inherited from the application-api stack wrapping this file; the
         // extensions.admin middleware adds a request-time defense-in-depth gate.
         //
-        // Only enabled extensions are require()'d: a disabled extension's route
-        // file — and therefore any top-level code in it — is never loaded, so
-        // disabling an extension makes its code fully inert, not just 404'd.
+        // Loading is driven by the declared capability rather than a
+        // filesystem glob, so a package that ships routes/admin.php without
+        // declaring capabilities.routes.admin is never require()'d. Only
+        // enabled extensions load at boot; the extensions.admin middleware
+        // re-checks the live runtime plan so cached routes and long-lived
+        // workers deny packages later disabled, revoked, or quarantined.
         //
         // Every route the file registers is audited immediately afterwards
         // (ExtensionRouteGuardService): a route that strips its inherited
         // middleware or loses the extensions.admin gate is dropped to a 404.
-        $enabledExtensionIds = Everest\Services\Extensions\ExtensionRuntimeGate::enabledExtensionIds();
+        $extensionPlan = app(Everest\Services\Extensions\ExtensionRuntimePlanService::class);
         $extensionRouteGuard = app(Everest\Services\Extensions\ExtensionRouteGuardService::class);
-        foreach ((glob(app_path('Extensions/Packages/*/routes/admin.php')) ?: []) as $extensionAdminRoutes) {
-            $extensionRouteId = basename(dirname(dirname($extensionAdminRoutes)));
-            if (!in_array($extensionRouteId, $enabledExtensionIds, true)) {
+        foreach ($extensionPlan->withCapability('routes.admin') as $extensionRouteId => $extensionEntry) {
+            $extensionAdminRoutes = app_path(sprintf('Extensions/Packages/%s/routes/admin.php', $extensionRouteId));
+            if (!is_file($extensionAdminRoutes)) {
                 continue;
             }
 
@@ -440,6 +368,21 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::post('/{extensionId}/install', [Application\Extensions\ExtensionsController::class, 'install']);
         Route::post('/{extensionId}/update-package', [Application\Extensions\ExtensionsController::class, 'updatePackage']);
         Route::post('/{extensionId}/uninstall', [Application\Extensions\ExtensionsController::class, 'uninstall']);
+
+        // Secrets are metadata-only on read: the API can say whether a key is
+        // configured and when it changed, never what it holds. Writes are
+        // blind, and an empty body means "unchanged" so an unrelated save
+        // cannot wipe a working credential.
+        // Health is computed on read from the package row, the capability
+        // tables, the migration log and the built asset manifest — there is no
+        // health table to drift. The export is the same report, redacted so an
+        // operator can paste it into a support thread.
+        Route::get('/{extensionId}/health', [Application\Extensions\ExtensionsController::class, 'health']);
+        Route::get('/{extensionId}/health/export', [Application\Extensions\ExtensionsController::class, 'exportHealth']);
+
+        Route::get('/{extensionId}/secrets', [Application\Extensions\ExtensionSecretsController::class, 'index']);
+        Route::put('/{extensionId}/secrets/{key}', [Application\Extensions\ExtensionSecretsController::class, 'update']);
+        Route::delete('/{extensionId}/secrets/{key}', [Application\Extensions\ExtensionSecretsController::class, 'destroy']);
     });
 
     /*

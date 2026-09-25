@@ -2,9 +2,9 @@
 
 namespace Everest\Tests\Unit\Http\Requests\Api\Client;
 
-use Everest\Models\User;
 use Everest\Models\Egg;
 use Everest\Models\Nest;
+use Everest\Models\User;
 use Everest\Tests\TestCase;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Testing\RefreshDatabase;

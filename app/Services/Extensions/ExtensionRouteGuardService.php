@@ -93,10 +93,8 @@ class ExtensionRouteGuardService
         // the route still carries the loader's correct gate. Cover class names
         // and aliases, since Laravel accepts both forms.
         $aliases = RouteFacade::getMiddleware();
-        foreach ($route->middleware() as $middleware) {
-            if (!is_string($middleware)) {
-                continue;
-            }
+        // Closure middleware has no name to compare, so only strings are read.
+        foreach (array_filter($route->middleware(), 'is_string') as $middleware) {
             [$name, $id] = array_pad(explode(':', $middleware, 2), 2, null);
             $class = $aliases[$name] ?? $name;
             foreach (['extensions.access', 'extensions.admin'] as $gate) {

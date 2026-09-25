@@ -5,6 +5,8 @@ import { can } from '@/lib/can';
 export interface NavItem {
     to: string;
     name: string;
+    /** Message id for the label; preferred over `name` when present. */
+    labelKey?: string;
     icon?: LucideIcon;
     category?: string;
     end?: boolean;
@@ -40,6 +42,7 @@ export function buildNav(
         const item: NavItem = {
             to: toPath(opts.basePath, r.path),
             name: r.name,
+            labelKey: r.labelKey,
             icon: r.icon,
             category: r.category,
             end: r.end,

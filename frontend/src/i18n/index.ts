@@ -21,7 +21,7 @@ import { initializeMessages } from './messages';
 
 // Extension UI packages use this stable entrypoint because their message ids do
 // not exist in the core typed catalog until the package is installed.
-export { td } from './messages';
+export { td, tdi } from './messages';
 
 /**
  * Render a message that embeds simple paired tags — e.g.

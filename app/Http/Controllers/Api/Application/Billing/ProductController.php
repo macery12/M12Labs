@@ -123,7 +123,6 @@ class ProductController extends ApplicationApiController
             'backup' => 0,
             'database' => 0,
             'allocation' => 0,
-            'subdomain' => 1,
         ];
 
         foreach ($limits as $key => $default) {
@@ -140,11 +139,8 @@ class ProductController extends ApplicationApiController
                 $value = $default;
             }
 
-            // subdomain_limit is documented and validated as nullable. All
-            // other limits are integers, including an explicit zero.
-            $attributes[$flat] = $value === null && $key === 'subdomain'
-                ? null
-                : (int) $value;
+            // Every remaining limit is an integer, including an explicit zero.
+            $attributes[$flat] = (int) $value;
         }
 
         return $attributes;

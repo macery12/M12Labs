@@ -158,9 +158,9 @@ class QueueTopology
                 'connection' => $this->longConnection(),
                 'queue' => [$this->queueFor('mods')],
             ],
-            'supervisor-agent' => [
+            'supervisor-extensions-long' => [
                 'connection' => $this->longConnection(),
-                'queue' => [$this->queueFor('agent')],
+                'queue' => [$this->queueFor('extensions-long')],
             ],
         ];
     }
@@ -197,6 +197,23 @@ class QueueTopology
         );
 
         return is_numeric($after) ? (int) $after : null;
+    }
+
+    /**
+     * The longest a job on this lane may be allowed to run.
+     *
+     * One below `retry_after`, because a job that reaches it has its
+     * reservation migrated and is handed to a second worker while the first is
+     * still inside handle() — the failure this returns a number to prevent.
+     *
+     * Null on drivers with no `retry_after` (`sync` under test, `sqs`), where
+     * there is no such ceiling to derive and the caller's own limit stands.
+     */
+    public function maxJobTimeoutFor(string $lane): ?int
+    {
+        $retryAfter = $this->retryAfterFor($lane);
+
+        return $retryAfter === null ? null : max(1, $retryAfter - 1);
     }
 
     private function connectionExists(string $connection): bool

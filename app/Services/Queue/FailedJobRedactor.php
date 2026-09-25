@@ -3,8 +3,8 @@
 namespace Everest\Services\Queue;
 
 use Illuminate\Support\Str;
-use Everest\Services\AI\Privacy\PiiRedactor;
-use Everest\Services\AI\Privacy\RedactionMap;
+use Everest\Services\Privacy\PiiRedactor;
+use Everest\Services\Privacy\RedactionMap;
 
 /**
  * Makes a failed job safe to show on the admin page.
@@ -18,12 +18,26 @@ use Everest\Services\AI\Privacy\RedactionMap;
  * Masking one and not the other would have left the queue page an incidental
  * data export through the half nobody thinks about.
  *
- * Two passes, deliberately. The AI module's PiiRedactor does the fuzzy work it
- * is already trusted with elsewhere, but it is gated on the AI privacy setting,
- * and an admin page must not become more revealing because someone switched off
- * a setting in a different module. So the structural pass below always runs:
- * key names whose value is a credential or a person are masked whatever the AI
- * module is doing, and the PiiRedactor sweep is applied on top when enabled.
+ * Two passes, deliberately. The structural pass below reads key names and is
+ * exact: a key whose value is a credential or a person is masked whatever it
+ * holds. PiiRedactor's pattern sweep is applied on top, across every category
+ * it knows, to catch the same data appearing in prose the structural pass
+ * cannot see into.
+ *
+ * Both passes are unconditional. They used to not be: this class took the
+ * redactor while it still lived in the AI module, and that class refused to do
+ * anything unless `modules:ai:privacy:enabled` was on — so switching off a
+ * setting in an unrelated module quietly made this page more revealing, which
+ * is the exact failure the paragraph above was written to prevent. The engine
+ * is core's now and takes its categories as an argument, so there is no setting
+ * left to disagree with.
+ *
+ * Credentials are deliberately withheld from the engine (see PERSONAL_KINDS).
+ * This class already masks them, and it masks them *better for this surface*:
+ * `Authorization: Bearer [redacted]` keeps the diagnosis readable, where the
+ * engine's secret category swallows the whole span into an opaque token. That
+ * token is also a lie here — it is minted into a RedactionMap this class throws
+ * away, so it looks reversible and correlatable and is neither.
  *
  * This is masking, not de-identification. Anything that must never be seen by
  * an administrator does not belong in a job payload in the first place.
@@ -53,6 +67,25 @@ class FailedJobRedactor
         'account[_-]?number',
     ];
 
+    /**
+     * Categories handed to the pattern engine: everything except `secret`.
+     *
+     * Credentials are this class's own job (SENSITIVE_KEYS and scrub() below).
+     * The engine is here for what those cannot see — a customer's address in a
+     * serialised payload, a player's IP in an exception message — which is
+     * exactly the set of categories that need a pattern rather than a key name.
+     *
+     * @var string[]
+     */
+    private const PERSONAL_KINDS = [
+        PiiRedactor::KIND_EMAIL,
+        PiiRedactor::KIND_IP,
+        PiiRedactor::KIND_NAME,
+        PiiRedactor::KIND_PHONE,
+        PiiRedactor::KIND_ADDRESS,
+        PiiRedactor::KIND_PAYMENT,
+    ];
+
     /** Long blobs are truncated: nobody diagnoses a failure from a base64 attachment. */
     private const MAX_STRING = 400;
 
@@ -79,7 +112,7 @@ class FailedJobRedactor
         $structural = $this->walk($payload, 0);
 
         try {
-            $swept = $this->pii->redact($structural, new RedactionMap());
+            $swept = $this->pii->redact($structural, new RedactionMap(), self::PERSONAL_KINDS);
         } catch (\Throwable) {
             // The redactor is best-effort here; the structural pass has already
             // removed the categorical hazards.
@@ -105,7 +138,7 @@ class FailedJobRedactor
         $text = $this->scrub($text);
 
         try {
-            return $this->pii->redactText($text, new RedactionMap());
+            return $this->pii->redactText($text, new RedactionMap(), self::PERSONAL_KINDS);
         } catch (\Throwable) {
             return $text;
         }

@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/Switch';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/cn';
 import { extensionTone, resolveExtensionIcon, toneVar, type ExtensionTone } from './extMeta';
+import { ExtensionTypeBadge } from './ExtensionTypeBadge';
 
 const tint = (v: string, pct: number) => `color-mix(in srgb, ${v} ${pct}%, transparent)`;
 
@@ -27,6 +28,8 @@ function statusLabel(tone: ExtensionTone): string {
             return td('extensions.status.available');
         case 'incompatible':
             return td('extensions.status.incompatible');
+        case 'unsupported':
+            return td('extensions.status.unsupported');
         case 'core':
             return td('extensions.status.core');
         case 'enabled':
@@ -157,7 +160,7 @@ export function ExtensionsTable({
                             </button>
                         </th>
                         <SortHeader label={m['extensions.table.extension']()} col="name" sort={sort} onSort={onSort} />
-                        <SortHeader label={m['extensions.table.type']()} col="type" sort={sort} onSort={onSort} className="w-28" />
+                        <SortHeader label={m['extensions.table.type']()} col="type" sort={sort} onSort={onSort} className="w-36" />
                         <SortHeader label={m['extensions.table.status']()} col="status" sort={sort} onSort={onSort} className="w-40" />
                         <SortHeader label={m['extensions.table.version']()} col="version" sort={sort} onSort={onSort} className="w-36" />
                         <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">
@@ -218,9 +221,7 @@ export function ExtensionsTable({
                                 </td>
 
                                 <td className="px-3 py-2.5">
-                                    <span className="rounded border border-[var(--color-border)] px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-                                        {td(`extensions.type.${ext.type}`)}
-                                    </span>
+                                    <ExtensionTypeBadge type={ext.type} />
                                 </td>
 
                                 <td className="px-3 py-2.5">
@@ -271,9 +272,10 @@ export function ExtensionsTable({
                                             <>
                                                 <Switch
                                                     checked={ext.enabled}
-                                                    disabled={toggling || locked}
+                                                    disabled={toggling || locked || ext.canEnable === false}
                                                     onChange={() => onToggle(ext)}
                                                     label={ext.enabled ? m['extensions.card.disabled']() : m['extensions.card.enabled']()}
+                                                    title={ext.canEnable === false ? m['extensions.unsupported.blocked']() : undefined}
                                                 />
                                                 <button
                                                     type="button"

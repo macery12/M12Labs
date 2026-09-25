@@ -136,10 +136,27 @@ return [
         'critical' => env('QUEUE_CRITICAL', 'critical'),
         'schedules' => env('QUEUE_SCHEDULES', 'schedules'),
         'mail' => env('QUEUE_MAIL', 'mail'),
-        'dns' => env('QUEUE_DNS', 'dns'),
         'mods' => env('QUEUE_MODS', 'mods'),
-        'agent' => env('QUEUE_AGENT', 'agent'),
         'standard' => env('QUEUE_STANDARD', 'standard'),
+
+        // Declared last on purpose. supervisor-interactive runs with
+        // `balance => false`, so its queue order is strict priority: extension
+        // work is only picked up once every core lane is empty. A package can
+        // therefore saturate its own lane without delaying an invoice.
+        //
+        // Horizon picks the lane up automatically (QueueTopology derives the
+        // supervisor queue lists from this map) but a *running* Horizon holds
+        // the old list, so it must be restarted on deploy or extension jobs
+        // queue up with no consumer.
+        'extensions' => env('QUEUE_EXTENSIONS', 'extensions'),
+
+        // The same work, for the groups a manifest declared `longRunning`. It
+        // is a separate lane for the same reason `mods` is: a job allowed to
+        // run for the best part of an hour cannot share a queue with work
+        // measured in seconds, or the short work waits behind it. It rides the
+        // long connection, which is the only place a timeout above the short
+        // `retry_after` is safe -- see `long_lanes` below.
+        'extensions-long' => env('QUEUE_EXTENSIONS_LONG', 'extensions-long'),
     ],
 
     /*
@@ -149,7 +166,7 @@ return [
     | short `retry_after` and hand a still-running job to a second worker.
     */
 
-    'long_lanes' => ['mods', 'agent'],
+    'long_lanes' => ['mods', 'extensions-long'],
 
     /*
     | Lanes that only need a worker when a module is switched on. The mods
@@ -163,11 +180,11 @@ return [
     'lane_requires' => [
         'mods' => 'modules.mods.enabled',
 
-        // Durable agent turns, not the agent itself. On an install that has
-        // deliberately switched execution back to request-bound, nothing is ever
-        // dispatched here and an unstaffed lane is the correct state rather
-        // than a fault to report.
-        'agent' => 'modules.ai.agent.durable',
+        // Not an operator setting: ExtensionServiceProvider writes this during
+        // boot, true only while some enabled package declares a long-running
+        // queue group. Nothing can reach the lane otherwise, so an unstaffed
+        // one is the correct state rather than a fault worth reporting.
+        'extensions-long' => 'extensions.queues.long_lane_in_use',
     ],
 
     /*
@@ -184,8 +201,12 @@ return [
     | this map — see Illuminate\Support\Traits\ReadsClassAttributes. The
     | QueueTopologyTest asserts no job does that.
     |
+    | Extension jobs are the one deliberate exception: ExtensionJob pins its
+    | own queue in the constructor, because a package's job classes are not
+    | known here and must not be routable by editing this file.
+    |
     | Anything unrouted falls through to the default connection's queue
-    | (`standard`), which is what extension-provided jobs get.
+    | (`standard`).
     |
     */
 
@@ -197,14 +218,8 @@ return [
         Everest\Jobs\Email\SendEmailJob::class => 'mail',
         Everest\Jobs\Email\ProcessDeferredEmailsJob::class => 'mail',
 
-        Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob::class => 'dns',
-        Everest\Jobs\CustomDomains\ProvisionCustomDomainRecordJob::class => 'dns',
-        Everest\Jobs\CustomDomains\CleanupServerCustomDomainsJob::class => 'dns',
-
         Everest\Jobs\InstallModpackJob::class => 'mods',
         Everest\Jobs\DownloadModJob::class => 'mods',
-
-        Everest\Jobs\AI\RunAgentTurnJob::class => 'agent',
     ],
 
     /*
@@ -234,21 +249,21 @@ return [
             'title' => 'Outbound email',
             'summary' => 'Queued messages and the deferred-send flush.',
         ],
-        'dns' => [
-            'title' => 'Custom domains',
-            'summary' => 'DNS records for server custom domains, rate limited per provider.',
-        ],
         'mods' => [
             'title' => 'Modpack installs',
             'summary' => 'Modpack and mod downloads. A single job here legitimately runs for hours.',
         ],
-        'agent' => [
-            'title' => 'AI assistant turns',
-            'summary' => 'Durable assistant turns and their tool calls. Never retried automatically.',
-        ],
         'standard' => [
             'title' => 'Everything else',
-            'summary' => 'Unrouted work, including jobs dispatched by extensions.',
+            'summary' => 'Unrouted work that does not belong to a dedicated lane.',
+        ],
+        'extensions' => [
+            'title' => 'Extension jobs',
+            'summary' => 'Background work dispatched by installed extensions. Drained after every core lane.',
+        ],
+        'extensions-long' => [
+            'title' => 'Long extension jobs',
+            'summary' => 'Extension work declared long-running. A job here may legitimately run for the better part of an hour.',
         ],
     ],
 
@@ -275,9 +290,9 @@ return [
             'title' => 'Modpack installs',
             'summary' => 'One process on the long connection. A job here may legitimately run for hours.',
         ],
-        'supervisor-agent' => [
-            'title' => 'AI assistant turns',
-            'summary' => 'Sized to the inference concurrency the AI gate already enforces.',
+        'supervisor-extensions-long' => [
+            'title' => 'Long extension jobs',
+            'summary' => 'Staffed only while an enabled package declares a long-running queue group.',
         ],
     ],
 
@@ -322,19 +337,6 @@ return [
             'summary' => 'Releases messages held back by the deferred-send window.',
         ],
 
-        Everest\Jobs\CustomDomains\ProvisionServerCustomDomainsJob::class => [
-            'title' => 'Provision custom domains',
-            'summary' => 'Creates the DNS records for every custom domain on a server.',
-        ],
-        Everest\Jobs\CustomDomains\ProvisionCustomDomainRecordJob::class => [
-            'title' => 'Provision domain record',
-            'summary' => 'Creates or updates one DNS record at the domain provider.',
-        ],
-        Everest\Jobs\CustomDomains\CleanupServerCustomDomainsJob::class => [
-            'title' => 'Remove custom domains',
-            'summary' => 'Deletes the DNS records left behind by a removed server or domain.',
-        ],
-
         Everest\Jobs\InstallModpackJob::class => [
             'title' => 'Install modpack',
             'summary' => 'Downloads and unpacks a modpack onto a server. Runs for minutes to hours.',
@@ -342,11 +344,6 @@ return [
         Everest\Jobs\DownloadModJob::class => [
             'title' => 'Download mod',
             'summary' => "Fetches a single mod file into a server's mod directory.",
-        ],
-
-        Everest\Jobs\AI\RunAgentTurnJob::class => [
-            'title' => 'Run AI assistant turn',
-            'summary' => 'Executes one durable assistant turn, including its tool calls.',
         ],
     ],
 

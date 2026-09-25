@@ -16,6 +16,7 @@ class UninstallExtensionCommand extends Command
     protected $signature = 'p:extensions:uninstall
                             {extensionId : Installed extension id to remove}
                             {--force : Skip the confirmation prompts}
+                            {--allow-modified : Proceed even though tracked files were changed after installation, discarding those changes}
                             {--drop-data : Also roll back the extension\'s migrations, DROPPING its database tables (unrecoverable)}
                             {--debug : Show detailed uninstall diagnostics}';
 
@@ -54,10 +55,16 @@ class UninstallExtensionCommand extends Command
             $result = $this->uninstallService->uninstall(
                 $extensionId,
                 $dropData,
-                sprintf('cli:%s', get_current_user() ?: 'unknown')
+                sprintf('cli:%s', get_current_user() ?: 'unknown'),
+                (bool) $this->option('allow-modified')
             );
         } catch (\Throwable $exception) {
             $this->components->error($exception->getMessage());
+
+            if (!$this->option('allow-modified') && str_contains($exception->getMessage(), 'modified after installation')) {
+                $this->newLine();
+                $this->components->warn('Re-run with --allow-modified to proceed and discard those changes.');
+            }
 
             if ($this->isDebug()) {
                 $this->renderDebugException($exception);
@@ -72,6 +79,7 @@ class UninstallExtensionCommand extends Command
         }
 
         $this->components->info(sprintf('Uninstalled %s.', $extensionId));
+        $this->reconcileHorizon();
 
         if ($result['dataDropped']) {
             $this->components->info(sprintf('Database tables were dropped. Audit log: %s', $result['migrationLog']));
@@ -83,6 +91,23 @@ class UninstallExtensionCommand extends Command
             $this->line('To remove the data manually, run the following SQL against the panel database:');
             foreach ($result['manualCleanup'] as $statement) {
                 $this->line('  ' . $statement);
+            }
+        }
+
+        $unused = $result['possiblyUnusedPackages'];
+        if (($unused['npmPackages'] ?? []) !== [] || ($unused['composerPackages'] ?? []) !== []) {
+            $this->newLine();
+            $this->components->warn('These manually managed packages are no longer declared by an installed extension. They were not removed automatically.');
+
+            if (($unused['npmPackages'] ?? []) !== []) {
+                $this->line('Frontend: ' . implode(', ', $unused['npmPackages']));
+            }
+            if (($unused['composerPackages'] ?? []) !== []) {
+                $this->line('Backend: ' . implode(', ', $unused['composerPackages']));
+            }
+
+            foreach ($unused['commands'] ?? [] as $command) {
+                $this->line('  ' . $command);
             }
         }
 

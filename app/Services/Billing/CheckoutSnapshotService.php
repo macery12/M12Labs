@@ -131,7 +131,6 @@ class CheckoutSnapshotService
         }
 
         $variables = $request->input('variables', []);
-        $domainPayload = $request->input('domain_payload', []);
 
         return [
             'locked' => $complete,
@@ -149,7 +148,6 @@ class CheckoutSnapshotService
                 'plan_change_snapshot' => $planChangeSnapshot,
                 'billing_days' => $billingDays,
                 'variables' => is_array($variables) ? $variables : [],
-                'domain_payload' => is_array($domainPayload) ? $domainPayload : [],
                 'subtotal' => $price['subtotal'],
                 'discount' => $price['discount'],
                 'total' => $price['finalPrice'],
@@ -212,7 +210,6 @@ class CheckoutSnapshotService
             'coupon_id' => $request->filled('coupon_id') ? (int) $request->input('coupon_id') : null,
             'name' => trim((string) $request->input('name', '')),
             'variables' => $this->canonicalize($request->input('variables', [])),
-            'domain_payload' => $this->canonicalize($request->input('domain_payload', [])),
             'return_url' => $request->input('return_url'),
             'cancel_url' => $request->input('cancel_url'),
         ];

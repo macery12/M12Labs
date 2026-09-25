@@ -24,7 +24,6 @@ export interface ProductLimits {
     backup: number;
     database: number;
     allocation: number;
-    subdomain: number | null;
 }
 
 export interface StoreProduct {
@@ -134,7 +133,6 @@ function toProduct(row: any): StoreProduct {
             backup: Number(l.backup ?? 0),
             database: Number(l.database ?? 0),
             allocation: Number(l.allocation ?? 0),
-            subdomain: l.subdomain ?? null,
         },
     };
 }
@@ -281,7 +279,6 @@ export async function processFreeOrder(payload: FreeOrderPayload): Promise<unkno
     const { data } = await http.post('/api/client/billing/process/free', {
         renewal: undefined,
         server_id: undefined,
-        domain_payload: undefined,
         ...payload,
     });
     return data;

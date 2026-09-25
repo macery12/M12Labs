@@ -48,6 +48,20 @@ app/Extensions/Packages/
 frontend/src/extensions/packages/
 frontend/messages/extensions/*
 
+# Extension package test suites, staged into this checkout by the extensions
+# repo's `m12labs_extension_tool.py tests` command and removed again when it
+# finishes. They belong with the package that ships them, and an interrupted
+# run leaves one behind -- which must not become a panel file by accident.
+#
+# The glob is the extension id shape (EXTENSION_ID_PATTERN: lowercase, leading
+# letter). Core's own suites under these roots are StudlyCase namespace
+# segments -- tests/Unit/Extensions/Sdk, tests/Integration/Extensions/
+# CustomDomains -- so they stay tracked.
+tests/Extensions/
+tests/Unit/Extensions/[a-z]*/
+tests/Integration/Extensions/[a-z]*/
+*.m12labs-tests-backup/
+
 # Wings / game server daemon integration
 wings/wings-rs/
 
@@ -81,3 +95,6 @@ misc
 
 # Local archive reference
 /archive/
+
+# Local test database (see docs: integration tests need a file-backed sqlite path containing "test")
+/storage/*.sqlite

@@ -17,7 +17,6 @@ import {
     Archive,
     Database,
     Network,
-    Globe,
 } from 'lucide-react';
 import { getCategory } from '@/api/billingCategories';
 import {
@@ -49,7 +48,6 @@ interface FormShape {
     backup: number;
     database: number;
     allocation: number;
-    subdomain: number;
 }
 
 const NEW_DEFAULTS: FormShape = {
@@ -64,7 +62,6 @@ const NEW_DEFAULTS: FormShape = {
     backup: 0,
     database: 0,
     allocation: 1,
-    subdomain: 1,
 };
 
 export default function ProductEditorPage() {
@@ -122,7 +119,6 @@ export default function ProductEditorPage() {
             backup: product.limits.backup,
             database: product.limits.database,
             allocation: product.limits.allocation,
-            subdomain: product.limits.subdomain,
         });
     }, [editing, product, reset]);
 
@@ -147,7 +143,6 @@ export default function ProductEditorPage() {
     const backup = watch('backup');
     const database = watch('database');
     const allocation = watch('allocation');
-    const subdomain = watch('subdomain');
 
     const dirty = isDirty || cyclesDirty;
 
@@ -173,7 +168,6 @@ export default function ProductEditorPage() {
             backup: Number(v.backup) || 0,
             database: Number(v.database) || 0,
             allocation: Number(v.allocation) || 0,
-            subdomain: Number(v.subdomain) || 0,
         },
     });
 
@@ -371,14 +365,6 @@ export default function ProductEditorPage() {
                                 value={allocation}
                                 onChange={setLimit('allocation')}
                                 presets={[0, 1, 2, 4]}
-                            />
-                            <LimitField
-                                label={m['admin.billing.products.limit.subdomain']()}
-                                icon={Globe}
-                                hint={m['admin.billing.products.limitDesc.subdomain']()}
-                                value={subdomain}
-                                onChange={setLimit('subdomain')}
-                                presets={[0, 1, 2]}
                             />
                         </div>
                     </SectionCard>

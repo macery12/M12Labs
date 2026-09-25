@@ -177,23 +177,60 @@ export async function getFileContents(
     return data;
 }
 
+// sha256 hex of a string, or null when the platform cannot produce one.
+// SubtleCrypto is exposed only in secure contexts, and a self-hosted panel is
+// commonly reached over plain http on a LAN address — so this has to be allowed
+// to fail, with the caller falling back to sending the whole original.
+async function sha256Hex(text: string): Promise<string | null> {
+    if (!globalThis.crypto?.subtle) return null;
+    try {
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+        return Array.from(new Uint8Array(digest))
+            .map(byte => byte.toString(16).padStart(2, '0'))
+            .join('');
+    } catch {
+        return null;
+    }
+}
+
 export async function saveFileContents(
     uuid: string,
     file: string,
     content: string,
     originalContent?: string,
 ): Promise<void> {
-    if (originalContent !== undefined) {
-        await http.post(`/api/client/servers/${uuid}/files/write-with-diff`, {
-            file,
-            content,
-            original_content: originalContent,
-        });
-    } else {
+    if (originalContent === undefined) {
+        // No previous version to compare against — a new file.
         await http.post(`/api/client/servers/${uuid}/files/write`, content, {
             params: { file },
             headers: { 'Content-Type': 'text/plain' },
         });
+        return;
+    }
+
+    // The original is only a compare-and-swap token: the server hashes the live
+    // file and checks it against this. Sending the digest instead of a second
+    // full copy keeps a ceiling-sized file inside the request body cap.
+    const originalHash = await sha256Hex(originalContent);
+
+    await http.post(`/api/client/servers/${uuid}/files/write-with-diff`, {
+        file,
+        content,
+        ...(originalHash === null ? { original_content: originalContent } : { original_hash: originalHash }),
+    });
+}
+
+// Does a path already exist in `directory`? Used to warn before a new file
+// silently overwrites something, since the daemon's write has no
+// exclusive-create mode to lean on.
+export async function fileExists(uuid: string, directory: string, name: string): Promise<boolean> {
+    try {
+        const entries = await loadDirectory(uuid, directory);
+        return entries.some(entry => entry.name === name);
+    } catch {
+        // A listing failure must not block the save; the confirm step is a
+        // courtesy, not a guarantee.
+        return false;
     }
 }
 
@@ -221,14 +258,42 @@ export async function getDirectoryDownloadUrl(
 export async function pullFile(
     uuid: string,
     params: { url: string; directory: string; filename?: string; useHeader?: boolean },
-): Promise<void> {
-    await http.post(`/api/client/servers/${uuid}/files/pull`, {
+): Promise<string | null> {
+    const { data } = await http.post(`/api/client/servers/${uuid}/files/pull`, {
         url: params.url,
         directory: params.directory,
         filename: params.filename || undefined,
         use_header: params.useHeader ?? true,
         foreground: false,
     });
+    // Present for a background pull, absent on older daemons.
+    return data?.attributes?.identifier ?? null;
+}
+
+// ── Remote pull progress ────────────────────────────────────────────────────
+// A background pull is only acknowledged, so its identifier is followed up with
+// the status endpoint below. Both legs stay inside the authenticated client API
+// — the browser never addresses the daemon directly.
+export interface FilePull {
+    identifier: string;
+    destination: string;
+    progress: number;
+    total: number;
+}
+
+export async function listPulls(uuid: string): Promise<FilePull[]> {
+    const { data } = await http.get(`/api/client/servers/${uuid}/files/pull`);
+    const rows: { attributes: FilePull }[] = data?.data ?? [];
+    return rows.map(({ attributes }) => ({
+        identifier: attributes.identifier,
+        destination: attributes.destination,
+        progress: Number(attributes.progress ?? 0),
+        total: Number(attributes.total ?? 0),
+    }));
+}
+
+export async function cancelPull(uuid: string, identifier: string): Promise<void> {
+    await http.delete(`/api/client/servers/${uuid}/files/pull/${identifier}`);
 }
 
 export async function getFileUploadUrl(uuid: string): Promise<string> {

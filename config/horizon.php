@@ -26,7 +26,7 @@ return [
     /*
     | Horizon's own bookkeeping. A distinct prefix matters here: cache, cache
     | locks, the queue itself and broadcasting all share Redis database 0, and
-    | so do the AI admission locks in InferenceGate.
+    | so do any locks an installed extension takes.
     */
 
     'prefix' => env('HORIZON_PREFIX', Str::slug(env('APP_NAME', 'Everest'), '_') . '_horizon:'),
@@ -55,7 +55,6 @@ return [
         'redis:critical' => 30,
         'redis:schedules' => 60,
         'redis:mail' => 60,
-        'redis:dns' => 300,
         'redis:standard' => 300,
         'redis:high' => 60,
         'redis:low' => 600,
@@ -104,7 +103,7 @@ return [
         */
         'supervisor-interactive' => [
             'connection' => 'redis',
-            'queue' => ['critical', 'schedules', 'mail', 'dns', 'standard', 'high', 'low'],
+            'queue' => ['critical', 'schedules', 'mail', 'standard', 'high', 'low'],
             'balance' => false,
             'minProcesses' => 1,
             'maxProcesses' => 6,
@@ -157,40 +156,40 @@ return [
         ],
 
         /*
-        | Durable agent turns.
+        | Extension work a manifest declared long-running.
         |
-        | Isolated for the same reason mods are, and then for one more. A turn
-        | is allowed up to `AgentRunner::MAX_WALL_SECONDS` (900) of wall clock,
-        | so on the interactive supervisor it would sit in front of invoices and
-        | scheduled tasks for a quarter of an hour. It also cannot share those
-        | processes for a subtler reason: an agent turn spends nearly all of its
-        | life blocked on a model or a tool, so it occupies a worker without
-        | using one, which is exactly the shape of work that starves a lane
-        | sized by throughput.
+        | Isolated for the reason the other two are: a package's hour-long
+        | import cannot share a queue with its own thirty-second webhook, and
+        | the extensions lane is already last in the interactive supervisor's
+        | strict priority order -- so a long job there would block every other
+        | package's short work behind it while never blocking a core lane.
         |
-        | `tries => 1` is not tuning, it is correctness. A turn executes real
-        | side effects through the panel's own API, and the queue cannot know
-        | which of them already happened when a worker died. Replaying one would
-        | re-run tool calls the user already saw succeed. A turn that fails is
-        | finished, and `RunAgentTurnJob::failed()` records that.
+        | `timeout` is the ceiling the manifest parser clamps declared
+        | timeoutSeconds against, so it must not be lowered without lowering
+        | ExtensionCapabilityVocabulary::QUEUE_MAX_TIMEOUT_SECONDS with it.
+        | Below the long connection's retry_after (3900), above the longest job
+        | the lane can carry (3600).
         |
-        | Sized from the durable-execution flag rather than from the agent flag:
-        | with the agent on and execution still request-bound, nothing is ever
-        | dispatched here. QueueServiceProvider sets the real value once the
-        | runtime setting overrides have been layered onto config. It also
-        | resolves this connection and queue name from config/queue.php.
+        | Sized to zero here and set for real by ExtensionServiceProvider once
+        | the runtime plan is readable: a panel where no enabled package
+        | declares a long-running group spends no process on a lane nothing can
+        | reach. Installing one is a Horizon restart, the same as adding any
+        | lane -- Horizon reads its provisioning plan when the command runs.
+        |
+        | `tries => 3` is only a fallback. Every extension job answers tries()
+        | from its verified manifest, which is what actually applies.
         */
-        'supervisor-agent' => [
+        'supervisor-extensions-long' => [
             'connection' => 'redis-long',
-            'queue' => ['agent'],
+            'queue' => ['extensions-long'],
             'balance' => 'simple',
             'processes' => 0,
             'maxTime' => 3600,
             'maxJobs' => 0,
             'memory' => 512,
-            'tries' => 1,
-            'timeout' => 1020,
-            'nice' => 0,
+            'tries' => 3,
+            'timeout' => 3600,
+            'nice' => 5,
         ],
     ],
 
@@ -198,13 +197,13 @@ return [
         'production' => [
             'supervisor-interactive' => ['maxProcesses' => 6],
             'supervisor-mods' => [],
-            'supervisor-agent' => [],
+            'supervisor-extensions-long' => [],
         ],
 
         'local' => [
             'supervisor-interactive' => ['maxProcesses' => 3],
             'supervisor-mods' => [],
-            'supervisor-agent' => [],
+            'supervisor-extensions-long' => [],
         ],
 
         // Staging and any custom APP_ENV, so an unexpected environment gets
@@ -212,7 +211,7 @@ return [
         '*' => [
             'supervisor-interactive' => ['maxProcesses' => 3],
             'supervisor-mods' => [],
-            'supervisor-agent' => [],
+            'supervisor-extensions-long' => [],
         ],
     ],
 ];

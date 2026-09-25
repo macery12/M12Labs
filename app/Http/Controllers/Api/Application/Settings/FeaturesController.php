@@ -17,8 +17,6 @@ class FeaturesController extends ApplicationApiController
      * admin choice (falling back to the module config default).
      */
     public const FEATURES = [
-        'custom_domains' => 'modules.custom_domains.enabled',
-        'ai' => 'modules.ai.enabled',
         'mods' => 'modules.mods.enabled',
         'email' => 'modules.email.enabled',
         'webhooks' => 'modules.webhooks.enabled',

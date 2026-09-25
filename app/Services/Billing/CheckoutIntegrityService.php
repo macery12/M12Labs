@@ -209,7 +209,6 @@ class CheckoutIntegrityService
             'billing_days' => (int) $order->billing_days,
             'name' => (string) $order->name,
             'variables' => $this->canonicalize($order->variables ?? []),
-            'domain_payload' => $this->canonicalize($order->domain_payload ?? []),
             'subtotal' => number_format((float) $order->subtotal, 2, '.', ''),
             'discount' => number_format((float) $order->discount, 2, '.', ''),
             'total' => number_format((float) $order->total, 2, '.', ''),

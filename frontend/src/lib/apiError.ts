@@ -14,8 +14,8 @@ const LOCALIZED_CODES: Record<string, () => string> = {
 
 // Pull the first human-readable message out of a Fractal/Laravel error response.
 // Fractal validation errors arrive as `{ errors: [{ detail }] }`; other failures
-// fall back to a top-level `message`. Returns undefined when nothing usable is
-// present so callers can substitute their own localized fallback.
+// fall back to a top-level `message` or `error`. Returns undefined when nothing
+// usable is present so callers can substitute their own localized fallback.
 export function firstError(err: unknown): string | undefined {
     if (isAxiosError(err)) {
         const localized = LOCALIZED_CODES[errorCode(err) ?? ''];
@@ -23,7 +23,14 @@ export function firstError(err: unknown): string | undefined {
 
         const errors = err.response?.data?.errors;
         if (Array.isArray(errors) && errors[0]?.detail) return errors[0].detail;
-        return err.response?.data?.message;
+        const message = err.response?.data?.message;
+        if (typeof message === 'string' && message.length > 0) return message;
+
+        // A few lifecycle conflict and repository endpoints return a flat
+        // `{ error }` payload rather than the JSON:API `errors[].detail`
+        // envelope. It is still deliberate user-facing copy from the backend.
+        const error = err.response?.data?.error;
+        return typeof error === 'string' && error.length > 0 ? error : undefined;
     }
     return undefined;
 }

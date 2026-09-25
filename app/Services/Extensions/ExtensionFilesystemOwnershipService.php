@@ -267,9 +267,23 @@ class ExtensionFilesystemOwnershipService
             return;
         }
 
-        if (is_file($path)) {
-            @chmod($path, 0644);
+        if (!is_file($path)) {
+            return;
         }
+
+        // Preserve the executable bit rather than flattening every file to
+        // 0644. This walk covers node_modules and frontend/node_modules, where
+        // clearing it breaks the pnpm shims and native binaries the frontend
+        // build invokes — so the first install would repair ownership and every
+        // subsequent rebuild would then fail with "tsc: Permission denied",
+        // leaving the panel unable to install or update anything.
+        //
+        // Only the owner's execute bit is consulted: an extension's own files
+        // are written 0644 by the installer and stay that way.
+        $mode = @fileperms($path);
+        $executable = $mode !== false && ($mode & 0100) !== 0;
+
+        @chmod($path, $executable ? 0755 : 0644);
     }
 
     private function findClosestExistingPath(string $path): ?string

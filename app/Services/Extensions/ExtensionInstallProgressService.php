@@ -6,8 +6,10 @@ use Illuminate\Support\Facades\File;
 
 /**
  * Tracks the real-time installation/uninstallation progress of an extension
- * using a JSON file in storage so that the progress survives cache clears
- * (e.g. the `php artisan optimize:clear` step inside the rebuild pipeline).
+ * using a JSON file in storage so that the progress survives a cache clear.
+ * The rebuild pipeline no longer flushes the cache (see
+ * ExtensionPanelRebuildService::CLEAR_COMMANDS), but an operator running
+ * `optimize:clear` by hand mid-install must not lose the progress record.
  */
 class ExtensionInstallProgressService
 {
@@ -32,6 +34,7 @@ class ExtensionInstallProgressService
      * Valid stage identifiers emitted during an uninstall.
      */
     public const UNINSTALL_STAGES = [
+        'draining',
         'validating',
         'migrating',
         'removing',
@@ -48,6 +51,7 @@ class ExtensionInstallProgressService
         'downloading',
         'extracting',
         'validating',
+        'draining',
         'removing',
         'copying',
         'migrating',

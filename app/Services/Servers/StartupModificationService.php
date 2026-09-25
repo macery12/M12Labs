@@ -9,6 +9,8 @@ use Illuminate\Support\Arr;
 use Everest\Models\ServerVariable;
 use Everest\Traits\Services\HasUserLevels;
 use Illuminate\Database\ConnectionInterface;
+use Everest\Extensions\Hooks\Events\ServerUpdatedHook;
+use Everest\Services\Extensions\ExtensionHookDispatcher;
 
 class StartupModificationService
 {
@@ -17,8 +19,11 @@ class StartupModificationService
     /**
      * StartupModificationService constructor.
      */
-    public function __construct(private ConnectionInterface $connection, private VariableValidatorService $validatorService)
-    {
+    public function __construct(
+        private ConnectionInterface $connection,
+        private VariableValidatorService $validatorService,
+        private ExtensionHookDispatcher $hooks,
+    ) {
     }
 
     /**
@@ -28,7 +33,7 @@ class StartupModificationService
      */
     public function handle(Server $server, array $data): Server
     {
-        return $this->connection->transaction(function () use ($server, $data) {
+        $updated = $this->connection->transaction(function () use ($server, $data) {
             if (!empty($data['environment'])) {
                 $egg = $this->isUserLevel(User::USER_LEVEL_ADMIN) ? ($data['egg_id'] ?? $server->egg_id) : $server->egg_id;
 
@@ -60,6 +65,13 @@ class StartupModificationService
             //  that should be looked into more.
             return $server->fresh();
         });
+
+        // After the commit, never inside it: a handler running in the same
+        // transaction could roll back a change core has already reported as
+        // done, and would read a database state nothing else can see yet.
+        $this->hooks->dispatch(ServerUpdatedHook::fromServer($updated, ['startup']));
+
+        return $updated;
     }
 
     /**

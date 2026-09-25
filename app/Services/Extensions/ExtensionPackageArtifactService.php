@@ -2,11 +2,13 @@
 
 namespace Everest\Services\Extensions;
 
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 use Everest\Exceptions\DisplayException;
+use Everest\Services\Extensions\Manifest\ExtensionManifest;
+use Everest\Services\Extensions\Manifest\ExtensionManifestParser;
+use Everest\Services\Extensions\Manifest\ExtensionManifestCanonicalizer;
+use Everest\Services\Extensions\Manifest\ExtensionCapabilityFileValidator;
 
 class ExtensionPackageArtifactService
 {
@@ -15,6 +17,11 @@ class ExtensionPackageArtifactService
 
     public function __construct(
         private PanelVersionCompatibilityService $panelVersionCompatibility,
+        private ExtensionManifestParser $manifestParser,
+        private ExtensionCapabilityFileValidator $capabilityFileValidator,
+        private ExtensionArchiveExtractor $archiveExtractor,
+        private ExtensionRemoteResourceService $remoteResourceService,
+        private ExtensionManifestCanonicalizer $manifestCanonicalizer,
     ) {
     }
 
@@ -31,9 +38,25 @@ class ExtensionPackageArtifactService
         }
 
         try {
-            $rawManifest = $zip->getFromName(self::MANIFEST_FILENAME);
-            if (!is_string($rawManifest)) {
+            $manifestIndex = $zip->locateName(self::MANIFEST_FILENAME);
+            if ($manifestIndex === false) {
                 throw new DisplayException(sprintf('The extension package "%s" does not contain %s.', basename($resolvedPath), self::MANIFEST_FILENAME));
+            }
+
+            $manifestLimit = (int) config('extensions.archive.max_manifest_bytes', 512 * 1024);
+            $manifestStat = $zip->statIndex($manifestIndex);
+            if (!is_array($manifestStat) || (int) $manifestStat['size'] > $manifestLimit) {
+                throw new DisplayException(sprintf('The extension package manifest is larger than the permitted %d bytes.', $manifestLimit));
+            }
+
+            // Supplying a maximum length ensures discovery never asks libzip
+            // to allocate an attacker-declared manifest before checking it.
+            $rawManifest = $zip->getFromIndex($manifestIndex, $manifestLimit + 1);
+            if (!is_string($rawManifest)) {
+                throw new DisplayException(sprintf('The extension package "%s" contains an unreadable manifest.', basename($resolvedPath)));
+            }
+            if (strlen($rawManifest) > $manifestLimit) {
+                throw new DisplayException(sprintf('The extension package manifest is larger than the permitted %d bytes.', $manifestLimit));
             }
 
             $manifest = json_decode($rawManifest, true, 512, JSON_THROW_ON_ERROR);
@@ -46,24 +69,23 @@ class ExtensionPackageArtifactService
             $zip->close();
         }
 
-        $extensionId = trim((string) Arr::get($manifest, 'extension.id', ''));
-        $version = trim((string) Arr::get($manifest, 'package.version', ''));
-
-        if ($extensionId === '' || $version === '') {
-            throw new DisplayException(sprintf('The extension package "%s" is missing extension.id or package.version.', basename($resolvedPath)));
-        }
+        // Inspection runs the same strict validation an install does, so a
+        // package that would be rejected later is rejected while it is still
+        // just a file being listed, with the same message.
+        $parsed = $this->parseManifest($manifest);
 
         return [
             'archivePath' => $resolvedPath,
             'archiveName' => basename($resolvedPath),
-            'extensionId' => $extensionId,
-            'packageId' => trim((string) Arr::get($manifest, 'package.id', $extensionId)),
-            'version' => $version,
-            'name' => trim((string) Arr::get($manifest, 'extension.name', $extensionId)),
-            'description' => trim((string) Arr::get($manifest, 'extension.description', '')),
-            'route' => trim((string) Arr::get($manifest, 'extension.route', $extensionId)),
-            'fileCount' => count((array) Arr::get($manifest, 'files', [])),
-            'compatiblePanelVersions' => array_values(array_filter((array) Arr::get($manifest, 'compatiblePanelVersions', []), 'is_string')),
+            'extensionId' => $parsed->id,
+            'packageId' => $parsed->packageId,
+            'version' => $parsed->version,
+            'name' => $parsed->name,
+            'description' => $parsed->description,
+            'fileCount' => count($parsed->files),
+            'compatiblePanelVersions' => $parsed->compatiblePanelVersions,
+            'capabilities' => $parsed->capabilities->summary(),
+            'parsed' => $parsed,
             'manifest' => $manifest,
         ];
     }
@@ -168,15 +190,27 @@ class ExtensionPackageArtifactService
     // Shared archive helpers — used by install and update services
     // ---------------------------------------------------------------------------
 
-    public function downloadArchive(string $location, string $destination): void
+    public function downloadArchive(string $location, string $destination, bool $allowLocalFile = false): void
     {
-        if (Str::startsWith($location, ['http://', 'https://'])) {
-            $response = Http::timeout(120)->withOptions(['sink' => $destination])->get($location);
-            if (!$response->successful()) {
-                throw new DisplayException(sprintf('Unable to download extension archive from "%s".', $location));
-            }
+        if (Str::startsWith($location, 'https://')) {
+            $limits = (array) config('extensions.archive', []);
+            $maxBytes = (int) ($limits['max_download_bytes'] ?? 64 * 1024 * 1024);
+
+            $this->remoteResourceService->download(
+                $location,
+                $destination,
+                $maxBytes,
+                (int) ($limits['download_timeout_seconds'] ?? 120),
+                (int) ($limits['download_connect_timeout_seconds'] ?? 10),
+                (int) ($limits['max_redirects'] ?? 3),
+                'extension archive',
+            );
 
             return;
+        }
+
+        if (!$allowLocalFile) {
+            throw new DisplayException('Extension archives must use a public HTTPS URL. Local files are accepted only by the explicit CLI file-install flow.');
         }
 
         $sourcePath = Str::startsWith($location, 'file://') ? rawurldecode(substr($location, 7)) : $location;
@@ -194,20 +228,18 @@ class ExtensionPackageArtifactService
         }
     }
 
+    /**
+     * Extract an archive that is still untrusted.
+     *
+     * Checksums and signatures are verified against files on disk, so they
+     * cannot protect the extraction itself. {@see ExtensionArchiveExtractor}
+     * inspects and streams every entry rather than handing the archive to
+     * ZipArchive::extractTo(), which would follow traversal paths, write
+     * symlinks and restore archive-chosen modes.
+     */
     public function extractArchive(string $archivePath, string $extractPath): void
     {
-        $zip = new \ZipArchive();
-        if ($zip->open($archivePath) !== true) {
-            throw new DisplayException('The downloaded extension archive could not be opened.');
-        }
-
-        if (!$zip->extractTo($extractPath)) {
-            $zip->close();
-
-            throw new DisplayException('The downloaded extension archive could not be extracted.');
-        }
-
-        $zip->close();
+        $this->archiveExtractor->extract($archivePath, $extractPath);
     }
 
     /**
@@ -215,17 +247,39 @@ class ExtensionPackageArtifactService
      */
     public function readPackageManifest(string $extractPath): array
     {
+        return $this->readPackageManifestDocument($extractPath)['manifest'];
+    }
+
+    /**
+     * Read one manifest in both forms needed downstream: an associative array
+     * for strict schema parsing and type-preserved canonical JSON for signature
+     * verification.
+     *
+     * @return array{manifest: array<string, mixed>, canonical: string, json: string}
+     */
+    public function readPackageManifestDocument(string $extractPath): array
+    {
         $manifestPath = $extractPath . '/' . self::MANIFEST_FILENAME;
         if (!is_file($manifestPath)) {
             throw new DisplayException('The extension archive did not include an m12labs-extension.json manifest.');
         }
 
-        $manifest = json_decode(File::get($manifestPath), true, 512, JSON_THROW_ON_ERROR);
+        $manifestLimit = (int) config('extensions.archive.max_manifest_bytes', 512 * 1024);
+        if (filesize($manifestPath) > $manifestLimit) {
+            throw new DisplayException(sprintf('The extension package manifest is larger than the permitted %d bytes.', $manifestLimit));
+        }
+
+        $manifestJson = File::get($manifestPath);
+        $manifest = json_decode($manifestJson, true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($manifest)) {
             throw new DisplayException('The extension package manifest is invalid.');
         }
 
-        return $manifest;
+        return [
+            'manifest' => $manifest,
+            'canonical' => $this->manifestCanonicalizer->canonicalizeJson($manifestJson),
+            'json' => $manifestJson,
+        ];
     }
 
     /**
@@ -236,95 +290,25 @@ class ExtensionPackageArtifactService
     public const SUPPORTED_MANIFEST_VERSION = 2;
 
     /**
-     * Validate the manifest's extension id / version against expected values and return it unchanged.
+     * Parse and fully validate a package manifest.
+     *
+     * Everything downstream consumes the returned object rather than the raw
+     * array: the parser is the only place that reads manifest keys, so a shape
+     * change lands in one file. Validation covers the document (strict schema,
+     * closed vocabularies, namespaced identity) and its agreement with the
+     * shipped file list in both directions.
      *
      * @param array<string, mixed> $manifest
      *
-     * @return array<string, mixed>
+     * @throws DisplayException
      */
-    public function normalizeManifest(array $manifest, ?string $expectedExtensionId = null, ?string $expectedVersion = null): array
+    public function parseManifest(array $manifest, ?string $expectedExtensionId = null, ?string $expectedVersion = null): ExtensionManifest
     {
-        $extensionId = trim((string) Arr::get($manifest, 'extension.id', ''));
-        $version = trim((string) Arr::get($manifest, 'package.version', ''));
+        $parsed = $this->manifestParser->parse($manifest, $expectedExtensionId, $expectedVersion);
 
-        if ($extensionId === '' || $version === '') {
-            throw new DisplayException('The extension package manifest is missing required metadata.');
-        }
+        $this->capabilityFileValidator->assertMatchesFiles($parsed);
 
-        if ($expectedExtensionId !== null && $extensionId !== $expectedExtensionId) {
-            throw new DisplayException('The downloaded package does not match the requested extension id.');
-        }
-
-        if ($expectedVersion !== null && $version !== $expectedVersion) {
-            throw new DisplayException('The downloaded package version does not match the repository manifest.');
-        }
-
-        $this->assertValidManifestSchema($manifest, $extensionId);
-
-        return $manifest;
-    }
-
-    /**
-     * Validate the v2 manifest additions (admin surface, backend capability
-     * declarations) and their consistency with the declared file list.
-     *
-     * @param array<string, mixed> $manifest
-     */
-    private function assertValidManifestSchema(array $manifest, string $extensionId): void
-    {
-        $manifestVersion = (int) Arr::get($manifest, 'manifestVersion', 1);
-        if ($manifestVersion > self::SUPPORTED_MANIFEST_VERSION) {
-            throw new DisplayException(sprintf('This extension package uses manifest version %d, which was built for a newer panel. Update the panel before installing it.', $manifestVersion));
-        }
-
-        $filePaths = array_map(
-            fn ($file) => is_array($file) ? (string) ($file['path'] ?? '') : '',
-            (array) Arr::get($manifest, 'files', [])
-        );
-        $hasMigrationFiles = (bool) array_filter(
-            $filePaths,
-            fn (string $path) => Str::startsWith($path, sprintf('app/Extensions/Packages/%s/database/migrations/', $extensionId))
-        );
-        $hasScheduleFile = in_array(sprintf('app/Extensions/Packages/%s/schedule.php', $extensionId), $filePaths, true);
-
-        $admin = Arr::get($manifest, 'extension.admin');
-        $backend = Arr::get($manifest, 'backend', []);
-
-        if ($manifestVersion < 2) {
-            if ($admin !== null || $backend !== [] || $hasMigrationFiles || $hasScheduleFile) {
-                throw new DisplayException('This extension uses admin pages, migrations, or scheduled tasks, which require "manifestVersion": 2 in its manifest.');
-            }
-
-            return;
-        }
-
-        if ($admin !== null) {
-            $route = trim((string) Arr::get($admin, 'route', ''));
-            $label = trim((string) Arr::get($admin, 'label', ''));
-            $icon = Arr::get($admin, 'icon');
-
-            if (!is_array($admin)
-                || !preg_match('/^[a-z0-9_-]+$/', $route)
-                || $label === '' || mb_strlen($label) > 60
-                || ($icon !== null && !is_string($icon))
-            ) {
-                throw new DisplayException('The extension manifest declares an invalid admin page (route must be a slug, label must be 1-60 characters).');
-            }
-        }
-
-        if (!is_array($backend)) {
-            throw new DisplayException('The extension manifest "backend" section must be an object.');
-        }
-
-        $declaresMigrations = (bool) Arr::get($backend, 'migrations', false);
-        if ($declaresMigrations !== $hasMigrationFiles) {
-            throw new DisplayException($declaresMigrations ? 'The extension manifest declares database migrations but ships no migration files.' : 'The extension package ships migration files but does not declare "backend": {"migrations": true} in its manifest.');
-        }
-
-        $declaresSchedule = (bool) Arr::get($backend, 'schedule', false);
-        if ($declaresSchedule !== $hasScheduleFile) {
-            throw new DisplayException($declaresSchedule ? 'The extension manifest declares scheduled tasks but ships no schedule.php.' : 'The extension package ships a schedule.php but does not declare "backend": {"schedule": true} in its manifest.');
-        }
+        return $parsed;
     }
 
     /**

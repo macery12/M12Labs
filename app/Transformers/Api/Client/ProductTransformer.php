@@ -37,7 +37,6 @@ class ProductTransformer extends Transformer
                 'backup' => $model->backup_limit,
                 'database' => $model->database_limit,
                 'allocation' => $model->allocation_limit,
-                'subdomain' => $model->subdomain_limit,
             ],
         ];
     }

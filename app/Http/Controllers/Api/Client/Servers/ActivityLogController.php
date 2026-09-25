@@ -108,7 +108,10 @@ class ActivityLogController extends ClientApiController
                 $builder->whereNull('users.id')
                     ->orWhereNull('admin_roles.id')
                     ->orWhere('admin_roles.is_owner', false)
-                    ->orWhereIn('users.id', $subusers);
+                    ->orWhereIn('users.id', $subusers)
+                    // Staff being let into this server is the one admin action
+                    // the customer must always be able to see.
+                    ->orWhereIn('activity_logs.event', ActivityLog::DELEGATED_ACCESS_EVENTS);
             });
     }
 

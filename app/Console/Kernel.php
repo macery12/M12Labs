@@ -3,16 +3,14 @@
 namespace Everest\Console;
 
 use Everest\Models\ActivityLog;
-use Everest\Services\AI\ProviderFactory;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Console\PruneCommand;
-use Everest\Console\Commands\AI\WarmAiModelCommand;
 use Everest\Console\Commands\Billing\CleanupOrdersCommand;
 use Everest\Console\Commands\Billing\ExpireCouponsCommand;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Everest\Console\Commands\Billing\ExpireInvoicesCommand;
 use Everest\Console\Commands\Billing\ExpirePdfCacheCommand;
-use Everest\Console\Commands\AI\PruneAiConversationsCommand;
+use Everest\Console\Commands\Queue\ReconcileHorizonCommand;
 use Everest\Console\Commands\Schedule\ProcessRunnableCommand;
 use Everest\Console\Commands\Email\ProcessDeferredEmailsCommand;
 use Everest\Console\Commands\Auth\ProcessJGuardActivationsCommand;
@@ -33,22 +31,22 @@ class Kernel extends ConsoleKernel
     {
         $this->load(__DIR__ . '/Commands');
 
-        // Extension-contributed artisan commands. The glob is deliberately
+        // Extension-contributed artisan commands. Loading is deliberately
         // scoped to Console/Commands directories: a wholesale load() over
         // Extensions/Packages would autoload-include route/schedule files and
         // execute their top-level Route:: calls at command registration time.
         //
-        // Only enabled extensions are loaded, so a disabled extension's command
-        // classes are never registered — they do not appear in artisan and
-        // cannot be invoked at all until the extension is re-enabled.
-        $enabledExtensionIds = \Everest\Services\Extensions\ExtensionRuntimeGate::enabledExtensionIds();
-        foreach ((glob(app_path('Extensions/Packages/*/Console/Commands')) ?: []) as $extensionCommandDir) {
-            $extensionId = basename(dirname(dirname($extensionCommandDir)));
-            if (!in_array($extensionId, $enabledExtensionIds, true)) {
-                continue;
-            }
+        // Driven by the declared capability, so a package that ships command
+        // classes without declaring capabilities.commands never registers them.
+        // Only enabled extensions load, so a disabled extension's commands do
+        // not appear in artisan and cannot be invoked until it is re-enabled.
+        $extensionPlan = app(\Everest\Services\Extensions\ExtensionRuntimePlanService::class);
+        foreach (array_keys($extensionPlan->withCapability('commands')) as $extensionId) {
+            $extensionCommandDir = app_path(sprintf('Extensions/Packages/%s/Console/Commands', $extensionId));
 
-            $this->load($extensionCommandDir);
+            if (is_dir($extensionCommandDir)) {
+                $this->load($extensionCommandDir);
+            }
         }
     }
 
@@ -63,14 +61,6 @@ class Kernel extends ConsoleKernel
         // Execute scheduled commands for servers every minute, as if there was a normal cron running.
         $schedule->command(ProcessRunnableCommand::class)->everyMinute()->withoutOverlapping();
         $schedule->command(CleanServiceBackupFilesCommand::class)->daily();
-        $schedule->command(PruneAiConversationsCommand::class)->hourly()->withoutOverlapping();
-        // Re-assert Ollama keep_alive before it lapses. Do not launch a child
-        // process for hosted providers or when warm-up is disabled; the command
-        // repeats this guard for manual invocations and settings-change races.
-        $schedule->command(WarmAiModelCommand::class)
-            ->everyFiveMinutes()
-            ->when(fn (ProviderFactory $factory): bool => WarmAiModelCommand::shouldRun($factory))
-            ->withoutOverlapping();
 
         if (config('backups.prune_age')) {
             // Every 30 minutes, run the backup pruning command so that any abandoned backups can be deleted.
@@ -111,6 +101,12 @@ class Kernel extends ConsoleKernel
         // Note this *deletes* the live counters as it goes, which is why the
         // queue page reports over the retained window rather than the counters.
         $schedule->command('horizon:snapshot')->everyFiveMinutes();
+
+        // Horizon takes its supervisor list once, at start. The extensions long
+        // lane is staffed from live state, so a Horizon that restarted mid
+        // extension install keeps a lane with jobs and no worker until
+        // something restarts it again; this is that something.
+        $schedule->command(ReconcileHorizonCommand::class)->everyMinute()->withoutOverlapping();
 
         // Send server renewal notices (run daily - checks for servers expiring in 7, 3, and 1 day)
         if (config('modules.billing.enabled')) {

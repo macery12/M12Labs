@@ -62,3 +62,19 @@ export function td(id: string, fallback?: string): string {
     const fn = (m as unknown as RuntimeCatalog)[id];
     return fn ? fn() : fallback ?? id;
 }
+
+/**
+ * td() for a message that takes inputs.
+ *
+ * The typed `m` surface is the right way to reach a message the panel ships,
+ * because it checks the inputs at compile time. This exists for ids assembled
+ * at runtime — extension packages, whose keys are not in the catalog when the
+ * package is written. The fallback is interpolated the same way so an untranslated
+ * locale still reads correctly rather than showing raw `{placeholders}`.
+ */
+export function tdi(id: string, fallback: string, inputs: Record<string, unknown>): string {
+    const fn = (m as unknown as Record<string, ((inputs: Record<string, unknown>) => string) | undefined>)[id];
+    if (fn) return fn(inputs);
+
+    return fallback.replace(/\{(\w+)\}/g, (match, key) => (key in inputs ? String(inputs[key]) : match));
+}

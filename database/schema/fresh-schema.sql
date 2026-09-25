@@ -66,182 +66,6 @@ CREATE TABLE `admin_roles` (
   UNIQUE KEY `admin_roles_id_unique` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_budget_reservations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_budget_reservations` (
-  `user_id` int(10) unsigned NOT NULL,
-  `token` char(36) NOT NULL,
-  `expires_at` timestamp NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `ai_budget_reservations_token_unique` (`token`),
-  CONSTRAINT `ai_budget_reservations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_conversations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_conversations` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned NOT NULL,
-  `server_uuid` char(36) DEFAULT NULL,
-  `scope` varchar(16) NOT NULL DEFAULT 'server',
-  `title` varchar(255) NOT NULL DEFAULT 'New conversation',
-  `redactions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`redactions`)),
-  `assist` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`assist`)),
-  `is_saved` tinyint(1) NOT NULL DEFAULT 0,
-  `expires_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `ai_conversations_user_id_server_uuid_index` (`user_id`,`server_uuid`),
-  KEY `ai_conversations_expires_at_index` (`expires_at`),
-  KEY `ai_conversations_server_uuid_foreign` (`server_uuid`),
-  KEY `ai_conversations_user_id_scope_index` (`user_id`,`scope`),
-  CONSTRAINT `ai_conversations_server_uuid_foreign` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`uuid`) ON DELETE CASCADE,
-  CONSTRAINT `ai_conversations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_messages`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_messages` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `conversation_id` bigint(20) unsigned NOT NULL,
-  `role` enum('user','assistant','system','tool') NOT NULL,
-  `content` text NOT NULL,
-  `tool_calls` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tool_calls`)),
-  `tool_call_id` varchar(128) DEFAULT NULL,
-  `tool_name` varchar(64) DEFAULT NULL,
-  `step` smallint(5) unsigned DEFAULT NULL,
-  `created_at` timestamp(3) NOT NULL DEFAULT current_timestamp(3),
-  PRIMARY KEY (`id`),
-  KEY `ai_messages_conversation_id_index` (`conversation_id`),
-  CONSTRAINT `ai_messages_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_pending_actions`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_pending_actions` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `turn_id` char(36) NOT NULL,
-  `conversation_id` bigint(20) unsigned NOT NULL,
-  `user_id` int(10) unsigned NOT NULL,
-  `server_uuid` char(36) DEFAULT NULL,
-  `scope` varchar(16) NOT NULL DEFAULT 'server',
-  `tool_name` varchar(64) NOT NULL,
-  `tool_call_id` varchar(128) DEFAULT NULL,
-  `risk` varchar(16) NOT NULL,
-  `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
-  `state` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`state`)),
-  `assist_grant` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`assist_grant`)),
-  `assist_grant_mac` char(64) DEFAULT NULL,
-  `step` smallint(5) unsigned NOT NULL DEFAULT 0,
-  `status` varchar(16) NOT NULL DEFAULT 'pending',
-  `execution_key` char(36) DEFAULT NULL,
-  `claimed_at` timestamp NULL DEFAULT NULL,
-  `resolved_at` timestamp NULL DEFAULT NULL,
-  `failure_reason` varchar(255) DEFAULT NULL,
-  `expires_at` timestamp NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ai_pending_actions_turn_id_unique` (`turn_id`),
-  UNIQUE KEY `ai_pending_actions_execution_key_unique` (`execution_key`),
-  KEY `ai_pending_actions_user_status_expires_index` (`user_id`,`status`,`expires_at`),
-  KEY `ai_pending_actions_user_server_status_index` (`user_id`,`server_uuid`,`status`),
-  KEY `ai_pending_actions_updated_status_index` (`updated_at`,`status`),
-  KEY `ai_pending_actions_conversation_id_index` (`conversation_id`),
-  CONSTRAINT `ai_pending_actions_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `ai_pending_actions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_tool_calls`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_tool_calls` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `turn_id` char(36) NOT NULL,
-  `conversation_id` bigint(20) unsigned DEFAULT NULL,
-  `user_id` int(10) unsigned DEFAULT NULL,
-  `server_uuid` char(36) DEFAULT NULL,
-  `scope` varchar(16) NOT NULL DEFAULT 'server',
-  `tool_call_id` varchar(128) DEFAULT NULL,
-  `batch_parent_tool_call_id` varchar(128) DEFAULT NULL,
-  `batch_index` smallint(5) unsigned DEFAULT NULL,
-  `tool_name` varchar(64) NOT NULL,
-  `risk` varchar(16) NOT NULL,
-  `step` smallint(5) unsigned NOT NULL DEFAULT 0,
-  `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`arguments`)),
-  `result_summary` text DEFAULT NULL,
-  `status` varchar(24) NOT NULL DEFAULT 'pending_approval',
-  `http_status` smallint(5) unsigned DEFAULT NULL,
-  `duration_ms` int(10) unsigned DEFAULT NULL,
-  `created_at` timestamp(3) NOT NULL DEFAULT current_timestamp(3),
-  `resolved_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `ai_tool_calls_turn_call_index` (`turn_id`,`tool_call_id`),
-  KEY `ai_tool_calls_created_at_index` (`created_at`),
-  KEY `ai_tool_calls_conversation_id_index` (`conversation_id`),
-  KEY `ai_tool_calls_user_id_index` (`user_id`),
-  CONSTRAINT `ai_tool_calls_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `ai_tool_calls_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_turn_events`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_turn_events` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `turn_id` char(36) NOT NULL,
-  `seq` int(10) unsigned NOT NULL,
-  `type` varchar(32) NOT NULL,
-  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payload`)),
-  `created_at` timestamp(3) NOT NULL DEFAULT current_timestamp(3),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ai_turn_events_turn_seq_unique` (`turn_id`,`seq`),
-  KEY `ai_turn_events_created_at_index` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `ai_usage_logs`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ai_usage_logs` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) unsigned DEFAULT NULL,
-  `server_uuid` char(36) DEFAULT NULL,
-  `conversation_id` bigint(20) unsigned DEFAULT NULL,
-  `turn_id` char(36) DEFAULT NULL,
-  `step` smallint(5) unsigned DEFAULT NULL,
-  `tool_calls_count` smallint(5) unsigned NOT NULL DEFAULT 0,
-  `model` varchar(100) NOT NULL,
-  `source` varchar(20) NOT NULL DEFAULT 'client',
-  `prompt_tokens` int(10) unsigned DEFAULT NULL,
-  `completion_tokens` int(10) unsigned DEFAULT NULL,
-  `total_tokens` int(10) unsigned DEFAULT NULL,
-  `latency_ms` int(10) unsigned DEFAULT NULL,
-  `status` enum('success','error','suspended','running','cancelled') NOT NULL DEFAULT 'success',
-  `cached` tinyint(1) NOT NULL DEFAULT 0,
-  `error_message` text DEFAULT NULL,
-  `heartbeat_at` timestamp NULL DEFAULT NULL,
-  `deadline_at` timestamp NULL DEFAULT NULL,
-  `cancel_requested_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ai_usage_logs_turn_unique` (`turn_id`),
-  KEY `ai_usage_logs_created_at_index` (`created_at`),
-  KEY `ai_usage_logs_conversation_id_foreign` (`conversation_id`),
-  KEY `ai_usage_logs_user_id_index` (`user_id`),
-  KEY `ai_usage_logs_server_uuid_index` (`server_uuid`),
-  KEY `ai_usage_logs_user_created_index` (`user_id`,`created_at`),
-  KEY `ai_usage_logs_user_status_id_index` (`user_id`,`status`,`id`),
-  CONSTRAINT `ai_usage_logs_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `ai_usage_logs_server_uuid_foreign` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`uuid`) ON DELETE SET NULL,
-  CONSTRAINT `ai_usage_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `alert_user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -495,62 +319,6 @@ CREATE TABLE `coupons` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `coupons_code_unique` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `custom_domain_api_keys`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `custom_domain_api_keys` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(191) NOT NULL,
-  `token` text NOT NULL,
-  `enabled` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `custom_domain_api_keys_name_unique` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `custom_domain_dns_logs`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `custom_domain_dns_logs` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `server_id` int(10) unsigned DEFAULT NULL,
-  `server_custom_domain_id` bigint(20) unsigned DEFAULT NULL,
-  `action` enum('create','update','delete','sync','ssl') NOT NULL,
-  `status` enum('success','failed') NOT NULL,
-  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payload`)),
-  `message` text DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `custom_domain_dns_logs_server_id_created_at_index` (`server_id`,`created_at`),
-  KEY `custom_domain_dns_logs_server_custom_domain_id_foreign` (`server_custom_domain_id`),
-  CONSTRAINT `custom_domain_dns_logs_server_custom_domain_id_foreign` FOREIGN KEY (`server_custom_domain_id`) REFERENCES `server_custom_domains` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `custom_domain_dns_logs_server_id_foreign` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `custom_domains`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `custom_domains` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `domain` varchar(191) NOT NULL,
-  `cloudflare_zone_id` varchar(191) DEFAULT NULL,
-  `api_key_id` bigint(20) unsigned DEFAULT NULL,
-  `allowed_nest_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`allowed_nest_ids`)),
-  `allowed_egg_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`allowed_egg_ids`)),
-  `service_tag` varchar(191) DEFAULT NULL,
-  `egg_service_tags` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`egg_service_tags`)),
-  `wildcard_enabled` tinyint(1) NOT NULL DEFAULT 0,
-  `enabled` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `custom_domains_domain_unique` (`domain`),
-  KEY `custom_domains_api_key_id_foreign` (`api_key_id`),
-  CONSTRAINT `custom_domains_api_key_id_foreign` FOREIGN KEY (`api_key_id`) REFERENCES `custom_domain_api_keys` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `custom_links`;
@@ -844,8 +612,8 @@ CREATE TABLE `email_quotas` (
   `month_sent_count` int(11) NOT NULL DEFAULT 0,
   `monthly_overage` int(11) NOT NULL DEFAULT 0,
   `overage_count` int(11) NOT NULL DEFAULT 0,
-  `month_reset_at` date NOT NULL DEFAULT '2026-08-22',
-  `day_reset_at` date NOT NULL DEFAULT '2026-08-22',
+  `month_reset_at` date NOT NULL DEFAULT '2026-09-21',
+  `day_reset_at` date NOT NULL DEFAULT '2026-09-21',
   `period_month` varchar(7) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -897,6 +665,81 @@ CREATE TABLE `extension_file_snapshots` (
   CONSTRAINT `extension_file_snapshots_server_id_foreign` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_hook_health`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_hook_health` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `extension_id` varchar(191) NOT NULL,
+  `event` varchar(64) NOT NULL,
+  `handler` varchar(191) NOT NULL,
+  `invocations` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `failures` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `consecutive_failures` int(10) unsigned NOT NULL DEFAULT 0,
+  `total_duration_ms` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `last_invoked_at` timestamp NULL DEFAULT NULL,
+  `last_failed_at` timestamp NULL DEFAULT NULL,
+  `last_error` text DEFAULT NULL,
+  `breaker_open_until` timestamp NULL DEFAULT NULL,
+  `breaker_trips` int(10) unsigned NOT NULL DEFAULT 0,
+  `quarantined_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_hook_health_extension_id_event_handler_unique` (`extension_id`,`event`,`handler`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_hook_tombstones`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_hook_tombstones` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `correlation_id` char(36) NOT NULL,
+  `extension_id` varchar(191) NOT NULL,
+  `event` varchar(64) NOT NULL,
+  `handler` varchar(191) NOT NULL,
+  `envelope` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`envelope`)),
+  `consumed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ext_hook_tombstones_delivery_unique` (`correlation_id`,`extension_id`,`handler`),
+  KEY `extension_hook_tombstones_extension_id_event_index` (`extension_id`,`event`),
+  KEY `extension_hook_tombstones_correlation_id_index` (`correlation_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_operations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_operations` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `correlation_id` char(36) NOT NULL,
+  `extension_id` varchar(191) NOT NULL,
+  `operation` varchar(24) NOT NULL,
+  `from_version` varchar(191) DEFAULT NULL,
+  `to_version` varchar(191) DEFAULT NULL,
+  `stage` varchar(32) DEFAULT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'running',
+  `initiator_user_id` int(10) unsigned DEFAULT NULL,
+  `initiator_label` varchar(191) DEFAULT NULL,
+  `started_at` timestamp NULL DEFAULT NULL,
+  `finished_at` timestamp NULL DEFAULT NULL,
+  `duration_ms` int(10) unsigned DEFAULT NULL,
+  `affected_paths` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`affected_paths`)),
+  `affected_tables` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`affected_tables`)),
+  `migration_batch` varchar(191) DEFAULT NULL,
+  `capability_diff` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`capability_diff`)),
+  `error_code` varchar(64) DEFAULT NULL,
+  `error_summary` text DEFAULT NULL,
+  `recovery_instructions` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_operations_correlation_id_unique` (`correlation_id`),
+  KEY `extension_operations_extension_id_created_at_index` (`extension_id`,`created_at`),
+  KEY `extension_operations_extension_id_index` (`extension_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `extension_package_files`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -929,12 +772,26 @@ CREATE TABLE `extension_packages` (
   `icon` varchar(191) NOT NULL DEFAULT 'puzzle',
   `route` varchar(191) DEFAULT NULL,
   `installed_version` varchar(191) NOT NULL,
+  `previous_version` varchar(191) DEFAULT NULL,
   `source_repository_id` bigint(20) unsigned DEFAULT NULL,
   `source_repository_name` varchar(191) DEFAULT NULL,
   `source_registry_url` text DEFAULT NULL,
   `source_archive_url` text DEFAULT NULL,
   `package_checksum` varchar(64) DEFAULT NULL,
   `manifest` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`manifest`)),
+  `manifest_version` tinyint(3) unsigned NOT NULL DEFAULT 1,
+  `capabilities` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`capabilities`)),
+  `capability_hash` char(64) DEFAULT NULL,
+  `approved_capability_hash` char(64) DEFAULT NULL,
+  `manifest_hash` char(64) DEFAULT NULL,
+  `signed_manifest` mediumtext DEFAULT NULL,
+  `publisher` varchar(191) DEFAULT NULL,
+  `signature_state` varchar(24) NOT NULL DEFAULT 'unsigned',
+  `signature_key_id` varchar(191) DEFAULT NULL,
+  `signature_verified_at` timestamp NULL DEFAULT NULL,
+  `last_operation_id` char(36) DEFAULT NULL,
+  `state` varchar(24) NOT NULL DEFAULT 'installed_disabled',
+  `state_reason` text DEFAULT NULL,
   `installed_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -942,7 +799,69 @@ CREATE TABLE `extension_packages` (
   UNIQUE KEY `extension_packages_extension_id_unique` (`extension_id`),
   KEY `extension_packages_source_repository_id_foreign` (`source_repository_id`),
   KEY `extension_packages_package_id_index` (`package_id`),
+  KEY `extension_packages_state_index` (`state`),
   CONSTRAINT `extension_packages_source_repository_id_foreign` FOREIGN KEY (`source_repository_id`) REFERENCES `extension_repositories` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_permissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_permissions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `extension_id` varchar(191) NOT NULL,
+  `action` varchar(64) NOT NULL,
+  `identifier` varchar(191) NOT NULL,
+  `label_key` varchar(191) NOT NULL,
+  `description_key` varchar(191) DEFAULT NULL,
+  `dangerous` tinyint(1) NOT NULL DEFAULT 0,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `approved_by` int(10) unsigned DEFAULT NULL,
+  `suspended_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_permissions_extension_id_action_unique` (`extension_id`,`action`),
+  UNIQUE KEY `extension_permissions_identifier_unique` (`identifier`),
+  KEY `extension_permissions_approved_by_foreign` (`approved_by`),
+  CONSTRAINT `extension_permissions_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_queue_admissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_queue_admissions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `extension_id` varchar(191) NOT NULL,
+  `queue_name` varchar(64) NOT NULL,
+  `generation` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_queue_admissions_extension_id_queue_name_unique` (`extension_id`,`queue_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_queue_jobs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_queue_jobs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `job_uuid` char(36) DEFAULT NULL,
+  `extension_id` varchar(191) NOT NULL,
+  `queue_name` varchar(64) NOT NULL,
+  `job_class` varchar(191) NOT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'queued',
+  `attempts` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `correlation_id` char(36) DEFAULT NULL,
+  `dispatched_at` timestamp NULL DEFAULT NULL,
+  `started_at` timestamp NULL DEFAULT NULL,
+  `finished_at` timestamp NULL DEFAULT NULL,
+  `last_error` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_queue_jobs_job_uuid_unique` (`job_uuid`),
+  KEY `extension_queue_jobs_extension_id_status_index` (`extension_id`,`status`),
+  KEY `extension_queue_jobs_extension_id_queue_name_status_index` (`extension_id`,`queue_name`,`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `extension_repositories`;
@@ -961,6 +880,70 @@ CREATE TABLE `extension_repositories` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `extension_repositories_slug_unique` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_secrets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_secrets` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `extension_id` varchar(191) NOT NULL,
+  `key` varchar(64) NOT NULL,
+  `value` text NOT NULL,
+  `key_version` int(10) unsigned NOT NULL DEFAULT 1,
+  `context_hash` char(64) NOT NULL,
+  `rotated_at` timestamp NULL DEFAULT NULL,
+  `updated_by` int(10) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_secrets_extension_id_key_unique` (`extension_id`,`key`),
+  KEY `extension_secrets_updated_by_foreign` (`updated_by`),
+  CONSTRAINT `extension_secrets_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_signature_audit`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_signature_audit` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `extension_id` varchar(191) NOT NULL,
+  `version` varchar(191) NOT NULL,
+  `verdict` varchar(24) NOT NULL,
+  `key_id` varchar(191) DEFAULT NULL,
+  `archive_sha256` char(64) DEFAULT NULL,
+  `canonical_manifest_sha256` char(64) DEFAULT NULL,
+  `reason` varchar(191) DEFAULT NULL,
+  `initiator` varchar(191) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `extension_signature_audit_extension_id_verdict_index` (`extension_id`,`verdict`),
+  KEY `extension_signature_audit_extension_id_index` (`extension_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `extension_trusted_keys`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `extension_trusted_keys` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `key_id` varchar(191) NOT NULL,
+  `public_key` varchar(191) NOT NULL,
+  `fingerprint` char(64) NOT NULL,
+  `root_fingerprint` char(64) DEFAULT NULL,
+  `repository_id` bigint(20) unsigned DEFAULT NULL,
+  `label` varchar(191) DEFAULT NULL,
+  `valid_from` timestamp NULL DEFAULT NULL,
+  `valid_until` timestamp NULL DEFAULT NULL,
+  `revoked_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `extension_trusted_keys_key_id_unique` (`key_id`),
+  KEY `extension_trusted_keys_repository_id_foreign` (`repository_id`),
+  KEY `extension_trusted_keys_fingerprint_index` (`fingerprint`),
+  KEY `extension_trusted_keys_root_fingerprint_index` (`root_fingerprint`),
+  CONSTRAINT `extension_trusted_keys_repository_id_foreign` FOREIGN KEY (`repository_id`) REFERENCES `extension_repositories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `failed_jobs`;
@@ -1127,7 +1110,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(191) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mount_node`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1268,7 +1251,6 @@ CREATE TABLE `orders` (
   `node_id` int(11) DEFAULT NULL,
   `server_id` int(11) DEFAULT NULL,
   `variables` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`variables`)),
-  `domain_payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`domain_payload`)),
   `plan_change_snapshot` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`plan_change_snapshot`)),
   `coupon_id` bigint(20) unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1413,7 +1395,6 @@ CREATE TABLE `products` (
   `backup_limit` int(10) unsigned NOT NULL,
   `database_limit` int(10) unsigned NOT NULL,
   `allocation_limit` int(10) unsigned NOT NULL,
-  `subdomain_limit` int(10) unsigned DEFAULT 1,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `stripe_id` varchar(191) DEFAULT NULL,
@@ -1471,36 +1452,6 @@ CREATE TABLE `schedules` (
   PRIMARY KEY (`id`),
   KEY `schedules_server_id_foreign` (`server_id`),
   CONSTRAINT `schedules_server_id_foreign` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `server_custom_domains`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `server_custom_domains` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `server_id` int(10) unsigned NOT NULL,
-  `allocation_id` int(10) unsigned DEFAULT NULL,
-  `custom_domain_id` bigint(20) unsigned NOT NULL,
-  `subdomain` varchar(191) NOT NULL,
-  `full_domain` varchar(191) NOT NULL,
-  `port` int(10) unsigned NOT NULL,
-  `protocol` enum('tcp','udp','both') NOT NULL DEFAULT 'both',
-  `record_type` enum('srv','cname') DEFAULT NULL,
-  `service_tag` varchar(191) DEFAULT NULL,
-  `status` enum('pending','active','failed') NOT NULL DEFAULT 'pending',
-  `dns_records` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`dns_records`)),
-  `last_error` text DEFAULT NULL,
-  `last_synced_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `server_custom_domains_unique_target` (`full_domain`,`port`,`protocol`),
-  KEY `server_custom_domains_server_id_status_index` (`server_id`,`status`),
-  KEY `server_custom_domains_custom_domain_id_foreign` (`custom_domain_id`),
-  KEY `server_custom_domains_allocation_id_index` (`allocation_id`),
-  CONSTRAINT `server_custom_domains_allocation_id_foreign` FOREIGN KEY (`allocation_id`) REFERENCES `allocations` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `server_custom_domains_custom_domain_id_foreign` FOREIGN KEY (`custom_domain_id`) REFERENCES `custom_domains` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `server_custom_domains_server_id_foreign` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `server_group_members`;
@@ -1629,7 +1580,6 @@ CREATE TABLE `servers` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `installed_at` timestamp NULL DEFAULT NULL,
   `subuser_limit` int(11) DEFAULT -1,
-  `subdomain_limit` int(10) unsigned DEFAULT 1,
   `renewal_date` datetime DEFAULT NULL,
   `deletion_scheduled_at` timestamp NULL DEFAULT NULL,
   `deletion_scheduled_by` bigint(20) unsigned DEFAULT NULL,
@@ -1693,7 +1643,7 @@ CREATE TABLE `settings` (
   `value` text NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `settings_key_unique` (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `subusers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1948,3 +1898,4 @@ CREATE TABLE `webhook_events` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+

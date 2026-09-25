@@ -232,7 +232,7 @@ class QueueHealthControllerTest extends ApplicationApiIntegrationTestCase
     {
         $this->keyHolding([AdminRole::QUEUES_READ, AdminRole::QUEUES_DELETE]);
         $this->recordFailure('mail');
-        $this->recordFailure('dns');
+        $this->recordFailure('standard');
 
         $this->postJson('/api/application/queues/failed/sweep-preview', ['queue' => 'mail'])
             ->assertStatus(200)
