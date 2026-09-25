@@ -90,10 +90,12 @@ export function CommandPalette() {
         // Extension pages are listed individually; their extension's name joins
         // the search text so "ai" finds every AI page.
         for (const { item, parent, group } of flattenNav(buildNav(adminRoutes, { flags, held, basePath: '/admin' }))) {
-            // Same label resolution as the sidebar.
-            const label = navItemLabel(item);
-            const category = group.category ? navCategoryLabel(group.category) : '';
+            // Same label resolution as the sidebar. A nested extension page's
+            // own label is short ("Settings") because its entry names the
+            // extension; out here, with no entry above it, it carries the name.
             const parentLabel = parent ? navItemLabel(parent) : '';
+            const label = parent ? `${parentLabel} · ${navItemLabel(item)}` : navItemLabel(item);
+            const category = group.category ? navCategoryLabel(group.category) : '';
             out.push({
                 id: `goto:${item.to}`,
                 label,
