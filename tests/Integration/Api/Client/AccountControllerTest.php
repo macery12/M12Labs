@@ -165,7 +165,8 @@ class AccountControllerTest extends ClientApiIntegrationTestCase
             'password_confirmation' => 'pass',
         ])
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
-            ->assertJsonPath('errors.0.meta.source_field', 'password');
+            ->assertJsonPath('errors.0.meta.source_field', 'password')
+            ->assertJsonPath('errors.0.meta.rule', 'password');
     }
 
     /**
