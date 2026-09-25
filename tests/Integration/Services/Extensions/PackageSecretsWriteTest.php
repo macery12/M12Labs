@@ -12,9 +12,11 @@ use Everest\Extensions\Sdk\DisplayException;
 use Everest\Tests\Integration\IntegrationTestCase;
 use Everest\Extensions\Sdk\Services\PackageSecrets;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Everest\Services\Extensions\ExtensionPermissionRegistry;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
 
 /**
  * A package taking a credential on its own settings page.
@@ -35,6 +37,7 @@ class PackageSecretsWriteTest extends IntegrationTestCase
         config()->set('modules.extensions.enabled', true);
 
         $capabilities = new ExtensionCapabilitySet(
+            adminPermissions: [new PermissionDefinition('settings', 'ext.demo.permission.settings')],
             secrets: [new SecretDefinition(key: 'api_key', labelKey: 'ext.demo.secret.apiKey')],
         );
 
@@ -43,6 +46,9 @@ class PackageSecretsWriteTest extends IntegrationTestCase
             'state' => 'enabled',
         ]));
         ExtensionConfig::create(['extension_id' => 'demo', 'enabled' => true]);
+        // What install does once the capability diff is approved: the package's
+        // admin permissions become assignable.
+        app(ExtensionPermissionRegistry::class)->sync('demo', $capabilities, approved: true);
         ExtensionRuntimePlanService::flush();
     }
 
@@ -128,5 +134,45 @@ class PackageSecretsWriteTest extends IntegrationTestCase
         $this->expectExceptionMessage('does not declare a secret');
 
         PackageSecrets::for('demo')->put($this->owner(), 'other_key', 'value');
+    }
+
+    /**
+     * An operator can grant "may configure this extension" without granting
+     * "may install and remove every extension": the page names the permission
+     * it is gated by, and that permission is enough.
+     */
+    public function testThePackagesOwnSettingsPermissionIsEnoughWhenThePageNamesIt(): void
+    {
+        $admin = $this->admin(['ext.demo.admin.settings']);
+
+        PackageSecrets::for('demo')->put($admin, 'api_key', 'sk-live-456', 'ext.demo.admin.settings');
+
+        $this->assertSame('sk-live-456', PackageSecrets::for('demo')->get('api_key'));
+    }
+
+    public function testThePackagesOwnPermissionCountsOnlyWhenThePageNamesIt(): void
+    {
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('requires the extensions update permission');
+
+        PackageSecrets::for('demo')->put($this->admin(['ext.demo.admin.settings']), 'api_key', 'sk-live-456');
+    }
+
+    /**
+     * A page cannot widen who may write by naming a permission this package
+     * never declared — another package's, or a core one.
+     */
+    public function testAPermissionThePackageDidNotDeclareIsRefused(): void
+    {
+        foreach (['ext.other.admin.settings', 'servers.read'] as $permission) {
+            try {
+                PackageSecrets::for('demo')->put($this->admin([$permission]), 'api_key', 'sk-live-789', $permission);
+                $this->fail(sprintf('%s: expected a refusal.', $permission));
+            } catch (DisplayException $exception) {
+                $this->assertStringContainsString('does not declare the admin permission', $exception->getMessage());
+            }
+        }
+
+        $this->assertNull(PackageSecrets::for('demo')->get('api_key'));
     }
 }

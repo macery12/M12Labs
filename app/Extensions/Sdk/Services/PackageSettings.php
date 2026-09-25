@@ -5,14 +5,13 @@ namespace Everest\Extensions\Sdk\Services;
 use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Facades\Activity;
-use Everest\Models\AdminRole;
 use Illuminate\Support\Facades\DB;
 use Everest\Models\ExtensionConfig;
 use Everest\Extensions\Sdk\DisplayException;
-use Everest\Services\Authorization\AdminAuthorizer;
 use Everest\Services\Extensions\ExtensionCallerGuard;
 use Everest\Services\Extensions\ExtensionSettingsValidator;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
+use Everest\Services\Extensions\ExtensionConfigurationAuthorizer;
 
 /**
  * The extension's own settings, as saved by an administrator.
@@ -161,10 +160,12 @@ final class PackageSettings
      * to {@see PackageSecrets}, and this column is returned by the catalog API.
      *
      * **Who.** Pass `$actor` when an administrator made the change on the
-     * package's own settings page: they must hold `extensions.update`, the
-     * permission the panel's settings form requires, so a package page cannot
-     * widen who may change configuration. Leave it null for the package's own
-     * bookkeeping (a migration adopting old values, a calibration it records).
+     * package's own settings page. They must hold `extensions.update`, what the
+     * panel's settings form requires, or the admin permission that page is
+     * gated by, passed as `$permission` -- which must be one this package
+     * declared, so a package page cannot widen who may change configuration.
+     * Leave the actor null for the package's own bookkeeping (a migration
+     * adopting old values, a calibration it records).
      * Either way the change is written to the activity log -- the keys that
      * changed, never their values, and `via` naming the package.
      *
@@ -173,13 +174,15 @@ final class PackageSettings
      * `refreshExtensionFlags()` without a reload. Nothing is cached here.
      *
      * @param array<string, mixed> $changes
+     * @param string|null $permission the `ext.<id>.admin.<action>` permission
+     *                                the calling page is gated by
      *
      * @throws DisplayException when the package is not in the runtime plan, a
      *                          key is undeclared or secret, or the actor may
-     *                          not manage extensions
+     *                          not configure this extension
      * @throws \Illuminate\Validation\ValidationException on a value that fails its rule
      */
-    public function save(array $changes, ?User $actor = null): void
+    public function save(array $changes, ?User $actor = null, ?string $permission = null): void
     {
         $entry = app(ExtensionRuntimePlanService::class)->entry($this->extensionId);
 
@@ -191,8 +194,16 @@ final class PackageSettings
             throw new DisplayException(sprintf('The extension [%s] is not currently loadable, so its settings cannot be saved.', $this->extensionId));
         }
 
-        if ($actor !== null && !app(AdminAuthorizer::class)->hasCapability($actor, AdminRole::EXTENSIONS_UPDATE)) {
-            throw new DisplayException('Changing extension settings requires the extensions update permission.');
+        if ($actor !== null) {
+            $authorizer = app(ExtensionConfigurationAuthorizer::class);
+
+            if ($permission !== null && !$authorizer->declares($this->extensionId, $permission)) {
+                throw new DisplayException(sprintf('The extension [%s] does not declare the admin permission [%s].', $this->extensionId, $permission));
+            }
+
+            if (!$authorizer->mayConfigure($actor, $this->extensionId, $permission)) {
+                throw new DisplayException('Changing this extension\'s settings requires the extensions update permission, or the permission its settings page requires.');
+            }
         }
 
         [$before, $validated] = DB::transaction(function () use ($entry, $changes): array {

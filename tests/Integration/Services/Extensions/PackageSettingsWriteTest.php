@@ -6,14 +6,18 @@ use Everest\Models\User;
 use Everest\Models\AdminRole;
 use Everest\Models\ActivityLog;
 use Everest\Models\ExtensionConfig;
+use Everest\Models\ExtensionPackage;
 use Everest\Extensions\Sdk\DisplayException;
 use Illuminate\Validation\ValidationException;
 use Everest\Tests\Integration\IntegrationTestCase;
 use Everest\Extensions\Sdk\Services\PackageSettings;
 use Everest\Services\Extensions\ExtensionRuntimeEntry;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Everest\Services\Extensions\ExtensionPermissionRegistry;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
 
 /**
  * A package writing its own declared settings.
@@ -30,6 +34,8 @@ use Everest\Services\Extensions\Manifest\Definitions\SettingDefinition;
  */
 class PackageSettingsWriteTest extends IntegrationTestCase
 {
+    use DatabaseTransactions;
+
     private const ID = 'sdk_settings_write';
 
     /** @param array<int, SettingDefinition> $fields */
@@ -38,7 +44,10 @@ class PackageSettingsWriteTest extends IntegrationTestCase
         $plan = $this->createStub(ExtensionRuntimePlanService::class);
         $plan->method('entry')->willReturnCallback(
             fn (string $requested) => $requested === $id
-                ? new ExtensionRuntimeEntry($id, '1.0.0', new ExtensionCapabilitySet(settings: $fields))
+                ? new ExtensionRuntimeEntry($id, '1.0.0', new ExtensionCapabilitySet(
+                    adminPermissions: [new PermissionDefinition('settings', 'ext.sdk_settings_write.permission.settings')],
+                    settings: $fields,
+                ))
                 : null
         );
 
@@ -55,11 +64,7 @@ class PackageSettingsWriteTest extends IntegrationTestCase
         ];
     }
 
-    /**
-     * Idempotent, and it rewrites the settings every time. The integration
-     * suite shares one database across a run with no per-test rollback, so a
-     * fixture that only inserts collides with itself on the second test.
-     */
+    /** Writes the config row, replacing any settings a test left before it. */
     private function config(array $settings = []): void
     {
         ExtensionConfig::updateOrCreateConfig(self::ID, [
@@ -263,5 +268,36 @@ class PackageSettingsWriteTest extends IntegrationTestCase
         $stored = PackageSettings::for(self::ID);
         $this->assertSame('openai', $stored->string('provider'));
         $this->assertSame(30, $stored->integer('max_steps'));
+    }
+
+    public function testThePackagesOwnSettingsPermissionIsEnoughWhenThePageNamesIt(): void
+    {
+        $this->plan($this->fields());
+        $this->config(['provider' => 'ollama']);
+        // A package permission is only assignable once a genuine installed
+        // package carries it, so this one test installs one.
+        $capabilities = app(ExtensionRuntimePlanService::class)->entry(self::ID)->capabilities;
+        ExtensionPackage::query()->create(array_merge(
+            $this->signedRuntimePackageAttributes(self::ID, $capabilities),
+            ['state' => 'enabled'],
+        ));
+        app(ExtensionPermissionRegistry::class)->sync(self::ID, $capabilities, approved: true);
+        $admin = $this->admin(['ext.sdk_settings_write.admin.settings']);
+
+        PackageSettings::for(self::ID)->save(['provider' => 'openai'], $admin, 'ext.sdk_settings_write.admin.settings');
+
+        $this->assertSame('openai', PackageSettings::for(self::ID)->string('provider'));
+        $this->assertSame($admin->id, $this->lastAudit()?->actor_id);
+    }
+
+    public function testAPermissionThePackageDidNotDeclareIsRefused(): void
+    {
+        $this->plan($this->fields());
+        $this->config(['provider' => 'ollama']);
+
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('does not declare the admin permission');
+
+        PackageSettings::for(self::ID)->save(['provider' => 'openai'], $this->admin(['servers.read']), 'servers.read');
     }
 }
