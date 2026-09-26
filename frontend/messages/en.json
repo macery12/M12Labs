@@ -104,6 +104,7 @@
   "account.profile.unverified": "Unverified",
   "account.profile.verified": "Verified",
   "account.verifyEmail.resend": "Resend verification email",
+  "account.verifyEmail.sending": "Sending…",
   "account.verifyEmail.sent": "Sent to {email}. It can take a few minutes, so check your spam folder too.",
   "account.recoveryCode.copy": "Copy",
   "account.recoveryCode.description": "An offline code to reset your password if you lose access to email.",

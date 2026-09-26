@@ -1,5 +1,8 @@
 import { m } from '@/i18n/messages';
+import { useMutation } from '@tanstack/react-query';
 import { BadgeCheck, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { sendVerificationEmail } from '@/api/account';
+import { firstError } from '@/lib/apiError';
 import { useSession } from '@/state/session';
 import { useFlags } from '@/state/flags';
 import { SettingsCard } from './SettingsCard';
@@ -61,6 +64,7 @@ export function AccountTab() {
                                         {m['account.profile.unverified']()}
                                     </span>
                                 )}
+                                {!user.email_verified && <ResendVerification email={user.email} />}
                             </div>
                             {memberSince && (
                                 <p className="mt-1 text-xs text-[var(--color-ink-faint)]">
@@ -91,5 +95,34 @@ export function AccountTab() {
 
             {userLocaleAllowed && <LanguageCard />}
         </div>
+    );
+}
+
+// Beside the Unverified badge, because that's where people look for it. The
+// dashboard's "Verify your email" item links here.
+function ResendVerification({ email }: { email: string }) {
+    const resend = useMutation({ mutationFn: sendVerificationEmail });
+
+    if (resend.isSuccess) {
+        return <span className="basis-full text-xs text-[var(--color-accent)]">{m['account.verifyEmail.sent']({ email })}</span>;
+    }
+
+    return (
+        <>
+            <span aria-hidden className="text-[var(--color-ink-faint)]">·</span>
+            <button
+                type="button"
+                onClick={() => resend.mutate()}
+                disabled={resend.isPending}
+                className="text-xs font-medium text-[var(--brand)] hover:underline disabled:opacity-60"
+            >
+                {resend.isPending ? m['account.verifyEmail.sending']() : m['account.verifyEmail.resend']()}
+            </button>
+            {resend.isError && (
+                <span className="basis-full text-xs text-[var(--color-danger)]">
+                    {firstError(resend.error) ?? m['common.states.genericError']()}
+                </span>
+            )}
+        </>
     );
 }

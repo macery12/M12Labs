@@ -16,20 +16,24 @@ export function EmailForm() {
     const setUser = useSession(s => s.setUser);
     const push = useFlashes(s => s.push);
 
-    const [email, setEmail] = useState(user?.email ?? '');
+    // Starts empty: pre-filling the current address made the field read as if
+    // the email had already been changed. The current one is the placeholder.
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     const mutation = useMutation({
-        mutationFn: () => updateEmail(email, password),
+        mutationFn: () => updateEmail(email.trim(), password),
         onSuccess: () => {
-            if (user) setUser({ ...user, email });
+            if (user) setUser({ ...user, email: email.trim() });
+            setEmail('');
             setPassword('');
             push({ type: 'success', message: m['account.email.success']() });
         },
         onError: (err: unknown) => push({ type: 'error', message: firstError(err) ?? m['account.email.error']() }),
     });
 
-    const dirty = email.trim() !== (user?.email ?? '') && password.length > 0;
+    const next = email.trim();
+    const dirty = next !== '' && next !== (user?.email ?? '') && password.length > 0;
 
     return (
         <SettingsCard title={m['account.email.title']()} description={m['account.email.description']()} icon={Mail}>
@@ -45,6 +49,7 @@ export function EmailForm() {
                         id="account-email"
                         type="email"
                         autoComplete="email"
+                        placeholder={user?.email}
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                     />
