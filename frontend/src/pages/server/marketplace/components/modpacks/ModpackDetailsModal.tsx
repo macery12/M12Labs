@@ -9,6 +9,8 @@ import { m, td } from '@/i18n/messages';
 import { firstError } from '@/lib/apiError';
 import { formatBytes } from '@/lib/format';
 import { useFlashes } from '@/state/flashes';
+import { can } from '@/lib/can';
+import { useServer } from '@/components/server/ServerContext';
 import type { Mod } from '@/api/mods';
 import {
     getModpackVersions,
@@ -36,6 +38,13 @@ export function ModpackDetailsModal({
 }) {
     const qc = useQueryClient();
     const push = useFlashes(s => s.push);
+    const server = useServer();
+    // Mirrors InstallModpackRequest: a wipe needs file.delete, and the loader
+    // step rewrites the startup command + Docker image, so it needs both
+    // startup permissions. Offering a switch the API would 403 helps nobody.
+    const canWipe = can(server.permissions, 'file.delete');
+    const canInstallLoader =
+        can(server.permissions, 'startup.update') && can(server.permissions, 'startup.docker-image');
     const [version, setVersion] = useState<ModpackVersion | null>(null);
     const [preview, setPreview] = useState<ModpackPreview | null>(null);
     const [wipeServer, setWipeServer] = useState(false);
@@ -57,7 +66,7 @@ export function ModpackDetailsModal({
             setVersion(v);
             setPreview(data);
             // Default: auto-install the loader unless one is already present.
-            setInstallLoader(!(loaderStatusQ.data?.has_loader ?? false));
+            setInstallLoader(canInstallLoader && !(loaderStatusQ.data?.has_loader ?? false));
         },
         onError: err => push({ type: 'error', message: firstError(err) ?? m['server.mods.error']() }),
     });
@@ -182,23 +191,25 @@ export function ModpackDetailsModal({
                     )}
 
                     <label className="flex items-start gap-3 rounded-lg border border-[var(--color-border)] px-3 py-2.5">
-                        <Switch checked={wipeServer} onChange={setWipeServer} />
+                        <Switch checked={wipeServer} onChange={setWipeServer} disabled={!canWipe} />
                         <span className="text-sm">
                             <span className="font-medium text-[var(--color-ink)]">{m['server.mods.modpacks.clean']()}</span>
                             <span className="block text-xs text-[var(--color-ink-muted)]">
-                                {m['server.mods.modpacks.cleanHint']()}
+                                {canWipe ? m['server.mods.modpacks.cleanHint']() : m['server.mods.modpacks.cleanNoPermission']()}
                             </span>
                         </span>
                     </label>
 
                     <label className="flex items-start gap-3 rounded-lg border border-[var(--color-border)] px-3 py-2.5">
-                        <Switch checked={installLoader} onChange={setInstallLoader} />
+                        <Switch checked={installLoader} onChange={setInstallLoader} disabled={!canInstallLoader} />
                         <span className="text-sm">
                             <span className="font-medium text-[var(--color-ink)]">
                                 {m['server.mods.modpacks.installLoader']()}
                             </span>
                             <span className="block text-xs text-[var(--color-ink-muted)]">
-                                {loaderStatusQ.data?.has_loader
+                                {!canInstallLoader
+                                    ? m['server.mods.modpacks.installLoaderNoPermission']()
+                                    : loaderStatusQ.data?.has_loader
                                     ? m['server.mods.modpacks.loaderPresent']({ loader: loaderStatusQ.data.detected ?? '?' })
                                     : m['server.mods.modpacks.installLoaderHint']()}
                             </span>

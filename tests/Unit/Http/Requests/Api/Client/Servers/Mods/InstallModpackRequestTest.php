@@ -8,6 +8,7 @@ use Everest\Models\Server;
 use Everest\Tests\TestCase;
 use Illuminate\Routing\Route;
 use Everest\Models\Permission;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Everest\Http\Requests\Api\Client\Servers\Mods\InstallModpackRequest;
 
 class InstallModpackRequestTest extends TestCase
@@ -41,6 +42,57 @@ class InstallModpackRequestTest extends TestCase
         ]);
 
         $this->assertFalse($request->authorize());
+    }
+
+    /**
+     * The loader step rewrites the server's startup command and Docker image,
+     * which file permissions must not reach on their own.
+     *
+     * @return array<string, array{0: bool, 1: bool}>
+     */
+    public static function missingStartupPermission(): array
+    {
+        return [
+            'no startup.update' => [false, true],
+            'no startup.docker-image' => [true, false],
+        ];
+    }
+
+    #[DataProvider('missingStartupPermission')]
+    public function testLoaderInstallRequiresBothStartupPermissions(bool $update, bool $image): void
+    {
+        $request = $this->request(['install_loader' => true], [
+            Permission::ACTION_FILE_CREATE => true,
+            Permission::ACTION_FILE_UPDATE => true,
+            Permission::ACTION_STARTUP_UPDATE => $update,
+            Permission::ACTION_STARTUP_DOCKER_IMAGE => $image,
+        ]);
+
+        $this->assertFalse($request->authorize());
+    }
+
+    public function testLoaderInstallAllowedWithStartupPermissions(): void
+    {
+        $request = $this->request(['install_loader' => true], [
+            Permission::ACTION_FILE_CREATE => true,
+            Permission::ACTION_FILE_UPDATE => true,
+            Permission::ACTION_STARTUP_UPDATE => true,
+            Permission::ACTION_STARTUP_DOCKER_IMAGE => true,
+        ]);
+
+        $this->assertTrue($request->authorize());
+    }
+
+    public function testInstallWithoutLoaderNeedsNoStartupPermission(): void
+    {
+        $request = $this->request(['install_loader' => false], [
+            Permission::ACTION_FILE_CREATE => true,
+            Permission::ACTION_FILE_UPDATE => true,
+            Permission::ACTION_STARTUP_UPDATE => false,
+            Permission::ACTION_STARTUP_DOCKER_IMAGE => false,
+        ]);
+
+        $this->assertTrue($request->authorize());
     }
 
     /**

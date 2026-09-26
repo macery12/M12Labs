@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Requests\Api\Client\Servers\Mods;
 
+use Everest\Models\User;
 use Everest\Models\Server;
 use Everest\Models\Permission;
 use Everest\Http\Requests\Api\Client\ClientApiRequest;
@@ -27,8 +28,23 @@ class InstallModpackRequest extends ClientApiRequest
 
         // Wiping the server directory before extraction is destructive, so it
         // additionally requires file.delete.
-        return !$this->boolean('wipe_server')
-            || $user->can(Permission::ACTION_FILE_DELETE, $server);
+        if ($this->boolean('wipe_server') && !$user->can(Permission::ACTION_FILE_DELETE, $server)) {
+            return false;
+        }
+
+        // Installing the loader rewrites the server's startup command and
+        // Docker image, which are otherwise only changeable with the startup
+        // permissions. File permissions alone must not reach them.
+        return !$this->boolean('install_loader') || self::canInstallLoader($user, $server);
+    }
+
+    /**
+     * Whether $user may have the loader step rewrite $server's startup + image.
+     */
+    public static function canInstallLoader(User $user, Server $server): bool
+    {
+        return $user->can(Permission::ACTION_STARTUP_UPDATE, $server)
+            && $user->can(Permission::ACTION_STARTUP_DOCKER_IMAGE, $server);
     }
 
     public function rules(): array
