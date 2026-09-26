@@ -10,7 +10,7 @@ import { useFlags } from '@/state/flags';
 import { useFlashes } from '@/state/flashes';
 import { renameServer, reinstallServer, scheduleDeletion, cancelDeletion } from '@/api/serverSettings';
 import { Button } from '@/components/ui/Button';
-import { CopyField } from '@/components/ui/CopyField';
+import { ReadOnlyValue } from '@/components/ui/ReadOnlyValue';
 import { Input, Field } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Spinner } from '@/components/ui/Spinner';
@@ -128,34 +128,24 @@ function ServerInfoCard() {
 
     return (
         <SectionCard icon={Info} title={m['server.settings.info.title']()} desc={m['server.settings.info.desc']()}>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <CopyField label={m['server.settings.info.uuid']()} value={server.uuid} />
-                <CopyField label={m['server.settings.info.id']()} value={server.id} />
-                <InfoField label={m['server.settings.info.node']()} value={server.node} />
-                <InfoField label={m['server.settings.info.image']()} value={server.dockerImage || '—'} mono />
-                <InfoField label={m['server.settings.info.memory']()} value={limit(server.limits.memory)} />
-                <InfoField label={m['server.settings.info.disk']()} value={limit(server.limits.disk)} />
-                <InfoField
-                    label={m['server.settings.info.cpu']()}
-                    value={server.limits.cpu === 0 ? m['common.states.unlimited']() : `${server.limits.cpu}%`}
-                />
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+                <ReadOnlyValue label={m['server.settings.info.uuid']()} mono copy={server.uuid}>
+                    {server.uuid}
+                </ReadOnlyValue>
+                <ReadOnlyValue label={m['server.settings.info.id']()} mono copy={server.id}>
+                    {server.id}
+                </ReadOnlyValue>
+                <ReadOnlyValue label={m['server.settings.info.node']()}>{server.node}</ReadOnlyValue>
+                <ReadOnlyValue label={m['server.settings.info.image']()} mono>
+                    {server.dockerImage || '—'}
+                </ReadOnlyValue>
+                <ReadOnlyValue label={m['server.settings.info.memory']()}>{limit(server.limits.memory)}</ReadOnlyValue>
+                <ReadOnlyValue label={m['server.settings.info.disk']()}>{limit(server.limits.disk)}</ReadOnlyValue>
+                <ReadOnlyValue label={m['server.settings.info.cpu']()}>
+                    {server.limits.cpu === 0 ? m['common.states.unlimited']() : `${server.limits.cpu}%`}
+                </ReadOnlyValue>
             </div>
         </SectionCard>
-    );
-}
-
-function InfoField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-    return (
-        <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-faint)]">{label}</span>
-            <p
-                className={`mt-1.5 truncate rounded-md border border-[var(--color-border)] px-3 py-2.5 text-sm text-[var(--color-ink)] ${
-                    mono ? 'font-mono text-xs' : ''
-                }`}
-            >
-                {value}
-            </p>
-        </div>
     );
 }
 

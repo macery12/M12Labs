@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
+import { ReadOnlyValue } from '@/components/ui/ReadOnlyValue';
 import {
     getInvoiceSettings,
     updateInvoiceSettings,
@@ -146,9 +147,12 @@ export default function InvoiceSettingsPage() {
                     <FieldRow label={m['admin.billing.invoiceSettings.numbering.prefix']()}>
                         <Input value={form.invoicePrefix} onChange={e => set('invoicePrefix', e.target.value)} placeholder="INV-" />
                     </FieldRow>
-                    <FieldRow label={m['admin.billing.invoiceSettings.numbering.sequence']()} desc={m['admin.billing.invoiceSettings.numbering.sequenceDesc']()}>
-                        <Input value={String(form.invoiceSequence)} disabled />
-                    </FieldRow>
+                    <ReadOnlyValue
+                        label={m['admin.billing.invoiceSettings.numbering.sequence']()}
+                        desc={m['admin.billing.invoiceSettings.numbering.sequenceDesc']()}
+                    >
+                        {form.invoiceSequence}
+                    </ReadOnlyValue>
                 </div>
             </SectionCard>
 
