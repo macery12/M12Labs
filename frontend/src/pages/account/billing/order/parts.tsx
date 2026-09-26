@@ -9,6 +9,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useBilling } from '@/state/billing';
 import type { ProductLimits, ProductCycle, VariableFieldModel } from '@/api/accountBilling';
 import type { CheckoutController } from './checkout';
+import { checkoutDescription } from './variableText';
 
 const gb = (mib: number) => `${(mib / 1024).toFixed(mib % 1024 === 0 ? 0 : 1)} GB`;
 
@@ -129,10 +130,11 @@ export function VariableField({
     value: string;
     onChange: (next: string) => void;
 }) {
+    const description = field.description ? checkoutDescription(field.description) : '';
     return (
         <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[var(--color-ink)]">{field.label}</label>
-            {field.description && <p className="text-xs text-[var(--color-ink-muted)]">{field.description}</p>}
+            {description && <p className="text-xs text-[var(--color-ink-muted)]">{description}</p>}
             {field.kind === 'select' ? (
                 <div className="flex flex-wrap gap-2 pt-1">
                     {field.options?.map(opt => (

@@ -36,7 +36,7 @@ function Section({ icon: Icon, step, title, subtitle, children }: {
                 </div>
                 <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
-                        Step {step}
+                        {m['billing.configure.step']({ n: step })}
                     </p>
                     <h2 className="text-base font-semibold text-[var(--color-ink)]">{title}</h2>
                     <p className="text-sm text-[var(--color-ink-muted)]">{subtitle}</p>
@@ -89,6 +89,20 @@ export default function ConfigureCheckout() {
     const nodeMissing = !(checkout.nodeId > 0);
     const eggMissing = checkout.eggId === undefined;
     const canSubmit = !nameMissing && !nodeMissing && !eggMissing && checkout.legalAgreed && !submitting;
+    // The first thing still missing, in the order the page asks for it. The
+    // button used to go grey with no reason, and the usual cause, the Terms
+    // switch, sat at the bottom of the other column.
+    const blockedReason = submitting
+        ? null
+        : nodeMissing
+          ? m['billing.configure.blocked.location']()
+          : eggMissing
+            ? m['billing.configure.blocked.software']()
+            : nameMissing
+              ? m['billing.configure.blocked.name']()
+              : !checkout.legalAgreed
+                ? m['billing.configure.blocked.terms']()
+                : null;
 
     const assertBillingAddress = async (): Promise<boolean> => {
         if (!billing.require_billing_address) return true;
@@ -247,15 +261,6 @@ export default function ConfigureCheckout() {
                         {serverNameTouched && nameMissing && (
                             <p className="mt-1 text-xs text-[var(--color-danger)]">{m['billing.configure.nameRequired']()}</p>
                         )}
-                        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--color-border-strong)] p-3">
-                            <Switch checked={checkout.legalAgreed} onChange={checkout.setLegalAgreed} />
-                            <span className="text-sm text-[var(--color-ink-muted)]">
-                                {formatTags(m['billing.configure.legal'](), {
-                                    terms: <a href={billing.links.terms} target="_blank" rel="noreferrer" className="text-[var(--brand)] hover:underline" />,
-                                    privacy: <a href={billing.links.privacy} target="_blank" rel="noreferrer" className="text-[var(--brand)] hover:underline" />,
-                                })}
-                            </span>
-                        </label>
                     </Section>
                 </div>
 
@@ -264,15 +269,34 @@ export default function ConfigureCheckout() {
                         <SummaryCart
                             checkout={checkout}
                             cta={
-                                <Button size="lg" className="w-full" disabled={!canSubmit} onClick={handleContinue}>
-                                    {submitting ? (
-                                        <Spinner className="h-5 w-5" />
-                                    ) : checkout.isFree ? (
-                                        m['billing.configure.createServer']()
-                                    ) : (
-                                        m['billing.configure.continueToPayment']()
-                                    )}
-                                </Button>
+                                <div className="flex flex-col gap-3">
+                                    {/* Beside the button it unlocks, not at the foot of the form. */}
+                                    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--color-border-strong)] p-3">
+                                        <Switch checked={checkout.legalAgreed} onChange={checkout.setLegalAgreed} />
+                                        <span className="text-sm text-[var(--color-ink-muted)]">
+                                            {formatTags(m['billing.configure.legal'](), {
+                                                terms: <a href={billing.links.terms} target="_blank" rel="noreferrer" className="text-[var(--brand)] hover:underline" />,
+                                                privacy: <a href={billing.links.privacy} target="_blank" rel="noreferrer" className="text-[var(--brand)] hover:underline" />,
+                                            })}
+                                        </span>
+                                    </label>
+                                    <Button
+                                        size="lg"
+                                        className="w-full"
+                                        disabled={!canSubmit}
+                                        disabledReason={blockedReason}
+                                        reasonAlign="center"
+                                        onClick={handleContinue}
+                                    >
+                                        {submitting ? (
+                                            <Spinner className="h-5 w-5" />
+                                        ) : checkout.isFree ? (
+                                            m['billing.configure.createServer']()
+                                        ) : (
+                                            m['billing.configure.continueToPayment']()
+                                        )}
+                                    </Button>
+                                </div>
                             }
                         />
                     </div>
