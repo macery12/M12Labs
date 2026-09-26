@@ -9,11 +9,12 @@ use Everest\Http\Requests\Api\Client\ClientApiRequest;
 class LinkController extends ClientApiController
 {
     /**
-     * Returns a list of all visible links.
+     * Returns every visible link in operator order. Placement is filtered on
+     * the client so the dashboard and server sidebars share one cached query.
      */
     public function index(ClientApiRequest $request): array
     {
-        $links = CustomLink::where('visible', true)->get();
+        $links = CustomLink::query()->where('visible', true)->ordered()->get();
 
         return $this->fractal->collection($links)
             ->transformWith(LinkTransformer::class)

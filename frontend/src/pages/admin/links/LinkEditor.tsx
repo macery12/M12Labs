@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { Switch } from '@/components/ui/Switch';
+import { Select } from '@/components/ui/Select';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
@@ -15,12 +16,14 @@ import {
     deleteLink,
     type CustomLink,
     type CustomLinkPayload,
+    type LinkPlacement,
 } from '@/api/adminLinks';
 
 interface FormState {
     name: string;
     url: string;
     visible: boolean;
+    placement: LinkPlacement;
 }
 
 function initialFrom(link: CustomLink | null): FormState {
@@ -29,6 +32,7 @@ function initialFrom(link: CustomLink | null): FormState {
         url: link?.url ?? '',
         // New links start hidden so a half-configured link never reaches users.
         visible: link?.visible ?? false,
+        placement: link?.placement ?? 'everywhere',
     };
 }
 
@@ -89,6 +93,7 @@ export default function LinkEditor({
         name: form.name.trim(),
         url: form.url.trim(),
         visible: form.visible,
+        placement: form.placement,
     });
 
     const saveMutation = useMutation({
@@ -125,6 +130,12 @@ export default function LinkEditor({
             setConfirmDelete(false);
         },
     });
+
+    const placementOptions = [
+        { value: 'everywhere', label: m['admin.links.placement.everywhere']() },
+        { value: 'dashboard', label: m['admin.links.placement.dashboard']() },
+        { value: 'server', label: m['admin.links.placement.server']() },
+    ];
 
     const canSave =
         form.name.trim().length >= 3 &&
@@ -199,22 +210,36 @@ export default function LinkEditor({
                 </Card>
 
                 <Card title={m['admin.links.editor.visibility']()}>
-                    <label className="flex cursor-pointer items-start gap-3">
-                        <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-medium text-[var(--color-ink)]">
-                                {m['admin.links.field.visible']()}
+                    <div className="flex flex-col gap-4">
+                        <label className="flex cursor-pointer items-start gap-3">
+                            <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-medium text-[var(--color-ink)]">
+                                    {m['admin.links.field.visible']()}
+                                </span>
+                                <span className="mt-0.5 block text-xs text-[var(--color-ink-faint)]">
+                                    {m['admin.links.field.visibleHint']()}
+                                </span>
                             </span>
-                            <span className="mt-0.5 block text-xs text-[var(--color-ink-faint)]">
-                                {m['admin.links.field.visibleHint']()}
-                            </span>
-                        </span>
-                        <Switch
-                            checked={form.visible}
-                            onChange={v => set('visible', v)}
-                            label={m['admin.links.field.visible']()}
-                            className="mt-0.5"
-                        />
-                    </label>
+                            <Switch
+                                checked={form.visible}
+                                onChange={v => set('visible', v)}
+                                label={m['admin.links.field.visible']()}
+                                className="mt-0.5"
+                            />
+                        </label>
+                        <Field
+                            label={m['admin.links.field.placement']()}
+                            hint={m['admin.links.field.placementHint']()}
+                            htmlFor="link-placement"
+                        >
+                            <Select
+                                id="link-placement"
+                                value={form.placement}
+                                onChange={v => set('placement', v as LinkPlacement)}
+                                options={placementOptions}
+                            />
+                        </Field>
+                    </div>
                 </Card>
             </div>
 

@@ -3,12 +3,12 @@ import { ExternalLink } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { getVisibleLinks } from '@/api/links';
 
-// Operator-defined external links, pinned below the nav in the user sidebar
-// (V1 parity: DashboardRouter rendered these at the bottom of its sidebar).
-// The client endpoint only returns links marked visible, so everything here is
-// meant to be seen. Renders nothing when there are none — most panels configure
-// zero links, and an empty header would be noise.
-export function CustomLinks() {
+// Operator-defined external links, pinned below the nav in the dashboard and
+// server sidebars. The client endpoint only returns links marked visible, in
+// operator order; each link's placement picks which of the two sidebars it
+// appears in. Renders nothing when none apply — most panels configure zero
+// links, and an empty header would be noise.
+export function CustomLinks({ area }: { area: 'dashboard' | 'server' }) {
     const { data: links } = useQuery({
         queryKey: ['links', 'visible'],
         queryFn: getVisibleLinks,
@@ -17,14 +17,15 @@ export function CustomLinks() {
         staleTime: 5 * 60 * 1000,
     });
 
-    if (!links || links.length === 0) return null;
+    const shown = links?.filter(l => l.placement === 'everywhere' || l.placement === area) ?? [];
+    if (shown.length === 0) return null;
 
     return (
         <div className="flex flex-col gap-1 border-t border-[var(--color-border)] pt-4">
             <p className="px-3 pb-1 text-xs font-medium uppercase tracking-wider text-[var(--color-ink-faint)]">
                 {m['nav.links.title']()}
             </p>
-            {links.map(link => (
+            {shown.map(link => (
                 <a
                     key={link.id}
                     href={link.url}

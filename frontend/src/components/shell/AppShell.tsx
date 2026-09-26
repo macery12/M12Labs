@@ -20,8 +20,8 @@ const WIDTH_CLASS: Record<ContentWidth, string> = {
 // sidebar (desktop static, mobile drawer) + the routed content. An optional
 // `header` slot renders a sticky band above the routed content (the server
 // area uses it for the server-identity bar); `sidebarFooter` appends non-route
-// entries below the nav groups (the account area uses it for custom links);
-// `sidebarPrefs` turns on foldable groups and pins (the admin area).
+// entries below the nav groups (the dashboard and server areas use it for
+// custom links); `sidebarPrefs` turns on foldable groups and pins (the admin area).
 export function AppShell({
     groups,
     header,

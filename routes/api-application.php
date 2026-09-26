@@ -448,6 +448,7 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::group(['prefix' => '/links'], function () {
         Route::get('/', [Application\Links\LinkController::class, 'index']);
         Route::post('/', [Application\Links\LinkController::class, 'store']);
+        Route::put('/order', [Application\Links\LinkController::class, 'reorder']);
 
         Route::patch('/{id}', [Application\Links\LinkController::class, 'update']);
         Route::delete('/{id}', [Application\Links\LinkController::class, 'delete']);

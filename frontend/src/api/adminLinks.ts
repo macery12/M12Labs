@@ -1,4 +1,7 @@
 import http from '@/lib/http';
+import type { LinkPlacement } from '@/api/links';
+
+export type { LinkPlacement };
 
 // Admin custom-links module (Application API). Mirrors V1's
 // `resources/scripts/api/routes/admin/links.ts` — operator-defined links to
@@ -11,6 +14,8 @@ export interface CustomLink {
     name: string;
     url: string;
     visible: boolean;
+    sort: number;
+    placement: LinkPlacement;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -22,6 +27,8 @@ interface FractalLink {
         name: string;
         url: string;
         visible: boolean;
+        sort: number;
+        placement: LinkPlacement;
         created_at: string;
         updated_at: string | null;
     };
@@ -33,6 +40,8 @@ function toLink({ attributes: a }: FractalLink): CustomLink {
         name: a.name,
         url: a.url,
         visible: a.visible,
+        sort: a.sort,
+        placement: a.placement,
         createdAt: a.created_at,
         updatedAt: a.updated_at ?? null,
     };
@@ -53,9 +62,11 @@ export interface CustomLinkPayload {
     name: string;
     url: string;
     visible: boolean;
+    placement: LinkPlacement;
 }
 
-// GET /api/application/links — the index caps per_page at 100.
+// GET /api/application/links — the index caps per_page at 100. Returned in
+// operator order (sort, then id).
 export async function getLinks(): Promise<CustomLink[]> {
     const { data } = await http.get('/api/application/links', { params: { per_page: 100 } });
     return (data.data ?? []).map(toLink);
@@ -74,4 +85,10 @@ export async function updateLink(id: number, payload: CustomLinkPayload): Promis
 
 export async function deleteLink(id: number): Promise<void> {
     await http.delete(`/api/application/links/${id}`);
+}
+
+// PUT /api/application/links/order — every link id, in the new order. The
+// server refuses a partial list.
+export async function reorderLinks(ids: number[]): Promise<void> {
+    await http.put('/api/application/links/order', { ids });
 }

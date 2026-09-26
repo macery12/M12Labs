@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AppShell } from '@/components/shell/AppShell';
+import { CustomLinks } from '@/components/shell/CustomLinks';
 import { RequireAuth } from './RequireAuth';
 import { serverRoutes } from '@/routes/server.routes';
 import { buildNav } from '@/routes/nav';
@@ -66,6 +67,7 @@ export default function ServerLayout() {
                         groups={groups}
                         header={<ServerHeader />}
                         beforeContent={<ServerExtensionSlot name="server-layout.banner" />}
+                        sidebarFooter={<CustomLinks area="server" />}
                     />
                     <ServerExtensionSlot name="server-layout.overlay" />
                 </ServerContext.Provider>

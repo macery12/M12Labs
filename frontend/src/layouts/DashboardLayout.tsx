@@ -17,7 +17,7 @@ export default function DashboardLayout() {
         <RequireAuth>
             {/* Custom links live in the account sidebar only — V1 rendered them
                 from DashboardRouter, not the admin or server chrome. */}
-            <AppShell groups={groups} sidebarFooter={<CustomLinks />} />
+            <AppShell groups={groups} sidebarFooter={<CustomLinks area="dashboard" />} />
         </RequireAuth>
     );
 }

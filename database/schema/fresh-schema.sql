@@ -329,6 +329,8 @@ CREATE TABLE `custom_links` (
   `url` text NOT NULL,
   `name` varchar(191) NOT NULL,
   `visible` tinyint(1) NOT NULL,
+  `sort` int(10) unsigned NOT NULL DEFAULT 0,
+  `placement` varchar(16) NOT NULL DEFAULT 'everywhere',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
