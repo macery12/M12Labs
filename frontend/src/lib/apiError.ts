@@ -53,6 +53,14 @@ export function errorCode(err: unknown): string | undefined {
     return typeof data?.code === 'string' ? data.code : undefined;
 }
 
+/**
+ * The HTTP status of a failed request, or null when it never got a response
+ * (network failure, timeout) or wasn't a request error at all.
+ */
+export function errorStatus(err: unknown): number | null {
+    return isAxiosError(err) ? (err.response?.status ?? null) : null;
+}
+
 interface FractalValidationError {
     detail?: string;
     meta?: { source_field?: string; rule?: string };

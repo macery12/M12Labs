@@ -16,13 +16,21 @@ import {
     type InstalledStatusFilter,
     type InstalledAddon,
 } from '@/api/mods';
+import { EmptyState, ErrorState, NoMatches } from '@/components/ui/EmptyState';
 
 const PER_PAGE = 50;
 const STATUSES: InstalledStatusFilter[] = ['all', 'enabled', 'disabled'];
 
 // Installed mods/plugins manager: type + status filters, debounced search,
 // paginated list, optimistic enable/disable toggle.
-export function InstalledAddons({ serverId }: { serverId: string }) {
+export function InstalledAddons({
+    serverId,
+    browse,
+}: {
+    serverId: string;
+    /** Switches to the browse tab for a type, when this server has one. */
+    browse?: Partial<Record<InstalledContentType, () => void>>;
+}) {
     const qc = useQueryClient();
     const push = useFlashes(s => s.push);
     const [type, setType] = useState<InstalledContentType>('mods');
@@ -124,14 +132,31 @@ export function InstalledAddons({ serverId }: { serverId: string }) {
                     <Spinner className="h-6 w-6" />
                 </div>
             ) : listQ.isError ? (
-                <div className="py-16 text-center text-sm text-[var(--color-danger)]">
-                    {firstError(listQ.error) ?? m['server.mods.error']()}
-                </div>
+                <ErrorState error={listQ.error} onRetry={() => listQ.refetch()} retrying={listQ.isFetching} />
             ) : items.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-16 text-sm text-[var(--color-ink-faint)]">
-                    <FileBox className="h-6 w-6" />
-                    {m['server.mods.installed.empty']()}
-                </div>
+                status !== 'all' || search ? (
+                    <NoMatches
+                        onClear={() => {
+                            setStatus('all');
+                            setText('');
+                            setSearch('');
+                        }}
+                    />
+                ) : (
+                    <EmptyState
+                        icon={FileBox}
+                        title={m['server.mods.installed.empty']()}
+                        action={
+                            browse?.[type] && (
+                                <Button size="sm" onClick={browse[type]}>
+                                    {type === 'plugins'
+                                        ? m['server.mods.installed.browsePlugins']()
+                                        : m['server.mods.installed.browseMods']()}
+                                </Button>
+                            )
+                        }
+                    />
+                )
             ) : (
                 <ul className="flex flex-col divide-y divide-[var(--color-border)] overflow-hidden rounded-lg border border-[var(--color-border)]">
                     {items.map(addon => (

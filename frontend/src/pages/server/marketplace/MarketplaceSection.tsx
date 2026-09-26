@@ -188,7 +188,15 @@ export default function MarketplaceSection() {
 
             <Suspense fallback={<div className="flex flex-1 items-center justify-center py-24"><Spinner className="h-6 w-6" /></div>}>
                 <div className="flex min-h-0 flex-1 flex-col">
-                    {tab === 'installed' && <InstalledAddons serverId={serverId} />}
+                    {tab === 'installed' && (
+                        <InstalledAddons
+                            serverId={serverId}
+                            browse={{
+                                mods: tabs.includes('mods') ? () => setTab('mods') : undefined,
+                                plugins: tabs.includes('plugins') ? () => setTab('plugins') : undefined,
+                            }}
+                        />
+                    )}
                     {tab === 'mods' && (
                         <ModBrowser
                             key={`mods-${source}`}

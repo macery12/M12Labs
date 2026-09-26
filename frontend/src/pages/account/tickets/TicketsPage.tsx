@@ -14,6 +14,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { StatusBadge, PriorityBadge, TICKET_STATUSES, type TicketStatus } from '@/components/tickets/meta';
 import { VerifyEmailNotice } from '@/components/account/VerifyEmailNotice';
 import { NewTicketModal } from './NewTicketModal';
+import { ErrorState } from '@/components/ui/EmptyState';
 
 type Filter = 'all' | TicketStatus;
 
@@ -24,7 +25,7 @@ export default function TicketsPage() {
 
     const gate = useVerificationGate('tickets');
 
-    const { data, isLoading, isError, error } = useQuery({
+    const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
         queryKey: ['account', 'tickets'],
         queryFn: getTickets,
         enabled: gate.canView,
@@ -102,7 +103,7 @@ export default function TicketsPage() {
                         <Spinner className="h-5 w-5" />
                     </div>
                 ) : isError ? (
-                    <p className="px-4 py-10 text-center text-sm text-[var(--color-danger)]">{m['tickets.loadError']()}</p>
+                    <ErrorState error={error} onRetry={() => refetch()} retrying={isFetching} />
                 ) : visible.length === 0 ? (
                     <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
                         <LifeBuoy className="h-8 w-8 text-[var(--color-ink-faint)]" />

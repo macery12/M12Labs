@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { Download, AlertTriangle, HardDrive, Clock } from 'lucide-react';
+import { Download, AlertTriangle, BarChart3, HardDrive, Clock } from 'lucide-react';
 import { Panel } from '@/components/ui/Panel';
 import { Spinner } from '@/components/ui/Spinner';
 import { m, td } from '@/i18n/messages';
-import { firstError } from '@/lib/apiError';
 import { formatBytes } from '@/lib/format';
 import { getMarketplaceAnalytics, type MarketplaceAnalytics } from '@/api/marketplaceAdmin';
 import { formatCount } from '@/pages/server/marketplace/modMeta';
+import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 
 export default function OverviewPage() {
     const q = useQuery({
@@ -23,11 +23,7 @@ export default function OverviewPage() {
         );
     }
     if (q.isError || !q.data) {
-        return (
-            <div className="py-16 text-center text-sm text-[var(--color-danger)]">
-                {firstError(q.error) ?? m['admin.marketplace.settings.error']()}
-            </div>
-        );
+        return <ErrorState error={q.error} onRetry={() => q.refetch()} retrying={q.isFetching} />;
     }
 
     const a = q.data;
@@ -78,7 +74,16 @@ export default function OverviewPage() {
 
             <Panel title={m['admin.marketplace.overview.trend7d']()}>
                 <div className="p-2">
-                    <TrendBars data={a.trends.last_7d.map(d => ({ label: d.date.slice(5), value: d.installs }))} />
+                    {a.trends.last_7d.some(d => d.installs > 0) ? (
+                        <TrendBars data={a.trends.last_7d.map(d => ({ label: d.date.slice(5), value: d.installs }))} />
+                    ) : (
+                        // A week of zero-height bars read as a broken chart.
+                        <EmptyState
+                            icon={BarChart3}
+                            title={m['admin.marketplace.overview.trendEmpty']()}
+                            body={m['admin.marketplace.overview.trendEmptyBody']()}
+                        />
+                    )}
                 </div>
             </Panel>
 

@@ -6,9 +6,12 @@ import {
     ChevronRight,
     ChevronUp,
     ListFilter,
+    Receipt,
     Search,
+    ShoppingCart,
     X,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { m } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 import {
@@ -25,6 +28,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { EmptyState, ErrorState, NoMatches } from '@/components/ui/EmptyState';
 import { StatusPill, ProcessorBadge, orderTypeLabel, money } from './parts';
 import OrderDetailModal from './OrderDetailModal';
 
@@ -109,7 +113,7 @@ export default function OrdersTab() {
         setPage(1);
     }, [filters, sort, sortDesc]);
 
-    const { data, isLoading, isFetching } = useQuery({
+    const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
         queryKey: ['account', 'orders', { page, sort, sortDesc, filters }],
         queryFn: () => getOrders(page, filters, sort, sortDesc),
         placeholderData: keepPreviousData,
@@ -316,10 +320,27 @@ export default function OrdersTab() {
                     <div className="flex justify-center py-14">
                         <Spinner className="h-5 w-5" />
                     </div>
+                ) : isError ? (
+                    <ErrorState error={error} onRetry={() => refetch()} retrying={isFetching} />
                 ) : items.length === 0 ? (
-                    <p className="px-4 py-14 text-center text-sm text-[var(--color-ink-muted)]">
-                        {m['billing.orders.empty']()}
-                    </p>
+                    activeFilterCount > 0 ? (
+                        <NoMatches title={m['billing.orders.empty']()} onClear={clearFilters} />
+                    ) : (
+                        <EmptyState
+                            icon={Receipt}
+                            title={m['billing.orders.none.title']()}
+                            body={m['billing.orders.none.body']()}
+                            action={
+                                <Link
+                                    to="/billing/order"
+                                    className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--brand)] px-3 text-sm font-medium text-[var(--color-brand-ink)] transition-colors hover:bg-[var(--brand-hover)]"
+                                >
+                                    <ShoppingCart className="h-4 w-4" />
+                                    {m['billing.orders.none.cta']()}
+                                </Link>
+                            }
+                        />
+                    )
                 ) : null}
             </div>
 
