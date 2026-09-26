@@ -87,11 +87,16 @@ export default function NetworkPage() {
                 </div>
                 {canCreate && (
                     <div className="flex flex-col items-end gap-1">
-                        <Button onClick={() => create.mutate()} disabled={atLimit || create.isPending}>
+                        <Button
+                            onClick={() => create.mutate()}
+                            disabled={create.isPending}
+                            disabledReason={atLimit ? m['server.network.limitReached']({ used: allocations.length, total: limit }) : null}
+                            reasonAlign="end"
+                        >
                             {create.isPending ? <Spinner className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                             {m['server.network.addAllocation']()}
                         </Button>
-                        {limit > 0 && (
+                        {limit > 0 && !atLimit && (
                             <span className="text-xs text-[var(--color-ink-faint)]">
                                 {m['server.network.limit']({ used: allocations.length, total: limit })}
                             </span>

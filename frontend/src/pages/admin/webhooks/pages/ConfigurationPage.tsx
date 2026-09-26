@@ -142,7 +142,8 @@ export default function ConfigurationPage() {
                             <Button
                                 variant="outline"
                                 onClick={test}
-                                disabled={testing || !configured}
+                                disabled={testing}
+                                disabledReason={configured ? null : m['admin.webhooks.config.testNoUrl']()}
                                 className="w-full"
                             >
                                 <Send className="h-4 w-4" />

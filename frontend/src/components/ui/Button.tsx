@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/cn';
 
@@ -26,11 +26,51 @@ const button = cva(
 
 export interface ButtonProps
     extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-        VariantProps<typeof button> {}
+        VariantProps<typeof button> {
+    /**
+     * Why the button can't be used right now. Passing one disables the button
+     * and says why, both in a line under it and as a hover tooltip. A bare
+     * disabled button explains nothing, and it can't show a tooltip because
+     * disabled elements get no pointer events, so the wrapper carries it.
+     */
+    disabledReason?: string | null;
+    /** Where the reason sits under the button; match the button's alignment. */
+    reasonAlign?: 'start' | 'center' | 'end';
+}
+
+const reasonAlignClass = {
+    start: 'items-start text-left',
+    center: 'items-center text-center',
+    end: 'items-end text-right',
+} as const;
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, variant, size, ...props }, ref) => (
-        <button ref={ref} className={cn(button({ variant, size }), className)} {...props} />
-    ),
+    ({ className, variant, size, disabled, disabledReason, reasonAlign = 'start', ...props }, ref) => {
+        const reasonId = useId();
+        const element = (
+            <button
+                ref={ref}
+                className={cn(button({ variant, size }), className)}
+                disabled={disabled || Boolean(disabledReason)}
+                {...props}
+                aria-describedby={disabledReason ? reasonId : props['aria-describedby']}
+            />
+        );
+        if (!disabledReason) return element;
+
+        // A full-width button needs a full-width wrapper to stay full width.
+        const block = /(^|\s)w-full(\s|$)/.test(className ?? '');
+        return (
+            <span
+                title={disabledReason}
+                className={cn(block ? 'flex w-full' : 'inline-flex', 'flex-col gap-1', reasonAlignClass[reasonAlign])}
+            >
+                {element}
+                <span id={reasonId} className="text-xs text-[var(--color-ink-muted)]">
+                    {disabledReason}
+                </span>
+            </span>
+        );
+    },
 );
 Button.displayName = 'Button';

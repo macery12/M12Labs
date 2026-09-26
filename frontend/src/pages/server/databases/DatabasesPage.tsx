@@ -54,15 +54,27 @@ export default function DatabasesPage() {
                     <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.databases.title']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.databases.subtitle']()}</p>
                 </div>
-                {canCreate && !disabled && (
+                {canCreate && (
                     <div className="flex flex-col items-end gap-1">
-                        <Button onClick={() => setCreating(true)} disabled={atLimit}>
+                        <Button
+                            onClick={() => setCreating(true)}
+                            disabledReason={
+                                disabled
+                                    ? m['server.databases.noneInPlan']()
+                                    : atLimit
+                                      ? m['server.databases.limitReached']({ used: databases.length, total: limit })
+                                      : null
+                            }
+                            reasonAlign="end"
+                        >
                             <Plus className="h-4 w-4" />
                             {m['server.databases.addDatabase']()}
                         </Button>
-                        <span className="text-xs text-[var(--color-ink-faint)]">
-                            {m['server.databases.limit']({ used: databases.length, total: limit })}
-                        </span>
+                        {!disabled && !atLimit && (
+                            <span className="text-xs text-[var(--color-ink-faint)]">
+                                {m['server.databases.limit']({ used: databases.length, total: limit })}
+                            </span>
+                        )}
                     </div>
                 )}
             </div>
