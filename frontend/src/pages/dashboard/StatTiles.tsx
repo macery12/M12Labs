@@ -5,6 +5,7 @@ import { Server, Activity, MemoryStick, LifeBuoy, AlertTriangle } from 'lucide-r
 import { formatBytes, formatMib } from '@/lib/format';
 import { useFlags } from '@/state/flags';
 import { getTickets } from '@/api/tickets';
+import { useVerificationGate } from '@/lib/emailVerification';
 import { cn } from '@/lib/cn';
 import type { ServerListItem } from '@/api/servers';
 
@@ -15,6 +16,7 @@ function Tile({
     label,
     value,
     sub,
+    note,
     to,
     tone = 'brand',
 }: {
@@ -22,6 +24,8 @@ function Tile({
     label: string;
     value: string;
     sub?: string;
+    // One line under the value explaining why it is missing.
+    note?: string;
     to?: string;
     tone?: Tone;
 }) {
@@ -49,6 +53,7 @@ function Tile({
                     <span className="ml-1 text-sm font-normal text-[var(--color-ink-faint)]">{sub}</span>
                 )}
             </p>
+            {note && <p className="mt-0.5 truncate text-xs text-[var(--color-warning)]">{note}</p>}
         </>
     );
 
@@ -79,11 +84,12 @@ export function StatTiles({
 }) {
     const flags = useFlags(s => s.everest);
     const ticketsEnabled = flags?.tickets.enabled ?? false;
+    const ticketsGate = useVerificationGate('tickets');
 
     const { data: tickets } = useQuery({
         queryKey: ['account', 'tickets'],
         queryFn: getTickets,
-        enabled: ticketsEnabled,
+        enabled: ticketsEnabled && ticketsGate.canView,
     });
     const openTickets = tickets ? tickets.filter(t => t.status !== 'resolved').length : null;
 
@@ -109,6 +115,7 @@ export function StatTiles({
                     icon={LifeBuoy}
                     label={m['dashboard.stats.openTickets']()}
                     value={openTickets === null ? '—' : String(openTickets)}
+                    note={ticketsGate.canView ? undefined : m['dashboard.stats.verifyToUse']()}
                     to="/tickets"
                 />
             ) : (

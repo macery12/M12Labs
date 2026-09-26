@@ -4,7 +4,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Send, Trash2 } from 'lucide-react';
 import { getTicket, replyToTicket, deleteTicket, type TicketMessage } from '@/api/tickets';
-import { firstError } from '@/lib/apiError';
+import { errorCode, firstError } from '@/lib/apiError';
+import { useVerificationGate } from '@/lib/emailVerification';
 import { useFlashes } from '@/state/flashes';
 import { useSession } from '@/state/session';
 import { timeAgo } from '@/lib/format';
@@ -14,6 +15,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StatusBadge, PriorityBadge } from '@/components/tickets/meta';
 import { Thread, type ThreadMessage } from '@/components/tickets/Thread';
+import { VerifyEmailNotice } from '@/components/account/VerifyEmailNotice';
 
 function toThread(messages: TicketMessage[], myEmail: string | undefined): ThreadMessage[] {
     return messages.map(msg => ({
@@ -37,10 +39,17 @@ export default function TicketDetailPage() {
     const [reply, setReply] = useState('');
     const [confirmDelete, setConfirmDelete] = useState(false);
 
-    const { data: ticket, isLoading, isError } = useQuery({
+    const gate = useVerificationGate('tickets');
+
+    const {
+        data: ticket,
+        isLoading,
+        isError,
+        error,
+    } = useQuery({
         queryKey: ['account', 'tickets', ticketId],
         queryFn: () => getTicket(ticketId),
-        enabled: Number.isFinite(ticketId),
+        enabled: Number.isFinite(ticketId) && gate.canView,
     });
 
     const thread = useMemo(() => toThread(ticket?.messages ?? [], myEmail), [ticket, myEmail]);
@@ -65,6 +74,14 @@ export default function TicketDetailPage() {
         onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
     });
 
+    if (!gate.canView || errorCode(error) === 'EMAIL_NOT_VERIFIED') {
+        return (
+            <div>
+                <BackLink />
+                <VerifyEmailNotice title={m['tickets.gate.title']()} body={m['tickets.gate.body']()} />
+            </div>
+        );
+    }
     if (isLoading) {
         return (
             <div className="flex min-h-[40vh] items-center justify-center">
@@ -101,21 +118,25 @@ export default function TicketDetailPage() {
                         <Thread messages={thread} />
                     </div>
 
-                    <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-                        <Textarea
-                            value={reply}
-                            rows={4}
-                            maxLength={2000}
-                            placeholder={m['tickets.reply.placeholder']()}
-                            onChange={e => setReply(e.target.value)}
-                        />
-                        <div className="flex justify-end">
-                            <Button onClick={() => replyMutation.mutate()} disabled={!canReply || replyMutation.isPending}>
-                                {replyMutation.isPending ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-                                {m['tickets.reply.submit']()}
-                            </Button>
+                    {!gate.canInteract ? (
+                        <VerifyEmailNotice variant="inline" title={m['tickets.gate.interact']()} />
+                    ) : (
+                        <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+                            <Textarea
+                                value={reply}
+                                rows={4}
+                                maxLength={2000}
+                                placeholder={m['tickets.reply.placeholder']()}
+                                onChange={e => setReply(e.target.value)}
+                            />
+                            <div className="flex justify-end">
+                                <Button onClick={() => replyMutation.mutate()} disabled={!canReply || replyMutation.isPending}>
+                                    {replyMutation.isPending ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                                    {m['tickets.reply.submit']()}
+                                </Button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Details sidebar */}
@@ -138,10 +159,12 @@ export default function TicketDetailPage() {
                         />
                     </div>
 
-                    <Button variant="outline" onClick={() => setConfirmDelete(true)}>
-                        <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
-                        {m['tickets.delete']()}
-                    </Button>
+                    {gate.canInteract && (
+                        <Button variant="outline" onClick={() => setConfirmDelete(true)}>
+                            <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
+                            {m['tickets.delete']()}
+                        </Button>
+                    )}
                 </aside>
             </div>
 

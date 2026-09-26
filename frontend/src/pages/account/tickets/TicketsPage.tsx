@@ -5,11 +5,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus, LifeBuoy, ChevronRight } from 'lucide-react';
 import { getTickets } from '@/api/tickets';
 import { useFlags } from '@/state/flags';
+import { errorCode } from '@/lib/apiError';
+import { useVerificationGate } from '@/lib/emailVerification';
 import { timeAgo } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { StatusBadge, PriorityBadge, TICKET_STATUSES, type TicketStatus } from '@/components/tickets/meta';
+import { VerifyEmailNotice } from '@/components/account/VerifyEmailNotice';
 import { NewTicketModal } from './NewTicketModal';
 
 type Filter = 'all' | TicketStatus;
@@ -19,7 +22,16 @@ export default function TicketsPage() {
     const [filter, setFilter] = useState<Filter>('all');
     const [creating, setCreating] = useState(false);
 
-    const { data, isLoading, isError } = useQuery({ queryKey: ['account', 'tickets'], queryFn: getTickets });
+    const gate = useVerificationGate('tickets');
+
+    const { data, isLoading, isError, error } = useQuery({
+        queryKey: ['account', 'tickets'],
+        queryFn: getTickets,
+        enabled: gate.canView,
+    });
+    // The rules can change after this page loaded; the server's answer wins.
+    const gated = !gate.canView || errorCode(error) === 'EMAIL_NOT_VERIFIED';
+    const canCreate = gate.canInteract && !gated;
 
     const counts = useMemo(() => {
         const map: Record<string, number> = { all: data?.length ?? 0 };
@@ -45,11 +57,15 @@ export default function TicketsPage() {
                     <h1 className="text-2xl font-semibold tracking-tight">{m['tickets.title']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['tickets.subtitle']()}</p>
                 </div>
-                <Button size="sm" disabled={atLimit} onClick={() => setCreating(true)}>
-                    <Plus className="h-4 w-4" />
-                    {m['tickets.new.button']()}
-                </Button>
+                {canCreate && (
+                    <Button size="sm" disabled={atLimit} onClick={() => setCreating(true)}>
+                        <Plus className="h-4 w-4" />
+                        {m['tickets.new.button']()}
+                    </Button>
+                )}
             </div>
+
+            {!gated && !gate.canInteract && <VerifyEmailNotice variant="inline" title={m['tickets.gate.interact']()} />}
 
             {atLimit && (
                 <p className="rounded-[var(--radius-card)] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/[0.06] px-4 py-2.5 text-xs text-[var(--color-warning)]">
@@ -57,27 +73,31 @@ export default function TicketsPage() {
                 </p>
             )}
 
-            <div className="flex flex-wrap gap-1.5">
-                {tabs.map(f => (
-                    <button
-                        key={f}
-                        type="button"
-                        onClick={() => setFilter(f)}
-                        className={cn(
-                            'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-                            filter === f
-                                ? 'bg-[var(--brand)]/15 text-[var(--color-ink)] ring-1 ring-inset ring-[var(--brand)]/30'
-                                : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]',
-                        )}
-                    >
-                        {f === 'all' ? m['tickets.filter.all']() : statusTabLabel(f)}
-                        <span className="text-[var(--color-ink-faint)]">{counts[f] ?? 0}</span>
-                    </button>
-                ))}
-            </div>
+            {!gated && (
+                <div className="flex flex-wrap gap-1.5">
+                    {tabs.map(f => (
+                        <button
+                            key={f}
+                            type="button"
+                            onClick={() => setFilter(f)}
+                            className={cn(
+                                'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                                filter === f
+                                    ? 'bg-[var(--brand)]/15 text-[var(--color-ink)] ring-1 ring-inset ring-[var(--brand)]/30'
+                                    : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]',
+                            )}
+                        >
+                            {f === 'all' ? m['tickets.filter.all']() : statusTabLabel(f)}
+                            <span className="text-[var(--color-ink-faint)]">{counts[f] ?? 0}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)]/70">
-                {isLoading ? (
+                {gated ? (
+                    <VerifyEmailNotice title={m['tickets.gate.title']()} body={m['tickets.gate.body']()} />
+                ) : isLoading ? (
                     <div className="flex justify-center py-12">
                         <Spinner className="h-5 w-5" />
                     </div>
@@ -87,7 +107,7 @@ export default function TicketsPage() {
                     <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
                         <LifeBuoy className="h-8 w-8 text-[var(--color-ink-faint)]" />
                         <p className="text-sm text-[var(--color-ink-muted)]">{m['tickets.empty']()}</p>
-                        {!atLimit && (
+                        {canCreate && !atLimit && (
                             <Button size="sm" variant="outline" onClick={() => setCreating(true)}>
                                 <Plus className="h-4 w-4" />
                                 {m['tickets.new.button']()}

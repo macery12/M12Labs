@@ -22,6 +22,12 @@ export async function updatePassword({ current, password, confirmPassword }: Upd
     });
 }
 
+// Send (or resend) the verification link. 202 when sent, 200 when already
+// verified, 503 when an admin turned the verification email off, 429 throttled.
+export async function sendVerificationEmail(): Promise<void> {
+    await http.post('/api/client/account/email/verification');
+}
+
 // Save the user's preferred panel language; null clears the preference so the
 // account follows the panel-wide default. 403s when admins disabled overrides.
 export async function updateLanguage(language: string | null): Promise<void> {
