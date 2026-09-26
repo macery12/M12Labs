@@ -49,6 +49,7 @@
         "@codemirror/view": "^6.43.13",
         "@fontsource/ibm-plex-mono": "^5.3.0",
         "@fontsource/ibm-plex-sans": "^5.3.0",
+        "@lezer/common": "^1.5.3",
         "@lezer/highlight": "^1.2.4",
         "@radix-ui/react-dialog": "^1.1.23",
         "@radix-ui/react-dropdown-menu": "^2.1.24",

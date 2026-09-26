@@ -75,7 +75,10 @@ export default defineConfig(({ command }) => ({
         // CodeMirror checks extensions (and lezer highlight tags) by identity:
         // a lockfile refresh once left codemirror@6.0.2 on a newer
         // @codemirror/state than ours and the file editor threw "Unrecognized
-        // extension value in extension set".
+        // extension value in extension set". @lezer/common numbers its node
+        // props per copy, so with two copies (language on 1.5.2, highlight on
+        // 1.5.3) every StreamLanguage mode (properties, ini, shell, toml)
+        // looked up the wrong prop and crashed with "e is not iterable".
         dedupe: [
             'react',
             'react-dom',
@@ -85,6 +88,7 @@ export default defineConfig(({ command }) => ({
             '@codemirror/view',
             '@codemirror/language',
             '@lezer/highlight',
+            '@lezer/common',
         ],
     },
 
