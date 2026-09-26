@@ -8,6 +8,7 @@ use Everest\Models\DownloadQueue;
 use Illuminate\Http\JsonResponse;
 use Everest\Jobs\InstallModpackJob;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
+use Everest\Http\Middleware\Api\Client\EnsureMarketplaceEnabled;
 use Everest\Http\Requests\Api\Client\Servers\Mods\DownloadModRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetDownloadQueueRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\ManageDownloadQueueRequest;
@@ -106,6 +107,13 @@ class ModQueueController extends ClientApiController
         $item = DownloadQueue::where('server_id', $server->id)
             ->where('uuid', $queueUuid)
             ->firstOrFail();
+
+        // The queue routes sit behind the mods switch only; a modpack retry
+        // re-runs a CurseForge install, so it answers to that switch as well —
+        // the same 404 the modpack routes give when it is off.
+        if ($item->source === 'modpack' && !EnsureMarketplaceEnabled::modpacksEnabled()) {
+            abort(404);
+        }
 
         if ($item->status !== DownloadQueue::STATUS_FAILED) {
             return response()->json([

@@ -111,5 +111,6 @@ class Kernel extends HttpKernel
         'node.maintenance' => MaintenanceMiddleware::class,
         'extensions.access' => Middleware\Api\Client\Extensions\EnsureExtensionAccess::class,
         'extensions.admin' => Middleware\Api\Application\Extensions\EnsureExtensionAdminAccess::class,
+        'marketplace' => Middleware\Api\Client\EnsureMarketplaceEnabled::class,
     ];
 }
