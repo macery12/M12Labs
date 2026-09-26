@@ -79,6 +79,8 @@ export { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 export { Panel } from '@/components/ui/Panel';
 export { Spinner } from '@/components/ui/Spinner';
 export { CopyField } from '@/components/ui/CopyField';
+export { ReadOnlyValue, type ReadOnlyValueProps } from '@/components/ui/ReadOnlyValue';
+export { EmptyState, NoMatches, ErrorState, type EmptyStateProps } from '@/components/ui/EmptyState';
 export { HelpButton, HelpSteps } from '@/components/ui/HelpButton';
 
 export { Markdown, type MarkdownProps } from './Markdown';
@@ -130,3 +132,7 @@ export {
 // utilities and theme variables core does. Handing them the panel's own merge
 // helper stops each package bundling its own clsx/tailwind-merge copy.
 export { cn } from '@/lib/cn';
+
+// Number and duration formatting, so a package prints "2,000,000" and
+// "146.4 sec" the same way the panel does rather than raw integers and ms.
+export { formatNumber, formatDuration, formatBytes } from '@/lib/format';
