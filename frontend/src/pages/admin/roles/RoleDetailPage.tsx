@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { Switch } from '@/components/ui/Switch';
+import { SaveBar } from '@/components/ui/editorChrome';
 import PermissionMatrix from './PermissionMatrix';
 
 const CROSS_GROUP_DEPENDENCIES: Record<string, string[]> = {
@@ -227,7 +228,7 @@ export default function RoleDetailPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 pb-24">
+        <div className="flex flex-col gap-6">
             <BackLink onClick={() => navigate('/admin/access/profiles')} />
 
             <header className="flex items-center gap-3">
@@ -353,22 +354,15 @@ export default function RoleDetailPage() {
                 />
             </div>
 
-            {/* Sticky save bar — only when the operator can edit and has changes. */}
+            {/* Save bar — only when the operator can edit and has changes. */}
             {!readOnly && !role.isSystem && !role.isOwner && dirty && (
-                <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 backdrop-blur">
-                    <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-                        <p className="text-sm text-[var(--color-ink-muted)]">{m['admin.roles.unsavedChanges']()}</p>
-                        <div className="flex gap-2">
-                            <Button variant="ghost" size="sm" onClick={discard} disabled={save.isPending}>
-                                {m['common.actions.discard']()}
-                            </Button>
-                            <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
-                                {save.isPending && <Spinner className="h-4 w-4" />}
-                                {m['common.actions.saveChanges']()}
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+                <SaveBar
+                    dirty={dirty}
+                    saving={save.isPending}
+                    onDiscard={discard}
+                    onSave={() => save.mutate()}
+                    labels={{ save: m['common.actions.saveChanges']() }}
+                />
             )}
         </div>
     );

@@ -4,10 +4,10 @@ import { Trash2, ExternalLink } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
-import { Spinner } from '@/components/ui/Spinner';
 import { Switch } from '@/components/ui/Switch';
 import { Select } from '@/components/ui/Select';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { SaveBar } from '@/components/ui/editorChrome';
 import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
 import {
@@ -137,14 +137,10 @@ export default function LinkEditor({
         { value: 'server', label: m['admin.links.placement.server']() },
     ];
 
-    const canSave =
-        form.name.trim().length >= 3 &&
-        isValidUrl(form.url.trim()) &&
-        (isNew || dirty) &&
-        !saveMutation.isPending;
+    const valid = form.name.trim().length >= 3 && isValidUrl(form.url.trim());
 
     return (
-        <div className="flex flex-col gap-6 pb-24">
+        <div className="flex flex-col gap-6">
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                     <h2 className="truncate text-lg font-semibold text-[var(--color-ink)]">
@@ -243,25 +239,15 @@ export default function LinkEditor({
                 </Card>
             </div>
 
-            {/* Sticky save bar */}
-            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 backdrop-blur">
-                <div className="mx-auto flex max-w-6xl items-center justify-end gap-3 px-4 py-3">
-                    <span className="mr-auto text-xs text-[var(--color-ink-faint)]">
-                        {isNew
-                            ? m['admin.links.editor.newHint']()
-                            : dirty
-                              ? m['admin.links.editor.unsaved']()
-                              : m['admin.links.editor.upToDate']()}
-                    </span>
-                    <Button variant="ghost" size="sm" onClick={onCancel} disabled={saveMutation.isPending}>
-                        {m['common.actions.cancel']()}
-                    </Button>
-                    <Button size="sm" onClick={() => saveMutation.mutate()} disabled={!canSave}>
-                        {saveMutation.isPending && <Spinner className="h-4 w-4" />}
-                        {isNew ? m['admin.links.editor.create']() : m['common.actions.saveChanges']()}
-                    </Button>
-                </div>
-            </div>
+            <SaveBar
+                dirty={isNew || dirty}
+                saving={saveMutation.isPending}
+                onCancel={onCancel}
+                onSave={() => saveMutation.mutate()}
+                saveDisabled={!valid}
+                blockedReason={isNew && !valid ? m['admin.links.editor.newHint']() : null}
+                labels={{ save: isNew ? m['admin.links.editor.create']() : m['common.actions.saveChanges']() }}
+            />
 
             {!isNew && (
                 <ConfirmDialog

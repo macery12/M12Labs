@@ -9,6 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { SaveBar } from '@/components/ui/editorChrome';
 import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
 import {
@@ -289,10 +290,11 @@ export default function AlertEditor({
         },
     });
 
-    const canSave = form.content.trim().length > 0 && dirty && !saveMutation.isPending;
+
+    const hasContent = form.content.trim().length > 0;
 
     return (
-        <div className="flex flex-col gap-6 pb-24">
+        <div className="flex flex-col gap-6">
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                     <h2 className="truncate text-lg font-semibold text-[var(--color-ink)]">
@@ -416,21 +418,15 @@ export default function AlertEditor({
                 </div>
             </div>
 
-            {/* Sticky save bar */}
-            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 backdrop-blur">
-                <div className="mx-auto flex max-w-6xl items-center justify-end gap-3 px-4 py-3">
-                    <span className="mr-auto text-xs text-[var(--color-ink-faint)]">
-                        {dirty ? m['admin.alerts.editor.unsaved']() : m['admin.alerts.editor.upToDate']()}
-                    </span>
-                    <Button variant="ghost" size="sm" onClick={onCancel} disabled={saveMutation.isPending}>
-                        {m['common.actions.cancel']()}
-                    </Button>
-                    <Button size="sm" onClick={() => saveMutation.mutate()} disabled={!canSave}>
-                        {saveMutation.isPending && <Spinner className="h-4 w-4" />}
-                        {isNew ? m['admin.alerts.editor.create']() : m['common.actions.saveChanges']()}
-                    </Button>
-                </div>
-            </div>
+            <SaveBar
+                dirty={isNew || dirty}
+                saving={saveMutation.isPending}
+                onCancel={onCancel}
+                onSave={() => saveMutation.mutate()}
+                saveDisabled={!hasContent}
+                blockedReason={isNew && !hasContent ? m['admin.alerts.editor.newHint']() : null}
+                labels={{ save: isNew ? m['admin.alerts.editor.create']() : m['common.actions.saveChanges']() }}
+            />
 
             {!isNew && (
                 <ConfirmDialog

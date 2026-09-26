@@ -117,7 +117,23 @@ export function ToggleRow({ label, desc, checked, onChange, disabled }: ToggleRo
 export interface SaveBarProps {
     dirty: boolean;
     saving: boolean;
-    onDiscard: () => void;
+    /** Reset the form to what was loaded. Omit when the editor has no reset. */
+    onDiscard?: () => void;
+    /**
+     * Leave the editor. For editors that open beside a list (links, alerts,
+     * database hosts), where closing is the other half of saving.
+     */
+    onCancel?: () => void;
+    /**
+     * Save without a surrounding <form>. When omitted the Save button is a
+     * submit button, which is what the form-based editors rely on.
+     */
+    onSave?: () => void;
+    /**
+     * Extra reasons Save is unavailable that don't warrant a message, such as
+     * a required field still being empty on a create form.
+     */
+    saveDisabled?: boolean;
     /**
      * Why the form can't be submitted yet, if it can't. Passing this disables
      * Save and shows the reason — an enabled button whose handler silently
@@ -135,7 +151,9 @@ export interface SaveBarProps {
     labels?: Partial<Record<'unsaved' | 'allSaved' | 'discard' | 'save', string>>;
 }
 
-export function SaveBar({ dirty, saving, onDiscard, blockedReason, labels }: SaveBarProps) {
+// Sticky inside the content column, never `fixed inset-x-0`: a full-width
+// fixed bar sat on top of the admin sidebar and hid its last group.
+export function SaveBar({ dirty, saving, onDiscard, onCancel, onSave, saveDisabled, blockedReason, labels }: SaveBarProps) {
     const blocked = Boolean(blockedReason);
 
     return (
@@ -152,10 +170,22 @@ export function SaveBar({ dirty, saving, onDiscard, blockedReason, labels }: Sav
                 </span>
             )}
             <div className="flex items-center justify-end gap-2">
-                <Button type="button" variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>
-                    <RotateCcw className="h-4 w-4" /> {labels?.discard ?? m['common.actions.discard']()}
-                </Button>
-                <Button type="submit" size="sm" disabled={!dirty || saving || blocked}>
+                {onCancel && (
+                    <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
+                        {m['common.actions.cancel']()}
+                    </Button>
+                )}
+                {onDiscard && (
+                    <Button type="button" variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>
+                        <RotateCcw className="h-4 w-4" /> {labels?.discard ?? m['common.actions.discard']()}
+                    </Button>
+                )}
+                <Button
+                    type={onSave ? 'button' : 'submit'}
+                    size="sm"
+                    onClick={onSave}
+                    disabled={!dirty || saving || blocked || saveDisabled}
+                >
                     {saving ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
                     {labels?.save ?? m['common.actions.save']()}
                 </Button>

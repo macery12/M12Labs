@@ -4,8 +4,8 @@ import { Trash2, Check, Copy } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
-import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { SaveBar } from '@/components/ui/editorChrome';
 import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
 import {
@@ -123,17 +123,15 @@ export default function DatabaseEditor({
         });
     };
 
-    const canSave =
+    const valid =
         form.name.trim().length > 0 &&
         form.host.trim().length > 0 &&
         form.username.trim().length > 0 &&
         form.port >= 1 &&
-        form.port <= 65535 &&
-        (isNew || dirty) &&
-        !saveMutation.isPending;
+        form.port <= 65535;
 
     return (
-        <div className="flex flex-col gap-6 pb-24">
+        <div className="flex flex-col gap-6">
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                     <h2 className="truncate text-lg font-semibold text-[var(--color-ink)]">
@@ -228,25 +226,15 @@ export default function DatabaseEditor({
                 </Card>
             </div>
 
-            {/* Sticky save bar */}
-            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 backdrop-blur">
-                <div className="mx-auto flex max-w-6xl items-center justify-end gap-3 px-4 py-3">
-                    <span className="mr-auto text-xs text-[var(--color-ink-faint)]">
-                        {isNew
-                            ? m['admin.databases.editor.newHint']()
-                            : dirty
-                              ? m['admin.databases.editor.unsaved']()
-                              : m['admin.databases.editor.upToDate']()}
-                    </span>
-                    <Button variant="ghost" size="sm" onClick={onCancel} disabled={saveMutation.isPending}>
-                        {m['common.actions.cancel']()}
-                    </Button>
-                    <Button size="sm" onClick={() => saveMutation.mutate()} disabled={!canSave}>
-                        {saveMutation.isPending && <Spinner className="h-4 w-4" />}
-                        {isNew ? m['admin.databases.editor.create']() : m['common.actions.saveChanges']()}
-                    </Button>
-                </div>
-            </div>
+            <SaveBar
+                dirty={isNew || dirty}
+                saving={saveMutation.isPending}
+                onCancel={onCancel}
+                onSave={() => saveMutation.mutate()}
+                saveDisabled={!valid}
+                blockedReason={isNew && !valid ? m['admin.databases.editor.newHint']() : null}
+                labels={{ save: isNew ? m['admin.databases.editor.create']() : m['common.actions.saveChanges']() }}
+            />
 
             {!isNew && (
                 <ConfirmDialog
