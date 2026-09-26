@@ -18,7 +18,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Spinner } from '@/components/ui/Spinner';
 import { fileExists, getFileContents, saveFileContents } from '@/api/files';
 import { validateFileName } from './Modals';
-import { editorTheme } from './editorTheme';
+import { editorTheme } from '@/lib/editorTheme';
 import { dirname, encodePathSegments } from '../paths';
 import { EDITOR_LANGUAGES, loadEditorLanguage, matchEditorLanguage } from '@/lib/editorLanguages';
 
@@ -495,12 +495,12 @@ export default function FileEditor({ action }: { action: 'edit' | 'new' }) {
             <Modal
                 open={blocker.state === 'blocked'}
                 onClose={() => blocker.reset?.()}
-                title={m['server.files.editor.leaveTitle']()}
+                title={m['common.editor.leaveTitle']()}
                 size="sm"
                 footer={
                     <>
                         <Button variant="ghost" size="sm" onClick={() => blocker.reset?.()}>
-                            {m['server.files.editor.leaveStay']()}
+                            {m['common.editor.leaveStay']()}
                         </Button>
                         <Button variant="danger" size="sm" onClick={() => blocker.proceed?.()}>
                             {m['common.actions.discard']()}

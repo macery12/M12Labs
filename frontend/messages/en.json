@@ -1761,15 +1761,12 @@
   "admin.navigation.title": "Navigation",
   "admin.navigation.unnamedGroup": "Every group you add needs a name.",
   "admin.nests.egg.about.configFiles": "Configuration files",
-  "admin.nests.egg.about.configStartup": "Startup configuration",
   "admin.nests.egg.about.name": "Name",
-  "admin.nests.egg.about.processHint": "These JSON blocks are used by Wings to detect startup state and parse file updates.",
   "admin.nests.egg.about.startup": "Startup command",
   "admin.nests.egg.about.stopCommand": "Stop command",
   "admin.nests.egg.about.updateUrl": "Update URL",
   "admin.nests.egg.advanced.feature.eula.desc": "Prompts users to accept the Minecraft EULA when required.",
   "admin.nests.egg.advanced.feature.eula.name": "EULA popup",
-  "admin.nests.egg.advanced.features": "Features",
   "admin.nests.egg.advanced.fileDenylist": "File deny list",
   "admin.nests.egg.advanced.fileDenylistHint": "One path per line. These files can't be edited by users.",
   "admin.nests.egg.advanced.forceOutgoingIp": "Force outgoing IP",
@@ -1798,11 +1795,7 @@
   "admin.nests.egg.loadError": "This egg could not be loaded.",
   "admin.nests.egg.newTitle": "New egg",
   "admin.nests.egg.saved": "Egg saved.",
-  "admin.nests.egg.stat.author": "Author",
   "admin.nests.egg.stat.id": "ID",
-  "admin.nests.egg.stat.servers": "Servers",
-  "admin.nests.egg.stat.uuid": "UUID",
-  "admin.nests.egg.tabs.about": "About",
   "admin.nests.egg.tabs.advanced": "Advanced",
   "admin.nests.egg.tabs.docker": "Docker",
   "admin.nests.egg.tabs.install": "Install script",
@@ -1833,13 +1826,72 @@
   "admin.nests.egg.variables.noDefault": "none",
   "admin.nests.egg.variables.rulePlaceholder": "Add a rule, e.g. max:255",
   "admin.nests.egg.variables.rules": "Validation rules",
-  "admin.nests.egg.variables.saved": "Variables saved.",
   "admin.nests.egg.variables.type.boolean": "Boolean",
   "admin.nests.egg.variables.type.number": "Number",
   "admin.nests.egg.variables.type.password": "Password",
   "admin.nests.egg.variables.type.text": "Text",
   "admin.nests.egg.variables.userEditable": "User editable",
   "admin.nests.egg.variables.userViewable": "User viewable",
+  "admin.nests.egg.about.stopHint": "Sent to the console to stop the server. Use ^C to send SIGINT instead.",
+  "admin.nests.egg.about.updateUrlHint": "Optional. Where a newer version of this egg's JSON can be fetched.",
+  "admin.nests.egg.advanced.forceOutgoingIpDesc": "NATs all outgoing traffic to the server's primary allocation IP. Some games need this on nodes with several public IPs.",
+  "admin.nests.egg.advanced.privilegedDesc": "Runs the install container with elevated privileges. Enable only if the script needs them.",
+  "admin.nests.egg.copyUuid": "Copy UUID",
+  "admin.nests.egg.createSubtitle": "Fill in the essentials and create the egg, then add its variables.",
+  "admin.nests.egg.delete.inUse": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "In use by {count} server, so it can't be deleted.",
+        "countPlural=other": "In use by {count} servers, so it can't be deleted."
+      }
+    }
+  ],
+  "admin.nests.egg.docker.default": "Default",
+  "admin.nests.egg.json.blocked": "Fix the invalid JSON under Configuration before saving.",
+  "admin.nests.egg.json.invalid": "Invalid JSON",
+  "admin.nests.egg.json.invalidAt": "Invalid JSON at line {line}, column {column}",
+  "admin.nests.egg.leaveBody": "You have unsaved changes to this egg. Leaving now will discard them.",
+  "admin.nests.egg.moreActions": "More actions",
+  "admin.nests.egg.nav": "Egg sections",
+  "admin.nests.egg.saveHint": "Press {shortcut} to save",
+  "admin.nests.egg.section.advancedDesc": "Feature prompts, networking and files users cannot edit.",
+  "admin.nests.egg.section.configFilesDesc": "Files Wings rewrites before each boot, such as ports and bind addresses.",
+  "admin.nests.egg.section.configuration": "Configuration",
+  "admin.nests.egg.section.detectionDesc": "How Wings tells that the server has finished starting.",
+  "admin.nests.egg.section.detectionTitle": "Startup detection",
+  "admin.nests.egg.section.dockerDesc": "Images a server can run on. Users choose between them by label.",
+  "admin.nests.egg.section.general": "General",
+  "admin.nests.egg.section.generalDesc": "How the egg is named and described across the panel.",
+  "admin.nests.egg.section.installDesc": "Runs once, in its own container, when a server is installed or reinstalled.",
+  "admin.nests.egg.section.installRuntime": "Install environment",
+  "admin.nests.egg.section.installRuntimeDesc": "The image and entrypoint the install script runs with.",
+  "admin.nests.egg.section.startup": "Startup",
+  "admin.nests.egg.section.startupDesc": "The command a server boots with and how it is stopped.",
+  "admin.nests.egg.section.variablesDesc": "Per-server settings users and admins can change.",
+  "admin.nests.egg.startup.insert": "Insert",
+  "admin.nests.egg.startup.unknown": "Not defined by this egg or the panel: {names}",
+  "admin.nests.egg.meta.servers": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} server",
+        "countPlural=other": "{count} servers"
+      }
+    }
+  ],
   "admin.nests.eggCount": "{count} eggs",
   "admin.nests.eggs.colId": "ID",
   "admin.nests.eggs.colName": "Name",
@@ -2814,6 +2866,8 @@
   "common.actions.send": "Send",
   "common.combobox.noResults": "No matches",
   "common.editor.allSaved": "All changes saved",
+  "common.editor.leaveStay": "Keep editing",
+  "common.editor.leaveTitle": "Discard unsaved changes?",
   "common.editor.unsaved": "Unsaved changes",
   "common.error.body": "This page hit an unexpected error. Reloading usually clears it.",
   "common.error.emailNotVerified": "Verify your email address to continue.",
@@ -3656,8 +3710,6 @@
   "server.files.editor.saved": "File saved.",
   "server.files.editor.cursor": "Ln {line}, Col {col}",
   "server.files.editor.leaveBody": "You have unsaved changes to {name}. Leaving now will discard them.",
-  "server.files.editor.leaveStay": "Keep editing",
-  "server.files.editor.leaveTitle": "Discard unsaved changes?",
   "server.files.editor.lineCount": "Lines: {count}",
   "server.files.editor.readonly": "Read-only",
   "server.files.editor.root": "Server root",

@@ -1,16 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Dropdown from '@radix-ui/react-dropdown-menu';
 import {
+    AlertTriangle,
     ArrowLeft,
-    Info,
+    Check,
     Container,
-    Variable,
+    Copy,
+    Download,
+    FileCog,
+    Info,
+    MoreHorizontal,
     ScrollText,
     Settings2,
-    Save,
-    Download,
+    SquareTerminal,
     Trash2,
+    Variable,
     type LucideIcon,
 } from 'lucide-react';
 import { m, td } from '@/i18n/messages';
@@ -19,26 +25,29 @@ import { firstError } from '@/lib/apiError';
 import { useFlashes } from '@/state/flashes';
 import { useWideContent } from '@/components/shell/shellLayout';
 import { Button } from '@/components/ui/Button';
-import { Input, Field } from '@/components/ui/Input';
+import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { Switch } from '@/components/ui/Switch';
 import { Spinner } from '@/components/ui/Spinner';
+import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { FieldGrid, FieldRow, SaveBar, SectionCard, ToggleGroup, ToggleRow } from '@/components/ui/editorChrome';
 import {
     getEggDetail,
     createEgg,
     updateEgg,
     deleteEgg,
+    updateEggVariables,
     dockerMapToRows,
     dockerRowsToMap,
     parseLines,
     type AdminEggDetail,
+    type AdminEggVariable,
     type DockerRow,
     type EggPayload,
 } from '@/api/adminNests';
 import { CodeEditor } from './CodeEditor';
 import { DockerImageManager } from './DockerImageManager';
-import { VariablesTab } from './VariablesTab';
+import { VariablesSection } from './VariablesSection';
 import { ExportEggModal } from './ExportEggModal';
 
 // The egg editor's shared draft. Docker images + file denylist are edited in a
@@ -120,26 +129,83 @@ function fullPayload(form: EggForm): EggPayload {
     };
 }
 
-type TabId = 'about' | 'docker' | 'variables' | 'install' | 'advanced';
-
-const TABS: { id: TabId; labelKey: string; icon: LucideIcon }[] = [
-    { id: 'about', labelKey: 'admin.nests.egg.tabs.about', icon: Info },
-    { id: 'docker', labelKey: 'admin.nests.egg.tabs.docker', icon: Container },
-    { id: 'variables', labelKey: 'admin.nests.egg.tabs.variables', icon: Variable },
-    { id: 'install', labelKey: 'admin.nests.egg.tabs.install', icon: ScrollText },
-    { id: 'advanced', labelKey: 'admin.nests.egg.tabs.advanced', icon: Settings2 },
-];
-
-// Field subset each edit-mode tab is responsible for, so per-tab Save only
-// writes what that tab owns (mirrors V1's per-tab saves).
-const TAB_KEYS: Record<Exclude<TabId, 'variables'>, (keyof EggForm)[]> = {
-    about: ['name', 'description', 'updateUrl', 'startup', 'configStop', 'configStartup', 'configFiles'],
-    docker: ['dockerRows'],
-    install: ['scriptContainer', 'scriptEntry', 'scriptInstall'],
-    advanced: ['features', 'fileDenylistText', 'forceOutgoingIp', 'scriptIsPrivileged'],
+// Which payload field each draft field is written through.
+const PAYLOAD_KEY: Record<keyof EggForm, keyof EggPayload> = {
+    name: 'name',
+    description: 'description',
+    startup: 'startup',
+    configStop: 'configStop',
+    updateUrl: 'updateUrl',
+    dockerRows: 'dockerImages',
+    configStartup: 'configStartup',
+    configFiles: 'configFiles',
+    features: 'features',
+    fileDenylistText: 'fileDenylist',
+    forceOutgoingIp: 'forceOutgoingIp',
+    scriptContainer: 'scriptContainer',
+    scriptEntry: 'scriptEntry',
+    scriptInstall: 'scriptInstall',
+    scriptIsPrivileged: 'scriptIsPrivileged',
 };
 
+type SectionId = 'general' | 'startup' | 'variables' | 'configuration' | 'install' | 'advanced';
+
+const SECTIONS: { id: SectionId; label: () => string; icon: LucideIcon }[] = [
+    { id: 'general', label: () => m['admin.nests.egg.section.general'](), icon: Info },
+    { id: 'startup', label: () => m['admin.nests.egg.section.startup'](), icon: SquareTerminal },
+    { id: 'variables', label: () => m['admin.nests.egg.tabs.variables'](), icon: Variable },
+    { id: 'configuration', label: () => m['admin.nests.egg.section.configuration'](), icon: FileCog },
+    { id: 'install', label: () => m['admin.nests.egg.tabs.install'](), icon: ScrollText },
+    { id: 'advanced', label: () => m['admin.nests.egg.tabs.advanced'](), icon: Settings2 },
+];
+
+// The draft fields each section owns — drives the nav's unsaved dots.
+const SECTION_KEYS: Record<Exclude<SectionId, 'variables'>, (keyof EggForm)[]> = {
+    general: ['name', 'description', 'updateUrl'],
+    startup: ['startup', 'configStop', 'dockerRows'],
+    configuration: ['configStartup', 'configFiles'],
+    install: ['scriptInstall', 'scriptContainer', 'scriptEntry', 'scriptIsPrivileged'],
+    advanced: ['features', 'fileDenylistText', 'forceOutgoingIp'],
+};
+
+const FORM_KEYS = Object.keys(PAYLOAD_KEY) as (keyof EggForm)[];
+
 const IMPLEMENTED_FEATURES = ['eula'] as const;
+
+// Substituted by StartupCommandService or present in every server's
+// environment, so a {{NAME}} for one of these is never a typo.
+const PANEL_VARIABLES = ['SERVER_MEMORY', 'SERVER_IP', 'SERVER_PORT'];
+const ENVIRONMENT_VARIABLES = [...PANEL_VARIABLES, 'STARTUP', 'P_SERVER_UUID', 'TZ'];
+
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+// Syntax-checks a JSON block as it's typed. The engines disagree on the error
+// text (V8 reports a character offset, Firefox a line/column), so pull out
+// whichever is there and say it in our own words.
+function jsonError(text: string): string | null {
+    if (!text.trim()) return null;
+    try {
+        JSON.parse(text);
+        return null;
+    } catch (err) {
+        const message = err instanceof Error ? err.message : '';
+        const lineCol = /line (\d+) column (\d+)/.exec(message);
+        if (lineCol) {
+            return m['admin.nests.egg.json.invalidAt']({ line: Number(lineCol[1]), column: Number(lineCol[2]) });
+        }
+        const position = /position (\d+)/.exec(message);
+        if (position) {
+            const before = text.slice(0, Number(position[1])).split('\n');
+            return m['admin.nests.egg.json.invalidAt']({
+                line: before.length,
+                column: (before[before.length - 1]?.length ?? 0) + 1,
+            });
+        }
+        return m['admin.nests.egg.json.invalid']();
+    }
+}
 
 export default function EggEditorPage() {
     useWideContent();
@@ -148,6 +214,7 @@ export default function EggEditorPage() {
     const queryClient = useQueryClient();
     const push = useFlashes(s => s.push);
     const isCreate = !eggId;
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const { data: egg, isLoading, isError } = useQuery({
         queryKey: ['admin', 'egg', eggId],
@@ -155,17 +222,29 @@ export default function EggEditorPage() {
         enabled: !isCreate,
     });
 
-    const [tab, setTab] = useState<TabId>('about');
+    const requested = searchParams.get('section');
+    const section: SectionId = SECTIONS.some(s => s.id === requested) ? (requested as SectionId) : 'general';
+    const setSection = (id: SectionId) =>
+        setSearchParams(
+            prev => {
+                const next = new URLSearchParams(prev);
+                next.set('section', id);
+                return next;
+            },
+            { replace: true },
+        );
+
     const [form, setForm] = useState<EggForm>(CREATE_DEFAULTS);
     const [baseline, setBaseline] = useState<EggForm>(CREATE_DEFAULTS);
-    const [savingTab, setSavingTab] = useState<TabId | null>(null);
-    const [creating, setCreating] = useState(false);
+    const [varRows, setVarRows] = useState<AdminEggVariable[]>([]);
+    const [varBaseline, setVarBaseline] = useState<AdminEggVariable[]>([]);
+    const [saving, setSaving] = useState(false);
     const [showExport, setShowExport] = useState(false);
     const [showDelete, setShowDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
-    // Initialize the draft only when a different egg loads — so per-tab saves and
-    // the variables refetch don't wipe unsaved edits in other tabs.
+    // Initialize the draft only when a different egg loads — so a background
+    // refetch never wipes unsaved edits.
     const initializedFor = useRef<number | null>(null);
     useEffect(() => {
         if (isCreate || !egg) return;
@@ -174,76 +253,135 @@ export default function EggEditorPage() {
         const next = formFromEgg(egg);
         setForm(next);
         setBaseline(next);
+        setVarRows(egg.variables);
+        setVarBaseline(egg.variables);
     }, [egg, isCreate]);
 
     const patch = (p: Partial<EggForm>) => setForm(prev => ({ ...prev, ...p }));
 
-    const tabDirty = (id: Exclude<TabId, 'variables'>): boolean => {
-        return TAB_KEYS[id].some(k => JSON.stringify(form[k]) !== JSON.stringify(baseline[k]));
+    const dirtyKeys = FORM_KEYS.filter(k => !same(form[k], baseline[k]));
+    const varsDirty = !same(varRows, varBaseline);
+    const dirty = dirtyKeys.length > 0 || varsDirty;
+
+    const startupJsonError = useMemo(() => jsonError(form.configStartup), [form.configStartup]);
+    const configFilesJsonError = useMemo(() => jsonError(form.configFiles), [form.configFiles]);
+    const hasJsonError = startupJsonError !== null || configFilesJsonError !== null;
+
+    const missingEssentials =
+        isCreate &&
+        (!form.name.trim() || !form.startup.trim() || Object.keys(dockerRowsToMap(form.dockerRows)).length === 0);
+    const blockedReason = hasJsonError
+        ? m['admin.nests.egg.json.blocked']()
+        : missingEssentials
+          ? m['admin.nests.egg.createValidation']()
+          : null;
+
+    const sectionDirty = (id: SectionId) =>
+        id === 'variables' ? varsDirty : SECTION_KEYS[id].some(k => dirtyKeys.includes(k));
+
+    // ── Leave guard + Ctrl/Cmd+S ─────────────────────────────────────────────
+    // Refs, not state: the blocker runs outside render. `leaving` lets our own
+    // post-create / post-delete navigation through.
+    const dirtyRef = useRef(false);
+    const leavingRef = useRef(false);
+    useEffect(() => {
+        dirtyRef.current = dirty;
+    });
+
+    const blocker = useBlocker(
+        ({ currentLocation, nextLocation }) =>
+            !leavingRef.current && dirtyRef.current && currentLocation.pathname !== nextLocation.pathname,
+    );
+
+    useEffect(() => {
+        if (!dirty) return;
+        const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+        window.addEventListener('beforeunload', onBeforeUnload);
+        return () => window.removeEventListener('beforeunload', onBeforeUnload);
+    }, [dirty]);
+
+    const formRef = useRef<HTMLFormElement>(null);
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== 's') return;
+            e.preventDefault();
+            // A variable/export/delete dialog owns the keyboard while it's open.
+            if (e.repeat || document.querySelector('[role="dialog"]')) return;
+            formRef.current?.requestSubmit();
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, []);
+
+    // ── Persistence ──────────────────────────────────────────────────────────
+
+    const invalidateLists = () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'nests'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'nest-eggs', Number(nestId)] });
     };
 
-    const saveTab = async (id: Exclude<TabId, 'variables'>) => {
-        if (isCreate || !egg) return;
-        setSavingTab(id);
+    const save = async () => {
+        if (!egg) return;
+        const snapshot = form;
+        const keys = dirtyKeys;
+        setSaving(true);
         try {
-            const payload = fullPayload(form);
-            // Only send this tab's slice so a stale field elsewhere isn't written.
-            const subset: Partial<EggPayload> = {};
-            if (id === 'about') {
-                Object.assign(subset, {
-                    name: payload.name,
-                    description: payload.description,
-                    updateUrl: payload.updateUrl,
-                    startup: payload.startup,
-                    configStop: payload.configStop,
-                    configStartup: payload.configStartup,
-                    configFiles: payload.configFiles,
+            if (keys.length > 0) {
+                // Only the fields that changed, so nothing stale is rewritten.
+                const payload = fullPayload(snapshot);
+                const subset: Partial<EggPayload> = {};
+                for (const k of keys) {
+                    const pk = PAYLOAD_KEY[k];
+                    (subset as Record<string, unknown>)[pk] = payload[pk];
+                }
+                await updateEgg(egg.id, subset);
+                setBaseline(prev => {
+                    const next = { ...prev };
+                    for (const k of keys) (next as Record<string, unknown>)[k] = snapshot[k];
+                    return next;
                 });
-            } else if (id === 'docker') {
-                subset.dockerImages = payload.dockerImages;
-            } else if (id === 'install') {
-                subset.scriptContainer = payload.scriptContainer;
-                subset.scriptEntry = payload.scriptEntry;
-                subset.scriptInstall = payload.scriptInstall;
-            } else if (id === 'advanced') {
-                subset.features = payload.features;
-                subset.fileDenylist = payload.fileDenylist;
-                subset.forceOutgoingIp = payload.forceOutgoingIp;
-                subset.scriptIsPrivileged = payload.scriptIsPrivileged;
             }
-            await updateEgg(egg.id, subset);
-            setBaseline(prev => {
-                const next = { ...prev };
-                for (const k of TAB_KEYS[id]) (next as Record<string, unknown>)[k] = form[k];
-                return next;
-            });
+            if (varsDirty) {
+                const fresh = await updateEggVariables(egg.id, varRows);
+                setVarRows(fresh);
+                setVarBaseline(fresh);
+            }
+            invalidateLists();
+            queryClient.invalidateQueries({ queryKey: ['admin', 'egg', eggId] });
             push({ type: 'success', message: m['admin.nests.egg.saved']() });
         } catch (err) {
             push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() });
         } finally {
-            setSavingTab(null);
+            setSaving(false);
         }
     };
 
     const create = async () => {
         if (!nestId) return;
-        const hasImage = Object.keys(dockerRowsToMap(form.dockerRows)).length > 0;
-        if (!form.name.trim() || !form.startup.trim() || !hasImage) {
-            push({ type: 'error', message: m['admin.nests.egg.createValidation']() });
-            return;
-        }
-        setCreating(true);
+        setSaving(true);
         try {
             const created = await createEgg(Number(nestId), fullPayload(form));
-            queryClient.invalidateQueries({ queryKey: ['admin', 'nests'] });
-            queryClient.invalidateQueries({ queryKey: ['admin', 'nest-eggs', Number(nestId)] });
+            invalidateLists();
             push({ type: 'success', message: m['admin.nests.egg.created']() });
-            navigate(`/admin/nests/${nestId}/eggs/${created.id}`);
+            leavingRef.current = true;
+            // Straight to Variables: it's the one section a new egg can't fill in yet.
+            navigate(`/admin/nests/${nestId}/eggs/${created.id}?section=variables`);
         } catch (err) {
             push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() });
         } finally {
-            setCreating(false);
+            setSaving(false);
         }
+    };
+
+    const onSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        if (saving || !dirty || blockedReason) return;
+        void (isCreate ? create() : save());
+    };
+
+    const discard = () => {
+        setForm(baseline);
+        setVarRows(varBaseline);
     };
 
     const remove = async () => {
@@ -251,20 +389,15 @@ export default function EggEditorPage() {
         setDeleting(true);
         try {
             await deleteEgg(egg.id);
-            queryClient.invalidateQueries({ queryKey: ['admin', 'nests'] });
-            queryClient.invalidateQueries({ queryKey: ['admin', 'nest-eggs', Number(nestId)] });
+            invalidateLists();
             push({ type: 'success', message: m['admin.nests.egg.deleted']() });
+            leavingRef.current = true;
             navigate(`/admin/nests/${nestId}`);
         } catch (err) {
             push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() });
             setDeleting(false);
             setShowDelete(false);
         }
-    };
-
-    const onVariablesChanged = () => {
-        queryClient.invalidateQueries({ queryKey: ['admin', 'egg', eggId] });
-        queryClient.invalidateQueries({ queryKey: ['admin', 'nest-eggs', Number(nestId)] });
     };
 
     if (!isCreate && isLoading) {
@@ -284,137 +417,344 @@ export default function EggEditorPage() {
     }
 
     return (
-        <div className="flex flex-col gap-5">
-            {/* Header */}
+        <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-5">
+            {/* ── Header ── */}
             <div>
-                <button
-                    onClick={() => navigate(`/admin/nests/${nestId}`)}
-                    className="mb-3 inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+                <Link
+                    to={`/admin/nests/${nestId}`}
+                    className="inline-flex items-center gap-1.5 text-xs text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
                 >
-                    <ArrowLeft className="h-4 w-4" /> {m['admin.nests.egg.back']()}
-                </button>
-
-                <div className="flex flex-wrap items-start gap-3">
-                    <div className="min-w-0">
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    {m['admin.nests.egg.back']()}
+                </Link>
+                <div className="mt-1 flex flex-wrap items-start gap-3">
+                    <div className="min-w-0 flex-1">
                         <h1 className="truncate text-xl font-semibold text-[var(--color-ink)]">
-                            {isCreate ? m['admin.nests.egg.newTitle']() : egg!.name}
+                            {isCreate ? m['admin.nests.egg.newTitle']() : baseline.name}
                         </h1>
-                        {!isCreate && (
-                            <p className="truncate font-mono text-xs text-[var(--color-ink-faint)]">{egg!.uuid}</p>
+                        {egg ? (
+                            <EggMeta egg={egg} />
+                        ) : (
+                            <p className="mt-0.5 text-sm text-[var(--color-ink-faint)]">{m['admin.nests.egg.createSubtitle']()}</p>
                         )}
                     </div>
-                    {!isCreate && (
-                        <div className="ml-auto flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => setShowExport(true)}>
+                    {egg && (
+                        <div className="flex items-center gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setShowExport(true)}>
                                 <Download className="h-4 w-4" /> {m['admin.nests.egg.exportAction']()}
                             </Button>
-                            <Button variant="danger" size="sm" onClick={() => setShowDelete(true)}>
-                                <Trash2 className="h-4 w-4" /> {m['common.actions.delete']()}
-                            </Button>
+                            <Dropdown.Root>
+                                <Dropdown.Trigger
+                                    type="button"
+                                    aria-label={m['admin.nests.egg.moreActions']()}
+                                    title={m['admin.nests.egg.moreActions']()}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border-strong)] text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)] focus:outline-none"
+                                >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Dropdown.Trigger>
+                                <Dropdown.Portal>
+                                    <Dropdown.Content
+                                        align="end"
+                                        sideOffset={4}
+                                        className="z-[60] w-56 overflow-hidden rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-1 shadow-xl shadow-black/30"
+                                    >
+                                        <Dropdown.Item
+                                            disabled={egg.serverCount > 0}
+                                            onSelect={() => setShowDelete(true)}
+                                            className="flex cursor-pointer select-none flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-sm text-[var(--color-danger)] outline-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-[highlighted]:bg-[var(--color-surface-2)]"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <Trash2 className="h-3.5 w-3.5" /> {m['admin.nests.egg.delete.title']()}
+                                            </span>
+                                            {egg.serverCount > 0 && (
+                                                <span className="text-xs text-[var(--color-ink-faint)]">
+                                                    {m['admin.nests.egg.delete.inUse']({ count: egg.serverCount })}
+                                                </span>
+                                            )}
+                                        </Dropdown.Item>
+                                    </Dropdown.Content>
+                                </Dropdown.Portal>
+                            </Dropdown.Root>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Stat row (edit only) */}
-            {!isCreate && egg && (
-                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-                    {[
-                        { label: m['admin.nests.egg.stat.id'](), value: String(egg.id) },
-                        { label: m['admin.nests.egg.stat.uuid'](), value: egg.uuid, mono: true },
-                        { label: m['admin.nests.egg.stat.author'](), value: egg.author },
-                        { label: m['admin.nests.egg.stat.servers'](), value: String(egg.serverCount) },
-                    ].map(stat => (
-                        <div
-                            key={stat.label}
-                            className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-4 py-3"
-                        >
-                            <p className="mb-1 text-xs uppercase tracking-widest text-[var(--color-ink-faint)]">{stat.label}</p>
-                            <p className={cn('truncate text-sm text-[var(--color-ink)]', stat.mono && 'font-mono')}>{stat.value}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Tab bar */}
-            <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)]">
-                {TABS.map(t => (
-                    <button
-                        key={t.id}
-                        onClick={() => setTab(t.id)}
-                        className={cn(
-                            'flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors',
-                            tab === t.id
-                                ? 'border-[var(--color-accent)] text-[var(--color-ink)]'
-                                : 'border-transparent text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
-                        )}
-                    >
-                        <t.icon className="h-3.5 w-3.5" />
-                        {td(t.labelKey)}
-                    </button>
-                ))}
-            </div>
-
-            {/* Tab body */}
-            <div>
-                {tab === 'about' && <AboutTab form={form} patch={patch} />}
-                {tab === 'docker' && (
-                    <DockerImageManager rows={form.dockerRows} onChange={rows => patch({ dockerRows: rows })} />
-                )}
-                {tab === 'variables' &&
-                    (isCreate ? (
-                        <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-2)]/30 px-6 py-12 text-center text-sm text-[var(--color-ink-faint)]">
-                            {m['admin.nests.egg.variables.createFirst']()}
-                        </div>
-                    ) : (
-                        <VariablesTab eggId={egg!.id} variables={egg!.variables} onChanged={onVariablesChanged} />
-                    ))}
-                {tab === 'install' && <InstallTab form={form} patch={patch} />}
-                {tab === 'advanced' && <AdvancedTab form={form} patch={patch} />}
-            </div>
-
-            {/* Save bar */}
-            {isCreate ? (
-                <div className="sticky bottom-4 z-10 flex items-center justify-end gap-3 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 px-5 py-3 shadow-2xl shadow-black/30 backdrop-blur">
-                    <Button size="sm" onClick={create} disabled={creating}>
-                        {creating ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                        {m['admin.nests.egg.createAction']()}
-                    </Button>
-                </div>
-            ) : (
-                tab !== 'variables' && (
-                    <div className="sticky bottom-4 z-10 flex items-center justify-between gap-4 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 px-5 py-3 shadow-2xl shadow-black/30 backdrop-blur">
-                        <span
-                            className={cn(
-                                'flex items-center gap-2 text-xs',
-                                tabDirty(tab as Exclude<TabId, 'variables'>)
-                                    ? 'text-[var(--color-warning)]'
-                                    : 'text-[var(--color-ink-faint)]',
-                            )}
-                        >
-                            <span
+            {/* ── Section nav + body ── */}
+            <div className="grid gap-5 lg:grid-cols-[12.5rem_minmax(0,1fr)]">
+                <nav
+                    aria-label={m['admin.nests.egg.nav']()}
+                    className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:sticky lg:top-4 lg:flex-col lg:self-start lg:overflow-visible lg:pb-0"
+                >
+                    {SECTIONS.map(s => {
+                        const active = section === s.id;
+                        const error = s.id === 'configuration' && hasJsonError;
+                        const changed = sectionDirty(s.id);
+                        return (
+                            <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => setSection(s.id)}
+                                aria-current={active ? 'page' : undefined}
                                 className={cn(
-                                    'h-1.5 w-1.5 rounded-full',
-                                    tabDirty(tab as Exclude<TabId, 'variables'>)
-                                        ? 'bg-[var(--color-warning)]'
-                                        : 'bg-[var(--color-ink-faint)]',
+                                    'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
+                                    active
+                                        ? 'bg-[var(--color-surface-2)] font-medium text-[var(--color-ink)]'
+                                        : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)]/60 hover:text-[var(--color-ink)]',
                                 )}
-                            />
-                            {tabDirty(tab as Exclude<TabId, 'variables'>)
-                                ? m['common.editor.unsaved']()
-                                : m['common.editor.allSaved']()}
-                        </span>
-                        <Button
-                            size="sm"
-                            onClick={() => saveTab(tab as Exclude<TabId, 'variables'>)}
-                            disabled={!tabDirty(tab as Exclude<TabId, 'variables'>) || savingTab !== null}
+                            >
+                                <s.icon className={cn('h-4 w-4 shrink-0', active ? 'text-[var(--brand-bright)]' : 'text-[var(--color-ink-faint)]')} />
+                                <span className="flex-1 whitespace-nowrap text-left">{s.label()}</span>
+                                {s.id === 'variables' && !isCreate && (
+                                    <span className="rounded bg-[var(--color-surface-2)] px-1.5 text-[11px] text-[var(--color-ink-faint)]">
+                                        {varRows.length}
+                                    </span>
+                                )}
+                                {error ? (
+                                    <AlertTriangle
+                                        className="h-3.5 w-3.5 shrink-0 text-[var(--color-danger)]"
+                                        aria-label={m['admin.nests.egg.json.invalid']()}
+                                    />
+                                ) : (
+                                    changed && (
+                                        <span
+                                            className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-warning)]"
+                                            aria-label={m['common.editor.unsaved']()}
+                                        />
+                                    )
+                                )}
+                            </button>
+                        );
+                    })}
+                    <p className="mt-3 hidden px-3 text-[11px] text-[var(--color-ink-faint)] lg:block">
+                        {m['admin.nests.egg.saveHint']({ shortcut: IS_MAC ? '⌘S' : 'Ctrl+S' })}
+                    </p>
+                </nav>
+
+                <div className="flex min-w-0 flex-col gap-5">
+                    {section === 'general' && (
+                        <SectionCard
+                            icon={Info}
+                            title={m['admin.nests.egg.section.general']()}
+                            desc={m['admin.nests.egg.section.generalDesc']()}
                         >
-                            {savingTab === tab ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                            {m['common.actions.saveChanges']()}
-                        </Button>
-                    </div>
-                )
-            )}
+                            <FieldGrid>
+                                <FieldRow label={m['admin.nests.egg.about.name']()}>
+                                    <Input value={form.name} onChange={e => patch({ name: e.currentTarget.value })} />
+                                </FieldRow>
+                                <FieldRow
+                                    label={m['admin.nests.egg.about.updateUrl']()}
+                                    desc={m['admin.nests.egg.about.updateUrlHint']()}
+                                >
+                                    <Input
+                                        placeholder="https://"
+                                        value={form.updateUrl}
+                                        onChange={e => patch({ updateUrl: e.currentTarget.value })}
+                                    />
+                                </FieldRow>
+                                <FieldRow label={m['common.labels.description']()} wide>
+                                    <Textarea
+                                        rows={4}
+                                        value={form.description}
+                                        onChange={e => patch({ description: e.currentTarget.value })}
+                                    />
+                                </FieldRow>
+                            </FieldGrid>
+                        </SectionCard>
+                    )}
+
+                    {section === 'startup' && (
+                        <>
+                            <SectionCard
+                                icon={SquareTerminal}
+                                title={m['admin.nests.egg.section.startup']()}
+                                desc={m['admin.nests.egg.section.startupDesc']()}
+                            >
+                                <FieldGrid>
+                                    <FieldRow label={m['admin.nests.egg.about.startup']()} wide>
+                                        <StartupCommandField
+                                            value={form.startup}
+                                            onChange={startup => patch({ startup })}
+                                            variables={varRows.map(v => v.environmentVariable).filter(Boolean)}
+                                        />
+                                    </FieldRow>
+                                    <FieldRow
+                                        label={m['admin.nests.egg.about.stopCommand']()}
+                                        desc={m['admin.nests.egg.about.stopHint']()}
+                                    >
+                                        <Input
+                                            className="font-mono"
+                                            value={form.configStop}
+                                            onChange={e => patch({ configStop: e.currentTarget.value })}
+                                        />
+                                    </FieldRow>
+                                </FieldGrid>
+                            </SectionCard>
+                            <SectionCard
+                                icon={Container}
+                                title={m['admin.nests.egg.tabs.docker']()}
+                                desc={m['admin.nests.egg.section.dockerDesc']()}
+                            >
+                                <DockerImageManager rows={form.dockerRows} onChange={rows => patch({ dockerRows: rows })} />
+                            </SectionCard>
+                        </>
+                    )}
+
+                    {section === 'variables' && (
+                        <VariablesSection
+                            eggId={egg ? egg.id : null}
+                            rows={varRows}
+                            baseline={varBaseline}
+                            onRowsChange={setVarRows}
+                            onCreated={v => {
+                                setVarRows(prev => [...prev, v]);
+                                setVarBaseline(prev => [...prev, v]);
+                                invalidateLists();
+                            }}
+                            onDeleted={id => {
+                                setVarRows(prev => prev.filter(v => v.id !== id));
+                                setVarBaseline(prev => prev.filter(v => v.id !== id));
+                                invalidateLists();
+                            }}
+                        />
+                    )}
+
+                    {section === 'configuration' && (
+                        <>
+                            <SectionCard
+                                icon={FileCog}
+                                title={m['admin.nests.egg.section.detectionTitle']()}
+                                desc={m['admin.nests.egg.section.detectionDesc']()}
+                            >
+                                <CodeEditor
+                                    value={form.configStartup}
+                                    onChange={v => patch({ configStartup: v })}
+                                    language="JSON"
+                                    height="12rem"
+                                    error={startupJsonError}
+                                />
+                            </SectionCard>
+                            <SectionCard
+                                icon={FileCog}
+                                title={m['admin.nests.egg.about.configFiles']()}
+                                desc={m['admin.nests.egg.section.configFilesDesc']()}
+                            >
+                                <CodeEditor
+                                    value={form.configFiles}
+                                    onChange={v => patch({ configFiles: v })}
+                                    language="JSON"
+                                    height="24rem"
+                                    error={configFilesJsonError}
+                                />
+                            </SectionCard>
+                        </>
+                    )}
+
+                    {section === 'install' && (
+                        <>
+                            <SectionCard
+                                icon={ScrollText}
+                                title={m['admin.nests.egg.install.script']()}
+                                desc={m['admin.nests.egg.section.installDesc']()}
+                            >
+                                <CodeEditor
+                                    value={form.scriptInstall}
+                                    onChange={v => patch({ scriptInstall: v })}
+                                    language="Shell"
+                                    height="calc(100vh - 26rem)"
+                                />
+                            </SectionCard>
+                            <SectionCard
+                                icon={Container}
+                                title={m['admin.nests.egg.section.installRuntime']()}
+                                desc={m['admin.nests.egg.section.installRuntimeDesc']()}
+                            >
+                                <FieldGrid>
+                                    <FieldRow
+                                        label={m['admin.nests.egg.install.container']()}
+                                        desc={m['admin.nests.egg.install.containerHint']()}
+                                    >
+                                        <Input
+                                            className="font-mono"
+                                            value={form.scriptContainer}
+                                            onChange={e => patch({ scriptContainer: e.currentTarget.value })}
+                                        />
+                                    </FieldRow>
+                                    <FieldRow
+                                        label={m['admin.nests.egg.install.entrypoint']()}
+                                        desc={m['admin.nests.egg.install.entrypointHint']()}
+                                    >
+                                        <Input
+                                            className="font-mono"
+                                            value={form.scriptEntry}
+                                            onChange={e => patch({ scriptEntry: e.currentTarget.value })}
+                                        />
+                                    </FieldRow>
+                                </FieldGrid>
+                                <ToggleGroup>
+                                    <ToggleRow
+                                        label={m['admin.nests.egg.advanced.privileged']()}
+                                        desc={m['admin.nests.egg.advanced.privilegedDesc']()}
+                                        checked={form.scriptIsPrivileged}
+                                        onChange={v => patch({ scriptIsPrivileged: v })}
+                                    />
+                                </ToggleGroup>
+                            </SectionCard>
+                        </>
+                    )}
+
+                    {section === 'advanced' && (
+                        <SectionCard
+                            icon={Settings2}
+                            title={m['admin.nests.egg.tabs.advanced']()}
+                            desc={m['admin.nests.egg.section.advancedDesc']()}
+                        >
+                            <ToggleGroup>
+                                {IMPLEMENTED_FEATURES.map(feature => (
+                                    <ToggleRow
+                                        key={feature}
+                                        label={td(`admin.nests.egg.advanced.feature.${feature}.name`, feature)}
+                                        desc={td(`admin.nests.egg.advanced.feature.${feature}.desc`, '')}
+                                        checked={form.features.includes(feature)}
+                                        onChange={on =>
+                                            patch({
+                                                features: on
+                                                    ? [...form.features, feature]
+                                                    : form.features.filter(f => f !== feature),
+                                            })
+                                        }
+                                    />
+                                ))}
+                                <ToggleRow
+                                    label={m['admin.nests.egg.advanced.forceOutgoingIp']()}
+                                    desc={m['admin.nests.egg.advanced.forceOutgoingIpDesc']()}
+                                    checked={form.forceOutgoingIp}
+                                    onChange={v => patch({ forceOutgoingIp: v })}
+                                />
+                            </ToggleGroup>
+                            <FieldRow
+                                label={m['admin.nests.egg.advanced.fileDenylist']()}
+                                desc={m['admin.nests.egg.advanced.fileDenylistHint']()}
+                            >
+                                <Textarea
+                                    rows={6}
+                                    className="font-mono"
+                                    value={form.fileDenylistText}
+                                    onChange={e => patch({ fileDenylistText: e.currentTarget.value })}
+                                />
+                            </FieldRow>
+                        </SectionCard>
+                    )}
+                </div>
+            </div>
+
+            <SaveBar
+                dirty={dirty}
+                saving={saving}
+                onDiscard={discard}
+                blockedReason={blockedReason}
+                labels={isCreate ? { save: m['admin.nests.egg.createAction']() } : undefined}
+            />
 
             {showExport && egg && <ExportEggModal eggId={egg.id} onClose={() => setShowExport(false)} />}
 
@@ -428,174 +768,133 @@ export default function EggEditorPage() {
                 busy={deleting}
                 onConfirm={remove}
             />
-        </div>
+
+            <Modal
+                open={blocker.state === 'blocked'}
+                onClose={() => blocker.reset?.()}
+                title={m['common.editor.leaveTitle']()}
+                size="sm"
+                footer={
+                    <>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => blocker.reset?.()}>
+                            {m['common.editor.leaveStay']()}
+                        </Button>
+                        <Button type="button" variant="danger" size="sm" onClick={() => blocker.proceed?.()}>
+                            {m['common.actions.discard']()}
+                        </Button>
+                    </>
+                }
+            >
+                <p className="text-sm text-[var(--color-ink-muted)]">{m['admin.nests.egg.leaveBody']()}</p>
+            </Modal>
+        </form>
     );
 }
 
-// ─── About tab ────────────────────────────────────────────────────────────────
+// ─── Header meta line ─────────────────────────────────────────────────────────
 
-function AboutTab({ form, patch }: { form: EggForm; patch: (p: Partial<EggForm>) => void }) {
+function EggMeta({ egg }: { egg: AdminEggDetail }) {
+    const [copied, setCopied] = useState(false);
+    const copy = () =>
+        void navigator.clipboard?.writeText(egg.uuid).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        });
+
     return (
-        <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-1 gap-x-8 gap-y-5 xl:grid-cols-2">
-                <Field label={m['admin.nests.egg.about.name']()} htmlFor="egg-name">
-                    <Input id="egg-name" value={form.name} onChange={e => patch({ name: e.currentTarget.value })} />
-                </Field>
-                <Field label={m['common.labels.description']()} htmlFor="egg-desc">
-                    <Input id="egg-desc" value={form.description} onChange={e => patch({ description: e.currentTarget.value })} />
-                </Field>
-                <Field label={m['admin.nests.egg.about.stopCommand']()} htmlFor="egg-stop">
-                    <Input id="egg-stop" value={form.configStop} onChange={e => patch({ configStop: e.currentTarget.value })} />
-                </Field>
-                <Field label={m['admin.nests.egg.about.updateUrl']()} htmlFor="egg-updateurl">
-                    <Input id="egg-updateurl" value={form.updateUrl} onChange={e => patch({ updateUrl: e.currentTarget.value })} />
-                </Field>
-            </div>
-
-            <Field label={m['admin.nests.egg.about.startup']()} htmlFor="egg-startup">
-                <Input id="egg-startup" className="font-mono" value={form.startup} onChange={e => patch({ startup: e.currentTarget.value })} />
-            </Field>
-
-            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-[var(--color-ink-muted)]">
-                        {m['admin.nests.egg.about.configStartup']()}
-                    </label>
-                    <CodeEditor value={form.configStartup} onChange={v => patch({ configStartup: v })} language="JSON" height="14rem" />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-[var(--color-ink-muted)]">
-                        {m['admin.nests.egg.about.configFiles']()}
-                    </label>
-                    <CodeEditor value={form.configFiles} onChange={v => patch({ configFiles: v })} language="JSON" height="14rem" />
-                </div>
-            </div>
-            <p className="text-xs text-[var(--color-ink-faint)]">{m['admin.nests.egg.about.processHint']()}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--color-ink-faint)]">
+            <span>
+                {m['admin.nests.egg.stat.id']()} {egg.id}
+            </span>
+            <span aria-hidden>·</span>
+            <span className="truncate">{egg.author}</span>
+            <span aria-hidden>·</span>
+            <span>{m['admin.nests.egg.meta.servers']({ count: egg.serverCount })}</span>
+            <span aria-hidden>·</span>
+            <button
+                type="button"
+                onClick={copy}
+                title={m['admin.nests.egg.copyUuid']()}
+                className="inline-flex min-w-0 items-center gap-1 rounded px-1 font-mono transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
+            >
+                <span className="truncate">{egg.uuid}</span>
+                {copied ? (
+                    <Check className="h-3 w-3 shrink-0 text-[var(--color-accent)]" />
+                ) : (
+                    <Copy className="h-3 w-3 shrink-0" />
+                )}
+            </button>
         </div>
     );
 }
 
-// ─── Install tab ──────────────────────────────────────────────────────────────
+// ─── Startup command + variable chips ─────────────────────────────────────────
 
-function InstallTab({ form, patch }: { form: EggForm; patch: (p: Partial<EggForm>) => void }) {
-    return (
-        <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-[var(--color-ink-muted)]">
-                    {m['admin.nests.egg.install.script']()}
-                </label>
-                <CodeEditor value={form.scriptInstall} onChange={v => patch({ scriptInstall: v })} language="Shell" height="22rem" />
-            </div>
+function StartupCommandField({
+    value,
+    onChange,
+    variables,
+}: {
+    value: string;
+    onChange: (next: string) => void;
+    variables: string[];
+}) {
+    const inputRef = useRef<HTMLInputElement>(null);
 
-            <div className="grid grid-cols-1 gap-x-8 gap-y-5 lg:grid-cols-2">
-                <Field
-                    label={m['admin.nests.egg.install.container']()}
-                    hint={m['admin.nests.egg.install.containerHint']()}
-                    htmlFor="egg-scriptcontainer"
-                >
-                    <Input
-                        id="egg-scriptcontainer"
-                        className="font-mono"
-                        value={form.scriptContainer}
-                        onChange={e => patch({ scriptContainer: e.currentTarget.value })}
-                    />
-                </Field>
-                <Field
-                    label={m['admin.nests.egg.install.entrypoint']()}
-                    hint={m['admin.nests.egg.install.entrypointHint']()}
-                    htmlFor="egg-scriptentry"
-                >
-                    <Input
-                        id="egg-scriptentry"
-                        className="font-mono"
-                        value={form.scriptEntry}
-                        onChange={e => patch({ scriptEntry: e.currentTarget.value })}
-                    />
-                </Field>
-            </div>
-        </div>
-    );
-}
+    const used = new Set([...value.matchAll(/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g)].map(match => match[1] ?? ''));
+    const known = new Set([...ENVIRONMENT_VARIABLES, ...variables]);
+    const unknown = [...used].filter(name => name && !known.has(name));
 
-// ─── Advanced tab ─────────────────────────────────────────────────────────────
-
-function AdvancedTab({ form, patch }: { form: EggForm; patch: (p: Partial<EggForm>) => void }) {
-    const toggleFeature = (feature: string) => {
-        patch({
-            features: form.features.includes(feature)
-                ? form.features.filter(f => f !== feature)
-                : [...form.features, feature],
+    // Insert at the caret (or replace the selection), then put the caret after it.
+    const insert = (name: string) => {
+        const token = `{{${name}}}`;
+        const el = inputRef.current;
+        const start = el?.selectionStart ?? value.length;
+        const end = el?.selectionEnd ?? value.length;
+        onChange(value.slice(0, start) + token + value.slice(end));
+        requestAnimationFrame(() => {
+            el?.focus();
+            el?.setSelectionRange(start + token.length, start + token.length);
         });
     };
 
+    const chip = (name: string, own: boolean) => (
+        <button
+            key={name}
+            type="button"
+            onClick={() => insert(name)}
+            className={cn(
+                'rounded border px-1.5 py-0.5 font-mono text-[11px] transition-colors',
+                own
+                    ? 'border-[var(--brand)]/40 bg-[var(--brand-soft)] text-[var(--brand-bright)] hover:border-[var(--brand)]'
+                    : 'border-[var(--color-border-strong)] bg-[var(--color-surface-2)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
+                used.has(name) && 'opacity-60',
+            )}
+        >
+            {name}
+        </button>
+    );
+
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-[var(--color-ink-muted)]">
-                    {m['admin.nests.egg.advanced.features']()}
-                </label>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {IMPLEMENTED_FEATURES.map(feature => {
-                        const on = form.features.includes(feature);
-                        return (
-                            <button
-                                key={feature}
-                                type="button"
-                                onClick={() => toggleFeature(feature)}
-                                className={cn(
-                                    'rounded-[var(--radius-card)] border px-4 py-3 text-left transition-colors',
-                                    on
-                                        ? 'border-[var(--color-accent)]/50 bg-[var(--color-accent)]/5'
-                                        : 'border-[var(--color-border)] bg-[var(--color-surface-2)]/40 hover:border-[var(--color-border-strong)]',
-                                )}
-                            >
-                                <div className="text-sm font-medium text-[var(--color-ink)]">
-                                    {td(`admin.nests.egg.advanced.feature.${feature}.name`)}
-                                </div>
-                                <div className="mt-1 text-xs text-[var(--color-ink-faint)]">
-                                    {td(`admin.nests.egg.advanced.feature.${feature}.desc`)}
-                                </div>
-                                <div className={cn('mt-2 text-xs', on ? 'text-[var(--color-accent)]' : 'text-[var(--color-ink-faint)]')}>
-                                    {on ? m['common.states.enabled']() : m['common.states.disabled']()}
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
+        <div className="flex flex-col gap-2">
+            <Input
+                ref={inputRef}
+                className="font-mono"
+                spellCheck={false}
+                value={value}
+                onChange={e => onChange(e.currentTarget.value)}
+            />
+            <div className="flex flex-wrap items-center gap-1.5">
+                <span className="mr-0.5 text-xs text-[var(--color-ink-faint)]">{m['admin.nests.egg.startup.insert']()}</span>
+                {variables.map(name => chip(name, true))}
+                {PANEL_VARIABLES.map(name => chip(name, false))}
             </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-4 py-3">
-                    <span className="text-sm text-[var(--color-ink)]">{m['admin.nests.egg.advanced.forceOutgoingIp']()}</span>
-                    <Switch
-                        checked={form.forceOutgoingIp}
-                        onChange={v => patch({ forceOutgoingIp: v })}
-                        label={m['admin.nests.egg.advanced.forceOutgoingIp']()}
-                    />
-                </label>
-                <label className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-4 py-3">
-                    <span className="text-sm text-[var(--color-ink)]">{m['admin.nests.egg.advanced.privileged']()}</span>
-                    <Switch
-                        checked={form.scriptIsPrivileged}
-                        onChange={v => patch({ scriptIsPrivileged: v })}
-                        label={m['admin.nests.egg.advanced.privileged']()}
-                    />
-                </label>
-            </div>
-
-            <Field
-                label={m['admin.nests.egg.advanced.fileDenylist']()}
-                hint={m['admin.nests.egg.advanced.fileDenylistHint']()}
-                htmlFor="egg-denylist"
-            >
-                <Textarea
-                    id="egg-denylist"
-                    rows={6}
-                    className="font-mono"
-                    value={form.fileDenylistText}
-                    onChange={e => patch({ fileDenylistText: e.currentTarget.value })}
-                />
-            </Field>
+            {unknown.length > 0 && (
+                <p className="flex items-center gap-1.5 text-xs text-[var(--color-warning)]">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    {m['admin.nests.egg.startup.unknown']({ names: unknown.map(n => `{{${n}}}`).join(', ') })}
+                </p>
+            )}
         </div>
     );
 }

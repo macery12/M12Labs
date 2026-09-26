@@ -3,11 +3,11 @@ import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import type { Extension } from '@codemirror/state';
 import { tags as t } from '@lezer/highlight';
 
-// Editor chrome themed against the V2 tokens so CodeMirror follows light/dark.
-// The card around the editor owns the border and radius.
+// Shared by every CodeMirror in the panel (file manager, egg editor). Editor
+// chrome themed against the V2 tokens so CodeMirror follows light/dark; the
+// surrounding card owns the border and radius, the `height` prop owns sizing.
 const chrome = EditorView.theme({
     '&': {
-        height: '100%',
         backgroundColor: 'var(--color-surface-2)',
         color: 'var(--color-ink)',
         fontSize: '14px',
