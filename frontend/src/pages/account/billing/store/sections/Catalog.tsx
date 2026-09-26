@@ -45,6 +45,8 @@ export default function Catalog({ data }: { data: StoreSectionData }) {
     // Spotlight ("most popular") plan: an operator-pinned product, else the first
     // plan of the selected category (the original behaviour). A pinned plan is
     // fetched by id so it can be showcased regardless of the active category.
+    // A pin that can't be sold (its category was deleted) or won't load falls
+    // back to the first plan rather than spotlighting nothing, or a dead end.
     const showFeatured = data.featuredEnabled !== false;
     const pinnedId = data.featuredProductId ?? null;
     const pinnedQ = useQuery({
@@ -52,7 +54,8 @@ export default function Catalog({ data }: { data: StoreSectionData }) {
         queryFn: () => getStoreProduct(pinnedId as number),
         enabled: showFeatured && pinnedId != null,
     });
-    const featured = pinnedId != null ? pinnedQ.data : products[0];
+    const pinUsable = pinnedId != null && !pinnedQ.isError && pinnedQ.data?.available !== false;
+    const featured = pinUsable ? pinnedQ.data : products[0];
 
     const cyclesQ = useQuery({
         queryKey: ['store', 'cycles', featured?.id],

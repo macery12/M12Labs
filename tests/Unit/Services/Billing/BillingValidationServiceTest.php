@@ -3,6 +3,7 @@
 namespace Everest\Tests\Unit\Services\Billing;
 
 use Everest\Tests\TestCase;
+use Everest\Models\Billing\Product;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Billing\BillingCycleService;
 use Everest\Services\Billing\NodeAvailabilityService;
@@ -32,6 +33,19 @@ class BillingValidationServiceTest extends TestCase
         \Mockery::close();
 
         parent::tearDown();
+    }
+
+    // The category supplies the eggs; without one the order can't be
+    // provisioned, so checkout must refuse it before taking payment.
+    public function testAPlanWhoseCategoryIsGoneCannotBeOrdered(): void
+    {
+        $product = new Product();
+        $product->setRelation('category', null);
+
+        $this->expectException(DisplayException::class);
+        $this->expectExceptionMessage('This plan is no longer available.');
+
+        $this->service->validateAndGetEggId($product, null);
     }
 
     public function testValidatePriceTypeTreatsTinyOrNegativeTotalsAsFree(): void

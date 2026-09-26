@@ -94,10 +94,16 @@ class BillingValidationService
      *
      * @return int The validated egg ID to use
      *
-     * @throws DisplayException if the requested egg is not allowed
+     * @throws DisplayException if the requested egg is not allowed, or the product has no category
      */
     public function validateAndGetEggId(Product $product, ?int $requestedEggId): int
     {
+        // The category supplies the eggs, so a plan whose category was deleted
+        // can't be provisioned. Refuse before any payment is taken.
+        if ($product->category === null) {
+            throw new DisplayException('This plan is no longer available. Please choose another.');
+        }
+
         $allowedEggs = $product->category->getAllowedEggs();
 
         if ($requestedEggId) {

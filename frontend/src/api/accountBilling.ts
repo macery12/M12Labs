@@ -35,6 +35,9 @@ export interface StoreProduct {
     eggId: number;
     allowedEggs: number[];
     allowEggChanges: boolean;
+    // False when the plan's category was deleted: it still displays (a server
+    // on it shows it on its billing page) but checkout refuses to sell it.
+    available: boolean;
     limits: ProductLimits;
 }
 
@@ -126,6 +129,7 @@ function toProduct(row: any): StoreProduct {
         eggId: a.egg_id,
         allowedEggs: a.allowed_eggs ?? (a.egg_id ? [a.egg_id] : []),
         allowEggChanges: a.allow_egg_changes ?? true,
+        available: a.available ?? true,
         limits: {
             cpu: Number(l.cpu ?? 0),
             memory: Number(l.memory ?? 0),

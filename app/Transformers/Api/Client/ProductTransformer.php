@@ -17,9 +17,11 @@ class ProductTransformer extends Transformer
      */
     public function transform(Product $model): array
     {
+        // A product outlives its category when the category is deleted. It
+        // must still render (a server on that plan shows it on its billing
+        // page), but it can't be ordered: the category supplies the eggs.
+        // This used to 500 the whole storefront when such a plan was pinned.
         $category = $model->category;
-        $allowedEggs = $category->getAllowedEggs();
-        $defaultEggId = $category->getDefaultEggId();
 
         return [
             'id' => $model->id,
@@ -27,9 +29,10 @@ class ProductTransformer extends Transformer
             'icon' => $model->icon,
             'price' => $model->price,
             'description' => $model->description,
-            'egg_id' => $defaultEggId,
-            'allowed_eggs' => $allowedEggs,
-            'allow_egg_changes' => $category->allow_egg_changes,
+            'egg_id' => $category?->getDefaultEggId(),
+            'allowed_eggs' => $category?->getAllowedEggs() ?? [],
+            'allow_egg_changes' => (bool) $category?->allow_egg_changes,
+            'available' => $category !== null,
             'limits' => [
                 'cpu' => $model->cpu_limit,
                 'memory' => $model->memory_limit,

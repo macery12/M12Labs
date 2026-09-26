@@ -22,6 +22,7 @@ function toPlan(row: any): StoreProduct {
         eggId: a.egg_id,
         allowedEggs: a.allowed_eggs ?? (a.egg_id ? [a.egg_id] : []),
         allowEggChanges: a.allow_egg_changes ?? true,
+        available: a.available ?? true,
         limits: {
             cpu: Number(l.cpu ?? 0),
             memory: Number(l.memory ?? 0),
