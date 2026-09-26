@@ -31,6 +31,27 @@ class DaemonServerRepository extends DaemonRepository
     }
 
     /**
+     * Returns every server the node knows about, with its current state. Needs
+     * setNode(), not setServer().
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws DaemonConnectionException
+     */
+    public function getAll(): array
+    {
+        try {
+            $response = $this->getHttpClient()->get('/api/servers');
+        } catch (TransferException $exception) {
+            throw new DaemonConnectionException($exception, false);
+        }
+
+        $servers = json_decode($response->getBody()->__toString(), true);
+
+        return is_array($servers) ? array_values(array_filter($servers, 'is_array')) : [];
+    }
+
+    /**
      * Creates a new server on the Wings daemon.
      *
      * @throws DaemonConnectionException

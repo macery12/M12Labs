@@ -1,11 +1,10 @@
-import { m, td } from '@/i18n/messages';
+import { m } from '@/i18n/messages';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, Copy, Check, ExternalLink, Power, PowerOff, RefreshCw, Trash2 } from 'lucide-react';
 import { useServerView } from './ServerContext';
-import { Badge } from '@/pages/admin/nodes/NodeBadges';
-import { SERVER_STATE } from '@/pages/admin/servers/serverState';
+import { ServerStatusBadges, usePowerStates } from '@/pages/admin/servers/ServerStatus';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -26,7 +25,7 @@ export function ServerHeader() {
 
     const canUpdate = can(held, 'servers.update');
     const canDelete = can(held, 'servers.delete');
-    const state = SERVER_STATE[server.state];
+    const power = usePowerStates([server.nodeId])(server);
     const suspended = server.state === 'suspended';
 
     const copy = () => {
@@ -75,7 +74,7 @@ export function ServerHeader() {
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                         <h1 className="truncate text-xl font-semibold tracking-tight text-[var(--color-ink)]">{server.name}</h1>
-                        <Badge tone={state.tone}>{td(`admin.servers.state.${server.state}`, state.label)}</Badge>
+                        <ServerStatusBadges power={power} lifecycle={server.state} />
                     </div>
                     <button
                         onClick={copy}

@@ -5,7 +5,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/cn';
 import { formatMib } from '@/lib/format';
 import { useBilling } from '@/state/billing';
-import { SERVER_STATE } from '@/pages/admin/servers/serverState';
+import { ServerStatusDot, usePowerStates } from '@/pages/admin/servers/ServerStatus';
 import { panelClass, PanelHeader } from '../../dashboardParts';
 import { getAdminOrders, type AdminOrder, type OrderStatus } from '@/api/adminBillingOrders';
 import { useServerView } from './ServerContext';
@@ -48,7 +48,7 @@ function MetricRow({ label, value, first }: { label: string; value: React.ReactN
 export function OverviewTab({ onManageBilling }: { onManageBilling: () => void }) {
     const s = useServerView();
     const { money } = useBilling();
-    const state = SERVER_STATE[s.state];
+    const power = usePowerStates([s.nodeId])(s);
     const primary = s.allocations.find(a => a.id === s.allocationId) ?? null;
     const product = s.billing.product;
 
@@ -59,10 +59,7 @@ export function OverviewTab({ onManageBilling }: { onManageBilling: () => void }
                     <PanelHeader title={m['admin.infrastructure.serverDetail.ov.configuration']()} />
                     <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
                         <Fact label={m['admin.infrastructure.serverDetail.ov.state']()}>
-                            <span className="inline-flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-sm" style={{ background: state.color }} />
-                                {td(`admin.servers.state.${s.state}`, state.label)}
-                            </span>
+                            <ServerStatusDot power={power} lifecycle={s.state} size="md" />
                         </Fact>
                         <Fact label={m['admin.infrastructure.serverDetail.net.node']()}>
                             <Link to={`/admin/infrastructure/nodes/${s.nodeId}`} className="text-[var(--brand-bright)] hover:underline">

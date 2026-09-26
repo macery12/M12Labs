@@ -1583,7 +1583,6 @@
   "admin.infrastructure.serverDetail.saved": "Сервер сохранен.",
   "admin.infrastructure.serverDetail.variables": "Переменные среды",
   "admin.infrastructure.subtitle": "Узлы и серверы, работающие на них — единый парк, единый интерфейс.",
-  "admin.infrastructure.summary.active": "{count} активных",
   "admin.infrastructure.summary.allOnline": "все онлайн",
   "admin.infrastructure.summary.disk": "Диск",
   "admin.infrastructure.summary.inMaintenance": "{count} находятся на техническом обслуживании",

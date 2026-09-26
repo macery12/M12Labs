@@ -1616,7 +1616,6 @@
   "admin.infrastructure.serverDetail.saved": "Serveren er gemt.",
   "admin.infrastructure.serverDetail.variables": "Miljøvariabler",
   "admin.infrastructure.subtitle": "Noder og de servere, der kører på dem — én flåde, ét overblik.",
-  "admin.infrastructure.summary.active": "{count} aktive",
   "admin.infrastructure.summary.allOnline": "alt online",
   "admin.infrastructure.summary.disk": "Disk",
   "admin.infrastructure.summary.inMaintenance": "{count} er under vedligeholdelse",

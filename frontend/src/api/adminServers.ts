@@ -84,6 +84,24 @@ function toAdminServer({ attributes: a }: FractalServer): AdminServer {
     };
 }
 
+// Live power state from Wings. Separate from ServerState, which is the
+// lifecycle (installing / suspended / …) and says nothing about whether the
+// process is up.
+export type PowerState = 'running' | 'starting' | 'stopping' | 'offline';
+
+export interface NodeServerStates {
+    /** False when the node didn't answer; every server on it is then unknown. */
+    reachable: boolean;
+    states: Record<string, PowerState>;
+}
+
+// GET /api/application/nodes/{id}/server-states — one Wings call per node,
+// cached ~20 s server-side.
+export async function getNodeServerStates(nodeId: number): Promise<NodeServerStates> {
+    const { data } = await http.get(`/api/application/nodes/${nodeId}/server-states`);
+    return { reachable: Boolean(data.reachable), states: data.states ?? {} };
+}
+
 // GET /api/application/servers — every server on the panel, with node + owner.
 // The index caps per_page at 100, so we page through to assemble the full fleet.
 export async function getAdminServers(): Promise<AdminServer[]> {

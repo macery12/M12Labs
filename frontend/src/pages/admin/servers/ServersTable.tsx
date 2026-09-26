@@ -1,4 +1,4 @@
-import { m, td } from '@/i18n/messages';
+import { m } from '@/i18n/messages';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,17 +16,7 @@ import { can } from '@/lib/can';
 import { useAdminHeld } from '@/layouts/heldPermissions';
 import { useFlashes } from '@/state/flashes';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { SERVER_STATE } from './serverState';
-
-function StateDot({ server }: { server: AdminServer }) {
-    const s = SERVER_STATE[server.state];
-    return (
-        <span className="flex items-center gap-2">
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: s.color }} />
-            <span className="text-[11px] font-medium text-[var(--color-ink-muted)]">{td(`admin.servers.state.${server.state}`, s.label)}</span>
-        </span>
-    );
-}
+import { ServerStatusDot, usePowerStates } from './ServerStatus';
 
 function RowActions({ server, onEdit, onDelete }: { server: AdminServer; onEdit: () => void; onDelete: () => void }) {
     const push = useFlashes(s => s.push);
@@ -99,6 +89,7 @@ export function ServersTable({ servers }: { servers: AdminServer[] }) {
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
     const [toDelete, setToDelete] = useState<AdminServer | null>(null);
+    const powerOf = usePowerStates(servers.map(s => s.nodeId));
 
     const del = useMutation({
         mutationFn: ({ id, force }: { id: number; force: boolean }) => deleteServer(id, force),
@@ -130,7 +121,7 @@ export function ServersTable({ servers }: { servers: AdminServer[] }) {
                             className="group border-b border-[var(--color-border)] transition-colors last:border-0 hover:bg-[var(--color-surface-2)]/40"
                         >
                             <td className="px-4 py-3">
-                                <StateDot server={s} />
+                                <ServerStatusDot power={powerOf(s)} lifecycle={s.state} />
                             </td>
                             <td className="px-4 py-3">
                                 <Link to={`/admin/infrastructure/servers/${s.id}`} className="flex flex-col">

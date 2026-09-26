@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/cn';
 import { CapacityRack } from '@/pages/admin/nodes/CapacityRack';
 import { ServersTable } from '@/pages/admin/servers/ServersTable';
+import { usePowerStates } from '@/pages/admin/servers/ServerStatus';
 import { useAdminHeld } from '@/layouts/heldPermissions';
 import { can } from '@/lib/can';
 
@@ -129,13 +130,13 @@ function NewMenu({ onNewServer, onNewNode }: { onNewServer: () => void; onNewNod
 function FleetSummary({
     nodes,
     totalServers,
-    activeServers,
+    runningServers,
     showNodes,
     showServers,
 }: {
     nodes: NodeListItem[];
     totalServers: number | null;
-    activeServers: number;
+    runningServers: number | null;
     showNodes: boolean;
     showServers: boolean;
 }) {
@@ -155,7 +156,7 @@ function FleetSummary({
                 </>
             )}
             {showServers && (
-                <SummaryCell icon={Layers} label={m['admin.infrastructure.summary.servers']()} value={totalServers == null ? '—' : String(totalServers)} sub={m['admin.infrastructure.summary.active']({ count: activeServers })} />
+                <SummaryCell icon={Layers} label={m['admin.infrastructure.summary.servers']()} value={totalServers == null ? '—' : String(totalServers)} sub={runningServers == null ? m['admin.servers.power.checking']() : m['admin.infrastructure.summary.running']({ count: runningServers })} />
             )}
             {showNodes && (
                 <>
@@ -256,7 +257,11 @@ export default function InfrastructureOverviewPage() {
             ? countQueries.reduce((a, q) => a + (q.data ?? 0), 0)
             : null
         : servers?.length ?? null;
-    const activeServers = useMemo(() => (servers ?? []).filter(s => s.state === 'active').length, [servers]);
+    // Live power state, not lifecycle: "6 active" sat above a table of six
+    // offline servers. Shares the table's per-node queries, so it's free.
+    const powerOf = usePowerStates(canReadServers ? (servers ?? []).map(s => s.nodeId) : []);
+    const powerViews = (servers ?? []).map(powerOf);
+    const runningServers = powerViews.includes('checking') ? null : powerViews.filter(p => p === 'running').length;
 
     return (
         <div className="relative flex flex-col gap-4">
@@ -295,7 +300,7 @@ export default function InfrastructureOverviewPage() {
                     <FleetSummary
                         nodes={nodes}
                         totalServers={totalServers}
-                        activeServers={activeServers}
+                        runningServers={runningServers}
                         showNodes={canReadNodes}
                         showServers={canReadServers}
                     />
