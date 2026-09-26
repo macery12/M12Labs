@@ -152,6 +152,8 @@ export interface ServerView {
     ownerName: string | null;
     nodeId: number;
     nodeName: string | null;
+    /** Where players reach the server when its allocation binds 0.0.0.0. */
+    nodeFqdn: string | null;
     eggId: number;
     eggName: string | null;
     nestId: number | null;
@@ -214,6 +216,7 @@ export async function getServerView(id: number | string): Promise<ServerView> {
         ownerName: user?.username ?? user?.email ?? null,
         nodeId: a.node_id,
         nodeName: node?.name ?? null,
+        nodeFqdn: node?.fqdn ?? null,
         eggId: a.egg_id,
         eggName: egg?.name ?? null,
         nestId: a.nest_id ?? null,

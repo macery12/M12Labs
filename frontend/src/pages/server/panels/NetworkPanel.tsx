@@ -4,6 +4,7 @@ import { Network, Star, Copy, Check } from 'lucide-react';
 import { Panel } from './Panel';
 import { useServer } from '@/components/server/ServerContext';
 import { cn } from '@/lib/cn';
+import { joinableAddress } from '@/lib/address';
 
 function CopyRow({ value, primary, starred }: { value: string; primary?: boolean; starred?: boolean }) {
     const [copied, setCopied] = useState(false);
@@ -50,9 +51,10 @@ export function NetworkPanel() {
                     {allocations.length === 0 && (
                         <p className="text-xs text-[var(--color-ink-faint)]">{m['server.network.noAllocations']()}</p>
                     )}
-                    {allocations.map(a => (
-                        <CopyRow key={a.id} value={`${a.alias || a.ip}:${a.port}`} primary={a.isDefault} starred={a.isDefault} />
-                    ))}
+                    {allocations.map(a => {
+                        const address = joinableAddress(a, server.sftp.ip);
+                        return address && <CopyRow key={a.id} value={address} primary={a.isDefault} starred={a.isDefault} />;
+                    })}
                 </div>
                 {sftp && (
                     <div className="flex flex-col gap-1.5">

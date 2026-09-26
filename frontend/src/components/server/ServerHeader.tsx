@@ -8,6 +8,7 @@ import { can } from '@/lib/can';
 import { cn } from '@/lib/cn';
 import { m, td } from '@/i18n/messages';
 import { useAdminHeld } from '@/layouts/heldPermissions';
+import { joinableAddress } from '@/lib/address';
 
 const stateMeta: Record<string, { label: string; dot: string }> = {
     running: { label: 'Running', dot: 'bg-[var(--color-accent)]' },
@@ -31,7 +32,8 @@ export function ServerHeader() {
     const meta = stateMeta[state] ?? stateMeta.offline!;
 
     const primary = server.allocations.find(a => a.isDefault) ?? server.allocations[0];
-    const address = primary ? `${primary.alias || primary.ip}:${primary.port}` : null;
+    // sftp.ip is the node's FQDN, the fallback when the allocation binds 0.0.0.0.
+    const address = primary ? joinableAddress(primary, server.sftp.ip) : null;
 
     const copyAddress = () => {
         if (!address) return;

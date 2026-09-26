@@ -9,6 +9,7 @@ import { ServerStatusDot, usePowerStates } from '@/pages/admin/servers/ServerSta
 import { panelClass, PanelHeader } from '../../dashboardParts';
 import { getAdminOrders, type AdminOrder, type OrderStatus } from '@/api/adminBillingOrders';
 import { useServerView } from './ServerContext';
+import { joinableAddress } from '@/lib/address';
 
 // Read-only landing tab: what this server *is* — identity facts, resource
 // allotment, billing snapshot, and its slice of the order ledger — before any
@@ -70,10 +71,17 @@ export function OverviewTab({ onManageBilling }: { onManageBilling: () => void }
                         <Fact label={m['admin.infrastructure.serverDetail.field.egg']()}>{s.eggName ?? `#${s.eggId}`}</Fact>
                         <Fact label={m['admin.infrastructure.serverDetail.ov.primaryAllocation']()}>
                             {primary ? (
-                                <span className="font-mono text-sm tabular-nums">
-                                    {primary.ip}:{primary.port}
-                                    {primary.alias ? ` (${primary.alias})` : ''}
-                                </span>
+                                <>
+                                    <span className="block truncate font-mono text-sm tabular-nums">
+                                        {joinableAddress(primary, s.nodeFqdn) ?? `${primary.ip}:${primary.port}`}
+                                    </span>
+                                    {/* Admins still need the bind address when it differs. */}
+                                    {joinableAddress(primary, s.nodeFqdn) !== `${primary.ip}:${primary.port}` && (
+                                        <span className="block truncate font-mono text-[11px] text-[var(--color-ink-faint)]">
+                                            {m['admin.infrastructure.serverDetail.ov.boundTo']({ address: `${primary.ip}:${primary.port}` })}
+                                        </span>
+                                    )}
+                                </>
                             ) : (
                                 '—'
                             )}

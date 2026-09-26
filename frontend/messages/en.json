@@ -1815,6 +1815,7 @@
   "admin.infrastructure.serverDetail.net.primary": "Primary",
   "admin.infrastructure.serverDetail.net.remove": "Remove",
   "admin.infrastructure.serverDetail.net.setPrimary": "Set primary",
+  "admin.infrastructure.serverDetail.ov.boundTo": "bound to {address}",
   "admin.infrastructure.serverDetail.ov.configuration": "Configuration",
   "admin.infrastructure.serverDetail.ov.cpu": "CPU limit",
   "admin.infrastructure.serverDetail.ov.disk": "Disk",

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Network, Plus, Star, Trash2, Pencil } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { can } from '@/lib/can';
+import { joinableAddress, isUnreachableHost } from '@/lib/address';
 import { useServer } from '@/components/server/ServerContext';
 import { useFlashes } from '@/state/flashes';
 import {
@@ -35,6 +36,9 @@ export default function NetworkPage() {
         queryKey: key,
         queryFn: () => getAllocations(server.uuid),
     });
+
+    // What a player connects to; the bind address is 0.0.0.0 more often than not.
+    const addressOf = (a: Allocation) => joinableAddress(a, server.sftp.ip) ?? `:${a.port}`;
 
     const [editNotes, setEditNotes] = useState<Allocation | null>(null);
     const [toDelete, setToDelete] = useState<Allocation | null>(null);
@@ -115,7 +119,7 @@ export default function NetworkPage() {
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
                                         <span className="font-mono text-sm text-[var(--color-ink)]">
-                                            {a.alias || a.ip}:{a.port}
+                                            {addressOf(a)}
                                         </span>
                                         {a.isDefault && (
                                             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brand-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--brand)]">
@@ -123,7 +127,7 @@ export default function NetworkPage() {
                                             </span>
                                         )}
                                     </div>
-                                    {a.alias && (
+                                    {addressOf(a) !== `${a.ip}:${a.port}` && !isUnreachableHost(a.ip) && (
                                         <p className="mt-0.5 font-mono text-xs text-[var(--color-ink-faint)]">
                                             {a.ip}:{a.port}
                                         </p>
@@ -170,6 +174,7 @@ export default function NetworkPage() {
                 <NotesModal
                     uuid={server.uuid}
                     allocation={editNotes}
+                    address={addressOf(editNotes)}
                     onClose={() => setEditNotes(null)}
                     onSaved={() => {
                         setEditNotes(null);
@@ -182,7 +187,7 @@ export default function NetworkPage() {
                 open={!!toDelete}
                 onClose={() => setToDelete(null)}
                 title={m['server.network.deleteTitle']()}
-                body={m['server.network.deleteBody']({ address: toDelete ? `${toDelete.ip}:${toDelete.port}` : '' })}
+                body={m['server.network.deleteBody']({ address: toDelete ? addressOf(toDelete) : '' })}
                 confirmLabel={m['common.actions.delete']()}
                 cancelLabel={m['common.actions.cancel']()}
                 busy={remove.isPending}
@@ -195,11 +200,13 @@ export default function NetworkPage() {
 function NotesModal({
     uuid,
     allocation,
+    address,
     onClose,
     onSaved,
 }: {
     uuid: string;
     allocation: Allocation;
+    address: string;
     onClose: () => void;
     onSaved: () => void;
 }) {
@@ -220,7 +227,7 @@ function NotesModal({
             open
             onClose={onClose}
             title={m['server.network.editNotes']()}
-            description={`${allocation.ip}:${allocation.port}`}
+            description={address}
             footer={
                 <>
                     <Button variant="ghost" size="sm" onClick={onClose} disabled={save.isPending}>
