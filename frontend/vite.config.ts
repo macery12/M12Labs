@@ -72,7 +72,20 @@ export default defineConfig(({ command }) => ({
         // Extension packages are compiled into this bundle. A package that
         // pulled in its own copy of React would produce two runtimes in one
         // tree — hooks throw, context silently misses. These stay single-copy.
-        dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+        // CodeMirror checks extensions (and lezer highlight tags) by identity:
+        // a lockfile refresh once left codemirror@6.0.2 on a newer
+        // @codemirror/state than ours and the file editor threw "Unrecognized
+        // extension value in extension set".
+        dedupe: [
+            'react',
+            'react-dom',
+            'react-router-dom',
+            '@tanstack/react-query',
+            '@codemirror/state',
+            '@codemirror/view',
+            '@codemirror/language',
+            '@lezer/highlight',
+        ],
     },
 
     build: {
