@@ -10,6 +10,7 @@ use Everest\Jobs\InstallModpackJob;
 use Everest\Http\Controllers\Api\Client\ClientApiController;
 use Everest\Http\Middleware\Api\Client\EnsureMarketplaceEnabled;
 use Everest\Http\Requests\Api\Client\Servers\Mods\DownloadModRequest;
+use Everest\Http\Requests\Api\Client\Servers\Mods\InstallModpackRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\GetDownloadQueueRequest;
 use Everest\Http\Requests\Api\Client\Servers\Mods\ManageDownloadQueueRequest;
 
@@ -121,6 +122,20 @@ class ModQueueController extends ClientApiController
             ], 422);
         }
 
+        // A retry re-runs the loader step exactly when the original install
+        // asked for it, and that step rewrites startup + image — so it needs
+        // the same startup permissions the install did. Refuse rather than
+        // quietly skip it: a pack retried without its loader will not boot.
+        if (
+            $item->source === 'modpack'
+            && $item->install_loader
+            && !InstallModpackRequest::canInstallLoader($request->user(), $server)
+        ) {
+            return response()->json([
+                'error' => 'Retrying this install re-runs its loader step, which requires permission to change the startup command and Docker image.',
+            ], 403);
+        }
+
         $item->update([
             'status'             => DownloadQueue::STATUS_PENDING,
             'error_message'      => null,
@@ -135,10 +150,11 @@ class ModQueueController extends ClientApiController
         ]);
 
         if ($item->source === 'modpack') {
-            // Re-run from the start. A retry never re-wipes (destructive), but it does
-            // re-ensure the loader — so a loader-phase failure can be retried. The
-            // loader step is skipped automatically when resuming the mods stage.
-            dispatch(new InstallModpackJob($item, wipeServer: false, installLoader: true));
+            // Re-run from the start. A retry never re-wipes (destructive), and
+            // re-runs the loader only if the original install asked for it — so
+            // a loader-phase failure can still be retried, while a pack installed
+            // onto an existing loader keeps the server's startup and image.
+            dispatch(new InstallModpackJob($item, wipeServer: false, installLoader: $item->install_loader));
         } else {
             dispatch(new DownloadModJob($item));
         }

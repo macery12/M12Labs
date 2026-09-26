@@ -425,6 +425,7 @@ CREATE TABLE `download_queue` (
   `error_message` text DEFAULT NULL,
   `install_log` text DEFAULT NULL,
   `phase` varchar(64) DEFAULT NULL,
+  `install_loader` tinyint(1) NOT NULL DEFAULT 0,
   `status` varchar(16) NOT NULL DEFAULT 'pending',
   `started_at` timestamp NULL DEFAULT NULL,
   `completed_at` timestamp NULL DEFAULT NULL,

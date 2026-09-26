@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $error_message
  * @property string|null $install_log
  * @property string|null $phase
+ * @property bool $install_loader
  * @property string $status
  * @property \Carbon\Carbon|null $started_at
  * @property \Carbon\Carbon|null $completed_at
@@ -56,12 +57,14 @@ class DownloadQueue extends Model
         'error_message',
         'install_log',
         'phase',
+        'install_loader',
         'status',
         'started_at',
         'completed_at',
     ];
 
     protected $casts = [
+        'install_loader' => 'boolean',
         'started_at'   => 'datetime',
         'completed_at' => 'datetime',
     ];

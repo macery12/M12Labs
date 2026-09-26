@@ -40,6 +40,7 @@ class InstallModpackRequest extends ClientApiRequest
 
     /**
      * Whether $user may have the loader step rewrite $server's startup + image.
+     * Shared with the queue's retry path, which re-runs the loader step.
      */
     public static function canInstallLoader(User $user, Server $server): bool
     {

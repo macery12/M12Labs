@@ -245,12 +245,15 @@ class ModpackController extends ClientApiController
             'file_id'    => (string) $fileId,
             'file_name'  => $request->input('modpack_name') ?: null,
             'status'     => DownloadQueue::STATUS_PENDING,
+            // Recorded so a retry from the queue re-runs the loader step only
+            // when this install asked for it.
+            'install_loader' => $request->boolean('install_loader'),
         ]);
 
         dispatch(new InstallModpackJob(
             parent:        $parent,
-            wipeServer:    (bool) $request->input('wipe_server', false),
-            installLoader: (bool) $request->input('install_loader', false),
+            wipeServer:    $request->boolean('wipe_server'),
+            installLoader: $parent->install_loader,
         ));
 
         return response()->json([
