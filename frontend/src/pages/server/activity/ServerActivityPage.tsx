@@ -19,14 +19,9 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { ActivityDetailsModal, hasActivityDetails } from '@/pages/account/activity/ActivityDetailsModal';
 import FileDiffViewer, { type FileDiff } from './FileDiffViewer';
+import { describeActivity } from '@/lib/activity';
 
 type Sort = '-timestamp' | 'timestamp';
-
-// 'server:file.write' → 'File Write'
-function prettyEvent(event: string): string {
-    const tail = event.split(':').slice(1).join(':') || event;
-    return tail.replace(/[:._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
 
 const severityDot: Record<string, string> = {
     critical: 'bg-[var(--color-danger)]',
@@ -103,7 +98,7 @@ function ActivityRow({
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                             <p className="truncate text-sm text-[var(--color-ink)]">
-                                {entry.description || prettyEvent(entry.event)}
+                                {describeActivity(entry)}
                             </p>
                             {viaSftp && (
                                 <FolderOpen

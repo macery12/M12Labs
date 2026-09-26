@@ -5,11 +5,7 @@ import { Panel } from './Panel';
 import { useServer } from '@/components/server/ServerContext';
 import { getServerActivity } from '@/api/serverActivity';
 import { timeAgo } from '@/lib/format';
-
-function prettyEvent(event: string): string {
-    const tail = event.split(':').pop() ?? event;
-    return tail.replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
+import { describeActivity } from '@/lib/activity';
 
 export function ActivityPanel() {
     const server = useServer();
@@ -34,7 +30,7 @@ export function ActivityPanel() {
                         <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand)]" />
                         <div className="min-w-0 flex-1">
                             <p className="truncate text-sm text-[var(--color-ink)]">
-                                {entry.description || prettyEvent(entry.event)}
+                                {describeActivity(entry)}
                             </p>
                             <p className="font-mono text-[11px] tabular-nums text-[var(--color-ink-faint)]">
                                 {timeAgo(entry.timestamp)}

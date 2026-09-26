@@ -10,14 +10,9 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { ActivityDetailsModal, hasActivityDetails } from './ActivityDetailsModal';
+import { describeActivity } from '@/lib/activity';
 
 type Scope = 'all' | 'account' | 'server';
-
-// 'auth:session_revoked' → 'Session Revoked'
-function prettyEvent(event: string): string {
-    const tail = event.split(':').pop() ?? event;
-    return tail.replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
 
 const severityDot: Record<string, string> = {
     critical: 'bg-[var(--color-danger)]',
@@ -35,7 +30,7 @@ function ActivityRow({ entry, onInspect }: { entry: ActivityEntry; onInspect: (e
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                     <p className="truncate text-sm text-[var(--color-ink)]">
-                        {entry.description || prettyEvent(entry.event)}
+                        {describeActivity(entry)}
                     </p>
                     {entry.category && (
                         <span className="shrink-0 rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-ink-muted)]">

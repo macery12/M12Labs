@@ -1,0 +1,97 @@
+import { td } from '@/i18n/messages';
+
+export interface DescribableActivity {
+    event: string;
+    description?: string | null;
+    properties?: Record<string, unknown>;
+}
+
+/**
+ * One line of human text for an activity log entry, shared by every feed
+ * (dashboard, account, server, admin, admin overview). Five pages used to
+ * title-case the raw event name themselves, so a sign-in read "Success" and an
+ * extension key change read "Extensions Secret Update" with no hint of which
+ * extension.
+ *
+ * Order: the catalog's label for the event plus the thing it acted on
+ * ("Updated an extension API key · ai"), then the backend's description, then
+ * a readable form of the event name. The label wins over the description
+ * because descriptions are English-only and often vaguer ("A user was
+ * updated"). Events without a label, such as ones an extension logs, fall
+ * through to their description.
+ */
+export function describeActivity(entry: DescribableActivity): string {
+    const label = td(activityMessageId(entry.event), '');
+    if (label) {
+        const subject = activitySubject(entry.properties);
+        return subject ? `${label} · ${subject}` : label;
+    }
+
+    return entry.description || humanizeEvent(entry.event);
+}
+
+/** 'admin:api-keys:create' → 'activity.event.admin.api_keys.create' */
+export function activityMessageId(event: string): string {
+    return `activity.event.${event.replace(/:/g, '.').replace(/-/g, '_')}`;
+}
+
+// Properties that name what an event acted on, most specific first. Logged
+// models (user, server, node…) arrive whole, so their name is read from inside.
+const SUBJECT_KEYS = [
+    'extension_id',
+    'name',
+    'file',
+    'identifier',
+    'fingerprint',
+    'email',
+    'provider',
+    'command',
+    'allocation',
+    'variable',
+    'directory',
+];
+const SUBJECT_MODELS = ['user', 'server', 'node', 'egg', 'nest', 'product', 'category', 'coupon', 'alert', 'link', 'host', 'preset'];
+const SUBJECT_MODEL_FIELDS = ['name', 'username', 'code', 'title'];
+
+export function activitySubject(properties: Record<string, unknown> | undefined): string | null {
+    if (!properties) return null;
+
+    for (const key of SUBJECT_KEYS) {
+        const value = subjectText(properties[key]);
+        if (value) return value;
+    }
+
+    for (const key of SUBJECT_MODELS) {
+        const model = properties[key];
+        if (!model || typeof model !== 'object') continue;
+        for (const field of SUBJECT_MODEL_FIELDS) {
+            const value = subjectText((model as Record<string, unknown>)[field]);
+            if (value) return value;
+        }
+    }
+
+    return null;
+}
+
+function subjectText(value: unknown): string | null {
+    if (typeof value !== 'string') return null;
+    const text = value.trim();
+    // '[hidden]' / '[REDACTED]' are the sanitizer's, not a name.
+    if (!text || text.startsWith('[') || text.length > 80) return null;
+    return text;
+}
+
+const SCOPES = new Set(['admin', 'auth', 'billing', 'event', 'ext', 'server', 'user']);
+const ACRONYMS: Record<string, string> = { ai: 'AI', api: 'API', ip: 'IP', sftp: 'SFTP', sso: 'SSO', ssh: 'SSH' };
+
+/** 'server:ai.assist.escalate' → 'AI assist escalate' */
+export function humanizeEvent(event: string): string {
+    const [scope = '', ...tail] = event.split(':');
+    const rest = tail.length > 0 && SCOPES.has(scope) ? tail.join(' ') : event;
+    const sentence = rest
+        .split(/[:._\-\s]+/)
+        .filter(Boolean)
+        .map(word => ACRONYMS[word.toLowerCase()] ?? word.toLowerCase())
+        .join(' ');
+    return sentence ? sentence.charAt(0).toUpperCase() + sentence.slice(1) : event;
+}

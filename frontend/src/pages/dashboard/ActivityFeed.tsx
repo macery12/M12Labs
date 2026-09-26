@@ -6,22 +6,16 @@ import { Link } from 'react-router-dom';
 import { getAccountActivity, type ActivityEntry } from '@/api/activity';
 import { timeAgo } from '@/lib/format';
 import { ActivityDetailsModal, hasActivityDetails } from '@/pages/account/activity/ActivityDetailsModal';
+import { describeActivity } from '@/lib/activity';
 
 // Turn an event key like 'auth:fail' or 'user:account.email-changed' into prose.
-function prettyEvent(event: string): string {
-    const tail = event.split(':').pop() ?? event;
-    return tail
-        .replace(/[._-]/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase());
-}
-
 function FeedRow({ entry, first, onInspect }: { entry: ActivityEntry; first: boolean; onInspect: (entry: ActivityEntry) => void }) {
     const inspectable = hasActivityDetails(entry);
     const inner = (
         <>
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand)]" />
             <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-[var(--color-ink)]">{entry.description || prettyEvent(entry.event)}</p>
+                <p className="truncate text-sm text-[var(--color-ink)]">{describeActivity(entry)}</p>
                 <p className="text-xs text-[var(--color-ink-faint)]">
                     {timeAgo(entry.timestamp)}
                     {entry.ip ? ` · ${entry.ip}` : ''}

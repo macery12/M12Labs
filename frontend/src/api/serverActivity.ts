@@ -18,6 +18,7 @@ export async function getServerActivity(id: string): Promise<ActivityEntry[]> {
         description: row.attributes.description ?? null,
         ip: row.attributes.ip ?? null,
         timestamp: row.attributes.timestamp,
+        properties: row.attributes.properties ?? undefined,
     }));
 }
 

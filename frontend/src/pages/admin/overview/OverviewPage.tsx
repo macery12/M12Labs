@@ -33,6 +33,7 @@ import {
     StatusLine,
     type AttentionItem,
 } from '../dashboardParts';
+import { describeActivity } from '@/lib/activity';
 
 function QueueCard({
     icon: Icon,
@@ -423,7 +424,7 @@ export default function OverviewPage() {
                                             >
                                                 <span className="min-w-0 flex-1">
                                                     <span className="font-semibold text-[var(--color-ink)]">{a.actor}</span>{' '}
-                                                    <span className="text-[var(--color-ink-muted)]">{a.description ?? a.event}</span>
+                                                    <span className="text-[var(--color-ink-muted)]">{describeActivity(a)}</span>
                                                 </span>
                                                 <span className="shrink-0 font-mono text-[11px] tabular-nums text-[var(--color-ink-faint)]">
                                                     {timeAgo(a.timestamp)}
