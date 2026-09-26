@@ -21,6 +21,28 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
     return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount || 0);
 }
 
+// A count with the viewer's digit grouping: 2000000 → "2,000,000". Raw
+// numbers past four digits are hard to read at a glance, and a limit field
+// showing 2000000 gets misread by an order of magnitude.
+export function formatNumber(n: number, maximumFractionDigits = 0): string {
+    return new Intl.NumberFormat(undefined, { maximumFractionDigits }).format(Number.isFinite(n) ? n : 0);
+}
+
+// A measured duration in milliseconds: 850 → "850 ms", 146401 → "146.4 sec",
+// 3_900_000 → "65 min". Latencies were printed as "146401ms". Seconds run up to
+// ten minutes, because a slow request compares better as "146.4 sec" than as
+// "2.4 min".
+export function formatDuration(ms: number): string {
+    const value = Number.isFinite(ms) && ms > 0 ? ms : 0;
+    const unit = (n: number, u: 'millisecond' | 'second' | 'minute' | 'hour', digits = 0) =>
+        new Intl.NumberFormat(undefined, { style: 'unit', unit: u, unitDisplay: 'short', maximumFractionDigits: digits }).format(n);
+
+    if (value < 1000) return unit(value, 'millisecond');
+    if (value < 600_000) return unit(value / 1000, 'second', 1);
+    if (value < 3_600_000) return unit(value / 60_000, 'minute');
+    return unit(value / 3_600_000, 'hour', 1);
+}
+
 // Daemon uptime is milliseconds.
 export function formatUptime(ms: number): string {
     if (!ms || ms <= 0) return '—';

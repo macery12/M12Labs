@@ -375,7 +375,21 @@
   "admin.access.keys.form.allowedIpsHint": "Optional. Enter one IPv4, IPv6, or CIDR range per line. Leave empty to allow any IP.",
   "admin.access.keys.form.authorityHint": "This key has exactly the capabilities of its selected access profile. Updating or disabling that profile changes the key immediately.",
   "admin.access.keys.form.capabilitiesFallback": "Capabilities assigned to this access profile.",
-  "admin.access.keys.form.capabilityCount": "{count} capabilities",
+  "admin.access.keys.form.capabilityCount": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} capability",
+        "countPlural=other": "{count} capabilities"
+      }
+    }
+  ],
   "admin.access.keys.form.expires": "Expires",
   "admin.access.keys.form.expiresHint": "Optional. Expired keys stop working immediately.",
   "admin.access.keys.form.loadingProfiles": "Loading profiles…",
@@ -592,7 +606,21 @@
   "admin.apiDocs.download": "Download JSON",
   "admin.apiDocs.empty": "No endpoints match your filters.",
   "admin.apiDocs.emptySelection": "Select an endpoint to view its reference.",
-  "admin.apiDocs.endpointCount": "{count} endpoints",
+  "admin.apiDocs.endpointCount": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} endpoint",
+        "countPlural=other": "{count} endpoints"
+      }
+    }
+  ],
   "admin.apiDocs.group.application": "Application API",
   "admin.apiDocs.group.client": "Client API",
   "admin.apiDocs.group.other": "Other",
@@ -889,7 +917,21 @@
   "admin.billing.exceptions.empty": "No unresolved exceptions.",
   "admin.billing.exceptions.resolve": "Resolve",
   "admin.billing.exceptions.resolveAll": "Resolve all",
-  "admin.billing.exceptions.resolveAllBody": "Resolve all {count} exceptions? This clears the entire list.",
+  "admin.billing.exceptions.resolveAllBody": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "Resolve the {count} exception? This clears the entire list.",
+        "countPlural=other": "Resolve all {count} exceptions? This clears the entire list."
+      }
+    }
+  ],
   "admin.billing.exceptions.resolveAllTitle": "Resolve all exceptions",
   "admin.billing.exceptions.resolved": "Exception resolved.",
   "admin.billing.exceptions.resolvedAll": "All exceptions resolved.",
@@ -914,7 +956,21 @@
   "admin.billing.integrations.keysSet": "API keys saved",
   "admin.billing.integrations.link.enable": "Enable Link",
   "admin.billing.integrations.link.enableDesc": "Stripe’s one-click payment method.",
-  "admin.billing.integrations.methodsOn": "{on} of {total} methods on",
+  "admin.billing.integrations.methodsOn": [
+    {
+      "declarations": [
+        "input total",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": [
+        "totalPlural"
+      ],
+      "match": {
+        "totalPlural=one": "{on} of {total} method on",
+        "totalPlural=other": "{on} of {total} methods on"
+      }
+    }
+  ],
   "admin.billing.integrations.paypal.add": "Add credentials",
   "admin.billing.integrations.paypal.clientId": "Client ID",
   "admin.billing.integrations.paypal.clientIdPlaceholder": "Enter PayPal Client ID…",
@@ -1054,11 +1110,67 @@
   "admin.billing.orders.txnId": "Transaction ID",
   "admin.billing.orders.txnLookup": "Transaction lookup",
   "admin.billing.orders.userN": "User #{id}",
-  "admin.billing.overview.attention.exceptions": "{count} exceptions this week",
-  "admin.billing.overview.attention.overdue": "{count} renewals overdue ({amount})",
-  "admin.billing.overview.attention.suspended": "{count} servers suspended",
+  "admin.billing.overview.attention.exceptions": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} exception this week",
+        "countPlural=other": "{count} exceptions this week"
+      }
+    }
+  ],
+  "admin.billing.overview.attention.overdue": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} renewal overdue ({amount})",
+        "countPlural=other": "{count} renewals overdue ({amount})"
+      }
+    }
+  ],
+  "admin.billing.overview.attention.suspended": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} server suspended",
+        "countPlural=other": "{count} servers suspended"
+      }
+    }
+  ],
   "admin.billing.overview.catalog": "Active products",
-  "admin.billing.overview.categoriesCount": "{count} categories",
+  "admin.billing.overview.categoriesCount": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} category",
+        "countPlural=other": "{count} categories"
+      }
+    }
+  ],
   "admin.billing.overview.due7": "Due in 7 days",
   "admin.billing.overview.due8to14": "Due in 8–14 days",
   "admin.billing.overview.eventTypeOrder": "{type} order",
@@ -1072,7 +1184,21 @@
   "admin.billing.overview.noRevenue": "No processed revenue in the last 12 months.",
   "admin.billing.overview.noTopProducts": "No active subscriptions yet.",
   "admin.billing.overview.orderStatus": "Orders by status",
-  "admin.billing.overview.ordersYear": "{count} orders this year",
+  "admin.billing.overview.ordersYear": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} order this year",
+        "countPlural=other": "{count} orders this year"
+      }
+    }
+  ],
   "admin.billing.overview.overdue": "Overdue",
   "admin.billing.overview.perMonth": "{amount}/mo",
   "admin.billing.overview.processedVia": "Processed via",
@@ -1088,7 +1214,21 @@
   "admin.billing.overview.status.failed": "Failed",
   "admin.billing.overview.status.pending": "Pending",
   "admin.billing.overview.status.processed": "Processed",
-  "admin.billing.overview.subsCount": "{count} subs",
+  "admin.billing.overview.subsCount": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} sub",
+        "countPlural=other": "{count} subs"
+      }
+    }
+  ],
   "admin.billing.overview.subtitle": "Revenue forecast, upcoming renewals and recent activity.",
   "admin.billing.overview.suspendedMore": "{count} more",
   "admin.billing.overview.suspendedServers": "Suspended servers",
@@ -1100,7 +1240,21 @@
   "admin.billing.products.clone": "Duplicate",
   "admin.billing.products.cloned": "Plan duplicated.",
   "admin.billing.products.copyOf": "{name} (copy)",
-  "admin.billing.products.count": "{count} products",
+  "admin.billing.products.count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} product",
+        "countPlural=other": "{count} products"
+      }
+    }
+  ],
   "admin.billing.products.created": "Product created.",
   "admin.billing.products.delete": "Delete product",
   "admin.billing.products.deleteBody": "Delete “{name}”? This cannot be undone.",
@@ -1416,7 +1570,21 @@
   "admin.email.status.unknown": "Unknown",
   "admin.email.subtitle": "Configure delivery, manage notifications, and audit every message your panel sends.",
   "admin.email.templates.countCustomized": "{count} customized",
-  "admin.email.templates.countTotal": "{count} templates",
+  "admin.email.templates.countTotal": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} template",
+        "countPlural=other": "{count} templates"
+      }
+    }
+  ],
   "admin.email.templates.customized": "Customized",
   "admin.email.templates.default": "Default",
   "admin.email.templates.desc": "Customize the transactional emails your users receive. Edits are saved as overrides — the originals are never touched.",
@@ -1445,7 +1613,21 @@
   "admin.email.templates.empty": "No templates match your search.",
   "admin.email.templates.searchPlaceholder": "Search templates…",
   "admin.email.templates.title": "Email templates",
-  "admin.email.templates.variableCount": "{count} variables",
+  "admin.email.templates.variableCount": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} variable",
+        "countPlural=other": "{count} variables"
+      }
+    }
+  ],
   "admin.email.test.code": "Code: {code}",
   "admin.email.test.failed": "The test could not be completed.",
   "admin.email.test.ok": "Connection succeeded.",
@@ -1530,7 +1712,21 @@
   "admin.infrastructure.capacity.status.maintenance": "Maintenance",
   "admin.infrastructure.capacity.status.nearCapacity": "Near capacity",
   "admin.infrastructure.capacity.status.overAllocated": "Over-allocated",
-  "admin.infrastructure.capacity.strained": "Near or past capacity: {count} of {total} nodes",
+  "admin.infrastructure.capacity.strained": [
+    {
+      "declarations": [
+        "input total",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": [
+        "totalPlural"
+      ],
+      "match": {
+        "totalPlural=one": "Near or past capacity: {count} of {total} node",
+        "totalPlural=other": "Near or past capacity: {count} of {total} nodes"
+      }
+    }
+  ],
   "admin.infrastructure.capacity.suspendedCount": "{count} suspended",
   "admin.infrastructure.capacity.unlimited": "Unlimited",
   "admin.infrastructure.capacity.updated": "Updated {ago}",
@@ -1996,7 +2192,21 @@
   "admin.nests.egg.variables.colFlags": "Flags",
   "admin.nests.egg.variables.colType": "Type",
   "admin.nests.egg.variables.colVariable": "Variable",
-  "admin.nests.egg.variables.count": "{count} variables",
+  "admin.nests.egg.variables.count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} variable",
+        "countPlural=other": "{count} variables"
+      }
+    }
+  ],
   "admin.nests.egg.variables.createFirst": "Save the egg first, then add its variables here.",
   "admin.nests.egg.variables.created": "Variable created.",
   "admin.nests.egg.variables.defaultValue": "Default value",
@@ -2083,7 +2293,21 @@
       }
     }
   ],
-  "admin.nests.eggCount": "{count} eggs",
+  "admin.nests.eggCount": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} egg",
+        "countPlural=other": "{count} eggs"
+      }
+    }
+  ],
   "admin.nests.eggs.colId": "ID",
   "admin.nests.eggs.colName": "Name",
   "admin.nests.eggs.colServers": "Servers",
@@ -2212,7 +2436,21 @@
   "admin.nodes.wingsRs.serversValue": "{online} online of {total}",
   "admin.nodes.wingsRs.supercharged": "supercharged",
   "admin.nodes.wingsRs.systemLogs": "System logs",
-  "admin.nodes.wingsRs.threads": "{count} threads",
+  "admin.nodes.wingsRs.threads": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} thread",
+        "countPlural=other": "{count} threads"
+      }
+    }
+  ],
   "admin.nodes.wingsRs.title": "Wings-RS",
   "admin.nodes.wingsRs.unknownVersion": "unknown version",
   "admin.nodes.wingsRs.upgrade": "Upgrade",
@@ -2229,10 +2467,38 @@
   "admin.nodes.wingsRs.version": "Version",
   "admin.overview.activity.empty": "No recent admin activity.",
   "admin.overview.attention.billing": "{count} billing exceptions",
-  "admin.overview.attention.installFailed": "{count} installs failed",
+  "admin.overview.attention.installFailed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} install failed",
+        "countPlural=other": "{count} installs failed"
+      }
+    }
+  ],
   "admin.overview.attention.label": "Attention",
   "admin.overview.attention.maintenance": "{count} in maintenance",
-  "admin.overview.attention.tickets": "{count} tickets waiting",
+  "admin.overview.attention.tickets": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} ticket waiting",
+        "countPlural=other": "{count} tickets waiting"
+      }
+    }
+  ],
   "admin.overview.attention.update": "Update to {version}",
   "admin.overview.attention.workers": "Queue workers stalled",
   "admin.overview.fleet.active": "{count} active",
@@ -2340,7 +2606,21 @@
   "admin.queues.lane.long": "long",
   "admin.queues.lane.never": "never run",
   "admin.queues.lane.queued": "queued",
-  "admin.queues.lane.workers": "{count} workers",
+  "admin.queues.lane.workers": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} worker",
+        "countPlural=other": "{count} workers"
+      }
+    }
+  ],
   "admin.queues.lane.moduleOff": "module off",
   "admin.queues.lane.processed": "{count} processed in the metrics window",
   "admin.queues.lane.overTarget": "Over its {target}s target — work is waiting longer than this lane allows.",
@@ -2349,7 +2629,21 @@
   "admin.queues.master.line": "{name} — {status}, pid {pid}",
   "admin.queues.metricsWindow": "last {minutes} min",
   "admin.queues.nav": "Queues",
-  "admin.queues.pool.processes": "{count} process(es)",
+  "admin.queues.pool.processes": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} process",
+        "countPlural=other": "{count} processes"
+      }
+    }
+  ],
   "admin.queues.pool.ofMax": "{count} of {max} processes",
   "admin.queues.pool.pids": "Show process IDs",
   "admin.queues.pool.starved": "No processes",
@@ -2387,7 +2681,21 @@
   "admin.roles.action.read": "Read",
   "admin.roles.action.update": "Update",
   "admin.roles.backToList": "Back to roles",
-  "admin.roles.capabilitySummary": "{selected} of {total} capabilities selected",
+  "admin.roles.capabilitySummary": [
+    {
+      "declarations": [
+        "input total",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": [
+        "totalPlural"
+      ],
+      "match": {
+        "totalPlural=one": "{selected} of {total} capability selected",
+        "totalPlural=other": "{selected} of {total} capabilities selected"
+      }
+    }
+  ],
   "admin.roles.create": "Create role",
   "admin.roles.createSubtitle": "Give the role a name; you’ll assign permissions next.",
   "admin.roles.createTitle": "Create role",
@@ -2410,7 +2718,21 @@
   "admin.roles.matrix.toggleRow": "Toggle every permission for {resource}",
   "admin.roles.noDescription": "No description.",
   "admin.roles.noPermissionMatches": "No permissions match your search.",
-  "admin.roles.permissionCount": "{count} permissions",
+  "admin.roles.permissionCount": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} permission",
+        "countPlural=other": "{count} permissions"
+      }
+    }
+  ],
   "admin.roles.permissionsHeading": "Permissions",
   "admin.roles.saved": "Role saved.",
   "admin.roles.searchPermissions": "Search permissions…",
@@ -2451,7 +2773,21 @@
   "admin.servers.summary.installingSub": "provisioning",
   "admin.servers.summary.memory": "Memory",
   "admin.servers.summary.memorySub": "allocated to servers",
-  "admin.servers.summary.onNodes": "on {count} nodes",
+  "admin.servers.summary.onNodes": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "on {count} node",
+        "countPlural=other": "on {count} nodes"
+      }
+    }
+  ],
   "admin.servers.summary.servers": "Servers",
   "admin.servers.summary.suspended": "Suspended",
   "admin.servers.summary.suspendedSub": "needs attention",
@@ -2875,7 +3211,21 @@
   "billing.orders.detail.capturedAt": "Captured",
   "billing.orders.detail.created": "Created",
   "billing.orders.detail.dashboard": "Dashboard",
-  "billing.orders.detail.days": "{count} days",
+  "billing.orders.detail.days": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} day",
+        "countPlural=other": "{count} days"
+      }
+    }
+  ],
   "billing.orders.detail.description": "Description",
   "billing.orders.detail.discount": "Discount",
   "billing.orders.detail.name": "Order name",
@@ -2961,10 +3311,52 @@
   "billing.processing.session": "Session {id}",
   "billing.processing.title": "Processing your order",
   "billing.processing.verifyDelay": "Payment verification is taking longer than expected. Check your orders or contact support.",
-  "billing.specs.backups": "{count} backups",
+  "billing.specs.backups": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} backup",
+        "countPlural=other": "{count} backups"
+      }
+    }
+  ],
   "billing.specs.cpu": "{value}% CPU",
-  "billing.specs.databases": "{count} databases",
-  "billing.specs.ports": "{count} ports",
+  "billing.specs.databases": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} database",
+        "countPlural=other": "{count} databases"
+      }
+    }
+  ],
+  "billing.specs.ports": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} port",
+        "countPlural=other": "{count} ports"
+      }
+    }
+  ],
   "billing.specs.ram": "{value} RAM",
   "billing.specs.ssd": "{value} SSD",
   "billing.store.card.backups": "Backups",
@@ -3640,7 +4032,21 @@
   "server.backups.failed": "Failed",
   "server.backups.ignored": "Ignored files & directories",
   "server.backups.ignoredHint": "Files and folders to leave out of this backup, one per line. Leave blank to use the .pteroignore file in the server root. Wildcards are supported, and prefixing a path with ! negates the rule.",
-  "server.backups.limit": "{used} of {total} backups",
+  "server.backups.limit": [
+    {
+      "declarations": [
+        "input total",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": [
+        "totalPlural"
+      ],
+      "match": {
+        "totalPlural=one": "{used} of {total} backup",
+        "totalPlural=other": "{used} of {total} backups"
+      }
+    }
+  ],
   "server.backups.loadError": "Couldn’t load backups.",
   "server.backups.lock": "Lock",
   "server.backups.locked": "Locked",
@@ -3699,7 +4105,21 @@
   "server.billing.eggOutcomeDelete": "The server will be stopped, all files will be permanently deleted, and the new type will be installed. This cannot be undone.",
   "server.billing.eggOutcomeKeep": "The server will be stopped and the new type will be installed.",
   "server.billing.freeServerNote": "This is a free server — it can be renewed {days} days before it expires.",
-  "server.billing.gracePeriodUsage": "Grace period: {used} of {total} days used.",
+  "server.billing.gracePeriodUsage": [
+    {
+      "declarations": [
+        "input total",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": [
+        "totalPlural"
+      ],
+      "match": {
+        "totalPlural=one": "Grace period: {used} of {total} day used.",
+        "totalPlural=other": "Grace period: {used} of {total} days used."
+      }
+    }
+  ],
   "server.billing.manageDeletion": "Manage scheduled deletion in Settings",
   "server.billing.mustBeStopped": "The server must be stopped before its type can be changed.",
   "server.billing.newResources": "New resources",
@@ -3799,7 +4219,21 @@
   "server.databases.errors.nameRequired": "A database name must be provided.",
   "server.databases.errors.remotePattern": "A valid host address must be provided.",
   "server.databases.jdbc": "JDBC connection string",
-  "server.databases.limit": "{used} of {total} databases",
+  "server.databases.limit": [
+    {
+      "declarations": [
+        "input total",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": [
+        "totalPlural"
+      ],
+      "match": {
+        "totalPlural=one": "{used} of {total} database",
+        "totalPlural=other": "{used} of {total} databases"
+      }
+    }
+  ],
   "server.databases.limitReached": "Database limit reached ({used} of {total}). Delete one to create another.",
   "server.databases.loadError": "Couldn’t load databases.",
   "server.databases.name": "Database name",
@@ -3833,7 +4267,21 @@
   "server.files.chmod.execute": "Exec",
   "server.files.chmod.group": "Group",
   "server.files.chmod.mode": "Octal mode",
-  "server.files.chmod.multi": "Applying to {count} items",
+  "server.files.chmod.multi": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "Applying to {count} item",
+        "countPlural=other": "Applying to {count} items"
+      }
+    }
+  ],
   "server.files.chmod.other": "Other",
   "server.files.chmod.owner": "Owner",
   "server.files.chmod.read": "Read",
@@ -3962,7 +4410,21 @@
   ],
   "server.files.listView": "List view",
   "server.files.loadError": "We couldn’t load this directory.",
-  "server.files.matchesCapped": "Found {count} matches — showing the first {cap}.",
+  "server.files.matchesCapped": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "Found {count} match — showing the first {cap}.",
+        "countPlural=other": "Found {count} matches — showing the first {cap}."
+      }
+    }
+  ],
   "server.files.move": "Move",
   "server.files.moveTitle": "Move files",
   "server.files.moved": "Files moved.",
@@ -4108,7 +4570,21 @@
   "server.mods.provider.modrinth": "Modrinth",
   "server.mods.provider.spigot": "Spigot",
   "server.mods.queue.button": "Queue",
-  "server.mods.queue.childProgress": "{done}/{total} mods",
+  "server.mods.queue.childProgress": [
+    {
+      "declarations": [
+        "input total",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": [
+        "totalPlural"
+      ],
+      "match": {
+        "totalPlural=one": "{done}/{total} mod",
+        "totalPlural=other": "{done}/{total} mods"
+      }
+    }
+  ],
   "server.mods.queue.clearActiveBody": "Some downloads are still active. Clearing now will cancel them. Continue?",
   "server.mods.queue.clearActiveTitle": "Clear active downloads?",
   "server.mods.queue.clearConfirm": "Clear all",
@@ -4146,7 +4622,21 @@
   "server.network.deleted": "Allocation removed.",
   "server.network.editNotes": "Edit notes",
   "server.network.empty": "No allocations are assigned to this server.",
-  "server.network.limit": "{used} of {total} allocations",
+  "server.network.limit": [
+    {
+      "declarations": [
+        "input total",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": [
+        "totalPlural"
+      ],
+      "match": {
+        "totalPlural=one": "{used} of {total} allocation",
+        "totalPlural=other": "{used} of {total} allocations"
+      }
+    }
+  ],
   "server.network.limitReached": "Allocation limit reached ({used} of {total}). Remove one to add another.",
   "server.network.loadError": "Couldn’t load allocations.",
   "server.network.makePrimary": "Make primary",
@@ -4215,7 +4705,21 @@
   "server.schedules.status.label": "Status",
   "server.schedules.status.processing": "Processing",
   "server.schedules.subtitle": "Run tasks automatically on a cron timetable.",
-  "server.schedules.taskCount": "{count} tasks",
+  "server.schedules.taskCount": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} task",
+        "countPlural=other": "{count} tasks"
+      }
+    }
+  ],
   "server.schedules.taskCreated": "Task added.",
   "server.schedules.taskDeleted": "Task deleted.",
   "server.schedules.taskUpdated": "Task updated.",
@@ -4310,7 +4814,21 @@
   "server.users.emailPlaceholder": "user@example.com",
   "server.users.empty": "No additional users have access to this server.",
   "server.users.loadError": "Couldn’t load subusers.",
-  "server.users.permissionCount": "{count} permissions",
+  "server.users.permissionCount": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} permission",
+        "countPlural=other": "{count} permissions"
+      }
+    }
+  ],
   "server.users.remove": "Remove",
   "server.users.removeBody": "{email} will lose all access to this server.",
   "server.users.removeTitle": "Remove user?",
