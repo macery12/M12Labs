@@ -1,7 +1,8 @@
 import { m } from '@/i18n/messages';
 import { useState, type ReactNode } from 'react';
-import { Check, Cpu, HardDrive, MemoryStick, Database, Network, Archive, Tag, X } from 'lucide-react';
+import { Check, Cpu, HardDrive, MemoryStick, Database, Network, Archive, Tag, X, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { cpuPercentHint, formatVcpu } from '@/lib/format';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
@@ -165,8 +166,8 @@ export function VariableField({
 // ---- Spec chips (product limits) -------------------------------------------
 
 export function SpecChips({ limits }: { limits: ProductLimits }) {
-    const specs = [
-        { icon: Cpu, label: m['billing.specs.cpu']({ value: limits.cpu }) },
+    const specs: { icon: LucideIcon; label: string; hint?: string }[] = [
+        { icon: Cpu, label: formatVcpu(limits.cpu), hint: cpuPercentHint(limits.cpu) },
         { icon: MemoryStick, label: m['billing.specs.ram']({ value: gb(limits.memory) }) },
         { icon: HardDrive, label: m['billing.specs.ssd']({ value: gb(limits.disk) }) },
         ...(limits.backup ? [{ icon: Archive, label: m['billing.specs.backups']({ count: limits.backup }) }] : []),
@@ -178,6 +179,7 @@ export function SpecChips({ limits }: { limits: ProductLimits }) {
             {specs.map(s => (
                 <span
                     key={s.label}
+                    title={s.hint}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-surface-2)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)]"
                 >
                     <s.icon className="h-3.5 w-3.5 text-[var(--color-ink-faint)]" /> {s.label}

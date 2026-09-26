@@ -2585,7 +2585,6 @@
   "billing.processing.title": "Behandling af din ordre",
   "billing.processing.verifyDelay": "Det tager længere tid end forventet at bekræfte betalingen. Tjek dine ordrer, eller kontakt kundeservice.",
   "billing.specs.backups": "{count} sikkerhedskopier",
-  "billing.specs.cpu": "{value} % CPU",
   "billing.specs.databases": "{count} databaser",
   "billing.specs.ports": "{count} porte",
   "billing.specs.ram": "{value} RAM",

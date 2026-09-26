@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { formatDuration, formatNumber } from './format';
+import { describe, expect, it, vi } from 'vitest';
+
+// The compiled catalog is a Vite virtual module, so tests see message ids and
+// their inputs instead of the English text.
+vi.mock('@/i18n/messages', () => ({
+    m: new Proxy({}, { get: (_t, id: string) => (inputs?: object) => (inputs ? `${id} ${JSON.stringify(inputs)}` : id) }),
+}));
+import { cpuPercentHint, formatDuration, formatNumber, formatVcpu } from './format';
 
 // Intl output depends on the runtime's default locale, so compare against
 // Intl itself rather than hard-coding "2,000,000".
@@ -30,5 +36,23 @@ describe('formatDuration', () => {
 
     it('never goes negative', () => {
         expect(formatDuration(-5)).toBe(unit(0, 'millisecond'));
+    });
+});
+
+describe('formatVcpu', () => {
+    it('shows cores, not percent', () => {
+        const vcpu = (value: string) => `common.units.vcpu ${JSON.stringify({ value })}`;
+        expect(formatVcpu(200)).toBe(vcpu(nf(2)));
+        expect(formatVcpu(50)).toBe(vcpu(nf(0.5, { maximumFractionDigits: 2 })));
+        expect(formatVcpu(125)).toBe(vcpu(nf(1.25, { maximumFractionDigits: 2 })));
+    });
+
+    it('reads 0 as unlimited, with no percent hint', () => {
+        expect(formatVcpu(0)).toBe('common.units.cpuUnlimited');
+        expect(cpuPercentHint(0)).toBeUndefined();
+    });
+
+    it('keeps the raw percent for the tooltip', () => {
+        expect(cpuPercentHint(200)).toBe(`common.units.cpuPercent ${JSON.stringify({ percent: nf(200) })}`);
     });
 });

@@ -1,3 +1,5 @@
+import { m } from '@/i18n/messages';
+
 // Bytes -> human string (binary units, matching panel conventions).
 export function formatBytes(bytes: number, decimals = 1): string {
     if (!bytes || bytes <= 0) return '0 MB';
@@ -26,6 +28,19 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
 // showing 2000000 gets misread by an order of magnitude.
 export function formatNumber(n: number, maximumFractionDigits = 0): string {
     return new Intl.NumberFormat(undefined, { maximumFractionDigits }).format(Number.isFinite(n) ? n : 0);
+}
+
+// CPU limits are a percentage of one core (200 = two cores), which players
+// read as nonsense on a plan card. Plans show cores instead: 200 → "2 vCPU",
+// 50 → "0.5 vCPU". 0 is unlimited. cpuPercentHint keeps the raw figure for a
+// tooltip, for anyone comparing against another host that quotes percent.
+export function formatVcpu(percent: number): string {
+    if (!Number.isFinite(percent) || percent <= 0) return m['common.units.cpuUnlimited']();
+    return m['common.units.vcpu']({ value: formatNumber(percent / 100, 2) });
+}
+
+export function cpuPercentHint(percent: number): string | undefined {
+    return Number.isFinite(percent) && percent > 0 ? m['common.units.cpuPercent']({ percent: formatNumber(percent) }) : undefined;
 }
 
 // A measured duration in milliseconds: 850 → "850 ms", 146401 → "146.4 sec",

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, AlertTriangle, ArrowRight, LayoutGrid, Table2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { cpuPercentHint, formatVcpu } from '@/lib/format';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { useBilling } from '@/state/billing';
@@ -189,9 +190,10 @@ function ViewButton({
 function ProductCard({ product, blocked }: { product: StoreProduct; blocked: boolean }) {
     const { money } = useBilling();
 
-    const specs: [string, string][] = [
+    // Third element is a tooltip, for the one spec whose unit needs it.
+    const specs: [string, string, string?][] = [
         [m['billing.store.card.ram'](), gb(product.limits.memory)],
-        [m['billing.store.card.cpu'](), `${product.limits.cpu}%`],
+        [m['billing.store.card.cpu'](), formatVcpu(product.limits.cpu), cpuPercentHint(product.limits.cpu)],
         [m['billing.store.card.storage'](), gb(product.limits.disk)],
         ...(product.limits.backup ? [[m['billing.store.card.backups'](), String(product.limits.backup)] as [string, string]] : []),
         ...(product.limits.database ? [[m['billing.store.card.databases'](), String(product.limits.database)] as [string, string]] : []),
@@ -217,10 +219,10 @@ function ProductCard({ product, blocked }: { product: StoreProduct; blocked: boo
             <div className="my-4 h-px bg-[var(--color-border)]" />
 
             <dl className="space-y-2 text-sm">
-                {specs.map(([label, value]) => (
+                {specs.map(([label, value, hint]) => (
                     <div key={label} className="flex items-center justify-between">
                         <dt className="text-[var(--color-ink-muted)]">{label}</dt>
-                        <dd className="font-medium text-[var(--color-ink)]">{value}</dd>
+                        <dd title={hint} className={cn('font-medium text-[var(--color-ink)]', hint && 'cursor-help')}>{value}</dd>
                     </div>
                 ))}
             </dl>

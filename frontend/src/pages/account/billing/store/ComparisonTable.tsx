@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { useBilling } from '@/state/billing';
 import type { StoreProduct } from '@/api/accountBilling';
+import { cpuPercentHint, formatVcpu } from '@/lib/format';
 
 const gb = (mib: number) => `${(mib / 1024).toFixed(mib % 1024 === 0 ? 0 : 1)} GB`;
 
@@ -12,8 +13,8 @@ const gb = (mib: number) => `${(mib / 1024).toFixed(mib % 1024 === 0 ? 0 : 1)} G
 export function ComparisonTable({ products }: { products: StoreProduct[] }) {
     const { money } = useBilling();
 
-    const rows: { label: string; value: (p: StoreProduct) => string; emphasis?: boolean }[] = [
-        { label: m['billing.store.compare.cpu'](), value: p => `${p.limits.cpu}%` },
+    const rows: { label: string; value: (p: StoreProduct) => string; hint?: (p: StoreProduct) => string | undefined; emphasis?: boolean }[] = [
+        { label: m['billing.store.compare.cpu'](), value: p => formatVcpu(p.limits.cpu), hint: p => cpuPercentHint(p.limits.cpu) },
         { label: m['billing.store.compare.memory'](), value: p => gb(p.limits.memory) },
         { label: m['billing.store.compare.disk'](), value: p => gb(p.limits.disk) },
         { label: m['billing.store.compare.backups'](), value: p => String(p.limits.backup) },
@@ -47,6 +48,7 @@ export function ComparisonTable({ products }: { products: StoreProduct[] }) {
                             {products.map(p => (
                                 <td
                                     key={p.id}
+                                    title={row.hint?.(p)}
                                     className={`${planCol} ${
                                         row.emphasis
                                             ? 'font-bold text-[var(--color-ink)]'

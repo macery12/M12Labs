@@ -3327,7 +3327,6 @@
       }
     }
   ],
-  "billing.specs.cpu": "{value}% CPU",
   "billing.specs.databases": [
     {
       "declarations": [
@@ -3480,6 +3479,9 @@
   "common.featureDisabled.title": "This feature is disabled",
   "common.labels.description": "Description",
   "common.metrics.cpu": "CPU",
+  "common.units.vcpu": "{value} vCPU",
+  "common.units.cpuUnlimited": "Unlimited CPU",
+  "common.units.cpuPercent": "{percent}% CPU. 100% is one full core.",
   "common.metrics.disk": "Disk",
   "common.metrics.memory": "Memory",
   "common.metrics.network": "Network",

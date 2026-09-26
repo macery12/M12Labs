@@ -2552,7 +2552,6 @@
   "billing.processing.title": "Обработка вашего заказа",
   "billing.processing.verifyDelay": "Проверка оплаты занимает больше времени, чем ожидалось. Проверьте свои заказы или обратитесь в службу поддержки.",
   "billing.specs.backups": "{count} резервных копий",
-  "billing.specs.cpu": "{value} % ЦП",
   "billing.specs.databases": "{count} баз данных",
   "billing.specs.ports": "{count} портов",
   "billing.specs.ram": "{value} ОЗУ",
