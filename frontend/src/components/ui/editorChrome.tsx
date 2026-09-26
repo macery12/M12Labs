@@ -1,5 +1,5 @@
 import { m } from '@/i18n/messages';
-import { Save, RotateCcw, AlertTriangle, type LucideIcon } from 'lucide-react';
+import { Save, RotateCcw, AlertTriangle, Info, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
 import { Spinner } from '@/components/ui/Spinner';
@@ -158,7 +158,15 @@ export function SaveBar({ dirty, saving, onDiscard, onCancel, onSave, saveDisabl
 
     return (
         <div className="sticky bottom-4 z-10 flex flex-col items-stretch gap-2 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 px-3 py-3 shadow-2xl shadow-black/30 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5">
-            {blocked ? (
+            {blocked && !dirty ? (
+                // Nothing typed yet: say what's needed, not that something is
+                // wrong. A warning before the first keystroke read as an error
+                // the admin had already made.
+                <span className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)]">
+                    <Info className="h-3.5 w-3.5 shrink-0" />
+                    {blockedReason}
+                </span>
+            ) : blocked ? (
                 <span className="flex items-center gap-2 text-xs text-[var(--color-warning)]">
                     <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                     {blockedReason}

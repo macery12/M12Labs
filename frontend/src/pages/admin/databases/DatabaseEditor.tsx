@@ -227,7 +227,7 @@ export default function DatabaseEditor({
             </div>
 
             <SaveBar
-                dirty={isNew || dirty}
+                dirty={dirty}
                 saving={saveMutation.isPending}
                 onCancel={onCancel}
                 onSave={() => saveMutation.mutate()}

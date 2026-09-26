@@ -419,7 +419,7 @@ export default function AlertEditor({
             </div>
 
             <SaveBar
-                dirty={isNew || dirty}
+                dirty={dirty}
                 saving={saveMutation.isPending}
                 onCancel={onCancel}
                 onSave={() => saveMutation.mutate()}

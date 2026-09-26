@@ -240,7 +240,7 @@ export default function LinkEditor({
             </div>
 
             <SaveBar
-                dirty={isNew || dirty}
+                dirty={dirty}
                 saving={saveMutation.isPending}
                 onCancel={onCancel}
                 onSave={() => saveMutation.mutate()}
