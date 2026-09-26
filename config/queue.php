@@ -220,6 +220,8 @@ return [
 
         Everest\Jobs\InstallModpackJob::class => 'mods',
         Everest\Jobs\DownloadModJob::class => 'mods',
+
+        Everest\Jobs\Api\GenerateApiDocsJob::class => 'standard',
     ],
 
     /*
@@ -344,6 +346,11 @@ return [
         Everest\Jobs\DownloadModJob::class => [
             'title' => 'Download mod',
             'summary' => "Fetches a single mod file into a server's mod directory.",
+        ],
+
+        Everest\Jobs\Api\GenerateApiDocsJob::class => [
+            'title' => 'Generate API reference',
+            'summary' => 'Rebuilds the OpenAPI document behind Admin > API docs from the current routes.',
         ],
     ],
 

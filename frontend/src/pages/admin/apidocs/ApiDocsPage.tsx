@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Download, RefreshCw, ExternalLink, Search, Check, Copy, Lock, ChevronRight } from 'lucide-react';
 import { m, td } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
@@ -62,6 +63,28 @@ function MethodBadge({ method, className }: { method: HttpMethod; className?: st
     );
 }
 
+// Past this, a run is stuck rather than slow: generation takes seconds once a
+// worker has it, so the likely cause is that no queue worker is running.
+const SLOW_AFTER_SECONDS = 60;
+
+function GeneratingState({ waitedSeconds }: { waitedSeconds: number }) {
+    return (
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-16 text-center">
+            <Spinner className="h-6 w-6" />
+            <p className="text-sm font-medium text-[var(--color-ink)]">{m['admin.apiDocs.generating.title']()}</p>
+            <p className="max-w-md text-sm text-[var(--color-ink-muted)]">{m['admin.apiDocs.generating.body']()}</p>
+            {waitedSeconds >= SLOW_AFTER_SECONDS && (
+                <p className="max-w-md text-sm text-[var(--color-warning)]">
+                    {m['admin.apiDocs.generating.slow']()}{' '}
+                    <Link to="/admin/queues" className="underline underline-offset-2">
+                        {m['admin.apiDocs.generating.queuesLink']()}
+                    </Link>
+                </p>
+            )}
+        </div>
+    );
+}
+
 export default function ApiDocsPage() {
     const push = useFlashes(s => s.push);
     const queryClient = useQueryClient();
@@ -72,11 +95,23 @@ export default function ApiDocsPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [regenerating, setRegenerating] = useState(false);
 
-    const { data: doc, isLoading, isError, error } = useQuery({
+    const {
+        data: result,
+        isLoading,
+        isError,
+        error,
+    } = useQuery({
         queryKey: ['admin', 'api-docs', 'spec'],
         queryFn: () => getApiSpec(false),
         staleTime: 5 * 60 * 1000,
+        // Generation runs on the queue; poll until the spec lands.
+        refetchInterval: query => (query.state.data?.status === 'generating' ? 2000 : false),
+        // A 503 is a recorded generation failure, and retrying the read can't
+        // change it. The error state offers Regenerate instead.
+        retry: false,
     });
+    const doc = result?.status === 'ready' ? result.spec : undefined;
+    const generating = result?.status === 'generating';
 
     const endpoints = useMemo(() => parseEndpoints(doc), [doc]);
 
@@ -124,9 +159,9 @@ export default function ApiDocsPage() {
         if (regenerating) return;
         setRegenerating(true);
         try {
+            // Answers 202 straight away; the query's polling picks up the new spec.
             const fresh = await getApiSpec(true);
             queryClient.setQueryData(['admin', 'api-docs', 'spec'], fresh);
-            push({ type: 'success', message: m['admin.apiDocs.regenerated']() });
         } catch (err) {
             push({ type: 'error', message: firstError(err) ?? m['admin.apiDocs.regenerateError']() });
         } finally {
@@ -174,13 +209,15 @@ export default function ApiDocsPage() {
                         <ExternalLink className="h-4 w-4" />
                         {m['admin.apiDocs.openRaw']()}
                     </a>
-                    <Button size="sm" onClick={handleRegenerate} disabled={regenerating}>
-                        {regenerating ? (
+                    <Button size="sm" onClick={handleRegenerate} disabled={regenerating || generating}>
+                        {regenerating || generating ? (
                             <Spinner className="h-4 w-4" />
                         ) : (
                             <RefreshCw className="h-4 w-4" />
                         )}
-                        {regenerating ? m['admin.apiDocs.regenerating']() : m['admin.apiDocs.regenerate']()}
+                        {regenerating || generating
+                            ? m['admin.apiDocs.regenerating']()
+                            : m['admin.apiDocs.regenerate']()}
                     </Button>
                 </div>
             </header>
@@ -190,9 +227,18 @@ export default function ApiDocsPage() {
                     <Spinner className="h-6 w-6" />
                 </div>
             ) : isError ? (
-                <div className="rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 p-6 text-sm text-[var(--color-danger)]">
-                    {firstError(error) ?? m['admin.apiDocs.loadError']()}
+                <div className="flex flex-col items-start gap-3 rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 p-6">
+                    <p className="text-sm font-medium text-[var(--color-danger)]">{m['admin.apiDocs.loadError']()}</p>
+                    {firstError(error) && (
+                        <p className="font-mono text-xs break-all text-[var(--color-ink-muted)]">{firstError(error)}</p>
+                    )}
+                    <Button size="sm" variant="outline" onClick={handleRegenerate} disabled={regenerating}>
+                        {regenerating ? <Spinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
+                        {m['common.actions.retry']()}
+                    </Button>
                 </div>
+            ) : result?.status === 'generating' ? (
+                <GeneratingState waitedSeconds={result.waitedSeconds} />
             ) : (
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-[400px_minmax(0,1fr)]">
                     {/* Left rail: search + method filter + grouped endpoint nav. */}
