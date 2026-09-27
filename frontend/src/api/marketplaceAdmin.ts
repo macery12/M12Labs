@@ -80,3 +80,19 @@ export interface MarketplaceAnalytics {
 
 export const getMarketplaceAnalytics = (): Promise<MarketplaceAnalytics> =>
     http.get('/api/application/plugins/analytics').then(r => r.data);
+
+export interface MarketplaceFailure {
+    id: number;
+    provider: string;
+    type: string;
+    project_id: string;
+    file_name: string | null;
+    /** From the download queue, when it recorded one. */
+    error: string | null;
+    server: { id: number; uuid: string; name: string } | null;
+    created_at: string;
+}
+
+// GET /api/application/plugins/failures — the 20 most recent failed installs.
+export const getMarketplaceFailures = (): Promise<MarketplaceFailure[]> =>
+    http.get('/api/application/plugins/failures').then(r => r.data.data ?? []);

@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { Download, AlertTriangle, BarChart3, HardDrive, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Download, AlertTriangle, BarChart3, HardDrive, Clock, CheckCircle2 } from 'lucide-react';
 import { Panel } from '@/components/ui/Panel';
 import { Spinner } from '@/components/ui/Spinner';
 import { m, td } from '@/i18n/messages';
-import { formatBytes } from '@/lib/format';
-import { getMarketplaceAnalytics, type MarketplaceAnalytics } from '@/api/marketplaceAdmin';
+import { formatBytes, timeAgo } from '@/lib/format';
+import { getMarketplaceAnalytics, getMarketplaceFailures, type MarketplaceAnalytics } from '@/api/marketplaceAdmin';
 import { formatCount } from '@/pages/server/marketplace/modMeta';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 
@@ -36,6 +37,14 @@ export default function OverviewPage() {
                     icon={AlertTriangle}
                     label={m['admin.marketplace.overview.failures']()}
                     value={formatCount(a.totals.failures)}
+                    // "14 failures" couldn't be followed anywhere; it now jumps to
+                    // the list of what failed and why.
+                    onClick={
+                        a.totals.failures > 0
+                            ? () => document.getElementById('recent-failures')?.scrollIntoView({ behavior: 'smooth' })
+                            : undefined
+                    }
+                    actionLabel={m['admin.marketplace.overview.showFailures']()}
                 />
                 <Stat
                     icon={HardDrive}
@@ -87,6 +96,8 @@ export default function OverviewPage() {
                 </div>
             </Panel>
 
+            <RecentFailures />
+
             <Panel title={m['admin.marketplace.overview.providerHealth']()}>
                 <div className="flex flex-col gap-3 p-1">
                     {Object.entries(a.provider_health).map(([key, health]) => (
@@ -98,14 +109,85 @@ export default function OverviewPage() {
     );
 }
 
-function Stat({ icon: Icon, label, value }: { icon: typeof Download; label: string; value: string }) {
-    return (
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+function Stat({
+    icon: Icon,
+    label,
+    value,
+    onClick,
+    actionLabel,
+}: {
+    icon: typeof Download;
+    label: string;
+    value: string;
+    onClick?: () => void;
+    actionLabel?: string;
+}) {
+    const body = (
+        <>
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-[var(--color-ink-faint)]">
                 <Icon className="h-3.5 w-3.5" />
                 {label}
             </div>
             <p className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">{value}</p>
+            {onClick && actionLabel && <p className="mt-1 text-xs font-medium text-[var(--brand-bright)]">{actionLabel} →</p>}
+        </>
+    );
+    const cls = 'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left';
+
+    return onClick ? (
+        <button type="button" onClick={onClick} className={`${cls} transition-colors hover:border-[var(--brand)]/40`}>
+            {body}
+        </button>
+    ) : (
+        <div className={cls}>{body}</div>
+    );
+}
+
+function RecentFailures() {
+    const q = useQuery({ queryKey: ['admin', 'marketplace', 'failures'], queryFn: getMarketplaceFailures });
+
+    return (
+        <div id="recent-failures" className="scroll-mt-6">
+            <Panel title={m['admin.marketplace.overview.recentFailures']()}>
+                {q.isLoading ? (
+                    <div className="flex justify-center py-6">
+                        <Spinner className="h-5 w-5" />
+                    </div>
+                ) : q.isError ? (
+                    <ErrorState error={q.error} onRetry={() => q.refetch()} retrying={q.isFetching} />
+                ) : (q.data ?? []).length === 0 ? (
+                    <EmptyState
+                        icon={CheckCircle2}
+                        title={m['admin.marketplace.overview.noFailures']()}
+                        body={m['admin.marketplace.overview.noFailuresBody']()}
+                    />
+                ) : (
+                    <ul className="flex flex-col divide-y divide-[var(--color-border)]">
+                        {q.data!.map(f => (
+                            <li key={f.id} className="flex flex-col gap-1 py-2.5 text-sm">
+                                <div className="flex flex-wrap items-baseline gap-x-2">
+                                    <span className="font-medium text-[var(--color-ink)]">{f.file_name ?? f.project_id}</span>
+                                    <span className="text-xs text-[var(--color-ink-faint)]">
+                                        {td(`server.mods.provider.${f.provider}`, f.provider)} · {f.type}
+                                    </span>
+                                    {f.server && (
+                                        <Link
+                                            to={`/admin/infrastructure/servers/${f.server.id}`}
+                                            className="text-xs text-[var(--brand-bright)] hover:underline"
+                                        >
+                                            {f.server.name}
+                                        </Link>
+                                    )}
+                                    <span className="ml-auto text-xs text-[var(--color-ink-faint)]">{timeAgo(f.created_at)}</span>
+                                </div>
+                                <p className={`text-xs ${f.error ? 'text-[var(--color-danger)]' : 'text-[var(--color-ink-faint)]'}`}>
+                                    {f.error ?? m['admin.marketplace.overview.noReason']()}
+                                </p>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </Panel>
         </div>
     );
 }

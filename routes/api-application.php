@@ -206,6 +206,7 @@ Route::middleware([AdminSubject::class])->group(function () {
     Route::group(['prefix' => '/plugins'], function () {
         Route::put('/settings', [Application\PluginsController::class, 'update']);
         Route::get('/analytics', [Application\PluginsController::class, 'analytics']);
+        Route::get('/failures', [Application\PluginsController::class, 'failures']);
 
         Route::get('/providers', [Application\PluginProviderRulesController::class, 'index']);
         Route::put('/providers', [Application\PluginProviderRulesController::class, 'update']);

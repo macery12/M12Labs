@@ -2,6 +2,7 @@
 
 namespace Everest\Http\Controllers\Api\Application;
 
+use Everest\Models\Server;
 use Everest\Models\Setting;
 use Everest\Facades\Activity;
 use Illuminate\Http\Response;
@@ -47,6 +48,50 @@ class PluginsController extends ApplicationApiController
             ->log();
 
         return $this->returnNoContent();
+    }
+
+    /**
+     * The most recent failed installs behind the overview's Failures count,
+     * each with the reason the download queue recorded for it when there is
+     * one. The install log only stores that an install failed; the queue row
+     * for the same server and project carries the error.
+     */
+    public function failures(GetModsAnalyticsRequest $request): JsonResponse
+    {
+        $logs = MarketplaceInstallLog::where('status', MarketplaceInstallLog::STATUS_FAILED)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get();
+
+        $servers = Server::query()
+            ->whereIn('id', $logs->pluck('server_id')->filter()->unique())
+            ->get(['id', 'uuid', 'name'])
+            ->keyBy('id');
+
+        $data = $logs->map(function (MarketplaceInstallLog $log) use ($servers) {
+            $queued = $log->server_id === null ? null : DownloadQueue::query()
+                ->where('server_id', $log->server_id)
+                ->where('project_id', $log->project_id)
+                ->where('status', DownloadQueue::STATUS_FAILED)
+                ->where('created_at', '<=', $log->created_at)
+                ->orderByDesc('created_at')
+                ->first(['file_name', 'error_message']);
+            $server = $log->server_id === null ? null : $servers->get($log->server_id);
+
+            return [
+                'id' => $log->id,
+                'provider' => $log->provider,
+                'type' => $log->type,
+                'project_id' => $log->project_id,
+                'file_name' => $queued?->file_name,
+                'error' => $queued?->error_message ? mb_strimwidth($queued->error_message, 0, 300, '…') : null,
+                'server' => $server ? ['id' => $server->id, 'uuid' => $server->uuid, 'name' => $server->name] : null,
+                'created_at' => $log->created_at->toIso8601String(),
+            ];
+        });
+
+        return response()->json(['data' => $data->values()]);
     }
 
     public function analytics(GetModsAnalyticsRequest $request): JsonResponse
