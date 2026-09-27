@@ -7,6 +7,12 @@ export interface SelectOption {
     label: string;
 }
 
+// Radix treats an empty-string value as "nothing selected" and shows the
+// placeholder, so an "All users" option with value '' rendered as a blank box
+// (the activity filters, order and invoice filters…). When '' is one of the
+// options it's a real choice, and goes through Radix as this stand-in instead.
+const EMPTY = '\u0000empty';
+
 // Themed single-select built on Radix. Trigger mirrors Input.tsx chrome so it
 // sits naturally inside the admin forms.
 export function Select({
@@ -28,8 +34,15 @@ export function Select({
     id?: string;
     className?: string;
 }) {
+    const emptyIsOption = options.some(o => o.value === '');
+    const toRadix = (v: string) => (emptyIsOption && v === '' ? EMPTY : v);
+
     return (
-        <RSelect.Root value={value} onValueChange={onChange} disabled={disabled}>
+        <RSelect.Root
+            value={value === undefined ? undefined : toRadix(value)}
+            onValueChange={v => onChange(v === EMPTY ? '' : v)}
+            disabled={disabled}
+        >
             <RSelect.Trigger
                 id={id}
                 // Opts out of the global brand focus outline — this trigger is a
@@ -60,7 +73,7 @@ export function Select({
                         {options.map(o => (
                             <RSelect.Item
                                 key={o.value}
-                                value={o.value}
+                                value={toRadix(o.value)}
                                 className="relative flex cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-8 text-sm text-[var(--color-ink)] outline-none data-[highlighted]:bg-[var(--color-surface-2)] data-[state=checked]:text-[var(--color-accent)]"
                             >
                                 <RSelect.ItemText>{o.label}</RSelect.ItemText>
