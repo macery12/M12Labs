@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Boxes, Download } from 'lucide-react';
+import { Boxes } from 'lucide-react';
 import { m, td } from '@/i18n/messages';
 import { useServer } from '@/components/server/ServerContext';
 import { useFlags } from '@/state/flags';
 import { Spinner } from '@/components/ui/Spinner';
-import { getPluginCapabilities, getServerModsConfig, type ProviderKey, type Source } from '@/api/mods';
+import { getPluginCapabilities, getServerModsConfig, type InstalledContentType, type ProviderKey, type Source } from '@/api/mods';
 import { getQueue } from '@/api/modQueue';
 import { InstalledAddons } from './components/InstalledAddons';
 import { queueKey } from './components/queueKey';
@@ -57,15 +57,27 @@ export default function MarketplaceSection() {
 
     const caps = capsQ.data;
 
+    // What this egg actually loads, from its name: Paper/Spigot/… take plugins,
+    // Forge/Fabric/… take mods. Null when the egg doesn't say.
+    const detected = configQ.data;
+    const kind: InstalledContentType | null = detected?.detectedLoader
+        ? 'mods'
+        : detected?.detectedPlatform
+          ? 'plugins'
+          : null;
+
     // Available tabs depend on provider capabilities + the CurseForge gate.
+    // The type this server runs comes first: a Paper server opened on "Mods".
     const tabs = useMemo<Tab[]>(() => {
-        const list: Tab[] = ['installed'];
-        if ((caps?.mods?.length ?? 0) > 0) list.push('mods');
-        if ((caps?.plugins?.length ?? 0) > 0) list.push('plugins');
+        const content: Tab[] = [];
+        if ((caps?.mods?.length ?? 0) > 0) content.push('mods');
+        if ((caps?.plugins?.length ?? 0) > 0) content.push('plugins');
+        if (kind === 'plugins') content.reverse();
+        const list: Tab[] = ['installed', ...content];
         if (modpacksEnabled) list.push('modpacks');
         list.push('queue');
         return list;
-    }, [caps, modpacksEnabled]);
+    }, [caps, modpacksEnabled, kind]);
 
     // Resolve the active tab: URL → localStorage → first available.
     const urlTab = params.get('type') as Tab | null;
@@ -112,7 +124,8 @@ export default function MarketplaceSection() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tab, source]);
 
-    if (capsQ.isLoading) {
+    // Wait for detection too, so Installed doesn't flash the wrong type.
+    if (capsQ.isLoading || configQ.isLoading) {
         return (
             <div className="flex flex-1 items-center justify-center py-24">
                 <Spinner className="h-6 w-6" />
@@ -122,27 +135,12 @@ export default function MarketplaceSection() {
 
     return (
         <div className="flex min-h-[calc(100vh-9rem)] flex-col gap-5">
-            <header className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                    <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
-                        <Boxes className="h-6 w-6 text-[var(--brand)]" />
-                        {m['server.mods.title']()}
-                    </h1>
-                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.mods.subtitle']()}</p>
-                </div>
-                <button
-                    type="button"
-                    onClick={() => setTab('queue')}
-                    className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border-strong)] px-3 py-2 text-sm text-[var(--color-ink)] transition-colors hover:bg-[var(--color-surface-2)]"
-                >
-                    <Download className="h-4 w-4" />
-                    {m['server.mods.queue.button']()}
-                    {activeCount > 0 && (
-                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--brand)]/20 px-1.5 text-[11px] font-semibold text-[var(--brand)]">
-                            {activeCount}
-                        </span>
-                    )}
-                </button>
+            <header>
+                <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
+                    <Boxes className="h-6 w-6 text-[var(--brand)]" />
+                    {m['server.mods.title']()}
+                </h1>
+                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.mods.subtitle']()}</p>
             </header>
 
             {/* Primary tabs */}
@@ -159,6 +157,12 @@ export default function MarketplaceSection() {
                         }`}
                     >
                         {td(`server.mods.tab.${t}`)}
+                        {/* Active downloads; this used to be a second "Queue" button in the header. */}
+                        {t === 'queue' && activeCount > 0 && (
+                            <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--brand)]/20 px-1.5 text-[11px] font-semibold text-[var(--brand)]">
+                                {activeCount}
+                            </span>
+                        )}
                         {tab === t && (
                             <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--brand)]" />
                         )}
@@ -191,6 +195,7 @@ export default function MarketplaceSection() {
                     {tab === 'installed' && (
                         <InstalledAddons
                             serverId={serverId}
+                            kind={kind}
                             browse={{
                                 mods: tabs.includes('mods') ? () => setTab('mods') : undefined,
                                 plugins: tabs.includes('plugins') ? () => setTab('plugins') : undefined,

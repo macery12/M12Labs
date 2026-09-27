@@ -25,15 +25,23 @@ const STATUSES: InstalledStatusFilter[] = ['all', 'enabled', 'disabled'];
 // paginated list, optimistic enable/disable toggle.
 export function InstalledAddons({
     serverId,
+    kind,
     browse,
 }: {
     serverId: string;
+    /**
+     * The one type this server loads, when the egg says. The Mods/Plugins
+     * switch then goes away: on Paper it duplicated the tab row above it and
+     * opened on Mods, which a plugin server never has.
+     */
+    kind?: InstalledContentType | null;
     /** Switches to the browse tab for a type, when this server has one. */
     browse?: Partial<Record<InstalledContentType, () => void>>;
 }) {
     const qc = useQueryClient();
     const push = useFlashes(s => s.push);
-    const [type, setType] = useState<InstalledContentType>('mods');
+    const [chosenType, setType] = useState<InstalledContentType>('mods');
+    const type = kind ?? chosenType;
     const [status, setStatus] = useState<InstalledStatusFilter>('all');
     const [page, setPage] = useState(1);
     const [text, setText] = useState('');
@@ -84,22 +92,24 @@ export function InstalledAddons({
     return (
         <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex overflow-hidden rounded-lg border border-[var(--color-border-strong)]">
-                    {(['mods', 'plugins'] as InstalledContentType[]).map(t => (
-                        <button
-                            key={t}
-                            type="button"
-                            onClick={() => setType(t)}
-                            className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                                type === t
-                                    ? 'bg-[var(--brand)]/15 text-[var(--color-ink)]'
-                                    : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)]'
-                            }`}
-                        >
-                            {td(`server.mods.installed.type.${t}`)}
-                        </button>
-                    ))}
-                </div>
+                {!kind && (
+                    <div className="inline-flex overflow-hidden rounded-lg border border-[var(--color-border-strong)]">
+                        {(['mods', 'plugins'] as InstalledContentType[]).map(t => (
+                            <button
+                                key={t}
+                                type="button"
+                                onClick={() => setType(t)}
+                                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                                    type === t
+                                        ? 'bg-[var(--brand)]/15 text-[var(--color-ink)]'
+                                        : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)]'
+                                }`}
+                            >
+                                {td(`server.mods.installed.type.${t}`)}
+                            </button>
+                        ))}
+                    </div>
+                )}
                 <div className="inline-flex overflow-hidden rounded-lg border border-[var(--color-border-strong)]">
                     {STATUSES.map(s => (
                         <button

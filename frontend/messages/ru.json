@@ -3555,7 +3555,6 @@
   "server.mods.provider.curseforge": "CurseForge",
   "server.mods.provider.modrinth": "Модринт",
   "server.mods.provider.spigot": "Спигот",
-  "server.mods.queue.button": "Очередь",
   "server.mods.queue.childProgress": "{done}/{total} модификаций",
   "server.mods.queue.clearActiveBody": "Некоторые загрузки все еще продолжаются. Их удаление в данный момент приведет к их отмене. Продолжить?",
   "server.mods.queue.clearActiveTitle": "Очистить активные загрузки?",

@@ -4583,7 +4583,6 @@
   "server.mods.provider.curseforge": "CurseForge",
   "server.mods.provider.modrinth": "Modrinth",
   "server.mods.provider.spigot": "Spigot",
-  "server.mods.queue.button": "Queue",
   "server.mods.queue.childProgress": [
     {
       "declarations": [

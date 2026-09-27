@@ -3678,7 +3678,6 @@
   "server.mods.provider.curseforge": "CurseForge",
   "server.mods.provider.modrinth": "Modrinth",
   "server.mods.provider.spigot": "Spigot",
-  "server.mods.queue.button": "Kø",
   "server.mods.queue.childProgress": "{done}/{total} mods",
   "server.mods.queue.clearActiveBody": "Nogle downloads er stadig i gang. Hvis du sletter dem nu, afbrydes de. Vil du fortsætte?",
   "server.mods.queue.clearActiveTitle": "Slette igangværende downloads?",
