@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Cog, ServerCog, Info, AlertTriangle, Trash2 } from 'lucide-react';
+import { Cog, ServerCog, Info, AlertTriangle, Trash2, RotateCcw } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { can } from '@/lib/can';
 import { formatMib } from '@/lib/format';
@@ -190,7 +190,7 @@ function ActionsCard({ canReinstall, billingEnabled }: { canReinstall: boolean; 
     });
 
     return (
-        <SectionCard icon={ServerCog} title={m['server.settings.actions.title']()} desc={m['server.settings.actions.desc']()} danger>
+        <SectionCard icon={ServerCog} title={m['server.settings.actions.title']()} desc={m['server.settings.actions.desc']()} danger={billingEnabled}>
             <div className="flex flex-col gap-5">
                 {canReinstall && (
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -203,8 +203,10 @@ function ActionsCard({ canReinstall, billingEnabled }: { canReinstall: boolean; 
                                 </p>
                             )}
                         </div>
-                        <Button variant="danger" onClick={() => setReinstallOpen(true)} disabled={!isStopped || reinstall.isPending}>
-                            {m['server.settings.actions.reinstall']()}
+                        {/* Recoverable, so not the same loud red as deleting the server;
+                            the confirm dialog still says to back up first. */}
+                        <Button variant="outline" onClick={() => setReinstallOpen(true)} disabled={!isStopped || reinstall.isPending}>
+                            <RotateCcw className="h-4 w-4" /> {m['server.settings.actions.reinstall']()}
                         </Button>
                     </div>
                 )}
