@@ -30,6 +30,27 @@ export function describeActivity(entry: DescribableActivity): string {
     return entry.description || humanizeEvent(entry.event);
 }
 
+/** The label alone, for filter lists: "Opened a file", "AI assist escalate". */
+export function activityEventLabel(event: string): string {
+    return td(activityMessageId(event), '') || humanizeEvent(event);
+}
+
+/**
+ * Merges runs of adjacent entries that share a key into one row with a count.
+ * Opening the same file three times filled a page with identical "Opened a
+ * file" rows. A null key never merges (edits with a diff, console commands).
+ */
+export function collapseRepeats<T>(items: T[], key: (item: T) => string | null): { entry: T; count: number }[] {
+    const out: { entry: T; count: number; key: string | null }[] = [];
+    for (const item of items) {
+        const k = key(item);
+        const last = out[out.length - 1];
+        if (k !== null && last && last.key === k) last.count++;
+        else out.push({ entry: item, count: 1, key: k });
+    }
+    return out.map(({ entry, count }) => ({ entry, count }));
+}
+
 /** 'admin:api-keys:create' → 'activity.event.admin.api_keys.create' */
 export function activityMessageId(event: string): string {
     return `activity.event.${event.replace(/:/g, '.').replace(/-/g, '_')}`;

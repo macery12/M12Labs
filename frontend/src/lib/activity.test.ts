@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activityMessageId, activitySubject, describeActivity, humanizeEvent } from './activity';
+import { activityMessageId, activitySubject, collapseRepeats, describeActivity, humanizeEvent } from './activity';
 
 describe('activityMessageId', () => {
     it('maps colons to dots and hyphens to underscores', () => {
@@ -48,5 +48,24 @@ describe('describeActivity', () => {
             'M12Labs-AI settings were updated',
         );
         expect(describeActivity({ event: 'server:ai.assist.start', description: null })).toBe('AI assist start');
+    });
+});
+
+describe('collapseRepeats', () => {
+    const key = (s: string) => (s.startsWith('!') ? null : s);
+
+    it('merges adjacent repeats only', () => {
+        expect(collapseRepeats(['a', 'a', 'b', 'a'], key)).toEqual([
+            { entry: 'a', count: 2 },
+            { entry: 'b', count: 1 },
+            { entry: 'a', count: 1 },
+        ]);
+    });
+
+    it('never merges entries without a key', () => {
+        expect(collapseRepeats(['!x', '!x'], key)).toEqual([
+            { entry: '!x', count: 1 },
+            { entry: '!x', count: 1 },
+        ]);
     });
 });

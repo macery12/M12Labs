@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { ActivityDetailsModal, hasActivityDetails } from '@/pages/account/activity/ActivityDetailsModal';
 import FileDiffViewer, { type FileDiff } from './FileDiffViewer';
-import { describeActivity } from '@/lib/activity';
+import { activityEventLabel, collapseRepeats, describeActivity } from '@/lib/activity';
 
 type Sort = '-timestamp' | 'timestamp';
 
@@ -72,9 +72,12 @@ function Avatar({ actor }: { actor: ServerActivityEntry['actor'] }) {
 
 function ActivityRow({
     entry,
+    count,
     onInspect,
 }: {
     entry: ServerActivityEntry;
+    /** Adjacent identical entries merged into this one; the row shows the newest. */
+    count: number;
     onInspect: (entry: ServerActivityEntry) => void;
 }) {
     const inspectable = hasActivityDetails(entry);
@@ -100,6 +103,11 @@ function ActivityRow({
                             <p className="truncate text-sm text-[var(--color-ink)]">
                                 {describeActivity(entry)}
                             </p>
+                            {count > 1 && (
+                                <span className="shrink-0 rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 font-mono text-[10px] font-medium text-[var(--color-ink-muted)]">
+                                    {m['server.activity.repeated']({ count })}
+                                </span>
+                            )}
                             {viaSftp && (
                                 <FolderOpen
                                     className="h-3.5 w-3.5 shrink-0 text-[var(--color-ink-faint)]"
@@ -244,7 +252,7 @@ export default function ServerActivityPage() {
 
     const userOptions = useMemo(
         () => [
-            { value: '', label: m['server.activity.allUsers']() },
+            { value: '', label: m['server.activity.anyone']() },
             ...(users ?? []).map(u => ({ value: u.uuid, label: u.username })),
         ],
         [users],
@@ -252,7 +260,7 @@ export default function ServerActivityPage() {
     const eventOptions = useMemo(
         () => [
             { value: '', label: m['server.activity.allEvents']() },
-            ...(events ?? []).map(e => ({ value: e, label: e })),
+            ...(events ?? []).map(e => ({ value: e, label: activityEventLabel(e) })),
         ],
         [events],
     );
@@ -275,6 +283,11 @@ export default function ServerActivityPage() {
 
     const items = data?.items ?? [];
     const pagination = data?.pagination;
+    // Repeats merge only when nothing differs but the time: same person, same
+    // event on the same thing, same IP. Edits and commands always stand alone.
+    const rows = collapseRepeats(items, e =>
+        getFileDiff(e) || getCommand(e) ? null : [e.actor?.username ?? '', e.event, describeActivity(e), e.ip ?? '', e.context ?? ''].join('\u0000'),
+    );
 
     if (!enabled) {
         return (
@@ -311,7 +324,8 @@ export default function ServerActivityPage() {
                             />
                         </div>
                     </RailField>
-                    <RailField label={m['admin.activity.filter.user']()}>
+                    {/* "Administrator" read as a staff-only filter; it lists everyone who acted. */}
+                    <RailField label={m['server.activity.performedBy']()}>
                         <Select
                             value={actor}
                             onChange={v => {
@@ -370,8 +384,8 @@ export default function ServerActivityPage() {
                             </div>
                         ) : (
                             <div className="divide-y divide-[var(--color-border)]">
-                                {items.map(entry => (
-                                    <ActivityRow key={entry.id} entry={entry} onInspect={setInspecting} />
+                                {rows.map(({ entry, count }) => (
+                                    <ActivityRow key={entry.id} entry={entry} count={count} onInspect={setInspecting} />
                                 ))}
                             </div>
                         )}

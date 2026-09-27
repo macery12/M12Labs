@@ -3073,7 +3073,6 @@
   "nav.topnav.toggleNav": "Переключить навигацию",
   "server.activity.admin": "Администратор",
   "server.activity.allEvents": "Все типы мероприятий",
-  "server.activity.allUsers": "Все пользователи",
   "server.activity.diff.newFile": "Новый файл",
   "server.activity.diff.tooLarge": "Файл слишком велик для подробного сравнения",
   "server.activity.diff.unknownFile": "Неизвестный файл",

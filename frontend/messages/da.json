@@ -3196,7 +3196,6 @@
   "nav.topnav.toggleNav": "Skift navigation",
   "server.activity.admin": "Admin",
   "server.activity.allEvents": "Alle begivenhedstyper",
-  "server.activity.allUsers": "Alle brugere",
   "server.activity.diff.newFile": "Ny fil",
   "server.activity.diff.tooLarge": "Filen er for stor til en detaljeret sammenligning",
   "server.activity.diff.unknownFile": "Ukendt fil",
