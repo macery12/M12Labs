@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
 import { Turnstile } from '@/components/auth/Turnstile';
 import { SsoButtons } from '@/components/auth/SsoButtons';
+import { PasswordInput } from '@/components/auth/PasswordStrength';
 
 type FormValues = { user: string; password: string; remember: boolean };
 
@@ -147,9 +148,9 @@ export default function LoginPage() {
             </Field>
 
             <Field label={m['auth.login.passwordLabel']()} htmlFor="password" error={errors.password?.message}>
-                <Input
+                {/* Same show/hide toggle as Register and reset. */}
+                <PasswordInput
                     id="password"
-                    type="password"
                     autoComplete="current-password"
                     invalid={!!errors.password}
                     {...register('password')}
