@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Database, Plus, Eye, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Database, Plus, Eye, Trash2, CreditCard, LifeBuoy } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { can } from '@/lib/can';
 import { useServer } from '@/components/server/ServerContext';
 import { getDatabases, connectionString, type ServerDatabase } from '@/api/databases';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { newTicketLink } from '@/components/tickets/link';
+import { useFlags } from '@/state/flags';
 import ConnectionModal from './ConnectionModal';
 import CreateDatabaseModal from './CreateDatabaseModal';
 import DeleteDatabaseModal from './DeleteDatabaseModal';
@@ -26,6 +30,9 @@ export default function DatabasesPage() {
     const held = server.permissions;
     const canCreate = can(held, 'database.create');
     const canDelete = can(held, 'database.delete');
+    const flags = useFlags(s => s.everest);
+    const canChangePlan = Boolean(flags?.billing.enabled) && can(held, 'billing.*');
+    const canTicket = Boolean(flags?.tickets.enabled);
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['server', server.id, 'databases'],
@@ -88,13 +95,57 @@ export default function DatabasesPage() {
                     <p className="px-4 py-10 text-center text-sm text-[var(--color-danger)]">
                         {m['server.databases.loadError']()}
                     </p>
+                ) : databases.length === 0 && disabled ? (
+                    // "Databases cannot be created for this server." gave no
+                    // reason and no way forward.
+                    <EmptyState
+                        icon={Database}
+                        title={m['server.databases.noneInPlanTitle']()}
+                        body={
+                            canChangePlan || canTicket
+                                ? m['server.databases.noneInPlanBody']()
+                                : m['server.databases.noneInPlanAsk']()
+                        }
+                        action={
+                            <>
+                                {canChangePlan && (
+                                    <Link to={`/server/${server.id}/billing`}>
+                                        <Button size="sm">
+                                            <CreditCard className="h-4 w-4" />
+                                            {m['server.databases.changePlan']()}
+                                        </Button>
+                                    </Link>
+                                )}
+                                {canTicket && (
+                                    <Link
+                                        to={newTicketLink({
+                                            title: m['server.databases.ticketTitle']({ server: server.name }),
+                                            serverId: server.internalId,
+                                        })}
+                                    >
+                                        <Button size="sm" variant="outline">
+                                            <LifeBuoy className="h-4 w-4" />
+                                            {m['common.actions.contactSupport']()}
+                                        </Button>
+                                    </Link>
+                                )}
+                            </>
+                        }
+                    />
                 ) : databases.length === 0 ? (
-                    <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
-                        <Database className="h-8 w-8 text-[var(--color-ink-faint)]" />
-                        <p className="text-sm text-[var(--color-ink-muted)]">
-                            {disabled ? m['server.databases.notAllowed']() : m['server.databases.empty']()}
-                        </p>
-                    </div>
+                    <EmptyState
+                        icon={Database}
+                        title={m['server.databases.empty']()}
+                        body={m['server.databases.emptyBody']()}
+                        action={
+                            canCreate && !atLimit ? (
+                                <Button size="sm" variant="outline" onClick={() => setCreating(true)}>
+                                    <Plus className="h-4 w-4" />
+                                    {m['server.databases.addDatabase']()}
+                                </Button>
+                            ) : undefined
+                        }
+                    />
                 ) : (
                     <ul className="divide-y divide-[var(--color-border)]">
                         {databases.map(db => (

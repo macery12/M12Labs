@@ -3266,7 +3266,6 @@
   "server.databases.loadError": "Не удалось загрузить базы данных.",
   "server.databases.name": "Название базы данных",
   "server.databases.nameHint": "Описательное имя для экземпляра базы данных.",
-  "server.databases.notAllowed": "На этом сервере невозможно создавать базы данных.",
   "server.databases.password": "Пароль",
   "server.databases.passwordRotated": "Пароль базы данных сменён.",
   "server.databases.rotatePassword": "Сменить пароль",
