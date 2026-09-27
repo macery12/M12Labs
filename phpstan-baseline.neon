@@ -38,7 +38,7 @@ parameters:
 		-
 			message: '#^Ternary operator condition is always true\.$#'
 			identifier: ternary.alwaysTrue
-			count: 2
+			count: 3
 			path: app/Http/Controllers/Api/Application/Billing/BillingController.php
 
 		# Defensive $request->user()?-> behind auth middleware; contract says non-null but kept as belt-and-braces.

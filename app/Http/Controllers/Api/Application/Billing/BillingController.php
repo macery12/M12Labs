@@ -97,6 +97,24 @@ class BillingController extends ApplicationApiController
         $in7Days = $this->renewalAggregate(fn ($q) => $q->whereBetween('renewal_date', [$now, $now->copy()->addDays(7)]));
         $in8to14Days = $this->renewalAggregate(fn ($q) => $q->whereBetween('renewal_date', [$now->copy()->addDays(7), $now->copy()->addDays(14)]));
 
+        // Which servers are overdue, so the dashboard can link to them instead
+        // of only counting them. Oldest first; capped like the suspended list.
+        $overdueServers = Server::query()
+            ->whereNotNull('renewal_date')
+            ->whereNotNull('billing_product_id')
+            ->where('renewal_date', '<', $now)
+            ->with('user')
+            ->orderBy('renewal_date')
+            ->limit(20)
+            ->get()
+            ->map(fn (Server $server) => [
+                'id' => $server->id,
+                'name' => $server->name,
+                'owner' => $server->user ? $server->user->username : null,
+                'renewal_date' => $server->renewal_date,
+                'billing_amount' => (float) $server->billing_amount,
+            ]);
+
         // Total for all renewals in next 14 days (including overdue)
         $totalRenewalsIn14Days = $overdue['count'] + $in7Days['count'] + $in8to14Days['count'];
         $totalExpectedRevenue14Days = $overdue['expectedRevenue'] + $in7Days['expectedRevenue'] + $in8to14Days['expectedRevenue'];
@@ -178,6 +196,7 @@ class BillingController extends ApplicationApiController
             'products' => Product::all(),
             'upcomingRenewals' => [
                 'overdue' => $overdue,
+                'overdueServers' => $overdueServers,
                 'in7Days' => $in7Days,
                 'in8to14Days' => $in8to14Days,
                 'total14Days' => [

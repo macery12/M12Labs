@@ -1,5 +1,6 @@
 import { m, td } from '@/i18n/messages';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { TrendingUp, Repeat, CalendarClock, Boxes } from 'lucide-react';
 import { getBillingAnalytics, type BillingAnalytics } from '@/api/billing';
 import { Spinner } from '@/components/ui/Spinner';
@@ -14,12 +15,20 @@ function buildAttention(data: BillingAnalytics): AttentionItem[] {
     const items: AttentionItem[] = [];
     const overdue = data.upcomingRenewals.overdue;
     if (overdue.count > 0) {
+        // A lone overdue server links straight to it; several are listed in
+        // the Upcoming renewals panel. "$0.00 overdue" read as an alarm about
+        // nothing, so a free renewal leaves the amount out.
+        const only = overdue.count === 1 ? data.overdueServers[0] : undefined;
         items.push({
             key: 'overdue',
-            label: m['admin.billing.overview.attention.overdue']({
-                count: overdue.count,
-                amount: formatCurrency(overdue.expectedRevenue),
-            }),
+            label:
+                overdue.expectedRevenue > 0
+                    ? m['admin.billing.overview.attention.overdue']({
+                          count: overdue.count,
+                          amount: formatCurrency(overdue.expectedRevenue),
+                      })
+                    : m['admin.billing.overview.attention.overdueNoCharge']({ count: overdue.count }),
+            to: only ? `/admin/infrastructure/servers/${only.id}` : undefined,
         });
     }
     if (data.exceptions7d > 0) {
@@ -135,7 +144,15 @@ export default function BillingOverviewPage() {
                     icon={Boxes}
                     label={m['admin.billing.overview.catalog']()}
                     value={String(data.productCount)}
-                    sub={m['admin.billing.overview.categoriesCount']({ count: data.categoryCount })}
+                    sub={
+                        data.orphanedProductCount > 0 ? (
+                            <span className="text-[var(--color-warning)]">
+                                {m['admin.billing.overview.orphaned']({ count: data.orphanedProductCount })}
+                            </span>
+                        ) : (
+                            m['admin.billing.overview.categoriesCount']({ count: data.categoryCount })
+                        )
+                    }
                     to="/admin/billing/products"
                 />
             </div>
@@ -201,6 +218,38 @@ export default function BillingOverviewPage() {
                                 { label: m['admin.billing.overview.due8to14'](), window: r.in8to14Days, color: 'var(--color-accent)' },
                             ]}
                         />
+                        {data.overdueServers.length > 0 && (
+                            <div className="mt-4 flex flex-col border-t border-[var(--color-border)] pt-2">
+                                {data.overdueServers.slice(0, 5).map((s, i) => (
+                                    <Link
+                                        key={s.id}
+                                        to={`/admin/infrastructure/servers/${s.id}`}
+                                        className={cn(
+                                            'flex items-baseline justify-between gap-3 py-2 hover:underline',
+                                            i > 0 && 'border-t border-[var(--color-border)]',
+                                        )}
+                                    >
+                                        <span className="min-w-0">
+                                            <span className="block truncate text-sm font-semibold text-[var(--color-ink)]">{s.name}</span>
+                                            <span className="block truncate text-xs text-[var(--color-danger)]">
+                                                {m['admin.billing.overview.overdueDue']({ ago: timeAgo(s.renewalDate) })}
+                                                {s.owner ? ` · ${s.owner}` : ''}
+                                            </span>
+                                        </span>
+                                        {s.billingAmount > 0 && (
+                                            <span className="shrink-0 font-mono text-xs tabular-nums text-[var(--color-ink)]">
+                                                {formatCurrency(s.billingAmount)}
+                                            </span>
+                                        )}
+                                    </Link>
+                                ))}
+                                {r.overdue.count > 5 && (
+                                    <p className="mt-1 font-mono text-xs text-[var(--color-ink-faint)]">
+                                        {m['admin.billing.overview.overdueMore']({ count: r.overdue.count - 5 })}
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {suspended.length > 0 && (

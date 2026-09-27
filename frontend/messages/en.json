@@ -1141,6 +1141,21 @@
       }
     }
   ],
+  "admin.billing.overview.attention.overdueNoCharge": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} renewal overdue",
+        "countPlural=other": "{count} renewals overdue"
+      }
+    }
+  ],
   "admin.billing.overview.attention.suspended": [
     {
       "declarations": [
@@ -1156,7 +1171,7 @@
       }
     }
   ],
-  "admin.billing.overview.catalog": "Active products",
+  "admin.billing.overview.catalog": "Listed products",
   "admin.billing.overview.categoriesCount": [
     {
       "declarations": [
@@ -1184,6 +1199,21 @@
   "admin.billing.overview.noOrders": "No orders in the last year.",
   "admin.billing.overview.noRevenue": "No processed revenue in the last 12 months.",
   "admin.billing.overview.noTopProducts": "No active subscriptions yet.",
+  "admin.billing.overview.orphaned": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} more in a deleted category",
+        "countPlural=other": "{count} more in deleted categories"
+      }
+    }
+  ],
   "admin.billing.overview.orderStatus": "Orders by status",
   "admin.billing.overview.ordersYear": [
     {
@@ -1201,6 +1231,8 @@
     }
   ],
   "admin.billing.overview.overdue": "Overdue",
+  "admin.billing.overview.overdueDue": "was due {ago}",
+  "admin.billing.overview.overdueMore": "{count} more",
   "admin.billing.overview.perMonth": "{amount}/mo",
   "admin.billing.overview.processedVia": "Processed via",
   "admin.billing.overview.processor.free": "Free",

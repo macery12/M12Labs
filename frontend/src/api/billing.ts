@@ -31,6 +31,14 @@ export interface SuspendedServer {
     ownerEmail: string | null;
 }
 
+export interface OverdueServer {
+    id: number;
+    name: string;
+    owner: string | null;
+    renewalDate: string;
+    billingAmount: number;
+}
+
 export interface MonthPoint {
     key: string; // YYYY-MM
     label: string; // e.g. "Jun"
@@ -57,7 +65,10 @@ export interface TopProduct {
 }
 
 export interface BillingAnalytics {
+    /** Products in a category that still exists, i.e. what the catalog lists. */
     productCount: number;
+    /** Products whose category was deleted: counted nowhere else, listed nowhere. */
+    orphanedProductCount: number;
     categoryCount: number;
     forecast: { next7Days: number; next30Days: number };
     /** Servers currently attached to a paid plan — the population behind the MRR figure. */
@@ -71,6 +82,8 @@ export interface BillingAnalytics {
         in8to14Days: RenewalWindow;
         total14Days: RenewalWindow;
     };
+    /** Oldest-first, capped at 20 by the endpoint. */
+    overdueServers: OverdueServer[];
     suspendedServers: SuspendedServer[];
     recentEvents: RecentEvent[];
     // Total realised revenue across the orders returned in the last-year window.
@@ -147,8 +160,16 @@ export async function getBillingAnalytics(): Promise<BillingAnalytics> {
     const ordersTotal = orders.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
     const { monthlyRevenue, statusBreakdown, processorBreakdown } = buildSeries(orders);
 
+    // The analytics payload returns every product row, including ones left
+    // behind by a deleted category (older builds didn't cascade). Counting
+    // them made "23 active products" disagree with the 8 the catalog lists.
+    const categoryUuids = new Set((data.categories ?? []).map((c: any) => c.uuid));
+    const products: any[] = data.products ?? [];
+    const listed = products.filter(p => categoryUuids.has(p.category_uuid)).length;
+
     return {
-        productCount: (data.products ?? []).length,
+        productCount: listed,
+        orphanedProductCount: products.length - listed,
         categoryCount: (data.categories ?? []).length,
         forecast: {
             next7Days: Number(data.forecast?.next7Days ?? 0),
@@ -168,6 +189,13 @@ export async function getBillingAnalytics(): Promise<BillingAnalytics> {
             in8to14Days: toWindow(data.upcomingRenewals?.in8to14Days),
             total14Days: toWindow(data.upcomingRenewals?.total14Days),
         },
+        overdueServers: (data.upcomingRenewals?.overdueServers ?? []).map((s: any) => ({
+            id: Number(s.id),
+            name: String(s.name ?? ''),
+            owner: s.owner ?? null,
+            renewalDate: s.renewal_date,
+            billingAmount: Number(s.billing_amount ?? 0),
+        })),
         suspendedServers: (data.suspendedServers ?? []).map((s: any) => ({
             id: s.id,
             uuid: s.uuid,
