@@ -270,6 +270,20 @@ export function ExtensionsTable({
                                             )
                                         ) : (
                                             <>
+                                                {/* An update was only a "→ vX" in the version column. The
+                                                    button opens the drawer, which runs the update with its
+                                                    database and capability checks. */}
+                                                {ext.updateAvailable && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onOpen(ext)}
+                                                        disabled={locked}
+                                                        className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg border border-[var(--color-warning)]/50 px-3 text-xs font-medium text-[var(--color-warning)] transition-colors hover:bg-[var(--color-warning)]/10 disabled:opacity-50"
+                                                    >
+                                                        <Download className="h-3.5 w-3.5" />
+                                                        {m['extensions.drawer.updateCta']({ version: ext.latestVersion })}
+                                                    </button>
+                                                )}
                                                 <Switch
                                                     checked={ext.enabled}
                                                     disabled={toggling || locked || ext.canEnable === false}
