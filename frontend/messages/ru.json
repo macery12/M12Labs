@@ -2059,7 +2059,6 @@
   "admin.settings.general.name": "Название приложения",
   "admin.settings.general.nameHelp": "Имя, отображаемое на панели и в электронных письмах.",
   "admin.settings.general.namePlaceholder": "M12Labs",
-  "admin.settings.general.quickTabs": "Быстрые вкладки",
   "admin.settings.general.quickTabsHelp": "Отображать администраторам вкладки категорий в верхней панели для быстрого доступа к инструментам администрирования. Только на больших экранах.",
   "admin.settings.general.subtitle": "Брендинг и удобства для администрации.",
   "admin.settings.general.title": "Общие сведения",

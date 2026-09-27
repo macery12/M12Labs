@@ -210,7 +210,7 @@ export default function SettingsSection() {
                 <div className="mt-5 grid gap-3 md:grid-cols-2">
                     <ToggleRow
                         icon={LayoutPanelTop}
-                        label={m['admin.settings.general.quickTabs']()}
+                        label={m['admin.settings.general.topBarMenus']()}
                         help={m['admin.settings.general.quickTabsHelp']()}
                         checked={form.quickTabs}
                         onChange={v => set('quickTabs', v)}

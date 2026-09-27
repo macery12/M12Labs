@@ -2092,7 +2092,6 @@
   "admin.settings.general.name": "Programnavn",
   "admin.settings.general.nameHelp": "Det navn, der vises på panelet og i e-mails.",
   "admin.settings.general.namePlaceholder": "M12Labs",
-  "admin.settings.general.quickTabs": "Hurtigfaner",
   "admin.settings.general.quickTabsHelp": "Vis faneblade med kategorier for administratorer i den øverste bjælke for hurtig adgang til administratorværktøjer. Kun på store skærme.",
   "admin.settings.general.subtitle": "Branding og administrative fordele.",
   "admin.settings.general.title": "Generelt",
