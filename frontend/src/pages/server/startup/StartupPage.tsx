@@ -1,9 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Copy, History } from 'lucide-react';
+import { Box, Check, ChevronDown, Copy, Gamepad2, RotateCcw, SlidersHorizontal, Terminal } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { can } from '@/lib/can';
+import { cn } from '@/lib/cn';
+import { withoutReinstallHint } from '@/lib/eggText';
+import { SocketRequest } from '@/lib/Websocket';
 import { useServer } from '@/components/server/ServerContext';
+import { useServerSocket } from '@/state/serverSocket';
 import { useFlashes } from '@/state/flashes';
 import {
     getStartup,
@@ -13,6 +17,9 @@ import {
     type EggVariable,
     type StartupData,
 } from '@/api/startup';
+import { SectionCard, FieldGrid } from '@/components/ui/editorChrome';
+import { ReadOnlyValue } from '@/components/ui/ReadOnlyValue';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
@@ -21,20 +28,66 @@ import { Button } from '@/components/ui/Button';
 
 const VersionPickerModal = lazy(() => import('./VersionPickerModal'));
 
+// Laid out by what people come here to do. The page used to open on the raw
+// java command line, which nobody edits, and ended with the game version as a
+// plain text box: typing a new version there saved it, but nothing downloaded
+// it until a reinstall, so the server kept running the old one.
+//
+//   1. Game version — shown large, changed only through the picker, which
+//      saves and reinstalls in one step.
+//   2. Server options — the other variables; they autosave and apply on the
+//      next start (D8).
+//   3. Docker image — also applies on the next start.
+//   4. Startup command — read-only, folded away.
+
+type FieldKind = 'switch' | 'select' | 'text';
+
+function fieldKind(variable: EggVariable): { kind: FieldKind; choices: string[] } {
+    const isSwitch = variable.rules.some(r => r === 'boolean' || r === 'in:0,1' || r === 'in:true,false');
+    if (isSwitch) return { kind: 'switch', choices: [] };
+    const choices = variable.rules.find(r => r.startsWith('in:'))?.slice(3).split(',') ?? [];
+    return choices.length > 0 ? { kind: 'select', choices } : { kind: 'text', choices: [] };
+}
+
+/** Version variables that get the picker instead of a text box. */
+function isVersionVariable(variable: EggVariable): boolean {
+    return VERSION_HELPER_VARIABLES.has(variable.envVariable) && fieldKind(variable).kind === 'text';
+}
+
 export default function StartupPage() {
     const server = useServer();
     const held = server.permissions;
     const canUpdate = can(held, 'startup.update');
     const canUpdateImage = can(held, 'startup.docker-image');
     const canReinstall = can(held, 'settings.reinstall');
+    const canRestart = can(held, 'control.restart');
 
     const qc = useQueryClient();
     const key = ['server', server.id, 'startup'];
 
-    const { data, isLoading, isError } = useQuery({
+    const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
         queryKey: key,
         queryFn: () => getStartup(server.uuid),
     });
+
+    // A change saved while the server runs waits for the next start. Say so
+    // once, with the button that does it, until the server goes down or
+    // starts again.
+    const status = useServerSocket(s => s.status);
+    const instance = useServerSocket(s => s.instance);
+    const [needsRestart, setNeedsRestart] = useState(false);
+    useEffect(
+        () =>
+            useServerSocket.subscribe((next, prev) => {
+                if (next.status !== prev.status && (next.status === 'starting' || next.status === 'offline')) {
+                    setNeedsRestart(false);
+                }
+            }),
+        [],
+    );
+    const onSaved = () => {
+        if (status === 'running' || status === 'starting') setNeedsRestart(true);
+    };
 
     if (isLoading) {
         return (
@@ -44,7 +97,7 @@ export default function StartupPage() {
         );
     }
     if (isError || !data) {
-        return <p className="py-16 text-center text-sm text-[var(--color-danger)]">{m['server.startup.loadError']()}</p>;
+        return <ErrorState error={error} onRetry={() => refetch()} retrying={isFetching} />;
     }
 
     // Context for version-dependent providers (e.g. Paper builds need the MC version).
@@ -57,90 +110,270 @@ export default function StartupPage() {
     const jarVar = data.variables.find(v => v.envVariable === 'SERVER_JARFILE');
     const serverJar = jarVar?.serverValue ?? jarVar?.defaultValue ?? '';
 
+    const versions = data.variables.filter(isVersionVariable);
+    const options = data.variables.filter(v => !isVersionVariable(v));
+
     return (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-6">
             <div>
                 <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.startup.title']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.startup.subtitle']()}</p>
             </div>
 
-            {/* One flat surface: labelled sections divided by hairlines, no cards. */}
-            <Section eyebrow={m['server.startup.commandTitle']()} desc={m['server.startup.commandDesc']()}>
-                <CommandBlock invocation={data.invocation} />
-            </Section>
+            {needsRestart && status === 'running' && (
+                <div
+                    role="status"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-4 py-3"
+                >
+                    <p className="text-sm text-[var(--color-ink)]">{m['server.startup.restartToApply']()}</p>
+                    {canRestart && (
+                        <Button size="sm" variant="outline" onClick={() => instance?.send(SocketRequest.SET_STATE, 'restart')}>
+                            <RotateCcw className="h-4 w-4" /> {m['common.power.restart']()}
+                        </Button>
+                    )}
+                </div>
+            )}
 
-            <Section eyebrow={m['server.startup.imageTitle']()} desc={m['server.startup.imageDesc']()}>
-                <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2">
+            {versions.length > 0 && (
+                <SectionCard icon={Gamepad2} title={m['server.startup.version.title']()} desc={m['server.startup.version.desc']()}>
+                    <div className="flex flex-col divide-y divide-[var(--color-border)]">
+                        {versions.map(v => (
+                            <VersionRow
+                                key={v.envVariable}
+                                variable={v}
+                                label={versions.length === 1 ? m['server.startup.version.change']() : m['common.actions.change']()}
+                                canEdit={canUpdate && v.isEditable}
+                                canReinstall={canReinstall}
+                                context={versionContext}
+                                serverJar={serverJar}
+                                onSaved={() => qc.invalidateQueries({ queryKey: key })}
+                            />
+                        ))}
+                    </div>
+                </SectionCard>
+            )}
+
+            <SectionCard
+                icon={SlidersHorizontal}
+                title={m['server.startup.options.title']()}
+                desc={canUpdate ? m['server.startup.variablesAutosave']() : m['server.startup.options.readOnly']()}
+            >
+                {options.length === 0 ? (
+                    <p className="text-sm text-[var(--color-ink-muted)]">{m['server.startup.noVariables']()}</p>
+                ) : (
+                    <FieldGrid>
+                        {options.map(v => (
+                            <VariableField
+                                key={v.envVariable}
+                                variable={v}
+                                canEdit={canUpdate && v.isEditable}
+                                queryKey={key}
+                                onSaved={onSaved}
+                            />
+                        ))}
+                    </FieldGrid>
+                )}
+            </SectionCard>
+
+            <SectionCard icon={Box} title={m['server.startup.imageTitle']()} desc={m['server.startup.imageDesc']()}>
+                <FieldGrid>
                     <DockerImage
                         data={data}
                         current={server.dockerImage}
                         canUpdate={canUpdateImage}
-                        onSaved={() => qc.invalidateQueries({ queryKey: key })}
+                        onSaved={() => {
+                            qc.invalidateQueries({ queryKey: key });
+                            onSaved();
+                        }}
                     />
-                </div>
-            </Section>
+                </FieldGrid>
+            </SectionCard>
 
-            <Section
-                eyebrow={m['server.startup.variablesTitle']()}
-                desc={canUpdate ? m['server.startup.variablesAutosave']() : m['server.startup.variablesDesc']()}
-            >
-                {data.variables.length === 0 ? (
-                    <p className="text-sm text-[var(--color-ink-muted)]">{m['server.startup.noVariables']()}</p>
-                ) : (
-                    <div className="grid gap-x-10 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
-                        {data.variables.map(v => (
-                            <VariableField
-                                key={v.envVariable}
-                                variable={v}
-                                canEdit={canUpdate}
-                                canReinstall={canReinstall}
-                                context={versionContext}
-                                serverJar={serverJar}
-                                queryKey={key}
-                            />
-                        ))}
-                    </div>
-                )}
-            </Section>
+            <CommandCard invocation={data.invocation} />
         </div>
     );
 }
 
-function Section({ eyebrow, desc, children }: { eyebrow: string; desc: string; children: React.ReactNode }) {
+// ---- Game version -----------------------------------------------------------
+
+function VersionRow({
+    variable,
+    label,
+    canEdit,
+    canReinstall,
+    context,
+    serverJar,
+    onSaved,
+}: {
+    variable: EggVariable;
+    /** "Change version" alone; plain "Change" when rows need telling apart. */
+    label: string;
+    canEdit: boolean;
+    canReinstall: boolean;
+    context: Record<string, string>;
+    serverJar: string;
+    onSaved: () => void;
+}) {
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const value = variable.serverValue || variable.defaultValue;
+    const description = withoutReinstallHint(variable.description);
+
     return (
-        <section className="border-t border-[var(--color-border)] pt-7 pb-1 mt-7 first:mt-8 first:border-t-0 first:pt-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--brand)]">{eyebrow}</p>
-            <p className="mt-1 text-xs text-[var(--color-ink-faint)]">{desc}</p>
-            <div className="mt-5">{children}</div>
-        </section>
+        <div className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+                <p className="text-xs font-medium text-[var(--color-ink-muted)]">{variable.name}</p>
+                <p className="mt-0.5 truncate font-mono text-lg font-semibold text-[var(--color-ink)]">{value || '—'}</p>
+                {description && <p className="mt-1 max-w-2xl text-xs text-[var(--color-ink-faint)]">{description}</p>}
+            </div>
+            {canEdit && (
+                <Button
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => setPickerOpen(true)}
+                    aria-label={`${label}: ${variable.name}`}
+                >
+                    {label}
+                </Button>
+            )}
+
+            {pickerOpen && (
+                <Suspense fallback={null}>
+                    <VersionPickerModal
+                        variable={variable}
+                        context={context}
+                        serverJar={serverJar}
+                        canReinstall={canReinstall}
+                        onClose={() => setPickerOpen(false)}
+                        onSaved={onSaved}
+                    />
+                </Suspense>
+            )}
+        </div>
     );
 }
 
-function CommandBlock({ invocation }: { invocation: string }) {
-    const [copied, setCopied] = useState(false);
-    const copy = () => {
-        navigator.clipboard?.writeText(invocation).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1600);
-        });
+// ---- Server options ---------------------------------------------------------
+
+function VariableField({
+    variable,
+    canEdit,
+    queryKey,
+    onSaved,
+}: {
+    variable: EggVariable;
+    canEdit: boolean;
+    queryKey: unknown[];
+    onSaved: () => void;
+}) {
+    const server = useServer();
+    const push = useFlashes(s => s.push);
+    const qc = useQueryClient();
+    const [value, setValue] = useState(variable.serverValue ?? '');
+    const { kind, choices } = fieldKind(variable);
+    const description = withoutReinstallHint(variable.description);
+
+    // Fields save on blur or toggle. A spinner that vanished was the only sign
+    // anything happened, so a short "Saved" stays where it was.
+    const [justSaved, setJustSaved] = useState(false);
+    useEffect(() => {
+        if (!justSaved) return;
+        const t = setTimeout(() => setJustSaved(false), 2500);
+        return () => clearTimeout(t);
+    }, [justSaved]);
+
+    const save = useMutation({
+        mutationFn: (next: string) => updateStartupVariable(server.uuid, variable.envVariable, next),
+        onMutate: () => setJustSaved(false),
+        onSuccess: ({ invocation }, saved) => {
+            setJustSaved(true);
+            onSaved();
+            qc.setQueryData<StartupData>(queryKey as string[], prev =>
+                prev
+                    ? {
+                          ...prev,
+                          invocation,
+                          variables: prev.variables.map(v =>
+                              v.envVariable === variable.envVariable ? { ...v, serverValue: saved } : v,
+                          ),
+                      }
+                    : prev,
+            );
+        },
+        onError: () => {
+            setValue(variable.serverValue ?? '');
+            push({ type: 'error', message: m['common.states.genericError']() });
+        },
+    });
+
+    const commit = (next: string) => {
+        setValue(next);
+        if (next !== (variable.serverValue ?? '')) save.mutate(next);
     };
+
+    const on = value === '1' || value === 'true';
+    const id = `var-${variable.envVariable}`;
+
     return (
-        <div className="relative">
-            <button
-                type="button"
-                onClick={copy}
-                aria-label={m['server.startup.copyCommand']()}
-                className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-3)] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
-            >
-                {copied ? <Check className="h-3 w-3 text-[var(--brand)]" /> : <Copy className="h-3 w-3" />}
-                {copied ? m['common.states.copied']() : m['server.startup.copyCommand']()}
-            </button>
-            <pre className="overflow-x-auto rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] p-4 pr-24 font-mono text-xs leading-relaxed text-[var(--color-ink)]">
-                {invocation}
-            </pre>
+        <div className="flex min-w-0 flex-col gap-1.5">
+            <div className="flex h-5 items-center justify-between gap-2">
+                <label htmlFor={id} className="flex min-w-0 items-baseline gap-2 text-sm font-medium text-[var(--color-ink-muted)]">
+                    <span className="truncate">{variable.name}</span>
+                    <code className="hidden shrink-0 font-mono text-[10px] text-[var(--color-ink-faint)] sm:inline">
+                        {variable.envVariable}
+                    </code>
+                </label>
+                {save.isPending ? (
+                    <Spinner className="h-3.5 w-3.5 shrink-0" />
+                ) : justSaved ? (
+                    <span role="status" className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-[var(--color-accent)]">
+                        <Check className="h-3.5 w-3.5" />
+                        {m['common.states.saved']()}
+                    </span>
+                ) : null}
+            </div>
+
+            {kind === 'switch' ? (
+                <div className="flex min-h-10 items-center gap-2.5">
+                    <Switch
+                        checked={on}
+                        onChange={next => commit(next ? '1' : '0')}
+                        disabled={!canEdit || save.isPending}
+                        label={variable.name}
+                    />
+                    <span className="text-xs text-[var(--color-ink-muted)]">
+                        {on ? m['common.states.enabled']() : m['common.states.disabled']()}
+                    </span>
+                </div>
+            ) : kind === 'select' ? (
+                <Select
+                    id={id}
+                    value={value}
+                    onChange={commit}
+                    options={choices.map(o => ({ label: o, value: o }))}
+                    disabled={!canEdit || save.isPending}
+                    className="w-full"
+                />
+            ) : canEdit ? (
+                <Input
+                    id={id}
+                    value={value}
+                    onChange={e => setValue(e.target.value)}
+                    onBlur={() => commit(value)}
+                    placeholder={variable.defaultValue}
+                    className="w-full font-mono text-xs"
+                />
+            ) : (
+                <span className="flex min-h-10 items-center truncate font-mono text-xs text-[var(--color-ink)]">
+                    {value || variable.defaultValue || '—'}
+                </span>
+            )}
+
+            {description && <span className="text-xs text-[var(--color-ink-faint)]">{description}</span>}
         </div>
     );
 }
+
+// ---- Docker image -----------------------------------------------------------
 
 function DockerImage({
     data,
@@ -173,7 +406,7 @@ function DockerImage({
 
     if (canUpdate && options.length > 1 && !isCustom) {
         return (
-            <div className="min-w-0">
+            <div className="flex min-w-0 flex-col gap-1.5">
                 <div className="flex items-center gap-3">
                     <Select
                         value={matched?.value ?? current}
@@ -184,169 +417,59 @@ function DockerImage({
                     />
                     {save.isPending && <Spinner className="h-4 w-4 shrink-0" />}
                 </div>
+                <span className="font-mono text-[10px] text-[var(--color-ink-faint)]">{current}</span>
             </div>
         );
     }
 
     return (
-        <div className="min-w-0">
-            <Input value={current} readOnly disabled className="w-full font-mono text-xs" />
-            {isCustom && <p className="mt-2 text-xs text-[var(--color-ink-faint)]">{m['server.startup.imageCustom']()}</p>}
-        </div>
+        <ReadOnlyValue
+            label={matched?.label ?? m['server.startup.imageTitle']()}
+            desc={isCustom ? m['server.startup.imageCustom']() : undefined}
+            mono
+        >
+            {current}
+        </ReadOnlyValue>
     );
 }
 
-function VariableField({
-    variable,
-    canEdit,
-    canReinstall,
-    context,
-    serverJar,
-    queryKey,
-}: {
-    variable: EggVariable;
-    canEdit: boolean;
-    canReinstall: boolean;
-    context: Record<string, string>;
-    serverJar: string;
-    queryKey: unknown[];
-}) {
-    const server = useServer();
-    const push = useFlashes(s => s.push);
-    const qc = useQueryClient();
-    const [value, setValue] = useState(variable.serverValue ?? '');
-    const [pickerOpen, setPickerOpen] = useState(false);
+// ---- Startup command --------------------------------------------------------
 
-    const editable = canEdit && variable.isEditable;
-
-    const useSwitch = variable.rules.some(r => r === 'boolean' || r === 'in:0,1' || r === 'in:true,false');
-    const selectValues = variable.rules.find(r => r.startsWith('in:'))?.slice(3).split(',') ?? [];
-    const useSelect = !useSwitch && selectValues.length > 0;
-    // Assisted version picker only for known version vars that aren't already a
-    // switch or fixed-choice select.
-    const hasVersionHelper = !useSwitch && selectValues.length === 0 && VERSION_HELPER_VARIABLES.has(variable.envVariable);
-
-    // Fields save on blur or toggle. A spinner that vanished was the only sign
-    // anything happened, so a short "Saved" stays where it was.
-    const [justSaved, setJustSaved] = useState(false);
-    useEffect(() => {
-        if (!justSaved) return;
-        const t = setTimeout(() => setJustSaved(false), 2500);
-        return () => clearTimeout(t);
-    }, [justSaved]);
-
-    const save = useMutation({
-        mutationFn: (next: string) => updateStartupVariable(server.uuid, variable.envVariable, next),
-        onMutate: () => setJustSaved(false),
-        onSuccess: ({ invocation }, saved) => {
-            setJustSaved(true);
-            qc.setQueryData<StartupData>(queryKey as string[], prev =>
-                prev
-                    ? {
-                          ...prev,
-                          invocation,
-                          variables: prev.variables.map(v =>
-                              v.envVariable === variable.envVariable ? { ...v, serverValue: saved } : v,
-                          ),
-                      }
-                    : prev,
-            );
-        },
-        onError: () => {
-            setValue(variable.serverValue ?? '');
-            push({ type: 'error', message: m['common.states.genericError']() });
-        },
-    });
-
-    const commit = (next: string) => {
-        setValue(next);
-        if (next !== (variable.serverValue ?? '')) save.mutate(next);
+function CommandCard({ invocation }: { invocation: string }) {
+    const [open, setOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const copy = () => {
+        navigator.clipboard?.writeText(invocation).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+        });
     };
 
-    const on = value === '1' || value === 'true';
-
     return (
-        <div className="min-w-0">
-            {/* Fixed height, so a row whose Versions button is taller than
-                its neighbours' variable names doesn't push its field down. */}
-            <div className="mb-2 flex h-6 items-center justify-between gap-2">
-                <label className="truncate text-xs font-semibold text-[var(--color-ink)]">{variable.name}</label>
-                <div className="flex shrink-0 items-center gap-2">
-                    {save.isPending ? (
-                        <Spinner className="h-3.5 w-3.5" />
-                    ) : justSaved ? (
-                        <span role="status" className="flex items-center gap-1 text-[11px] font-medium text-[var(--color-accent)]">
-                            <Check className="h-3.5 w-3.5" />
-                            {m['common.states.saved']()}
-                        </span>
-                    ) : null}
-                    {hasVersionHelper ? (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-1.5 text-xs"
-                            onClick={() => setPickerOpen(true)}
-                            disabled={!editable}
-                        >
-                            <History className="h-3.5 w-3.5" />
-                            {m['server.startup.versions.button']()}
+        <SectionCard
+            icon={Terminal}
+            title={m['server.startup.commandTitle']()}
+            desc={m['server.startup.commandDesc']()}
+            right={
+                <div className="flex items-center gap-2">
+                    {open && (
+                        <Button variant="ghost" size="sm" onClick={copy}>
+                            {copied ? <Check className="h-4 w-4 text-[var(--color-accent)]" /> : <Copy className="h-4 w-4" />}
+                            {copied ? m['common.states.copied']() : m['server.startup.copyCommand']()}
                         </Button>
-                    ) : (
-                        <span className="truncate font-mono text-[10px] text-[var(--color-ink-faint)]">
-                            {variable.envVariable}
-                        </span>
                     )}
+                    <Button variant="outline" size="sm" onClick={() => setOpen(o => !o)} aria-expanded={open}>
+                        <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} />
+                        {open ? m['common.actions.hide']() : m['server.startup.showCommand']()}
+                    </Button>
                 </div>
-            </div>
-
-            <div className="flex min-h-[2.75rem] items-center">
-                {useSwitch ? (
-                    <div className="flex items-center gap-2.5">
-                        <Switch
-                            checked={on}
-                            onChange={next => commit(next ? '1' : '0')}
-                            disabled={!editable || save.isPending}
-                            label={variable.name}
-                        />
-                        <span className="text-xs text-[var(--color-ink-muted)]">
-                            {on ? m['common.states.enabled']() : m['common.states.disabled']()}
-                        </span>
-                    </div>
-                ) : useSelect ? (
-                    <Select
-                        value={value}
-                        onChange={commit}
-                        options={selectValues.map(o => ({ label: o, value: o }))}
-                        disabled={!editable || save.isPending}
-                        className="w-full"
-                    />
-                ) : (
-                    <Input
-                        value={value}
-                        onChange={e => setValue(e.target.value)}
-                        onBlur={() => commit(value)}
-                        readOnly={!editable}
-                        disabled={!editable}
-                        placeholder={variable.defaultValue}
-                        className="w-full font-mono text-xs"
-                    />
-                )}
-            </div>
-
-            <p className="mt-2 text-xs leading-snug text-[var(--color-ink-faint)]">{variable.description}</p>
-
-            {pickerOpen && (
-                <Suspense fallback={null}>
-                    <VersionPickerModal
-                        variable={variable}
-                        context={context}
-                        serverJar={serverJar}
-                        canReinstall={canReinstall}
-                        onClose={() => setPickerOpen(false)}
-                        onSaved={() => qc.invalidateQueries({ queryKey })}
-                    />
-                </Suspense>
+            }
+        >
+            {open && (
+                <pre className="whitespace-pre-wrap break-all rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] p-4 font-mono text-xs leading-relaxed text-[var(--color-ink)]">
+                    {invocation}
+                </pre>
             )}
-        </div>
+        </SectionCard>
     );
 }

@@ -10,6 +10,7 @@ import { deleteFiles } from '@/api/files';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -38,6 +39,11 @@ export default function VersionPickerModal({
     const [selected, setSelected] = useState(variable.serverValue ?? variable.defaultValue ?? '');
     const [includeSnapshots, setIncludeSnapshots] = useState(false);
     const [deleteJar, setDeleteJar] = useState(true);
+    // The list covers releases; eggs also accept values it can't show, like
+    // "latest" or a specific build. The Startup page's version box used to be
+    // free text, so typing one stays possible here.
+    const [custom, setCustom] = useState('');
+    const chosen = custom.trim() || selected;
 
     const versions = useQuery({
         queryKey: ['server', server.id, 'startup-versions', variable.envVariable, includeSnapshots],
@@ -63,7 +69,7 @@ export default function VersionPickerModal({
 
     const save = useMutation({
         mutationFn: async () => {
-            await updateStartupVariable(server.uuid, variable.envVariable, selected);
+            await updateStartupVariable(server.uuid, variable.envVariable, chosen);
             if (deleteJar && serverJar) {
                 try {
                     await deleteFiles(server.uuid, '/', [serverJar]);
@@ -82,7 +88,7 @@ export default function VersionPickerModal({
     });
 
     const submit = () => {
-        if (!selected) {
+        if (!chosen) {
             push({ type: 'error', message: m['server.startup.versions.selectFirst']() });
             return;
         }
@@ -125,8 +131,31 @@ export default function VersionPickerModal({
                     ) : selectOptions.length === 0 ? (
                         <p className="text-sm text-[var(--color-ink-muted)]">{m['server.startup.versions.empty']()}</p>
                     ) : (
-                        <Select value={selected} onChange={setSelected} options={selectOptions} disabled={save.isPending} />
+                        <Select
+                            value={selected}
+                            onChange={setSelected}
+                            options={selectOptions}
+                            disabled={save.isPending || custom.trim() !== ''}
+                        />
                     )}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                    <label
+                        htmlFor="version-custom"
+                        className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-faint)]"
+                    >
+                        {m['server.startup.versions.custom']()}
+                    </label>
+                    <Input
+                        id="version-custom"
+                        value={custom}
+                        onChange={e => setCustom(e.target.value)}
+                        placeholder={variable.defaultValue || 'latest'}
+                        disabled={save.isPending}
+                        className="font-mono text-xs"
+                    />
+                    <span className="text-xs text-[var(--color-ink-faint)]">{m['server.startup.versions.customHint']()}</span>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3">

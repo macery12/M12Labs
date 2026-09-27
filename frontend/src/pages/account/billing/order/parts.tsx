@@ -9,7 +9,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useBilling } from '@/state/billing';
 import type { ProductLimits, ProductCycle, VariableFieldModel } from '@/api/accountBilling';
 import type { CheckoutController } from './checkout';
-import { checkoutDescription } from './variableText';
+import { withoutReinstallHint } from '@/lib/eggText';
 
 const gb = (mib: number) => `${(mib / 1024).toFixed(mib % 1024 === 0 ? 0 : 1)} GB`;
 
@@ -130,7 +130,7 @@ export function VariableField({
     value: string;
     onChange: (next: string) => void;
 }) {
-    const description = field.description ? checkoutDescription(field.description) : '';
+    const description = field.description ? withoutReinstallHint(field.description) : '';
     return (
         <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[var(--color-ink)]">{field.label}</label>
