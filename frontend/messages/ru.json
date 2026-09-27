@@ -2220,7 +2220,6 @@
   "admin.users.searchPlaceholder": "Поиск по имени пользователя, адресу электронной почты или идентификатору…",
   "admin.users.status.active": "Активный",
   "admin.users.status.suspended": "Приостановлено",
-  "admin.users.status.unverified": "Непроверенное",
   "admin.users.subtitle": "Управление пользователями панели, ролями администраторов и доступом к учетным записям.",
   "admin.users.suspend": "Приостановить",
   "admin.users.suspended": "Пользователь заблокирован.",

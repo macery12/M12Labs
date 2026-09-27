@@ -130,6 +130,10 @@ export interface AdminUserQuery {
     search?: string;
     /** Allowed sort; prefix with '-' for descending. */
     sort?: string;
+    /** An access profile id, or 'none' for accounts without one. */
+    accessProfile?: string;
+    /** Account state or email verification. */
+    status?: 'active' | 'suspended' | 'unverified';
 }
 
 // GET /api/application/users — paginated, searchable admin list.
@@ -140,6 +144,8 @@ export async function getAdminUsers(query: AdminUserQuery = {}): Promise<AdminUs
     };
     if (query.sort) params.sort = query.sort;
     if (query.search) params['filter[*]'] = query.search;
+    if (query.accessProfile) params['filter[access_profile]'] = query.accessProfile;
+    if (query.status) params['filter[status]'] = query.status;
 
     const { data } = await http.get('/api/application/users', { params });
     const p = data.meta?.pagination ?? {};

@@ -67,16 +67,37 @@ class UserController extends ApplicationApiController
                 AllowedFilter::exact('id'),
                 AllowedFilter::exact('uuid'),
                 AllowedFilter::exact('external_id'),
+                // Grouped so the ORs stay inside the search and can't swallow
+                // another filter's condition.
                 AllowedFilter::callback('*', function (Builder $builder, $value) {
-                    foreach (Arr::wrap($value) as $datum) {
-                        $datum = '%' . $datum . '%';
-                        $builder->orWhere(function (Builder $builder) use ($datum) {
-                            $builder->where('uuid', 'LIKE', $datum)
-                                ->orWhere('username', 'LIKE', $datum)
-                                ->orWhere('email', 'LIKE', $datum)
-                                ->orWhere('external_id', 'LIKE', $datum);
-                        });
-                    }
+                    $builder->where(function (Builder $builder) use ($value) {
+                        foreach (Arr::wrap($value) as $datum) {
+                            $datum = '%' . $datum . '%';
+                            $builder->orWhere(function (Builder $builder) use ($datum) {
+                                $builder->where('uuid', 'LIKE', $datum)
+                                    ->orWhere('username', 'LIKE', $datum)
+                                    ->orWhere('email', 'LIKE', $datum)
+                                    ->orWhere('external_id', 'LIKE', $datum);
+                            });
+                        }
+                    });
+                }),
+                // An access profile id, or "none" for accounts without one.
+                AllowedFilter::callback('access_profile', function (Builder $builder, $value) {
+                    $value === 'none'
+                        ? $builder->whereNull('admin_role_id')
+                        : $builder->where('admin_role_id', (int) $value);
+                }),
+                // Account state and email verification are separate facts; the
+                // filter offers each on its own.
+                AllowedFilter::callback('status', function (Builder $builder, $value) {
+                    match ($value) {
+                        'suspended' => $builder->where('state', 'suspended'),
+                        // state is nullable, and NULL != 'suspended' is not true in SQL.
+                        'active' => $builder->where(fn (Builder $q) => $q->whereNull('state')->orWhere('state', '!=', 'suspended')),
+                        'unverified' => $builder->whereNull('email_verified_at'),
+                        default => null,
+                    };
                 }),
             ])
             ->defaultSort('-root_admin')

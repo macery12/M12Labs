@@ -6,6 +6,7 @@ import {
     ChevronLeft,
     ChevronRight,
     MailCheck,
+    MailWarning,
     MailX,
     MoreVertical,
     Pencil,
@@ -23,17 +24,38 @@ import {
     suspendUser,
     unsuspendUser,
     verifyUserEmail,
+    type AdminUserQuery,
     type AdminUserRow,
 } from '@/api/adminUsers';
+import { getAdminRoles } from '@/api/adminRoles';
 import { timeAgo } from '@/lib/format';
 import { can } from '@/lib/can';
 import { useAdminHeld } from '@/layouts/heldPermissions';
 import { useFlashes } from '@/state/flashes';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { NoMatches } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import UserFormModal from './UserFormModal';
+
+function EmailCell({ user }: { user: AdminUserRow }) {
+    return (
+        <span className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate">{user.email}</span>
+            {!user.emailVerified && (
+                <MailWarning
+                    className="h-3.5 w-3.5 shrink-0 text-[var(--color-warning)]"
+                    role="img"
+                    aria-label={m['admin.users.unverifiedEmail']()}
+                >
+                    <title>{m['admin.users.unverifiedEmail']()}</title>
+                </MailWarning>
+            )}
+        </span>
+    );
+}
 
 function RowActions({
     user,
@@ -137,12 +159,13 @@ function Item({
     );
 }
 
+// Account state only. Email verification used to share this pill, so an
+// unverified but otherwise normal account read as a different "status" from
+// a suspended one; it's an icon beside the email now.
 function StatusPill({ user }: { user: AdminUserRow }) {
     const [label, cls] = user.suspended
         ? [m['admin.users.status.suspended'](), 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]']
-        : !user.emailVerified
-          ? [m['admin.users.status.unverified'](), 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]']
-          : [m['admin.users.status.active'](), 'bg-[var(--color-accent)]/15 text-[var(--color-accent)]'];
+        : [m['admin.users.status.active'](), 'bg-[var(--color-accent)]/15 text-[var(--color-accent)]'];
     return (
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{label}</span>
     );
@@ -160,6 +183,9 @@ export default function UsersListPage() {
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
+    const [profile, setProfile] = useState('');
+    const [status, setStatus] = useState<'' | NonNullable<AdminUserQuery['status']>>('');
+    const filtered = Boolean(search || profile || status);
     const [formOpen, setFormOpen] = useState(false);
     const [editUser, setEditUser] = useState<AdminUserRow | null>(null);
     const [toDelete, setToDelete] = useState<AdminUserRow | null>(null);
@@ -174,10 +200,43 @@ export default function UsersListPage() {
     }, [searchInput]);
 
     const { data, isLoading, isError, isFetching } = useQuery({
-        queryKey: ['admin', 'users', { page, search }],
-        queryFn: () => getAdminUsers({ page, search: search || undefined, sort: '-root_admin' }),
+        queryKey: ['admin', 'users', { page, search, profile, status }],
+        queryFn: () =>
+            getAdminUsers({
+                page,
+                search: search || undefined,
+                accessProfile: profile || undefined,
+                status: status || undefined,
+                sort: '-root_admin',
+            }),
         placeholderData: keepPreviousData,
     });
+
+    // Profile names for the filter. Without roles.read the filter still offers
+    // "no administrative access", which is the split that matters most.
+    const rolesQ = useQuery({
+        queryKey: ['admin', 'roles', 'all'],
+        queryFn: () => getAdminRoles({ perPage: 100 }),
+        enabled: can(held, 'roles.read'),
+    });
+    const profileOptions = [
+        { value: '', label: m['admin.users.filter.anyProfile']() },
+        { value: 'none', label: m['admin.access.users.noAccess']() },
+        ...(rolesQ.data?.items ?? []).map(r => ({ value: String(r.id), label: r.name })),
+    ];
+    const statusOptions = [
+        { value: '', label: m['admin.users.filter.anyStatus']() },
+        { value: 'active', label: m['admin.users.status.active']() },
+        { value: 'suspended', label: m['admin.users.status.suspended']() },
+        { value: 'unverified', label: m['admin.users.unverifiedEmail']() },
+    ];
+    const clearFilters = () => {
+        setSearchInput('');
+        setSearch('');
+        setProfile('');
+        setStatus('');
+        setPage(1);
+    };
 
     const items = data?.items ?? [];
     const pagination = data?.pagination;
@@ -220,14 +279,36 @@ export default function UsersListPage() {
                 )}
             </div>
 
-            <div className="relative max-w-sm">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-faint)]" />
-                <Input
-                    value={searchInput}
-                    onChange={e => setSearchInput(e.target.value)}
-                    placeholder={m['admin.users.searchPlaceholder']()}
-                    className="pl-9"
-                />
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <div className="relative sm:w-80">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-faint)]" />
+                    <Input
+                        value={searchInput}
+                        onChange={e => setSearchInput(e.target.value)}
+                        placeholder={m['admin.users.searchPlaceholder']()}
+                        className="pl-9"
+                    />
+                </div>
+                <div className="sm:w-56">
+                    <Select
+                        value={profile}
+                        onChange={v => {
+                            setProfile(v);
+                            setPage(1);
+                        }}
+                        options={profileOptions}
+                    />
+                </div>
+                <div className="sm:w-48">
+                    <Select
+                        value={status}
+                        onChange={v => {
+                            setStatus(v as typeof status);
+                            setPage(1);
+                        }}
+                        options={statusOptions}
+                    />
+                </div>
             </div>
 
             <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]">
@@ -237,6 +318,8 @@ export default function UsersListPage() {
                     </div>
                 ) : isError ? (
                     <p className="px-4 py-10 text-center text-sm text-[var(--color-danger)]">{m['admin.users.loadError']()}</p>
+                ) : items.length === 0 && filtered ? (
+                    <NoMatches onClear={clearFilters} />
                 ) : items.length === 0 ? (
                     <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
                         <Users className="h-8 w-8 text-[var(--color-ink-faint)]" />
@@ -281,13 +364,15 @@ export default function UsersListPage() {
                                                         />
                                                     )}
                                                 </span>
-                                                <span className="block truncate text-xs text-[var(--color-ink-faint)] md:hidden">
-                                                    {u.email}
+                                                <span className="block text-xs text-[var(--color-ink-faint)] md:hidden">
+                                                    <EmailCell user={u} />
                                                 </span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="hidden px-4 py-3 text-[var(--color-ink-muted)] md:table-cell">{u.email}</td>
+                                    <td className="hidden px-4 py-3 text-[var(--color-ink-muted)] md:table-cell">
+                                        <EmailCell user={u} />
+                                    </td>
                                     <td className="hidden px-4 py-3 text-[var(--color-ink-muted)] lg:table-cell">
                                         {u.accessProfile?.isOwner ? (
                                             <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--brand)]/30 bg-[var(--brand-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--brand)]">

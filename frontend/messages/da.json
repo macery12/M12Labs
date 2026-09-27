@@ -2253,7 +2253,6 @@
   "admin.users.searchPlaceholder": "Søg efter brugernavn, e-mail eller ID…",
   "admin.users.status.active": "Aktiv",
   "admin.users.status.suspended": "Suspenderet",
-  "admin.users.status.unverified": "Ikke bekræftet",
   "admin.users.subtitle": "Administrer panelbrugere, administratorroller og kontoadgang.",
   "admin.users.suspend": "Suspender",
   "admin.users.suspended": "Brugeren er blevet suspenderet.",

@@ -14,6 +14,53 @@ use Everest\Tests\Integration\Api\Application\ApplicationApiIntegrationTestCase;
 
 class UserControllerTest extends ApplicationApiIntegrationTestCase
 {
+    public function testUsersCanBeFilteredByAccessProfile(): void
+    {
+        $role = AdminRole::query()->create(['name' => 'Filter ' . uniqid(), 'sort_id' => 98, 'permissions' => []]);
+        $staff = User::factory()->create(['admin_role_id' => $role->id]);
+        $player = User::factory()->create(['admin_role_id' => null]);
+
+        $ids = $this->getJson('/api/application/users?per_page=100&filter[access_profile]=' . $role->id)
+            ->assertOk()
+            ->json('data.*.attributes.id');
+        $this->assertSame([$staff->id], $ids);
+
+        $ids = $this->getJson('/api/application/users?per_page=100&filter[access_profile]=none')
+            ->assertOk()
+            ->json('data.*.attributes.id');
+        $this->assertContains($player->id, $ids);
+        $this->assertNotContains($staff->id, $ids);
+    }
+
+    public function testUsersCanBeFilteredByStatus(): void
+    {
+        $suspended = User::factory()->create(['state' => 'suspended', 'email_verified_at' => now()]);
+        $unverified = User::factory()->create(['state' => null, 'email_verified_at' => null]);
+
+        $ids = fn (string $status) => $this->getJson('/api/application/users?per_page=100&filter[status]=' . $status)
+            ->assertOk()
+            ->json('data.*.attributes.id');
+
+        $this->assertSame([$suspended->id], $ids('suspended'));
+        $this->assertContains($unverified->id, $ids('unverified'));
+        $this->assertNotContains($suspended->id, $ids('unverified'));
+        $this->assertContains($unverified->id, $ids('active'));
+        $this->assertNotContains($suspended->id, $ids('active'));
+    }
+
+    public function testSearchDoesNotOverrideOtherFilters(): void
+    {
+        $role = AdminRole::query()->create(['name' => 'Filter ' . uniqid(), 'sort_id' => 98, 'permissions' => []]);
+        User::factory()->create(['username' => 'filtertarget', 'admin_role_id' => null]);
+        $match = User::factory()->create(['username' => 'filtertarget2', 'admin_role_id' => $role->id]);
+
+        $ids = $this->getJson('/api/application/users?per_page=100&filter[*]=filtertarget&filter[access_profile]=' . $role->id)
+            ->assertOk()
+            ->json('data.*.attributes.id');
+
+        $this->assertSame([$match->id], $ids);
+    }
+
     /**
      * Test the response when requesting all users on the panel.
      */
