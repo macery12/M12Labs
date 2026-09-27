@@ -1,7 +1,7 @@
 import { m } from '@/i18n/messages';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileCode, Pencil, Search } from 'lucide-react';
+import { Eye, FileCode, Pencil, Search } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { FullPageSpinner } from '@/components/ui/Spinner';
 import { getEmailTemplates, type EmailTemplateSummary } from '@/api/email';
@@ -14,6 +14,7 @@ export const TEMPLATES_KEY = ['admin', 'email', 'templates'] as const;
 // category; clicking one opens the fullscreen editor with a live preview.
 export default function TemplatesPage() {
     const [editing, setEditing] = useState<EmailTemplateSummary | null>(null);
+    const [openView, setOpenView] = useState<'split' | 'preview'>('split');
     const [q, setQ] = useState('');
 
     const query = useQuery({ queryKey: TEMPLATES_KEY, queryFn: getEmailTemplates });
@@ -95,28 +96,42 @@ export default function TemplatesPage() {
                         </h3>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                             {items.map(t => (
-                                <TemplateCard key={t.key} template={t} onEdit={() => setEditing(t)} />
+                                <TemplateCard
+                                    key={t.key}
+                                    template={t}
+                                    onEdit={() => {
+                                        setOpenView('split');
+                                        setEditing(t);
+                                    }}
+                                    onPreview={() => {
+                                        setOpenView('preview');
+                                        setEditing(t);
+                                    }}
+                                />
                             ))}
                         </div>
                     </section>
                 ))
             )}
 
-            {current && <TemplateEditorDialog template={current} onClose={() => setEditing(null)} />}
+            {current && <TemplateEditorDialog template={current} initialView={openView} onClose={() => setEditing(null)} />}
         </div>
     );
 }
 
+// Two actions per card: seeing what an email looks like was only possible by
+// opening the code editor. Preview opens the same dialog on the rendered view.
 function TemplateCard({
     template,
     onEdit,
+    onPreview,
 }: {
     template: EmailTemplateSummary;
     onEdit: () => void;
+    onPreview: () => void;
 }) {
     return (
-        <button
-            onClick={onEdit}
+        <div
             className="group flex flex-col gap-3 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70 p-4 text-left transition-colors hover:border-[var(--brand)]/50 hover:bg-[var(--color-surface-2)]"
         >
             <div className="flex items-start justify-between gap-3">
@@ -139,11 +154,25 @@ function TemplateCard({
                 <span className="text-[11px] text-[var(--color-ink-muted)]">
                     {m['admin.email.templates.variableCount']({ count: template.variables.length })}
                 </span>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-ink-muted)] group-hover:text-[var(--brand)]">
-                    <Pencil className="h-3.5 w-3.5" />
-                    {m['admin.email.templates.edit']()}
-                </span>
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={onPreview}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--brand)]"
+                    >
+                        <Eye className="h-3.5 w-3.5" />
+                        {m['admin.email.templates.preview']()}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onEdit}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--brand)]"
+                    >
+                        <Pencil className="h-3.5 w-3.5" />
+                        {m['admin.email.templates.edit']()}
+                    </button>
+                </div>
             </div>
-        </button>
+        </div>
     );
 }

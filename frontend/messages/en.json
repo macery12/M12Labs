@@ -1695,6 +1695,7 @@
   "admin.email.templates.default": "Default",
   "admin.email.templates.desc": "Customize the transactional emails your users receive. Edits are saved as overrides — the originals are never touched.",
   "admin.email.templates.edit": "Edit",
+  "admin.email.templates.preview": "Preview",
   "admin.email.templates.editor.codePlaceholder": "Template source (Blade / HTML)…",
   "admin.email.templates.editor.desktop": "Desktop width",
   "admin.email.templates.editor.eg": "e.g.",

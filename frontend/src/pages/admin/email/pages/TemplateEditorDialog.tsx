@@ -41,9 +41,12 @@ type Device = 'desktop' | 'mobile';
 export function TemplateEditorDialog({
     template,
     onClose,
+    initialView = 'split',
 }: {
     template: EmailTemplateSummary;
     onClose: () => void;
+    /** "preview" opens straight on the rendered email (the card's Preview action). */
+    initialView?: ViewMode;
 }) {
     const qc = useQueryClient();
     const push = useFlashes(s => s.push);
@@ -52,7 +55,7 @@ export function TemplateEditorDialog({
     const [content, setContent] = useState('');
     const [savedContent, setSavedContent] = useState('');
     const [isCustomized, setIsCustomized] = useState(template.is_customized);
-    const [view, setView] = useState<ViewMode>('split');
+    const [view, setView] = useState<ViewMode>(initialView);
     const [device, setDevice] = useState<Device>('desktop');
     const [showVars, setShowVars] = useState(true);
     const [confirmRevert, setConfirmRevert] = useState(false);
