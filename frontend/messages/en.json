@@ -2223,7 +2223,7 @@
   "admin.marketplace.settings.curseforgeEnabledHint": "Powers modpack browsing and installation.",
   "admin.marketplace.settings.defaultSource": "Default source",
   "admin.marketplace.settings.enabled": "Marketplace enabled",
-  "admin.marketplace.settings.enabledHint": "Master switch for the user-facing Mods & Plugins page.",
+  "admin.marketplace.settings.enabledHintShared": "Master switch for the user-facing Mods & Plugins page. It is the same switch as Marketplace on the Features page.",
   "admin.marketplace.settings.error": "Something went wrong. Please try again.",
   "admin.marketplace.settings.externalDownloads": "Allow external downloads",
   "admin.marketplace.settings.externalDownloadsHint": "Permit downloads that link off-provider.",

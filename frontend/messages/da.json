@@ -1690,7 +1690,6 @@
   "admin.marketplace.settings.curseforgeEnabledHint": "Giver mulighed for at gennemse og installere modpacks.",
   "admin.marketplace.settings.defaultSource": "Standardkilde",
   "admin.marketplace.settings.enabled": "Markedsplads aktiveret",
-  "admin.marketplace.settings.enabledHint": "Hovedkontakt til siden »Mods & Plugins«, som brugeren ser.",
   "admin.marketplace.settings.error": "Der opstod en fejl. Prøv venligst igen.",
   "admin.marketplace.settings.externalDownloads": "Tillad eksterne downloads",
   "admin.marketplace.settings.externalDownloadsHint": "Tillad downloads, der fører til websteder uden for udbyderen.",

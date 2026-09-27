@@ -1657,7 +1657,6 @@
   "admin.marketplace.settings.curseforgeEnabledHint": "Просмотр и установка модпаков Powers.",
   "admin.marketplace.settings.defaultSource": "Источник по умолчанию",
   "admin.marketplace.settings.enabled": "Функция «Marketplace» включена",
-  "admin.marketplace.settings.enabledHint": "Главный переключатель на странице «Модификации и плагины», доступной пользователям.",
   "admin.marketplace.settings.error": "Произошла ошибка. Пожалуйста, попробуйте ещё раз.",
   "admin.marketplace.settings.externalDownloads": "Разрешить загрузку файлов из внешних источников",
   "admin.marketplace.settings.externalDownloadsHint": "Разрешить загрузку файлов, ссылки на которые ведут за пределы провайдера.",

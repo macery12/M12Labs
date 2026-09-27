@@ -131,7 +131,7 @@ export default function SettingsPage() {
                 <div className="flex flex-col gap-4 p-1">
                     <ToggleRow
                         label={m['admin.marketplace.settings.enabled']()}
-                        hint={m['admin.marketplace.settings.enabledHint']()}
+                        hint={m['admin.marketplace.settings.enabledHintShared']()}
                         checked={form.enabled}
                         onChange={v => set({ enabled: v })}
                     />
