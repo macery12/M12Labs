@@ -213,7 +213,9 @@ export default function RegisterPage() {
                     {...register('password')}
                 />
             </Field>
-            {password.length > 0 && <PasswordStrength value={password} />}
+            {/* The rules show before anyone types, so they're known up front
+                rather than discovered one rejection at a time. */}
+            <PasswordStrength value={password} />
 
             <Field
                 label={m['auth.register.confirmLabel']()}
