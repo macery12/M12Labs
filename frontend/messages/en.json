@@ -3096,6 +3096,7 @@
   "admin.theme.unsaved": "• unsaved",
   "admin.tickets.addNote": "Add note",
   "admin.tickets.backToQueue": "Back to queue",
+  "admin.tickets.assignToMe": "Assign to me",
   "admin.tickets.col.assignee": "Assignee",
   "admin.tickets.col.lastReply": "Last reply",
   "admin.tickets.col.priority": "Priority",

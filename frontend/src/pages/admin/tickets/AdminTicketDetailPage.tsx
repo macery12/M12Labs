@@ -178,6 +178,7 @@ export default function AdminTicketDetailPage() {
 
     const statusOptions = TICKET_STATUSES.map(s => ({ value: s, label: statusLabel(s) }));
     const priorityOptions = TICKET_PRIORITIES.map(p => ({ value: p, label: priorityLabel(p) }));
+    const me = (users ?? []).find(u => u.email === myEmail);
     const assigneeOptions = [
         { value: '', label: m['admin.tickets.unassigned']() },
         ...(users ?? []).map(u => ({ value: String(u.id), label: `${u.username} (${u.email})` })),
@@ -282,6 +283,17 @@ export default function AdminTicketDetailPage() {
                                 options={assigneeOptions}
                                 disabled={!canUpdate || updateMutation.isPending}
                             />
+                            {/* Taking a ticket was a scroll through every admin in the list. */}
+                            {canUpdate && me && assignee !== String(me.id) && (
+                                <button
+                                    type="button"
+                                    onClick={() => saveProperty({ assignee: String(me.id) })}
+                                    disabled={updateMutation.isPending}
+                                    className="mt-1 w-fit text-xs font-medium text-[var(--brand)] hover:underline disabled:opacity-50"
+                                >
+                                    {m['admin.tickets.assignToMe']()}
+                                </button>
+                            )}
                         </Field>
                         {canUpdate && (
                             <p className="text-xs text-[var(--color-ink-faint)]">{m['admin.tickets.propertiesAutosave']()}</p>
