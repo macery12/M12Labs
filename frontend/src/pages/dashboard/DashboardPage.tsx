@@ -72,7 +72,7 @@ export default function DashboardPage() {
                         to="/billing/order"
                         className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--brand)] px-4 text-sm font-medium text-[var(--color-brand-ink)] hover:bg-[var(--brand-hover)]"
                     >
-                        <Plus className="h-4 w-4" /> {m['dashboard.newServer']()}
+                        <Plus className="h-4 w-4" /> {m['ui.labels.newServer']()}
                     </Link>
                 )}
             </div>
@@ -102,7 +102,7 @@ export default function DashboardPage() {
                         <div className="flex flex-col gap-4 xl:col-span-2">
                             <div className="flex items-center justify-between gap-3">
                                 <h2 className="text-sm font-semibold text-[var(--color-ink-muted)]">
-                                    {showAll ? m['dashboard.allServers']() : m['dashboard.yourServers']()}
+                                    {showAll ? m['ui.labels.allServers']() : m['dashboard.yourServers']()}
                                 </h2>
                                 {canReadAllServers && (
                                     <div className="flex shrink-0 items-center gap-1 rounded-lg border border-[var(--color-border-strong)] p-0.5">
@@ -117,7 +117,7 @@ export default function DashboardPage() {
                                                         : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
                                                 )}
                                             >
-                                                {all ? m['dashboard.scope.all']() : m['dashboard.scope.mine']()}
+                                                {all ? m['ui.states.all']() : m['dashboard.scope.mine']()}
                                             </button>
                                         ))}
                                     </div>
@@ -126,7 +126,7 @@ export default function DashboardPage() {
                             {servers.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface)]/40 px-6 py-16 text-center">
                                     <Server className="mb-4 h-7 w-7 text-[var(--color-ink-faint)]" />
-                                    <h3 className="text-lg font-medium">{m['dashboard.empty.title']()}</h3>
+                                    <h3 className="text-lg font-medium">{m['ui.labels.noServersYet']()}</h3>
                                     <p className="mt-1 max-w-sm text-sm text-[var(--color-ink-muted)]">
                                         {m['dashboard.empty.body']()}
                                     </p>
@@ -135,7 +135,7 @@ export default function DashboardPage() {
                                             to="/billing/order"
                                             className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--brand)] px-4 text-sm font-medium text-[var(--color-brand-ink)] hover:bg-[var(--brand-hover)]"
                                         >
-                                            <Plus className="h-4 w-4" /> {m['dashboard.newServer']()}
+                                            <Plus className="h-4 w-4" /> {m['ui.labels.newServer']()}
                                         </Link>
                                     )}
                                 </div>

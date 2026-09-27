@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/cn';
-import { formatMib } from '@/lib/format';
+import { formatDate, formatMib } from '@/lib/format';
 import { useBilling } from '@/state/billing';
 import { ServerStatusDot, usePowerStates } from '@/pages/admin/servers/ServerStatus';
 import { panelClass, PanelHeader } from '../../dashboardParts';
@@ -57,18 +57,18 @@ export function OverviewTab({ onManageBilling }: { onManageBilling: () => void }
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="flex flex-col gap-4 lg:col-span-2">
                 <section className={panelClass()}>
-                    <PanelHeader title={m['admin.infrastructure.serverDetail.ov.configuration']()} />
+                    <PanelHeader title={m['ui.labels.configuration']()} />
                     <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
                         <Fact label={m['admin.infrastructure.serverDetail.ov.state']()}>
                             <ServerStatusDot power={power} lifecycle={s.state} size="md" />
                         </Fact>
-                        <Fact label={m['admin.infrastructure.serverDetail.net.node']()}>
+                        <Fact label={m['ui.labels.node']()}>
                             <Link to={`/admin/infrastructure/nodes/${s.nodeId}`} className="text-[var(--brand-bright)] hover:underline">
                                 {s.nodeName ?? `#${s.nodeId}`}
                             </Link>
                         </Fact>
                         <Fact label={m['admin.infrastructure.serverDetail.field.owner']()}>{s.ownerName ?? `#${s.ownerId}`}</Fact>
-                        <Fact label={m['admin.infrastructure.serverDetail.field.egg']()}>{s.eggName ?? `#${s.eggId}`}</Fact>
+                        <Fact label={m['ui.labels.egg']()}>{s.eggName ?? `#${s.eggId}`}</Fact>
                         <Fact label={m['admin.infrastructure.serverDetail.ov.primaryAllocation']()}>
                             {primary ? (
                                 <>
@@ -101,11 +101,11 @@ export function OverviewTab({ onManageBilling }: { onManageBilling: () => void }
                     <MetricRow first label={m['admin.infrastructure.serverDetail.ov.memory']()} value={formatMib(s.limits.memory)} />
                     <MetricRow label={m['admin.infrastructure.serverDetail.ov.disk']()} value={formatMib(s.limits.disk)} />
                     <MetricRow
-                        label={m['admin.infrastructure.serverDetail.ov.cpu']()}
+                        label={m['ui.labels.cpuLimit']()}
                         value={s.limits.cpu === 0 ? '∞' : `${s.limits.cpu}%`}
                     />
                     <MetricRow
-                        label={m['admin.infrastructure.serverDetail.ov.swap']()}
+                        label={m['ui.labels.swap']()}
                         value={s.limits.swap === -1 ? '∞' : s.limits.swap === 0 ? '0' : formatMib(s.limits.swap)}
                     />
                     <MetricRow label={m['admin.infrastructure.serverDetail.ov.io']()} value={s.limits.io} />
@@ -115,11 +115,11 @@ export function OverviewTab({ onManageBilling }: { onManageBilling: () => void }
                     />
 
                     <div className="mt-4 border-t border-[var(--color-border)] pt-3">
-                        <p className={cn(microLabel, 'mb-1')}>{m['admin.infrastructure.serverDetail.nav.limits']()}</p>
-                        <MetricRow first label={m['admin.infrastructure.serverDetail.field.allocations']()} value={s.featureLimits.allocations} />
-                        <MetricRow label={m['admin.infrastructure.serverDetail.field.backups']()} value={s.featureLimits.backups} />
-                        <MetricRow label={m['admin.infrastructure.serverDetail.field.databases']()} value={s.featureLimits.databases} />
-                        <MetricRow label={m['admin.infrastructure.serverDetail.field.subusers']()} value={s.featureLimits.subusers} />
+                        <p className={cn(microLabel, 'mb-1')}>{m['ui.labels.featureLimits']()}</p>
+                        <MetricRow first label={m['ui.labels.allocationLimit']()} value={s.featureLimits.allocations} />
+                        <MetricRow label={m['ui.labels.backupLimit']()} value={s.featureLimits.backups} />
+                        <MetricRow label={m['ui.labels.databaseLimit']()} value={s.featureLimits.databases} />
+                        <MetricRow label={m['ui.labels.subuserLimit']()} value={s.featureLimits.subusers} />
                     </div>
                 </section>
 
@@ -133,7 +133,7 @@ export function OverviewTab({ onManageBilling }: { onManageBilling: () => void }
                             onClick={onManageBilling}
                             className="ml-auto text-xs font-semibold text-[var(--brand-bright)] hover:underline"
                         >
-                            {m['admin.infrastructure.serverDetail.ov.manage']()}
+                            {m['ui.actions.manage']()}
                         </button>
                     </div>
                     {!s.billing.productId ? (
@@ -164,9 +164,9 @@ function RenewalLine({ iso }: { iso: string }) {
     const { days, hours, overdue } = timeUntil(iso);
     return (
         <p className="mt-2 flex items-baseline justify-between gap-3 border-t border-[var(--color-border)] pt-2 text-xs">
-            <span className="text-[var(--color-ink-muted)]">{m['admin.infrastructure.serverDetail.billing.summary.renewal']()}</span>
+            <span className="text-[var(--color-ink-muted)]">{m['ui.labels.nextRenewal']()}</span>
             <span className="text-right">
-                <span className="font-mono tabular-nums text-[var(--color-ink)]">{new Date(iso).toLocaleDateString()}</span>
+                <span className="font-mono tabular-nums text-[var(--color-ink)]">{formatDate(iso)}</span>
                 <span className={cn('ml-2 font-mono tabular-nums', overdue ? 'text-[var(--color-warning)]' : 'text-[var(--color-ink-faint)]')}>
                     {overdue
                         ? m['admin.infrastructure.serverDetail.billing.summary.overdue']({ days, hours })
@@ -194,7 +194,7 @@ function ServerOrders({ uuid }: { uuid: string }) {
             <PanelHeader
                 title={m['admin.infrastructure.serverDetail.billing.orders.title']()}
                 to="/admin/billing/orders"
-                action={m['admin.overview.link.viewAll']()}
+                action={m['ui.actions.viewAll']()}
             />
 
             {ordersQ.isLoading ? (
@@ -214,10 +214,10 @@ function ServerOrders({ uuid }: { uuid: string }) {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className={cn('text-left', microLabel)}>
-                                <th className="py-2 pr-4 font-semibold">{m['admin.infrastructure.serverDetail.billing.orders.id']()}</th>
-                                <th className="py-2 pr-4 font-semibold">{m['admin.infrastructure.serverDetail.billing.orders.name']()}</th>
-                                <th className="py-2 pr-4 font-semibold">{m['admin.infrastructure.serverDetail.billing.orders.status']()}</th>
-                                <th className="py-2 pr-4 text-right font-semibold">{m['admin.infrastructure.serverDetail.billing.orders.total']()}</th>
+                                <th className="py-2 pr-4 font-semibold">{m['ui.labels.order']()}</th>
+                                <th className="py-2 pr-4 font-semibold">{m['common.labels.description']()}</th>
+                                <th className="py-2 pr-4 font-semibold">{m['ui.labels.status']()}</th>
+                                <th className="py-2 pr-4 text-right font-semibold">{m['ui.labels.total']()}</th>
                                 <th className="py-2 text-right font-semibold">{m['admin.infrastructure.serverDetail.billing.orders.date']()}</th>
                             </tr>
                         </thead>
@@ -251,7 +251,7 @@ function OrderRow({ order, money }: { order: AdminOrder; money: (n: number) => s
             </td>
             <td className="py-2.5 pr-4 text-right font-mono tabular-nums text-[var(--color-ink)]">{money(order.total)}</td>
             <td className="py-2.5 text-right font-mono text-xs tabular-nums text-[var(--color-ink-faint)]">
-                {new Date(order.createdAt).toLocaleDateString()}
+                {formatDate(order.createdAt)}
             </td>
         </tr>
     );

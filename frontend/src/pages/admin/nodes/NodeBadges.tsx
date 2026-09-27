@@ -38,7 +38,7 @@ export function SuperchargedBadge({ wingsType }: { wingsType: WingsType }) {
     return (
         <span title={m['admin.nodes.superchargedHint']()}>
             <Badge tone="accent">
-                <Zap className="h-2.5 w-2.5" /> {m['admin.nodes.supercharged']()}
+                <Zap className="h-2.5 w-2.5" /> {m['ui.labels.supercharged']()}
             </Badge>
         </span>
     );

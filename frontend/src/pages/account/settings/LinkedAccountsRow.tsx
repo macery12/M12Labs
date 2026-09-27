@@ -147,7 +147,7 @@ export function LinkedAccountsRow() {
                             disabled={!password || unlink.isPending}
                         >
                             {unlink.isPending && <Spinner className="h-4 w-4" />}
-                            {m['account.sso.unlinkConfirm']()}
+                            {m['ui.actions.unlink']()}
                         </Button>
                     </>
                 }
@@ -215,7 +215,7 @@ function ProviderLine({
             </div>
             {account.linked ? (
                 <Button variant="outline" size="sm" onClick={onUnlink} disabled={busy}>
-                    {m['account.sso.unlink']()}
+                    {m['ui.actions.unlink']()}
                 </Button>
             ) : (
                 <Button size="sm" onClick={onLink} disabled={busy}>

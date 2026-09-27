@@ -46,7 +46,7 @@ export function NetworkPanel() {
             <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1.5">
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-faint)]">
-                        {m['server.network.allocations']()}
+                        {m['ui.labels.allocations']()}
                     </span>
                     {allocations.length === 0 && (
                         <p className="text-xs text-[var(--color-ink-faint)]">{m['server.network.noAllocations']()}</p>
@@ -59,7 +59,7 @@ export function NetworkPanel() {
                 {sftp && (
                     <div className="flex flex-col gap-1.5">
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-faint)]">
-                            {m['server.network.sftp']()}
+                            {m['ui.labels.sftp']()}
                         </span>
                         <CopyRow value={sftp} />
                     </div>

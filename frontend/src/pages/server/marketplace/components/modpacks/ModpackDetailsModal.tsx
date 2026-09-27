@@ -164,7 +164,7 @@ export function ModpackDetailsModal({
                                         {previewM.isPending && previewM.variables?.id === v.id ? (
                                             <Spinner className="h-4 w-4" />
                                         ) : null}
-                                        {m['server.mods.modpacks.select']()}
+                                        {m['ui.actions.select']()}
                                     </Button>
                                 </li>
                             ))}

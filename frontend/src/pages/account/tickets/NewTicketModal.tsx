@@ -92,7 +92,7 @@ export function NewTicketModal({ open, onClose, prefill }: { open: boolean; onCl
             }
         >
             <div className="flex flex-col gap-4">
-                <Field label={m['tickets.new.subjectLabel']()} htmlFor="ticket-title">
+                <Field label={m['ui.labels.subject']()} htmlFor="ticket-title">
                     <Input
                         id="ticket-title"
                         value={title}

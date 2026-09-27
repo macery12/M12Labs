@@ -104,13 +104,13 @@ function RowActions({
                                 (user.suspended ? (
                                     <Item
                                         icon={Power}
-                                        label={m['admin.users.unsuspend']()}
+                                        label={m['ui.actions.unsuspend']()}
                                         onSelect={() => act(() => unsuspendUser(user.id), m['admin.users.unsuspended']())}
                                     />
                                 ) : (
                                     <Item
                                         icon={PowerOff}
-                                        label={m['admin.users.suspend']()}
+                                        label={m['ui.actions.suspend']()}
                                         onSelect={() => act(() => suspendUser(user.id), m['admin.users.suspended']())}
                                     />
                                 ))}
@@ -164,8 +164,8 @@ function Item({
 // a suspended one; it's an icon beside the email now.
 function StatusPill({ user }: { user: AdminUserRow }) {
     const [label, cls] = user.suspended
-        ? [m['admin.users.status.suspended'](), 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]']
-        : [m['admin.users.status.active'](), 'bg-[var(--color-accent)]/15 text-[var(--color-accent)]'];
+        ? [m['common.states.suspended'](), 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]']
+        : [m['ui.states.active'](), 'bg-[var(--color-accent)]/15 text-[var(--color-accent)]'];
     return (
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{label}</span>
     );
@@ -225,9 +225,9 @@ export default function UsersListPage() {
         ...(rolesQ.data?.items ?? []).map(r => ({ value: String(r.id), label: r.name })),
     ];
     const statusOptions = [
-        { value: '', label: m['admin.users.filter.anyStatus']() },
-        { value: 'active', label: m['admin.users.status.active']() },
-        { value: 'suspended', label: m['admin.users.status.suspended']() },
+        { value: '', label: m['ui.labels.allStatuses']() },
+        { value: 'active', label: m['ui.states.active']() },
+        { value: 'suspended', label: m['common.states.suspended']() },
         { value: 'unverified', label: m['admin.users.unverifiedEmail']() },
     ];
     const clearFilters = () => {
@@ -265,7 +265,7 @@ export default function UsersListPage() {
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
-                        {m['admin.access.users.title']()}
+                        {m['ui.labels.users']()}
                     </h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
                         {m['admin.access.users.subtitle']()}
@@ -274,7 +274,7 @@ export default function UsersListPage() {
                 {canCreate && (
                     <Button onClick={openCreate}>
                         <Plus className="h-4 w-4" />
-                        {m['admin.users.create']()}
+                        {m['ui.actions.createUser']()}
                     </Button>
                 )}
             </div>
@@ -329,13 +329,13 @@ export default function UsersListPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-wide text-[var(--color-ink-faint)]">
-                                <th className="px-4 py-2.5 font-medium">{m['admin.users.col.user']()}</th>
+                                <th className="px-4 py-2.5 font-medium">{m['ui.labels.user']()}</th>
                                 <th className="hidden px-4 py-2.5 font-medium md:table-cell">{m['admin.users.col.email']()}</th>
                                 <th className="hidden px-4 py-2.5 font-medium lg:table-cell">
-                                    {m['admin.access.users.profileColumn']()}
+                                    {m['ui.labels.accessProfile']()}
                                 </th>
-                                <th className="px-4 py-2.5 font-medium">{m['admin.users.col.status']()}</th>
-                                <th className="hidden px-4 py-2.5 font-medium sm:table-cell">{m['admin.users.col.created']()}</th>
+                                <th className="px-4 py-2.5 font-medium">{m['ui.labels.status']()}</th>
+                                <th className="hidden px-4 py-2.5 font-medium sm:table-cell">{m['ui.labels.created']()}</th>
                                 <th className="w-8 px-4 py-2.5" />
                             </tr>
                         </thead>
@@ -416,7 +416,7 @@ export default function UsersListPage() {
             {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between">
                     <p className="text-xs text-[var(--color-ink-faint)]">
-                        {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                        {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                         {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                     </p>
                     <div className="flex gap-2">
@@ -435,7 +435,7 @@ export default function UsersListPage() {
                             disabled={pagination.currentPage >= pagination.totalPages || isFetching}
                             onClick={() => setPage(p => p + 1)}
                         >
-                            {m['activity.next']()}
+                            {m['ui.actions.next']()}
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>

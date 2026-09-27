@@ -9,6 +9,7 @@ import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
 import { cn } from '@/lib/cn';
 import { getDeferredQueue, sendDeferredNow, cancelDeferred } from '@/api/email';
+import { formatDateTime } from '@/lib/format';
 
 const DEFERRED_QUEUE_KEY = ['admin', 'email', 'deferred'] as const;
 
@@ -52,7 +53,7 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
     const data = queueQ.data;
     const rows = data?.deferred.data ?? [];
     const isDue = (scheduledAt: string) => new Date(scheduledAt) <= new Date();
-    const fmt = (d: string) => new Date(d).toLocaleString();
+    const fmt = (d: string) => formatDateTime(d);
 
     return (
         <Modal
@@ -88,7 +89,7 @@ export function DeferredQueueModal({ open, onClose }: { open: boolean; onClose: 
                         disabled={queueQ.isFetching}
                     >
                         <RotateCw className={cn('h-4 w-4', queueQ.isFetching && 'animate-spin')} />
-                        {m['admin.email.deferred.refresh']()}
+                        {m['common.actions.refresh']()}
                     </Button>
                 </div>
 

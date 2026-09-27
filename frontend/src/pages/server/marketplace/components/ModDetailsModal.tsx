@@ -141,7 +141,7 @@ export function ModDetailsModal({
                                         ) : (
                                             <Download className="h-4 w-4" />
                                         )}
-                                        {m['server.mods.install']()}
+                                        {m['ui.actions.install']()}
                                     </Button>
                                 </li>
                             ))}

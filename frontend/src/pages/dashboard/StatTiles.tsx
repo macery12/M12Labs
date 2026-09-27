@@ -97,7 +97,7 @@ export function StatTiles({
 
     return (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Tile icon={Server} label={m['dashboard.stats.servers']()} value={String(servers.length)} />
+            <Tile icon={Server} label={m['ui.labels.servers']()} value={String(servers.length)} />
             <Tile
                 icon={Activity}
                 label={m['dashboard.stats.running']()}
@@ -113,7 +113,7 @@ export function StatTiles({
             {ticketsEnabled ? (
                 <Tile
                     icon={LifeBuoy}
-                    label={m['dashboard.stats.openTickets']()}
+                    label={m['ui.actions.openTickets']()}
                     value={openTickets === null ? '—' : String(openTickets)}
                     note={ticketsGate.canView ? undefined : m['dashboard.stats.verifyToUse']()}
                     to="/tickets"

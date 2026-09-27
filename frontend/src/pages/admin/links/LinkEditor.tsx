@@ -144,7 +144,7 @@ export default function LinkEditor({
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                     <h2 className="truncate text-lg font-semibold text-[var(--color-ink)]">
-                        {isNew ? m['admin.links.editor.newTitle']() : m['admin.links.editor.editTitle']({ name: link.name })}
+                        {isNew ? m['admin.links.editor.newTitle']() : m['ui.actions.editName']({ name: link.name })}
                     </h2>
                     {isNew ? (
                         <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">
@@ -172,10 +172,10 @@ export default function LinkEditor({
             </div>
 
             <div className="flex flex-col gap-6">
-                <Card title={m['admin.links.editor.destination']()}>
+                <Card title={m['ui.labels.destination']()}>
                     <div className="flex flex-col gap-4">
                         <Field
-                            label={m['admin.links.field.name']()}
+                            label={m['ui.labels.name']()}
                             hint={m['admin.links.field.nameHint']()}
                             htmlFor="link-name"
                         >

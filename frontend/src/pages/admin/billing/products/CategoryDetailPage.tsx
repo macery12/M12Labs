@@ -223,7 +223,7 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                     <ArrowLeft className="h-3.5 w-3.5" /> {m['admin.billing.products.backToCatalog']()}
                 </Link>
                 <h1 className="mt-1 truncate text-xl font-semibold text-[var(--color-ink)]">
-                    {editing ? form.name || category?.name : m['admin.billing.categories.newTitle']()}
+                    {editing ? form.name || category?.name : m['ui.labels.newCategory']()}
                 </h1>
             </div>
 
@@ -233,14 +233,14 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                 are the thing you came for, not the name field.
             */}
             <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
-                <SectionCard icon={Settings2} title={m['admin.billing.categories.section.settings']()} desc={m['admin.billing.categories.section.settingsDesc']()}>
-                    <FieldRow label={m['admin.billing.categories.name']()}>
+                <SectionCard icon={Settings2} title={m['ui.labels.settings']()} desc={m['admin.billing.categories.section.settingsDesc']()}>
+                    <FieldRow label={m['ui.labels.name']()}>
                         <Input value={form.name} onChange={e => set('name', e.target.value)} />
                     </FieldRow>
                     {/* The store draws an allowlisted name as an icon and anything
                         else as an image URL. The old free-text field suggested
                         "server", which the store then tried to load as an image. */}
-                    <FieldRow label={m['admin.billing.categories.icon']()} desc={m['admin.billing.categories.iconDesc']()}>
+                    <FieldRow label={m['ui.labels.icon']()} desc={m['admin.billing.categories.iconDesc']()}>
                         <IconPicker value={isIconName(form.icon) ? form.icon : ''} onChange={v => set('icon', v)} allowNone />
                         <Input
                             value={isIconName(form.icon) ? '' : form.icon}
@@ -249,7 +249,7 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                             aria-label={m['admin.billing.categories.iconUrl']()}
                         />
                     </FieldRow>
-                    <FieldRow label={m['admin.billing.categories.description']()}>
+                    <FieldRow label={m['common.labels.description']()}>
                         <Input value={form.description} onChange={e => set('description', e.target.value)} />
                     </FieldRow>
 
@@ -284,11 +284,11 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                     desc={m['admin.billing.categories.section.eggsDesc']()}
                     right={
                         <span className="rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-ink-muted)]">
-                            {m['admin.billing.categories.eggsSelected']({ count: form.allowedEggs.length })}
+                            {m['ui.labels.countSelected']({ count: form.allowedEggs.length })}
                         </span>
                     }
                 >
-                    <FieldRow label={m['admin.billing.categories.nest']()} desc={m['admin.billing.categories.nestDesc']()}>
+                    <FieldRow label={m['ui.labels.nest']()} desc={m['admin.billing.categories.nestDesc']()}>
                         <Select
                             value={form.nestId != null ? String(form.nestId) : undefined}
                             onChange={v => {
@@ -296,7 +296,7 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                                 setForm(f => ({ ...f, nestId: Number.isFinite(n) && n > 0 ? n : null, eggId: null, allowedEggs: [] }));
                             }}
                             options={nestOptions}
-                            placeholder={m['admin.billing.categories.selectNest']()}
+                            placeholder={m['ui.labels.selectNestPlaceholder']()}
                         />
                     </FieldRow>
 
@@ -348,7 +348,7 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                                                     e.stopPropagation();
                                                     set('eggId', egg.id);
                                                 }}
-                                                title={m['admin.billing.categories.makePrimary']()}
+                                                title={m['ui.actions.makePrimary']()}
                                                 className={cn(
                                                     'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors disabled:opacity-30',
                                                     primary
@@ -357,7 +357,7 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                                                 )}
                                             >
                                                 <Star className={cn('h-3.5 w-3.5', primary && 'fill-[var(--brand)]')} />
-                                                {primary ? m['admin.billing.categories.primary']() : ''}
+                                                {primary ? m['ui.labels.primary']() : ''}
                                             </button>
                                         </div>
                                     );
@@ -438,7 +438,7 @@ function ProductsSection({
                         size="sm"
                         onClick={() => navigate(`/admin/billing/products/new?category=${categoryId}`)}
                     >
-                        <Plus className="h-4 w-4" /> {m['admin.billing.products.new']()}
+                        <Plus className="h-4 w-4" /> {m['ui.labels.newProduct']()}
                     </Button>
                 )
             }
@@ -449,7 +449,7 @@ function ProductsSection({
                 </div>
             ) : !products || products.length === 0 ? (
                 <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-[var(--color-border-strong)] px-4 py-6">
-                    <p className="text-sm text-[var(--color-ink-faint)]">{m['admin.billing.products.empty']()}</p>
+                    <p className="text-sm text-[var(--color-ink-faint)]">{m['ui.messages.noProductsInCategory']()}</p>
                     {canCreate && (
                         <Button
                             type="button"
@@ -457,7 +457,7 @@ function ProductsSection({
                             size="sm"
                             onClick={() => navigate(`/admin/billing/products/new?category=${categoryId}`)}
                         >
-                            <Plus className="h-4 w-4" /> {m['admin.billing.products.new']()}
+                            <Plus className="h-4 w-4" /> {m['ui.labels.newProduct']()}
                         </Button>
                     )}
                 </div>
@@ -482,13 +482,13 @@ function ProductsSection({
                                         <StatePill
                                             on={false}
                                             onLabel={m['admin.billing.products.shown']()}
-                                            offLabel={m['admin.billing.products.hidden']()}
+                                            offLabel={m['ui.states.hidden']()}
                                         />
                                     )}
                                 </span>
 
                                 <span className="font-mono text-lg font-semibold tabular-nums text-[var(--brand-bright)]">
-                                    {p.price === 0 ? m['admin.billing.products.free']() : money(p.price)}
+                                    {p.price === 0 ? m['ui.labels.free']() : money(p.price)}
                                 </span>
 
                                 <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs tabular-nums text-[var(--color-ink-muted)]">
@@ -524,7 +524,7 @@ function ProductsSection({
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            aria-label={m['admin.billing.products.delete']()}
+                                            aria-label={m['ui.actions.deleteProduct']()}
                                             onClick={() => setDel(p)}
                                         >
                                             <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
@@ -540,7 +540,7 @@ function ProductsSection({
             <ConfirmDialog
                 open={Boolean(del)}
                 onClose={() => setDel(null)}
-                title={m['admin.billing.products.deleteTitle']()}
+                title={m['ui.actions.deleteProduct']()}
                 body={m['admin.billing.products.deleteBody']({ name: del?.name ?? '' })}
                 confirmLabel={m['common.actions.delete']()}
                 cancelLabel={m['common.actions.cancel']()}

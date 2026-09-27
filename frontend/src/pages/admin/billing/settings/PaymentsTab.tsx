@@ -157,7 +157,7 @@ const STATE_STYLE: Record<ProviderState, { pill: string; dot: string; icon: stri
 const stateLabel: Record<ProviderState, () => string> = {
     live: m['admin.billing.integrations.state.live'],
     needsKeys: m['admin.billing.integrations.state.needsKeys'],
-    off: m['admin.billing.integrations.state.off'],
+    off: m['ui.states.off'],
 };
 
 function StatusPill({ state }: { state: ProviderState }) {
@@ -308,7 +308,7 @@ function StripeKeysModal({ open, onClose }: { open: boolean; onClose: () => void
                 <Field label={m['admin.billing.integrations.stripe.publishable']()} hint={m['admin.billing.integrations.stripe.publishableHint']()}>
                     <Input value={publishable} onChange={e => setPublishable(e.target.value)} placeholder="pk_test_51Ab…" />
                 </Field>
-                <Field label={m['admin.billing.integrations.stripe.secret']()} hint={m['admin.billing.integrations.stripe.secretHint']()}>
+                <Field label={m['ui.labels.secretKey']()} hint={m['admin.billing.integrations.stripe.secretHint']()}>
                     <Input value={secret} onChange={e => setSecret(e.target.value)} placeholder="sk_test_51Ab…" />
                 </Field>
                 <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
@@ -378,13 +378,13 @@ function PayPalKeysModal({
                 }}
                 className="flex flex-col gap-4"
             >
-                <Field label={m['admin.billing.integrations.paypal.mode']()}>
+                <Field label={m['ui.labels.mode']()}>
                     <Select value={mode} onChange={v => setMode(v as 'sandbox' | 'live')} options={modeOptions} />
                 </Field>
                 <Field label={m['admin.billing.integrations.paypal.clientId']()}>
                     <Input value={clientId} onChange={e => setClientId(e.target.value)} placeholder={m['admin.billing.integrations.paypal.clientIdPlaceholder']()} />
                 </Field>
-                <Field label={m['admin.billing.integrations.paypal.clientSecret']()}>
+                <Field label={m['ui.labels.clientSecret']()}>
                     <Input value={clientSecret} onChange={e => setClientSecret(e.target.value)} placeholder={m['admin.billing.integrations.paypal.clientSecretPlaceholder']()} />
                 </Field>
                 <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
@@ -430,7 +430,7 @@ export default function PaymentsTab() {
         mutationFn: ({ key, value }: { key: string; value: boolean }) => updateBillingSetting(key, value),
         onSuccess: (_d, { key, value }) => {
             patchBilling({ [key]: value });
-            push({ type: 'success', message: m['admin.billing.settings.saved']() });
+            push({ type: 'success', message: m['ui.messages.settingsSaved']() });
         },
         onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
     });
@@ -441,7 +441,7 @@ export default function PaymentsTab() {
             updateBillingSetting(`integrations:${id}:enabled`, value),
         onSuccess: (_d, { id, value }) => {
             patchBilling({ integrations: { ...(raw.integrations ?? {}), [id]: { ...(raw.integrations?.[id] ?? {}), enabled: value } } });
-            push({ type: 'success', message: m['admin.billing.settings.saved']() });
+            push({ type: 'success', message: m['ui.messages.settingsSaved']() });
         },
         onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
     });
@@ -481,7 +481,7 @@ export default function PaymentsTab() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="group" aria-label={m['admin.billing.integrations.providersAria']()}>
                 <ProviderTile
                     icon={CreditCard}
-                    name={m['admin.billing.integrations.stripe.title']()}
+                    name={m['ui.labels.stripe']()}
                     state={stripeState}
                     meta={stripeMeta}
                     selected={selected === 'stripe'}
@@ -489,7 +489,7 @@ export default function PaymentsTab() {
                 />
                 <ProviderTile
                     icon={Wallet}
-                    name={m['admin.billing.integrations.paypal.title']()}
+                    name={m['ui.labels.paypal']()}
                     state={paypalState}
                     meta={paypalMeta}
                     selected={selected === 'paypal'}
@@ -502,7 +502,7 @@ export default function PaymentsTab() {
                 <SectionCard
                     id="integrations"
                     icon={CreditCard}
-                    title={m['admin.billing.integrations.stripe.title']()}
+                    title={m['ui.labels.stripe']()}
                     desc={m['admin.billing.integrations.stripe.desc']()}
                     right={
                         <MasterToggle
@@ -537,7 +537,7 @@ export default function PaymentsTab() {
 
                     {/* Keys before webhook: that's the order the provider's own setup
                         runs in, and the webhook is useless without them. */}
-                    <Block label={m['admin.billing.integrations.apiKeys']()}>
+                    <Block label={m['ui.labels.apiKeys']()}>
                         <div className="flex flex-wrap items-center gap-2">
                             <Button variant="outline" size="sm" onClick={() => setStripeOpen(true)}>
                                 <KeyRound className="h-4 w-4" />
@@ -575,7 +575,7 @@ export default function PaymentsTab() {
             {selected === 'paypal' && (
                 <SectionCard
                     icon={Wallet}
-                    title={m['admin.billing.integrations.paypal.title']()}
+                    title={m['ui.labels.paypal']()}
                     desc={m['admin.billing.integrations.paypal.desc']()}
                     right={
                         <MasterToggle
@@ -586,7 +586,7 @@ export default function PaymentsTab() {
                         />
                     }
                 >
-                    <Block label={m['admin.billing.integrations.apiKeys']()}>
+                    <Block label={m['ui.labels.apiKeys']()}>
                         <div className="flex flex-wrap items-center gap-2">
                             <Button variant="outline" size="sm" onClick={() => setPaypalOpen(true)}>
                                 <KeyRound className="h-4 w-4" />

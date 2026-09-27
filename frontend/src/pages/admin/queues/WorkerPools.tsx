@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { m } from '@/i18n/messages';
+import { m, td } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 import { timeAgo } from '@/lib/format';
 import type { QueuePool, QueueProcess, QueueScheduler } from '@/api/adminQueues';
@@ -67,7 +67,7 @@ function PoolCard({ pool, running }: { pool: QueuePool; running: boolean }) {
             )}
         >
             <header className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-[var(--color-ink)]">{pool.title}</h3>
+                <h3 className="text-sm font-semibold text-[var(--color-ink)]">{td(`admin.queues.poolMeta.${pool.name}.title`, pool.title)}</h3>
                 <span
                     className={cn(
                         'ml-auto shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold',
@@ -96,7 +96,11 @@ function PoolCard({ pool, running }: { pool: QueuePool; running: boolean }) {
                 </span>
             </div>
 
-            {pool.summary && <p className="mt-2 text-[11px] leading-relaxed text-[var(--color-ink-muted)]">{pool.summary}</p>}
+            {pool.summary && (
+                <p className="mt-2 text-[11px] leading-relaxed text-[var(--color-ink-muted)]">
+                    {td(`admin.queues.poolMeta.${pool.name}.summary`, pool.summary)}
+                </p>
+            )}
 
             {pool.lanes.length > 0 && (
                 <p className="mt-2 font-mono text-[10px] text-[var(--color-ink-faint)]">{pool.lanes.join(' · ')}</p>
@@ -203,8 +207,8 @@ function BusyLines({ processes }: { processes: QueueProcess[] }) {
 
 function statusLabel(pool: QueuePool, running: boolean, starved: boolean): string {
     if (starved) return m['admin.queues.pool.starved']();
-    if (!pool.expected && pool.processCount === 0) return m['admin.queues.pool.off']();
-    if (!running) return m['admin.queues.status.stopped']();
+    if (!pool.expected && pool.processCount === 0) return m['ui.states.notNeeded']();
+    if (!running) return m['ui.states.notRunning']();
 
     return pool.busyCount > 0
         ? m['admin.queues.pool.busy']({ count: pool.busyCount })

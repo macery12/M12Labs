@@ -7,9 +7,9 @@ vi.mock('@/i18n/messages', () => ({
 }));
 import { cpuPercentHint, formatDuration, formatNumber, formatVcpu } from './format';
 
-// Intl output depends on the runtime's default locale, so compare against
-// Intl itself rather than hard-coding "2,000,000".
-const nf = (n: number, o: Intl.NumberFormatOptions = {}) => new Intl.NumberFormat(undefined, o).format(n);
+// Formatting follows the panel locale, which is the base locale ('en') here.
+// Compare against Intl itself rather than hard-coding "2,000,000".
+const nf = (n: number, o: Intl.NumberFormatOptions = {}) => new Intl.NumberFormat('en', o).format(n);
 const unit = (n: number, u: string, digits = 0) =>
     nf(n, { style: 'unit', unit: u, unitDisplay: 'short', maximumFractionDigits: digits });
 

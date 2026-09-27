@@ -24,7 +24,7 @@ type PresetId = 'blank' | 'readOnly' | 'support' | 'billing';
 
 const PRESET_LABELS: Record<PresetId, () => string> = {
     blank: m['admin.access.profiles.preset.blank'],
-    readOnly: m['admin.access.profiles.preset.readOnly'],
+    readOnly: m['ui.states.readOnly'],
     support: m['admin.access.profiles.preset.support'],
     billing: m['admin.access.profiles.preset.billing'],
 };
@@ -152,10 +152,10 @@ export default function RoleCreateModal({ open, onClose }: { open: boolean; onCl
                         {error}
                     </p>
                 )}
-                <Field label={m['admin.roles.form.name']()}>
+                <Field label={m['ui.labels.name']()}>
                     <Input value={name} onChange={e => setName(e.target.value)} maxLength={64} autoComplete="off" />
                 </Field>
-                <Field label={m['admin.roles.form.description']()}>
+                <Field label={m['common.labels.description']()}>
                     <Input value={description} onChange={e => setDescription(e.target.value)} maxLength={255} autoComplete="off" />
                 </Field>
                 <Field label={m['admin.roles.form.color']()} hint={m['admin.roles.form.colorHint']()}>

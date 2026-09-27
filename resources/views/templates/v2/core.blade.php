@@ -1,5 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+{{-- LanguageMiddleware resolves the same precedence the SPA does (the user's
+     choice while admins allow it, else the panel default), so assistive tech
+     and no-JS readers get the right language before the bundle corrects it. --}}
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <title>{{ config('app.name', 'Everest') }}</title>
 

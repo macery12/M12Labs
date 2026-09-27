@@ -79,7 +79,7 @@ export function NetworkingSection({ draft, onChange, readOnly }: { draft: Alloca
             <div className="flex items-center justify-between text-xs text-[var(--color-ink-faint)]">
                 <span className="font-semibold uppercase tracking-[0.14em]">{m['admin.infrastructure.serverDetail.net.current']()}</span>
                 <span>
-                    {m['admin.infrastructure.serverDetail.net.node']()}:{' '}
+                    {m['ui.labels.node']()}:{' '}
                     <Link to={`/admin/infrastructure/nodes/${s.nodeId}`} className="text-[var(--color-accent)] hover:underline">
                         {s.nodeName ?? `#${s.nodeId}`}
                     </Link>
@@ -106,7 +106,7 @@ export function NetworkingSection({ draft, onChange, readOnly }: { draft: Alloca
                                     <span className="font-mono text-sm tabular-nums text-[var(--color-ink)]">{row.label}</span>
                                     {primary && (
                                         <span className="inline-flex items-center gap-1 rounded-sm bg-[var(--color-accent)]/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[var(--color-accent)]">
-                                            <Star className="h-2.5 w-2.5 fill-current" /> {m['admin.infrastructure.serverDetail.net.primary']()}
+                                            <Star className="h-2.5 w-2.5 fill-current" /> {m['ui.labels.primary']()}
                                         </span>
                                     )}
                                     {row.staged && <span className="text-[10px] uppercase tracking-wider text-[var(--color-warning)]">+ new</span>}
@@ -126,7 +126,7 @@ export function NetworkingSection({ draft, onChange, readOnly }: { draft: Alloca
                                         <button
                                             type="button"
                                             onClick={() => remove(row)}
-                                            title={m['admin.infrastructure.serverDetail.net.remove']()}
+                                            title={m['common.actions.remove']()}
                                             className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--color-ink-faint)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-danger)]"
                                         >
                                             <X className="h-3.5 w-3.5" />

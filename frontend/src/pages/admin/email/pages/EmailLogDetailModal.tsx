@@ -7,6 +7,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
 import { getEmailLog } from '@/api/email';
 import { StatusChip } from '../parts';
+import { formatDateTime } from '@/lib/format';
 
 // Read-only detail view for a single email log entry: metadata, error, sanitized
 // template variables, retry history, and related (same-correlation) emails.
@@ -29,7 +30,7 @@ export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose
         push({ type: 'success', message: m['admin.email.detail.copied']() });
     };
 
-    const fmt = (d: string) => new Date(d).toLocaleString();
+    const fmt = (d: string) => formatDateTime(d);
 
     return (
         <Modal
@@ -55,24 +56,24 @@ export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose
                 </div>
             ) : (
                 <div className="flex flex-col gap-6">
-                    <Section title={m['admin.email.detail.basic']()}>
+                    <Section title={m['ui.labels.basicInformation']()}>
                         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-                            <Item label={m['admin.email.detail.status']()}>
+                            <Item label={m['ui.labels.status']()}>
                                 <StatusChip status={data.log.status} />
                             </Item>
                             <Item label={m['admin.email.detail.sentAt']()}>{fmt(data.log.created_at)}</Item>
-                            <Item label={m['admin.email.detail.recipient']()}>{data.log.to}</Item>
-                            <Item label={m['admin.email.detail.user']()}>
+                            <Item label={m['ui.labels.recipient']()}>{data.log.to}</Item>
+                            <Item label={m['ui.labels.user']()}>
                                 {data.log.user ? `${data.log.user.username} (${data.log.user.email})` : '—'}
                             </Item>
-                            <Item label={m['admin.email.detail.subject']()}>{data.log.subject}</Item>
+                            <Item label={m['ui.labels.subject']()}>{data.log.subject}</Item>
                             <Item label={m['admin.email.detail.template']()}>
                                 <code className="rounded bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[11px]">
                                     {data.log.template_key || m['admin.email.activity.custom']()}
                                 </code>
                             </Item>
-                            <Item label={m['admin.email.detail.provider']()}>{data.log.provider || '—'}</Item>
-                            <Item label={m['admin.email.detail.attempts']()}>{data.log.attempt_count}</Item>
+                            <Item label={m['ui.labels.provider']()}>{data.log.provider || '—'}</Item>
+                            <Item label={m['ui.labels.attempts']()}>{data.log.attempt_count}</Item>
                             <Item label={m['admin.email.detail.messageId']()} mono>
                                 {data.log.message_id || '—'}
                             </Item>

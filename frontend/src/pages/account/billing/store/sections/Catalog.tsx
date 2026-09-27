@@ -128,7 +128,7 @@ export default function Catalog({ data }: { data: StoreSectionData }) {
                             <Spinner className="h-7 w-7" />
                         </div>
                     ) : products.length === 0 ? (
-                        <EmptyState message={m['billing.store.noProductsInCategory']()} />
+                        <EmptyState message={m['ui.messages.noProductsInCategory']()} />
                     ) : (
                         <div className="flex flex-col gap-5">
                             {maxDiscount > 0 && <SavingsCallout percent={maxDiscount} />}
@@ -190,11 +190,11 @@ function ProductCard({ product, blocked }: { product: StoreProduct; blocked: boo
     // Third element is a tooltip, for the one spec whose unit needs it.
     const specs: [string, string, string?][] = [
         [m['billing.store.card.ram'](), gb(product.limits.memory)],
-        [m['billing.store.card.cpu'](), formatVcpu(product.limits.cpu), cpuPercentHint(product.limits.cpu)],
-        [m['billing.store.card.storage'](), gb(product.limits.disk)],
-        ...(product.limits.backup ? [[m['billing.store.card.backups'](), String(product.limits.backup)] as [string, string]] : []),
-        ...(product.limits.database ? [[m['billing.store.card.databases'](), String(product.limits.database)] as [string, string]] : []),
-        [m['billing.store.card.ports'](), String(product.limits.allocation)],
+        [m['common.metrics.cpu'](), formatVcpu(product.limits.cpu), cpuPercentHint(product.limits.cpu)],
+        [m['ui.labels.storage'](), gb(product.limits.disk)],
+        ...(product.limits.backup ? [[m['ui.labels.backups'](), String(product.limits.backup)] as [string, string]] : []),
+        ...(product.limits.database ? [[m['ui.labels.databases'](), String(product.limits.database)] as [string, string]] : []),
+        [m['ui.labels.ports'](), String(product.limits.allocation)],
     ];
 
     return (
@@ -202,7 +202,7 @@ function ProductCard({ product, blocked }: { product: StoreProduct; blocked: boo
             {/* Price-led header */}
             <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold text-[var(--color-ink)]">
-                    {product.price === 0 ? m['billing.store.free']() : money(product.price)}
+                    {product.price === 0 ? m['ui.labels.free']() : money(product.price)}
                 </span>
                 {product.price > 0 && (
                     <span className="text-sm text-[var(--color-ink-faint)]">{m['billing.store.perMonth']()}</span>
@@ -227,12 +227,12 @@ function ProductCard({ product, blocked }: { product: StoreProduct; blocked: boo
             <div className="mt-5 flex-1" />
             {blocked ? (
                 <Button disabled className="w-full">
-                    {m['billing.store.configure']()}
+                    {m['ui.actions.configure']()}
                 </Button>
             ) : (
                 <Link to={`/checkout/configure/${product.id}`}>
                     <Button className="w-full">
-                        {m['billing.store.configure']()} <ArrowRight className="h-4 w-4" />
+                        {m['ui.actions.configure']()} <ArrowRight className="h-4 w-4" />
                     </Button>
                 </Link>
             )}

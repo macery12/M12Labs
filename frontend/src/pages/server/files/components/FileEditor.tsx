@@ -226,7 +226,7 @@ export default function FileEditor({ action }: { action: 'edit' | 'new' }) {
     const backHref = `/server/${id}/files#${encodePathSegments(directory)}`;
     const canWrite = action === 'new' ? canCreate : canUpdate;
     const canSave = canWrite && !saving && !readonly && (action === 'new' || dirty);
-    const displayName = action === 'new' ? m['server.files.editor.newFile']() : filename.split('/').pop() || filename;
+    const displayName = action === 'new' ? m['ui.labels.newFile']() : filename.split('/').pop() || filename;
     const crumbs = directory.split('/').filter(Boolean);
 
     // Refs, not state: the blocker and the save shortcut run outside render and
@@ -333,8 +333,8 @@ export default function FileEditor({ action }: { action: 'edit' | 'new' }) {
                             <span
                                 className="h-2 w-2 shrink-0 rounded-full bg-[var(--color-warning)]"
                                 role="status"
-                                aria-label={m['server.files.editor.unsaved']()}
-                                title={m['server.files.editor.unsaved']()}
+                                aria-label={m['common.editor.unsaved']()}
+                                title={m['common.editor.unsaved']()}
                             />
                         )}
                     </nav>
@@ -356,7 +356,7 @@ export default function FileEditor({ action }: { action: 'edit' | 'new' }) {
                                 value={langName}
                                 onChange={loadLanguage}
                                 options={langOptions}
-                                placeholder={m['server.files.editor.language']()}
+                                placeholder={m['ui.labels.language']()}
                                 className="h-9 px-3"
                             />
                         </div>
@@ -415,7 +415,7 @@ export default function FileEditor({ action }: { action: 'edit' | 'new' }) {
                     {readonly && (
                         <>
                             <span aria-hidden>·</span>
-                            <span className="text-[var(--color-warning)]">{m['server.files.editor.readonly']()}</span>
+                            <span className="text-[var(--color-warning)]">{m['ui.states.readOnly']()}</span>
                         </>
                     )}
                     <span className="ml-auto truncate">{langName || m['server.files.editor.plainText']()}</span>

@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Server, Cpu, MemoryStick, LayoutDashboard, Boxes } from 'lucide-react';
 import { applyThemeVars, type Theme } from '@/lib/theme';
+import { formatTags } from '@/i18n';
+import { m } from '@/i18n/messages';
 
 // A sandboxed mini-panel that renders the draft theme by writing its CSS vars
 // onto this container only (not the whole app). Lets the operator see exactly
@@ -28,18 +30,18 @@ export function ThemePreview({ theme }: { theme: Theme }) {
                         <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--brand)] text-[var(--color-brand-ink)]">
                             <Boxes className="h-3.5 w-3.5" />
                         </span>
-                        <span className="text-sm font-semibold tracking-tight">Panel</span>
+                        <span className="text-sm font-semibold tracking-tight">{m['admin.theme.preview.panel']()}</span>
                     </div>
-                    <NavItem icon={LayoutDashboard} label="Overview" active />
-                    <NavItem icon={Server} label="Nodes" />
-                    <NavItem icon={Boxes} label="Servers" />
+                    <NavItem icon={LayoutDashboard} label={m['ui.labels.overview']()} active />
+                    <NavItem icon={Server} label={m['ui.labels.nodes']()} />
+                    <NavItem icon={Boxes} label={m['ui.labels.servers']()} />
                 </aside>
 
                 {/* Content */}
                 <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
                     <div>
-                        <h3 className="text-base font-semibold tracking-tight">Servers</h3>
-                        <p className="text-xs text-[var(--color-ink-muted)]">Every server on the panel, woven by node.</p>
+                        <h3 className="text-base font-semibold tracking-tight">{m['ui.labels.servers']()}</h3>
+                        <p className="text-xs text-[var(--color-ink-muted)]">{m['admin.theme.preview.subtitle']()}</p>
                     </div>
 
                     {/* A panel card */}
@@ -49,13 +51,13 @@ export function ThemePreview({ theme }: { theme: Theme }) {
                     >
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
-                                Live status
+                                {m['admin.theme.preview.liveStatus']()}
                             </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
-                            <Dot color="var(--color-accent)" label="Active" />
-                            <Dot color="var(--color-warning)" label="Installing" />
-                            <Dot color="var(--color-danger)" label="Suspended" />
+                            <Dot color="var(--color-accent)" label={m['ui.states.active']()} />
+                            <Dot color="var(--color-warning)" label={m['common.states.installing']()} />
+                            <Dot color="var(--color-danger)" label={m['common.states.suspended']()} />
                         </div>
                         <div className="flex items-center gap-4 font-mono text-xs tabular-nums text-[var(--color-ink-muted)]">
                             <span className="flex items-center gap-1.5">
@@ -73,28 +75,30 @@ export function ThemePreview({ theme }: { theme: Theme }) {
                             className="inline-flex h-8 items-center gap-1.5 px-3 text-xs font-medium text-[var(--color-brand-ink)]"
                             style={{ background: 'var(--brand)', borderRadius: 'var(--radius-card)' }}
                         >
-                            Primary
+                            {m['ui.labels.primary']()}
                         </button>
                         <button
                             className="inline-flex h-8 items-center gap-1.5 bg-[var(--color-surface-2)] px-3 text-xs font-medium text-[var(--color-ink)]"
                             style={{ borderRadius: 'var(--radius-card)' }}
                         >
-                            Secondary
+                            {m['admin.theme.preview.secondary']()}
                         </button>
                         <button
                             className="inline-flex h-8 items-center gap-1.5 border border-[var(--color-border-strong)] px-3 text-xs font-medium text-[var(--color-ink)]"
                             style={{ borderRadius: 'var(--radius-card)' }}
                         >
-                            Outline
+                            {m['admin.theme.preview.outline']()}
                         </button>
                     </div>
 
                     {/* Text ramp + link */}
                     <p className="text-xs leading-relaxed">
-                        <span className="text-[var(--color-ink)]">Primary text</span>,{' '}
-                        <span className="text-[var(--color-ink-muted)]">muted text</span>,{' '}
-                        <span className="text-[var(--color-ink-faint)]">faint text</span> and a{' '}
-                        <span className="font-medium text-[var(--brand)]">brand link</span>.
+                        {formatTags(m['admin.theme.preview.textRamp'](), {
+                            ink: <span className="text-[var(--color-ink)]" />,
+                            muted: <span className="text-[var(--color-ink-muted)]" />,
+                            faint: <span className="text-[var(--color-ink-faint)]" />,
+                            link: <span className="font-medium text-[var(--brand)]" />,
+                        })}
                     </p>
                 </div>
             </div>

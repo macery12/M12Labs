@@ -51,7 +51,7 @@ function Bubble({ msg }: { msg: ThreadMessage }) {
                 <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-warning)]/40 bg-[var(--color-warning)]/[0.06] px-4 py-3">
                     <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-warning)]">
                         <Lock className="h-3 w-3" />
-                        {m['tickets.thread.internalNote']()}
+                        {m['ui.labels.internalNote']()}
                         <span className="font-normal normal-case text-[var(--color-ink-faint)]">
                             · {msg.authorName} · {timeAgo(msg.createdAt)}
                         </span>
@@ -72,7 +72,7 @@ function Bubble({ msg }: { msg: ThreadMessage }) {
                     <span className="font-medium text-[var(--color-ink-muted)]">{msg.authorName}</span>
                     {msg.isRequester ? (
                         <span className="rounded-full bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-ink-muted)] ring-1 ring-inset ring-[var(--color-border)]">
-                            {m['tickets.thread.requester']()}
+                            {m['ui.labels.requester']()}
                         </span>
                     ) : (
                         msg.isStaff && (

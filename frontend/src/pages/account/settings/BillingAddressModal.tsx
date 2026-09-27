@@ -115,11 +115,11 @@ export function BillingAddressModal({
                     </Field>
                 </div>
                 <div className="sm:col-span-2">
-                    <Field label={m['account.billing.addressLine2']()} hint={m['account.billing.optional']()} htmlFor="ba-l2">
+                    <Field label={m['account.billing.addressLine2']()} hint={m['ui.states.optional']()} htmlFor="ba-l2">
                         <Input id="ba-l2" value={form.address_line2} onChange={e => set('address_line2', e.target.value)} />
                     </Field>
                 </div>
-                <Field label={m['account.billing.city']()} htmlFor="ba-city">
+                <Field label={m['ui.labels.city']()} htmlFor="ba-city">
                     <Input id="ba-city" value={form.city} onChange={e => set('city', e.target.value)} />
                 </Field>
                 <Field label={m['account.billing.state']()} htmlFor="ba-state">
@@ -137,7 +137,7 @@ export function BillingAddressModal({
                     />
                 </Field>
                 <div className="sm:col-span-2">
-                    <Field label={m['account.billing.phone']()} hint={m['account.billing.optional']()} htmlFor="ba-phone">
+                    <Field label={m['account.billing.phone']()} hint={m['ui.states.optional']()} htmlFor="ba-phone">
                         <Input id="ba-phone" value={form.phone} onChange={e => set('phone', e.target.value)} />
                     </Field>
                 </div>

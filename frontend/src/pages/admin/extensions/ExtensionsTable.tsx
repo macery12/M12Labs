@@ -25,7 +25,7 @@ function statusLabel(tone: ExtensionTone): string {
             // wrapped to two lines. The amber arrow icon carries the rest.
             return td('extensions.status.updateShort');
         case 'available':
-            return td('extensions.status.available');
+            return td('ui.states.available');
         case 'incompatible':
             return td('extensions.status.incompatible');
         case 'unsupported':
@@ -33,10 +33,10 @@ function statusLabel(tone: ExtensionTone): string {
         case 'core':
             return td('extensions.status.core');
         case 'enabled':
-            return td('extensions.status.enabled');
+            return td('common.states.enabled');
         case 'installed':
         default:
-            return td('extensions.status.disabled');
+            return td('common.states.disabled');
     }
 }
 
@@ -143,7 +143,7 @@ export function ExtensionsTable({
                             <button
                                 type="button"
                                 onClick={onTogglePage}
-                                aria-label={m['extensions.select.selectPage']()}
+                                aria-label={m['ui.actions.selectAll']()}
                                 aria-pressed={allPageSelected}
                                 className={cn(
                                     'flex h-4 w-4 items-center justify-center rounded-[4px] border transition-colors',
@@ -159,15 +159,15 @@ export function ExtensionsTable({
                                 ) : null}
                             </button>
                         </th>
-                        <SortHeader label={m['extensions.table.extension']()} col="name" sort={sort} onSort={onSort} />
-                        <SortHeader label={m['extensions.table.type']()} col="type" sort={sort} onSort={onSort} className="w-36" />
-                        <SortHeader label={m['extensions.table.status']()} col="status" sort={sort} onSort={onSort} className="w-40" />
-                        <SortHeader label={m['extensions.table.version']()} col="version" sort={sort} onSort={onSort} className="w-36" />
+                        <SortHeader label={m['ui.labels.extension']()} col="name" sort={sort} onSort={onSort} />
+                        <SortHeader label={m['ui.labels.type']()} col="type" sort={sort} onSort={onSort} className="w-36" />
+                        <SortHeader label={m['ui.labels.status']()} col="status" sort={sort} onSort={onSort} className="w-40" />
+                        <SortHeader label={m['ui.labels.version']()} col="version" sort={sort} onSort={onSort} className="w-36" />
                         <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">
                             {m['extensions.table.source']()}
                         </th>
                         <th className="w-px px-3 py-2.5 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">
-                            {m['extensions.table.actions']()}
+                            {m['ui.labels.actions']()}
                         </th>
                     </tr>
                 </thead>
@@ -192,7 +192,7 @@ export function ExtensionsTable({
                                     <button
                                         type="button"
                                         onClick={e => onRowSelect(index, (e.nativeEvent as MouseEvent).shiftKey)}
-                                        aria-label={m['extensions.select.aria']({ name: ext.name })}
+                                        aria-label={m['ui.labels.selectName']({ name: ext.name })}
                                         aria-pressed={selected}
                                         className={cn(
                                             'flex h-4 w-4 items-center justify-center rounded-[4px] border transition-colors',
@@ -255,7 +255,7 @@ export function ExtensionsTable({
                                                     className="inline-flex h-8 cursor-not-allowed items-center gap-1.5 rounded-lg border border-[var(--color-danger)]/40 px-3 text-xs font-medium text-[var(--color-danger)] opacity-90"
                                                 >
                                                     <AlertTriangle className="h-3.5 w-3.5" />
-                                                    {m['extensions.card.install']()}
+                                                    {m['ui.actions.install']()}
                                                 </button>
                                             ) : (
                                                 <button
@@ -265,7 +265,7 @@ export function ExtensionsTable({
                                                     className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-medium text-[var(--color-brand-ink)] transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
                                                 >
                                                     {installing ? <Spinner className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" />}
-                                                    {m['extensions.card.install']()}
+                                                    {m['ui.actions.install']()}
                                                 </button>
                                             )
                                         ) : (
@@ -288,13 +288,13 @@ export function ExtensionsTable({
                                                     checked={ext.enabled}
                                                     disabled={toggling || locked || ext.canEnable === false}
                                                     onChange={() => onToggle(ext)}
-                                                    label={ext.enabled ? m['extensions.card.disabled']() : m['extensions.card.enabled']()}
+                                                    label={ext.enabled ? m['common.states.disabled']() : m['common.states.enabled']()}
                                                     title={ext.canEnable === false ? m['extensions.unsupported.blocked']() : undefined}
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => onOpen(ext)}
-                                                    aria-label={m['extensions.card.manage']()}
+                                                    aria-label={m['ui.actions.manage']()}
                                                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border-strong)] text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
                                                 >
                                                     <Settings2 className="h-3.5 w-3.5" />

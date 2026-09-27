@@ -123,7 +123,7 @@ export default function ProductsPage() {
                     </div>
                     {canCreateCat && (
                         <Button size="sm" onClick={() => navigate('/admin/billing/products/categories/new')}>
-                            <Plus className="h-4 w-4" /> {m['admin.billing.categories.new']()}
+                            <Plus className="h-4 w-4" /> {m['ui.labels.newCategory']()}
                         </Button>
                     )}
                 </div>
@@ -138,7 +138,7 @@ export default function ProductsPage() {
                             className="mt-4"
                             onClick={() => navigate('/admin/billing/products/categories/new')}
                         >
-                            <Plus className="h-4 w-4" /> {m['admin.billing.categories.new']()}
+                            <Plus className="h-4 w-4" /> {m['ui.labels.newCategory']()}
                         </Button>
                     )}
                 </div>
@@ -177,7 +177,7 @@ export default function ProductsPage() {
                                         <StatePill
                                             on={cat.visible}
                                             onLabel={m['admin.billing.categories.shown']()}
-                                            offLabel={m['admin.billing.categories.hidden']()}
+                                            offLabel={m['ui.states.hidden']()}
                                         />
                                     </div>
 
@@ -246,7 +246,7 @@ export default function ProductsPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="ml-auto"
-                                            aria-label={m['admin.billing.categories.delete']()}
+                                            aria-label={m['ui.actions.deleteCategory']()}
                                             onClick={() => setDelCat(cat)}
                                         >
                                             <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
@@ -262,7 +262,7 @@ export default function ProductsPage() {
             <ConfirmDialog
                 open={Boolean(delCat)}
                 onClose={() => setDelCat(null)}
-                title={m['admin.billing.categories.deleteTitle']()}
+                title={m['ui.actions.deleteCategory']()}
                 body={m['admin.billing.categories.deleteBody']({ name: delCat?.name ?? '' })}
                 confirmLabel={m['common.actions.delete']()}
                 cancelLabel={m['common.actions.cancel']()}

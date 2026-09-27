@@ -35,7 +35,7 @@ export function JobTypesPanel({ jobs, windowMinutes }: { jobs: QueueJobMetric[];
                     <thead className="text-left text-xs uppercase tracking-wide text-[var(--color-ink-faint)]">
                         <tr className="border-b border-[var(--color-border)]">
                             <th className="px-4 py-2 font-medium">{m['admin.queues.col.job']()}</th>
-                            <th className="px-4 py-2 font-medium">{m['admin.queues.col.lane']()}</th>
+                            <th className="px-4 py-2 font-medium">{m['ui.labels.queue']()}</th>
                             <th className="px-4 py-2 text-right font-medium">{m['admin.queues.col.processed']()}</th>
                             <th className="px-4 py-2 text-right font-medium">{m['admin.queues.col.runtime']()}</th>
                         </tr>

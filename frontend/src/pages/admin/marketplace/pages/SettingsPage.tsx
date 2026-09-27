@@ -103,9 +103,9 @@ export default function SettingsPage() {
             const cleared = { ...f, curseforge_api_key: '' };
             setForm(cleared);
             setSaved(cleared);
-            push({ type: 'success', message: m['admin.marketplace.settings.saved']() });
+            push({ type: 'success', message: m['ui.messages.settingsSaved']() });
         },
-        onError: err => push({ type: 'error', message: firstError(err) ?? m['admin.marketplace.settings.error']() }),
+        onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
     });
 
     if (!form) {
@@ -123,11 +123,11 @@ export default function SettingsPage() {
             <div className="flex items-center justify-end">
                 <Button size="sm" onClick={() => save.mutate(form)} disabled={!dirty || save.isPending}>
                     {save.isPending ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                    {m['admin.marketplace.settings.save']()}
+                    {m['common.actions.saveChanges']()}
                 </Button>
             </div>
 
-            <Panel title={m['admin.marketplace.settings.general']()}>
+            <Panel title={m['ui.labels.general']()}>
                 <div className="flex flex-col gap-4 p-1">
                     <ToggleRow
                         label={m['admin.marketplace.settings.enabled']()}
@@ -183,7 +183,7 @@ export default function SettingsPage() {
                 </div>
             </Panel>
 
-            <Panel title={m['admin.marketplace.settings.limits']()}>
+            <Panel title={m['ui.labels.limits']()}>
                 <div className="grid grid-cols-1 gap-4 p-1 sm:grid-cols-3">
                     <NumberField
                         label={m['admin.marketplace.settings.maxConcurrent']()}

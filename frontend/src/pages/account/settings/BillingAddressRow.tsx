@@ -40,7 +40,7 @@ export function BillingAddressRow() {
                     <Spinner className="h-4 w-4" />
                 ) : (
                     <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-                        {complete ? m['account.billing.edit']() : m['account.billing.add']()}
+                        {complete ? m['common.actions.edit']() : m['account.billing.add']()}
                     </Button>
                 )
             }

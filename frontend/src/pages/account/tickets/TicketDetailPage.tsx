@@ -143,18 +143,18 @@ export default function TicketDetailPage() {
                 <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-72">
                     <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-ink-faint)]">
-                            {m['tickets.details']()}
+                            {m['ui.labels.details']()}
                         </p>
-                        <Row label={m['tickets.field.status']()}>
+                        <Row label={m['ui.labels.status']()}>
                             <StatusBadge status={ticket.status} />
                         </Row>
-                        <Row label={m['tickets.field.priority']()}>
+                        <Row label={m['ui.labels.priority']()}>
                             <PriorityBadge priority={ticket.priority} />
                         </Row>
-                        <Meta label={m['tickets.field.server']()} value={ticket.server?.name ?? '—'} />
-                        <Meta label={m['tickets.field.opened']()} value={timeAgo(ticket.createdAt)} />
+                        <Meta label={m['ui.labels.server']()} value={ticket.server?.name ?? '—'} />
+                        <Meta label={m['ui.labels.opened']()} value={timeAgo(ticket.createdAt)} />
                         <Meta
-                            label={m['tickets.field.lastReply']()}
+                            label={m['ui.labels.lastReply']()}
                             value={ticket.lastReplyAt ? timeAgo(ticket.lastReplyAt) : '—'}
                         />
                     </div>

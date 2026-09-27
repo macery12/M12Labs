@@ -256,7 +256,7 @@ export function TemplateEditorDialog({
                                 variant={showVars ? 'secondary' : 'ghost'}
                                 size="sm"
                                 onClick={() => setShowVars(v => !v)}
-                                title={m['admin.email.templates.editor.variables']()}
+                                title={m['ui.labels.variables']()}
                             >
                                 <Braces className="h-4 w-4" />
                             </Button>
@@ -315,7 +315,7 @@ export function TemplateEditorDialog({
                                 <aside className="flex w-60 shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)]">
                                     <div className="border-b border-[var(--color-border)] px-4 py-3">
                                         <h3 className="text-sm font-semibold text-[var(--color-ink)]">
-                                            {m['admin.email.templates.editor.variables']()}
+                                            {m['ui.labels.variables']()}
                                         </h3>
                                         <p className="mt-0.5 text-[11px] text-[var(--color-ink-muted)]">
                                             {m['admin.email.templates.editor.variablesHint']()}

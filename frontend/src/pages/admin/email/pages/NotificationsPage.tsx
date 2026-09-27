@@ -18,8 +18,8 @@ const NOTIF_KEY = ['admin', 'email', 'notifications'] as const;
 // unknown one (a new category, or one an extension adds) is title-cased.
 const CATEGORY_LABELS: Record<string, () => string> = {
     auth: m['admin.email.notifications.category.auth'],
-    billing: m['admin.email.notifications.category.billing'],
-    server: m['admin.email.notifications.category.server'],
+    billing: m['ui.labels.billing'],
+    server: m['ui.labels.servers'],
 };
 const categoryLabel = (key: string) =>
     CATEGORY_LABELS[key]?.() ?? key.replace(/[_-]+/g, ' ').replace(/^\w/, c => c.toUpperCase());

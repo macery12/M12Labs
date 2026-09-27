@@ -137,7 +137,7 @@ export default function DatabaseEditor({
                     <h2 className="truncate text-lg font-semibold text-[var(--color-ink)]">
                         {isNew
                             ? m['admin.databases.editor.newTitle']()
-                            : m['admin.databases.editor.editTitle']({ name: host.name })}
+                            : m['ui.actions.editName']({ name: host.name })}
                     </h2>
                     {isNew ? (
                         <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">
@@ -171,7 +171,7 @@ export default function DatabaseEditor({
                 <Card title={m['admin.databases.editor.connection']()}>
                     <div className="flex flex-col gap-4">
                         <Field
-                            label={m['admin.databases.field.name']()}
+                            label={m['ui.labels.name']()}
                             hint={m['admin.databases.field.nameHint']()}
                             htmlFor="db-name"
                         >
@@ -179,13 +179,13 @@ export default function DatabaseEditor({
                         </Field>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_8rem]">
                             <Field
-                                label={m['admin.databases.field.host']()}
+                                label={m['ui.labels.host']()}
                                 hint={m['admin.databases.field.hostHint']()}
                                 htmlFor="db-host"
                             >
                                 <Input id="db-host" value={form.host} onChange={e => set('host', e.target.value)} placeholder="127.0.0.1" />
                             </Field>
-                            <Field label={m['admin.databases.field.port']()} htmlFor="db-port">
+                            <Field label={m['ui.labels.port']()} htmlFor="db-port">
                                 <Input
                                     id="db-port"
                                     type="number"
@@ -202,14 +202,14 @@ export default function DatabaseEditor({
                 <Card title={m['admin.databases.editor.credentials']()}>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <Field
-                            label={m['admin.databases.field.username']()}
+                            label={m['ui.labels.username']()}
                             hint={m['admin.databases.field.usernameHint']()}
                             htmlFor="db-username"
                         >
                             <Input id="db-username" value={form.username} onChange={e => set('username', e.target.value)} maxLength={32} autoComplete="off" />
                         </Field>
                         <Field
-                            label={m['admin.databases.field.password']()}
+                            label={m['ui.labels.password']()}
                             hint={isNew ? m['admin.databases.field.passwordHintNew']() : m['admin.databases.field.passwordHint']()}
                             htmlFor="db-password"
                         >
@@ -220,7 +220,7 @@ export default function DatabaseEditor({
                                 onChange={e => set('password', e.target.value)}
                                 // Dots read as a password already filled in. A new host
                                 // shows nothing; an existing one says blank keeps it.
-                                placeholder={isNew ? undefined : m['admin.databases.field.passwordUnchanged']()}
+                                placeholder={isNew ? undefined : m['ui.states.unchanged']()}
                                 autoComplete="new-password"
                             />
                         </Field>

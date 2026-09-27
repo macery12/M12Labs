@@ -91,12 +91,12 @@ export function DatabaseChangesModal({
 
     const confirmLabel =
         operation === 'install'
-            ? m['extensions.dbchanges.confirmInstall']()
+            ? m['ui.actions.install']()
             : operation === 'update'
               ? m['extensions.dbchanges.confirmUpdate']()
               : dropping
                 ? m['extensions.dbchanges.confirmUninstallDrop']()
-                : m['extensions.dbchanges.confirmUninstall']();
+                : m['ui.actions.uninstall']();
 
     return (
         <Modal

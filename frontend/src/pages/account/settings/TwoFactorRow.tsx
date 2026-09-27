@@ -27,10 +27,10 @@ export function TwoFactorRow() {
     const badge = enabled ? (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs font-medium text-[var(--color-accent)]">
             <Check className="h-3.5 w-3.5" />
-            {m['account.twoFactor.enabled']()}
+            {m['common.states.enabled']()}
         </span>
     ) : (
-        <span className="text-xs text-[var(--color-ink-faint)]">{m['account.twoFactor.disabled']()}</span>
+        <span className="text-xs text-[var(--color-ink-faint)]">{m['common.states.disabled']()}</span>
     );
 
     return (
@@ -42,7 +42,7 @@ export function TwoFactorRow() {
             action={
                 enabled ? (
                     <Button variant="outline" size="sm" onClick={() => setDisable(true)}>
-                        {m['account.twoFactor.disable']()}
+                        {m['ui.actions.disable']()}
                     </Button>
                 ) : (
                     <Button size="sm" onClick={() => setSetup(true)}>

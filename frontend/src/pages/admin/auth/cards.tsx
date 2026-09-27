@@ -217,7 +217,7 @@ export function CaptchaCard({ auth }: { auth: Auth }) {
                         run(() => updateAuthModule('captcha', 'provider', value));
                     }}
                     options={[
-                        { value: 'disabled', label: m['admin.auth.captcha.disabled']() },
+                        { value: 'disabled', label: m['common.states.disabled']() },
                         { value: 'turnstile', label: m['admin.auth.captcha.turnstile']() },
                     ]}
                 />
@@ -234,7 +234,7 @@ export function CaptchaCard({ auth }: { auth: Auth }) {
                         />
                         <HelpText>{m['admin.auth.captcha.siteKeyHelp']()}</HelpText>
                     </Field>
-                    <Field label={m['admin.auth.captcha.secretKeyLabel']()} htmlFor="captcha-secret-key">
+                    <Field label={m['ui.labels.secretKey']()} htmlFor="captcha-secret-key">
                         <Input
                             id="captcha-secret-key"
                             type="password"
@@ -260,7 +260,7 @@ export function OnboardingCard({ auth }: { auth: Auth }) {
     return (
         <ModuleCard
             icon={DoorOpen}
-            title={m['admin.auth.onboarding.title']()}
+            title={m['ui.labels.onboarding']()}
             status={status}
             onRemove={remove.open}
             removeLabel={m['admin.auth.remove.title']()}
@@ -288,7 +288,7 @@ export function OnboardingCard({ auth }: { auth: Auth }) {
 /* ── jGuard summary ────────────────────────────────────────────────────── */
 export function JGuardCard() {
     return (
-        <ModuleCard icon={ShieldHalf} title={m['admin.auth.jguardCard.title']()}>
+        <ModuleCard icon={ShieldHalf} title={m['ui.labels.jguard']()}>
             <div className="flex items-start gap-2.5 rounded-lg border border-[var(--brand)]/25 bg-[var(--brand)]/8 px-4 py-3">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--brand)]" />
                 <p className="text-xs text-[var(--color-ink-muted)]">{m['admin.auth.jguardCard.body']()}</p>
@@ -338,7 +338,7 @@ function SsoCard({
                 />
                 {!settings.clientId && <HelpText>{m['admin.auth.sso.required']()}</HelpText>}
             </Field>
-            <Field label={m['admin.auth.sso.clientSecretLabel']()} htmlFor={`${name}-client-secret`}>
+            <Field label={m['ui.labels.clientSecret']()} htmlFor={`${name}-client-secret`}>
                 <Input
                     id={`${name}-client-secret`}
                     type="password"
@@ -360,7 +360,7 @@ export function DiscordCard({ auth }: { auth: Auth }) {
         <SsoCard
             name="discord"
             icon={MessageCircle}
-            title={m['admin.auth.discord.title']()}
+            title={m['ui.labels.discordSso']()}
             settings={auth.modules.discord}
             callback="/auth/modules/discord/authenticate"
         />
@@ -372,7 +372,7 @@ export function GoogleCard({ auth }: { auth: Auth }) {
         <SsoCard
             name="google"
             icon={Globe}
-            title={m['admin.auth.google.title']()}
+            title={m['ui.labels.googleSso']()}
             settings={auth.modules.google}
             callback="/auth/modules/google/authenticate"
         />

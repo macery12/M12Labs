@@ -57,13 +57,13 @@ export default function UsersListPage() {
         <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.users.title']()}</h1>
+                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.users']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.users.subtitleInvite']()}</p>
                 </div>
                 {canCreate && (
                     <Button onClick={openCreate}>
                         <Plus className="h-4 w-4" />
-                        {m['server.users.add']()}
+                        {m['ui.actions.addUser']()}
                     </Button>
                 )}
             </div>
@@ -84,7 +84,7 @@ export default function UsersListPage() {
                             canCreate ? (
                                 <Button size="sm" onClick={openCreate}>
                                     <Plus className="h-4 w-4" />
-                                    {m['server.users.add']()}
+                                    {m['ui.actions.addUser']()}
                                 </Button>
                             ) : undefined
                         }
@@ -106,7 +106,7 @@ export default function UsersListPage() {
                                         {s.twoFactorEnabled && (
                                             <ShieldCheck
                                                 className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]"
-                                                aria-label={m['server.users.twoFactorOn']()}
+                                                aria-label={m['ui.labels.twoFactorEnabled']()}
                                             />
                                         )}
                                     </div>
@@ -125,7 +125,7 @@ export default function UsersListPage() {
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            aria-label={m['server.users.remove']()}
+                                            aria-label={m['common.actions.remove']()}
                                             className="text-[var(--color-danger)]"
                                             onClick={() => setToDelete(s)}
                                         >
@@ -156,7 +156,7 @@ export default function UsersListPage() {
                 onClose={() => setToDelete(null)}
                 title={m['server.users.removeTitle']()}
                 body={m['server.users.removeBody']({ email: toDelete?.email ?? '' })}
-                confirmLabel={m['server.users.remove']()}
+                confirmLabel={m['common.actions.remove']()}
                 cancelLabel={m['common.actions.cancel']()}
                 busy={remove.isPending}
                 onConfirm={() => toDelete && remove.mutate(toDelete.uuid)}

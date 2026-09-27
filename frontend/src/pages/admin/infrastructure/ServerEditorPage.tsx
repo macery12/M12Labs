@@ -315,10 +315,10 @@ export default function ServerEditorPage() {
                     className="inline-flex items-center gap-1.5 text-xs text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
                 >
                     <ArrowLeft className="h-3.5 w-3.5" />
-                    {m['admin.infrastructure.title']()}
+                    {m['ui.labels.infrastructure']()}
                 </Link>
                 <h1 className="mt-1 truncate text-xl font-semibold text-[var(--color-ink)]">
-                    {m['admin.infrastructure.server.createTitle']()}
+                    {m['ui.labels.newServer']()}
                 </h1>
                 <p className="mt-0.5 text-sm text-[var(--color-ink-faint)]">{m['admin.infrastructure.server.createSubtitle']()}</p>
             </div>
@@ -381,11 +381,11 @@ export default function ServerEditorPage() {
                     <>
                             <SectionCard
                                 icon={Info}
-                                title={m['admin.infrastructure.server.group.details']()}
+                                title={m['ui.labels.details']()}
                                 desc={m['admin.infrastructure.server.group.detailsDesc']()}
                             >
                                 <FieldGrid>
-                                    <FieldRow label={m['admin.infrastructure.server.field.name']()} error={errors.name?.message}>
+                                    <FieldRow label={m['ui.labels.name']()} error={errors.name?.message}>
                                         <Input invalid={!!errors.name} {...register('name', req)} />
                                     </FieldRow>
                                     <FieldRow
@@ -404,7 +404,7 @@ export default function ServerEditorPage() {
                                             emptyMessage={m['admin.infrastructure.server.noUsers']()}
                                         />
                                     </FieldRow>
-                                    <FieldRow wide label={m['admin.infrastructure.server.field.description']()}>
+                                    <FieldRow wide label={m['common.labels.description']()}>
                                         <Input {...register('description')} />
                                     </FieldRow>
                                 </FieldGrid>
@@ -449,7 +449,7 @@ export default function ServerEditorPage() {
                                 desc={m['admin.infrastructure.server.group.eggDesc']()}
                             >
                                 <FieldGrid>
-                                    <FieldRow label={m['admin.infrastructure.server.field.nest']()}>
+                                    <FieldRow label={m['ui.labels.nest']()}>
                                         <Combobox
                                             value={nestId}
                                             onChange={v => {
@@ -457,12 +457,12 @@ export default function ServerEditorPage() {
                                                 setEggId(undefined);
                                             }}
                                             options={(nestsQ.data ?? []).map(n => ({ value: String(n.id), label: n.name, hint: n.description ?? undefined }))}
-                                            placeholder={m['admin.infrastructure.server.selectNest']()}
+                                            placeholder={m['ui.labels.selectNestPlaceholder']()}
                                             loading={nestsQ.isLoading}
                                             error={nestsQ.isError ? m['admin.infrastructure.server.nestsFailed']() : null}
                                         />
                                     </FieldRow>
-                                    <FieldRow label={m['admin.infrastructure.server.field.egg']()}>
+                                    <FieldRow label={m['ui.labels.egg']()}>
                                         <Combobox
                                             value={eggId}
                                             onChange={setEggId}
@@ -473,11 +473,11 @@ export default function ServerEditorPage() {
                                             error={eggsQ.isError ? m['admin.infrastructure.server.eggsFailed']() : null}
                                         />
                                     </FieldRow>
-                                    <FieldRow wide label={m['admin.infrastructure.server.field.image']()}>
+                                    <FieldRow wide label={m['ui.labels.dockerImage']()}>
                                         <Input value={image} onChange={e => setImage(e.target.value)} />
                                     </FieldRow>
                                     {/* Startup commands are long — never squeeze them into a half column. */}
-                                    <FieldRow wide label={m['admin.infrastructure.server.field.startup']()}>
+                                    <FieldRow wide label={m['ui.labels.startupCommand']()}>
                                         <Input className="font-mono text-xs" value={startup} onChange={e => setStartup(e.target.value)} />
                                     </FieldRow>
                                 </FieldGrid>
@@ -508,20 +508,20 @@ export default function ServerEditorPage() {
                                 desc={m['admin.infrastructure.server.group.limitsDesc']()}
                             >
                                 <FieldGrid columns={3}>
-                                    <FieldRow label={m['admin.infrastructure.server.field.memory']()} mono="MiB" error={errors.memory?.message}>
+                                    <FieldRow label={m['ui.labels.memoryMib']()} mono="MiB" error={errors.memory?.message}>
                                         <Input type="number" min={0} invalid={!!errors.memory} {...register('memory', { ...num, min: { value: 0, message: m['admin.infrastructure.server.validation.min0']() } })} />
                                     </FieldRow>
-                                    <FieldRow label={m['admin.infrastructure.server.field.swap']()} mono="MiB" error={errors.swap?.message}>
+                                    <FieldRow label={m['ui.labels.swapMib']()} mono="MiB" error={errors.swap?.message}>
                                         <Input type="number" min={-1} invalid={!!errors.swap} {...register('swap', { ...num, min: { value: -1, message: m['admin.infrastructure.server.validation.swap']() } })} />
                                     </FieldRow>
-                                    <FieldRow label={m['admin.infrastructure.server.field.disk']()} mono="MiB" error={errors.disk?.message}>
+                                    <FieldRow label={m['ui.labels.diskMib']()} mono="MiB" error={errors.disk?.message}>
                                         <Input type="number" min={0} invalid={!!errors.disk} {...register('disk', { ...num, min: { value: 0, message: m['admin.infrastructure.server.validation.min0']() } })} />
                                     </FieldRow>
-                                    <FieldRow label={m['admin.infrastructure.server.field.cpu']()} mono="%" error={errors.cpu?.message}>
+                                    <FieldRow label={m['ui.labels.cpuPercent']()} mono="%" error={errors.cpu?.message}>
                                         <Input type="number" min={0} invalid={!!errors.cpu} {...register('cpu', { ...num, min: { value: 0, message: m['admin.infrastructure.server.validation.min0']() } })} />
                                     </FieldRow>
                                     <FieldRow
-                                        label={m['admin.infrastructure.server.field.io']()}
+                                        label={m['ui.labels.blockIoWeight']()}
                                         desc={m['admin.infrastructure.server.field.ioHint']()}
                                         error={errors.io?.message}
                                     >
@@ -550,20 +550,20 @@ export default function ServerEditorPage() {
 
                             <SectionCard
                                 icon={Package}
-                                title={m['admin.infrastructure.server.group.featureLimits']()}
+                                title={m['ui.labels.featureLimits']()}
                                 desc={m['admin.infrastructure.server.group.featureLimitsDesc']()}
                             >
                                 <FieldGrid columns={3}>
-                                    <FieldRow label={m['admin.infrastructure.server.field.allocations']()} desc={zeroHint('allocations')}>
+                                    <FieldRow label={m['ui.labels.allocationLimit']()} desc={zeroHint('allocations')}>
                                         <Input type="number" min={0} {...register('allocations', num)} />
                                     </FieldRow>
-                                    <FieldRow label={m['admin.infrastructure.server.field.backups']()} desc={zeroHint('backups')}>
+                                    <FieldRow label={m['ui.labels.backupLimit']()} desc={zeroHint('backups')}>
                                         <Input type="number" min={0} {...register('backups', num)} />
                                     </FieldRow>
-                                    <FieldRow label={m['admin.infrastructure.server.field.databases']()} desc={zeroHint('databases')}>
+                                    <FieldRow label={m['ui.labels.databaseLimit']()} desc={zeroHint('databases')}>
                                         <Input type="number" min={0} {...register('databases', num)} />
                                     </FieldRow>
-                                    <FieldRow label={m['admin.infrastructure.server.field.subusers']()} desc={zeroHint('subusers')}>
+                                    <FieldRow label={m['ui.labels.subuserLimit']()} desc={zeroHint('subusers')}>
                                         <Input type="number" min={0} {...register('subusers', num)} />
                                     </FieldRow>
                                 </FieldGrid>
@@ -579,14 +579,14 @@ export default function ServerEditorPage() {
                                 <SummaryRow label={m['admin.infrastructure.server.field.preset']()} value={selectedPreset.name} />
                             )}
                             <SummaryRow label={m['admin.infrastructure.server.field.owner']()} value={selectedOwner?.username} />
-                            <SummaryRow label={m['admin.infrastructure.server.field.egg']()} value={selectedEgg?.name} />
-                            <SummaryRow label={m['admin.infrastructure.server.field.node']()} value={selectedNode?.name} />
+                            <SummaryRow label={m['ui.labels.egg']()} value={selectedEgg?.name} />
+                            <SummaryRow label={m['ui.labels.node']()} value={selectedNode?.name} />
                             <SummaryRow
                                 label={m['admin.infrastructure.server.field.allocation']()}
                                 value={selectedAllocation ? `${selectedAllocation.ip}:${selectedAllocation.port}` : undefined}
                             />
-                            <SummaryRow label={m['admin.infrastructure.server.field.memory']()} value={`${memory || 0} MiB`} />
-                            <SummaryRow label={m['admin.infrastructure.server.field.disk']()} value={`${disk || 0} MiB`} />
+                            <SummaryRow label={m['ui.labels.memoryMib']()} value={`${memory || 0} MiB`} />
+                            <SummaryRow label={m['ui.labels.diskMib']()} value={`${disk || 0} MiB`} />
                         </dl>
 
                         {selectedShortfalls.length > 0 && (
@@ -633,7 +633,7 @@ function NodeField({
     query: { isLoading: boolean; isError: boolean };
 }) {
     return (
-        <FieldRow label={m['admin.infrastructure.server.field.node']()}>
+        <FieldRow label={m['ui.labels.node']()}>
             <Combobox
                 value={value}
                 onChange={onChange}

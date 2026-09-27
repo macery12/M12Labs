@@ -12,7 +12,7 @@ export default function CredentialsPage() {
     const [tab, setTab] = useState<TabId>('api');
 
     const tabs: { id: TabId; label: string }[] = [
-        { id: 'api', label: m['account.credentials.tabs.api']() },
+        { id: 'api', label: m['ui.labels.apiKeys']() },
         { id: 'ssh', label: m['account.credentials.tabs.ssh']() },
     ];
 

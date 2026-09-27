@@ -43,7 +43,7 @@ export default function ConnectionModal({
         <Modal
             open
             onClose={onClose}
-            title={m['server.databases.connectionTitle']()}
+            title={m['ui.labels.connectionDetails']()}
             description={database.name}
             footer={
                 <>
@@ -68,9 +68,9 @@ export default function ConnectionModal({
             <div className="flex flex-col gap-4">
                 <CopyField label={m['server.databases.endpoint']()} value={connectionString(database)} />
                 <CopyField label={m['server.databases.connectionsFrom']()} value={database.connectionsFrom} />
-                <CopyField label={m['server.databases.username']()} value={database.username} />
+                <CopyField label={m['ui.labels.username']()} value={database.username} />
                 {database.password && (
-                    <CopyField label={m['server.databases.password']()} value={database.password} secret />
+                    <CopyField label={m['ui.labels.password']()} value={database.password} secret />
                 )}
                 <CopyField label={m['server.databases.jdbc']()} value={jdbcConnectionString(database)} secret />
             </div>

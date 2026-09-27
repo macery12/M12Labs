@@ -98,7 +98,7 @@ export function ModBrowser({
                             ? m['server.mods.warn.pluginsOnModServer']()
                             : m['server.mods.warn.modsOnPluginServer']()}
                     </span>
-                    <button type="button" onClick={() => setWarningDismissed(true)} aria-label={m['server.mods.filter.clear']()}>
+                    <button type="button" onClick={() => setWarningDismissed(true)} aria-label={m['common.actions.clear']()}>
                         <X className="h-4 w-4" />
                     </button>
                 </div>

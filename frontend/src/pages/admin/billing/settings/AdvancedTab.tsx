@@ -87,7 +87,7 @@ export default function AdvancedTab() {
             <SectionCard
                 id="danger"
                 icon={Power}
-                title={m['admin.billing.integrations.danger.title']()}
+                title={m['ui.actions.disableBillingModule']()}
                 desc={m['admin.billing.integrations.danger.desc']()}
             >
                 {/* Said up front, not only in the confirm dialog: the button used
@@ -95,7 +95,7 @@ export default function AdvancedTab() {
                 <p className="text-sm text-[var(--color-ink-muted)]">{m['admin.billing.integrations.danger.disableBody']()}</p>
                 <div className="flex flex-wrap items-center gap-3">
                     <Button variant="danger" size="sm" onClick={() => setDisableOpen(true)}>
-                        {m['admin.billing.integrations.danger.disable']()}
+                        {m['ui.actions.disableBillingModule']()}
                     </Button>
                     <Link to="/admin/features" className="text-sm text-[var(--brand-bright)] hover:underline">
                         {m['admin.billing.integrations.danger.featuresLink']()}
@@ -106,9 +106,9 @@ export default function AdvancedTab() {
             <ConfirmDialog
                 open={disableOpen}
                 onClose={() => setDisableOpen(false)}
-                title={m['admin.billing.integrations.danger.disableTitle']()}
+                title={m['ui.actions.disableBillingModule']()}
                 body={m['admin.billing.integrations.danger.disableBody']()}
-                confirmLabel={m['admin.billing.integrations.danger.disable']()}
+                confirmLabel={m['ui.actions.disableBillingModule']()}
                 cancelLabel={m['common.actions.cancel']()}
                 busy={disableModule.isPending}
                 onConfirm={() => disableModule.mutate()}

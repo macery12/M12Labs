@@ -57,19 +57,19 @@ export function ActivityFeed() {
         <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-ink-muted)]">
-                    <History className="h-4 w-4" /> {m['dashboard.recentActivity']()}
+                    <History className="h-4 w-4" /> {m['ui.labels.recentActivity']()}
                 </h2>
                 <Link
                     to="/activity"
                     className="flex items-center gap-1 text-xs font-medium text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
                 >
-                    {m['dashboard.activityViewAll']()} <ArrowRight className="h-3 w-3" />
+                    {m['ui.actions.viewAll']()} <ArrowRight className="h-3 w-3" />
                 </Link>
             </div>
             <div className="rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-2">
                 {isLoading && <p className="px-3 py-4 text-sm text-[var(--color-ink-faint)]">{m['common.states.loading']()}</p>}
                 {!isLoading && (!entries || entries.length === 0) && (
-                    <p className="px-3 py-4 text-sm text-[var(--color-ink-faint)]">{m['dashboard.noActivity']()}</p>
+                    <p className="px-3 py-4 text-sm text-[var(--color-ink-faint)]">{m['ui.messages.noRecentActivity']()}</p>
                 )}
                 {entries?.map((entry, i) => (
                     <FeedRow key={entry.id} entry={entry} first={i === 0} onInspect={setInspecting} />

@@ -45,14 +45,14 @@ function WingsRsOverviewPanel() {
                 <div className="flex flex-col">
                     {/* Kernel/arch are already in the System info panel below, so this
                         panel only carries what is unique to the Wings-RS overview. */}
-                    <Row label={m['admin.nodes.wingsRs.version']()} value={overview.version} />
-                    <Row label={m['admin.nodes.wingsRs.cpu']()} value={overview.cpuModel ?? '—'} />
+                    <Row label={m['ui.labels.version']()} value={overview.version} />
+                    <Row label={m['common.metrics.cpu']()} value={overview.cpuModel ?? '—'} />
                     <Row
                         label={m['admin.nodes.wingsRs.containerType']()}
                         value={overview.containerType ?? '—'}
                     />
                     <Row
-                        label={m['admin.nodes.wingsRs.servers']()}
+                        label={m['ui.labels.servers']()}
                         value={
                             overview.servers
                                 ? m['admin.nodes.wingsRs.serversValue']({
@@ -128,7 +128,7 @@ export function NodeOverviewTab() {
                             <span
                                 className={`h-1.5 w-1.5 rounded-full ${utilError ? 'bg-[var(--color-danger)]' : 'bg-[var(--color-accent)]'}`}
                             />
-                            {utilError ? m['admin.nodes.overview.unreachable']() : m['admin.nodes.overview.live']()}
+                            {utilError ? m['admin.nodes.overview.unreachable']() : m['ui.states.liveInline']()}
                         </span>
                     }
                 >
@@ -156,7 +156,7 @@ export function NodeOverviewTab() {
                             />
                             <Meter
                                 icon={Activity}
-                                label={m['admin.nodes.overview.swap']()}
+                                label={m['ui.labels.swap']()}
                                 value={util.swap.total > 0 ? `${formatBytes(util.swap.used)} / ${formatBytes(util.swap.total)}` : m['admin.nodes.overview.swapDisabled']()}
                                 percent={pct(util.swap.used, util.swap.total)}
                             />
@@ -183,7 +183,7 @@ export function NodeOverviewTab() {
                             value={`${formatMib(node.allocatedDisk)} / ${node.disk > 0 ? formatMib(node.disk) : '∞'}`}
                             percent={node.utilization.disk}
                         />
-                        <Meter icon={Server} label={m['admin.nodes.overview.allocations']()} value={`${node.utilization.allocations}%`} percent={node.utilization.allocations} />
+                        <Meter icon={Server} label={m['ui.labels.allocations']()} value={`${node.utilization.allocations}%`} percent={node.utilization.allocations} />
                         {capacityNotes.length > 0 && (
                             <ul className="flex flex-col gap-2 border-t border-[var(--color-border)] pt-3">
                                 {capacityNotes.map(note => (
@@ -202,7 +202,7 @@ export function NodeOverviewTab() {
                         <Row label={m['admin.nodes.overview.daemon']()} value={info?.version ?? '—'} />
                         <Row label={m['admin.nodes.overview.os']()} value={info?.system.type ?? '—'} />
                         <Row label={m['admin.nodes.overview.arch']()} value={info?.system.arch ?? '—'} />
-                        <Row label={m['admin.nodes.overview.kernel']()} value={info?.system.release ?? '—'} />
+                        <Row label={m['ui.labels.kernel']()} value={info?.system.release ?? '—'} />
                         <Row label={m['admin.nodes.overview.cpuThreads']()} value={info?.system.cpus ?? '—'} />
                         <Row label={m['admin.nodes.overview.overallocate']()} value={m['admin.nodes.overview.overallocateValue']({ memory: node.memoryOverallocate, disk: node.diskOverallocate })} />
                     </div>

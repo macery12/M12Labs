@@ -429,7 +429,7 @@ export default function FileBrowser() {
                                 onClick={() => navigate(`/server/${id}/files/new${window.location.hash}`)}
                             >
                                 <FilePlus className="h-4 w-4" />
-                                {m['server.files.newFile']()}
+                                {m['ui.labels.newFile']()}
                             </Button>
                         </>
                     )}
@@ -444,11 +444,11 @@ export default function FileBrowser() {
                         <Button
                             variant="secondary"
                             size="sm"
-                            title={m['server.files.connection.title']()}
+                            title={m['ui.labels.connectionDetails']()}
                             onClick={() => setShowConnection(v => !v)}
                         >
                             <Network className="h-4 w-4" />
-                            {m['server.files.connection.short']()}
+                            {m['ui.labels.sftp']()}
                         </Button>
                     )}
                 </div>
@@ -533,17 +533,17 @@ export default function FileBrowser() {
                                                 className="accent-[var(--brand)]"
                                                 checked={allSelected}
                                                 onChange={toggleSelectAll}
-                                                aria-label={m['server.files.selectAll']()}
+                                                aria-label={m['ui.actions.selectAll']()}
                                             />
                                         </th>
                                         <SortHeader
-                                            label={m['server.files.col.name']()}
+                                            label={m['ui.labels.name']()}
                                             active={sortField === 'name'}
                                             dir={sortDirection}
                                             onClick={() => toggleSort('name')}
                                         />
                                         <SortHeader
-                                            label={m['server.files.col.size']()}
+                                            label={m['ui.labels.size']()}
                                             active={sortField === 'size'}
                                             dir={sortDirection}
                                             onClick={() => toggleSort('size')}
@@ -834,10 +834,10 @@ function SortMenu({
     onSelect: (f: SortField) => void;
 }) {
     const options: { value: SortField; label: string }[] = [
-        { value: 'name', label: m['server.files.col.name']() },
-        { value: 'size', label: m['server.files.col.size']() },
+        { value: 'name', label: m['ui.labels.name']() },
+        { value: 'size', label: m['ui.labels.size']() },
         { value: 'modified', label: m['server.files.col.modified']() },
-        { value: 'type', label: m['server.files.col.type']() },
+        { value: 'type', label: m['ui.labels.type']() },
     ];
     return (
         <Dropdown.Root>
@@ -1009,7 +1009,7 @@ function FileActionsMenu({
                         />
                     )}
                     {file.isFile && canCreate && (
-                        <MenuItem icon={Copy} label={m['server.files.copy']()} onSelect={() => actions.copy(file)} />
+                        <MenuItem icon={Copy} label={m['common.actions.copy']()} onSelect={() => actions.copy(file)} />
                     )}
                     {/* Extract runs against /files/decompress, which both the Go
                         daemon and wings-rs implement — one action, either daemon. */}
@@ -1052,7 +1052,7 @@ function FileActionsMenu({
                     {file.isFile && canReadContent && (
                         <MenuItem
                             icon={Download}
-                            label={m['server.files.download']()}
+                            label={m['ui.actions.download']()}
                             onSelect={() => actions.download(file)}
                         />
                     )}

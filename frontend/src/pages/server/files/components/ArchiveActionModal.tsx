@@ -65,7 +65,7 @@ export function ArchiveActionModal({
                         onClick={run(onDownload)}
                     >
                         <Download className="h-4 w-4" />
-                        {m['server.files.download']()}
+                        {m['ui.actions.download']()}
                     </Button>
                 )}
             </div>

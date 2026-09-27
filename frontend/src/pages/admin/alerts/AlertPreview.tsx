@@ -68,7 +68,7 @@ export default function AlertPreview(props: Props) {
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
-                    {m['admin.alerts.preview.title']()}
+                    {m['ui.labels.livePreview']()}
                 </span>
                 <span className="text-xs text-[var(--color-ink-muted)]">{label}</span>
             </div>

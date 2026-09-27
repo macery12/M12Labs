@@ -64,7 +64,7 @@ export default function SshKeysTab() {
                 <p className="text-sm text-[var(--color-ink-muted)]">{m['account.credentials.ssh.subtitle']()}</p>
                 <Button onClick={() => setFormOpen(true)}>
                     <Plus className="h-4 w-4" />
-                    {m['account.credentials.ssh.create']()}
+                    {m['ui.actions.addSshKey']()}
                 </Button>
             </div>
 
@@ -87,7 +87,7 @@ export default function SshKeysTab() {
                         action={
                             <Button size="sm" onClick={() => setFormOpen(true)}>
                                 <Plus className="h-4 w-4" />
-                                {m['account.credentials.ssh.create']()}
+                                {m['ui.actions.addSshKey']()}
                             </Button>
                         }
                     />

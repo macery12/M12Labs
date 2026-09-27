@@ -1,4 +1,5 @@
 import http from '@/lib/http';
+import { uiLocale } from '@/lib/format';
 
 // Admin billing analytics — the overview dashboard. Sourced from
 // GET /api/application/billing/analytics (BillingController::buildAnalytics).
@@ -107,7 +108,7 @@ function buildSeries(orders: any[]): {
     const months: MonthPoint[] = [];
     const index = new Map<string, MonthPoint>();
     const now = new Date();
-    const fmt = new Intl.DateTimeFormat(undefined, { month: 'short' });
+    const fmt = new Intl.DateTimeFormat(uiLocale(), { month: 'short' });
     for (let i = 11; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;

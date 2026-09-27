@@ -426,7 +426,7 @@ export default function ThemeSection() {
                                             <button
                                                 onClick={() => onDeletePreset(p)}
                                                 className="shrink-0 text-[var(--color-ink-faint)] opacity-0 transition-opacity hover:text-[var(--color-danger)] group-hover:opacity-100"
-                                                title={m['admin.theme.deletePreset']()}
+                                                title={m['ui.actions.deletePreset']()}
                                             >
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </button>
@@ -457,7 +457,7 @@ export default function ThemeSection() {
                 {/* Sticky live preview */}
                 <div className="lg:sticky lg:top-4 lg:self-start">
                     <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
-                        <Palette className="h-3.5 w-3.5 text-[var(--color-ink-faint)]" /> {m['admin.theme.livePreview']()}
+                        <Palette className="h-3.5 w-3.5 text-[var(--color-ink-faint)]" /> {m['ui.labels.livePreview']()}
                         {dirty && <span className="text-[var(--color-warning)]">{m['admin.theme.unsaved']()}</span>}
                     </div>
                     <ThemePreview theme={draft} />

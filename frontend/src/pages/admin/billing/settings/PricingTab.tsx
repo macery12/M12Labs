@@ -146,7 +146,7 @@ export default function PricingTab() {
             <SectionCard
                 id="rules"
                 icon={CalendarClock}
-                title={m['admin.billing.rules.cyclesTitle']()}
+                title={m['ui.labels.billingCycles']()}
                 desc={m['admin.billing.rules.cyclesDesc']()}
                 right={
                     <Button variant="outline" size="sm" disabled={saveCycles.isPending} onClick={() => saveCycles.mutate()}>
@@ -165,7 +165,7 @@ export default function PricingTab() {
                             <tr>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-muted)]">{m['admin.billing.rules.upToDays']()}</th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-muted)]">{m['admin.billing.rules.multiplier']()}</th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-muted)]">{m['admin.billing.rules.adjustment']()}</th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-muted)]">{m['ui.labels.adjustment']()}</th>
                                 <th className="px-3 py-2" />
                             </tr>
                         </thead>

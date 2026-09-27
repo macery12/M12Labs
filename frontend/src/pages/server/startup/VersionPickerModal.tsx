@@ -99,7 +99,7 @@ export default function VersionPickerModal({
         <Modal
             open
             onClose={onClose}
-            title={m['server.startup.versions.title']({ name: variable.name })}
+            title={m['ui.labels.selectName']({ name: variable.name })}
             footer={
                 <>
                     <Button variant="ghost" size="sm" onClick={onClose} disabled={save.isPending}>
@@ -122,7 +122,7 @@ export default function VersionPickerModal({
 
                 <div className="flex flex-col gap-2">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-faint)]">
-                        {m['server.startup.versions.select']()}
+                        {m['ui.labels.version']()}
                     </span>
                     {versions.isLoading ? (
                         <div className="flex items-center gap-2 text-sm text-[var(--color-ink-muted)]">

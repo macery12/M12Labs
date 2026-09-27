@@ -66,7 +66,7 @@ export function NodeHeader() {
                         )}
                         <Badge tone="muted">
                             {node.isPublic ? <Globe className="h-2.5 w-2.5" /> : <Lock className="h-2.5 w-2.5" />}
-                            {node.isPublic ? m['admin.nodes.public']() : m['admin.nodes.private']()}
+                            {node.isPublic ? m['ui.labels.public']() : m['admin.nodes.private']()}
                         </Badge>
                     </div>
                     <button
@@ -86,7 +86,7 @@ export function NodeHeader() {
             <div className="flex shrink-0 items-center gap-2">
                 {can(held, 'nodes.update') && (
                     <Button variant="outline" size="sm" onClick={() => navigate(`/admin/infrastructure/nodes/${node.id}/edit`)}>
-                        <Pencil className="h-4 w-4" /> {m['admin.infrastructure.server.edit']()}
+                        <Pencil className="h-4 w-4" /> {m['common.actions.edit']()}
                     </Button>
                 )}
                 {can(held, 'nodes.delete') && (

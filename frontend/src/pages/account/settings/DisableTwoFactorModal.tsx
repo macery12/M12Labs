@@ -85,7 +85,7 @@ export function DisableTwoFactorModal({
                         disabled={!ready || disable.isPending}
                     >
                         {disable.isPending && <Spinner className="h-4 w-4" />}
-                        {m['account.twoFactor.disable']()}
+                        {m['ui.actions.disable']()}
                     </Button>
                 </>
             }
@@ -114,7 +114,7 @@ export function DisableTwoFactorModal({
                 </Field>
 
                 {mode === 'totp' ? (
-                    <Field label={m['account.twoFactor.disableCodeLabel']()} htmlFor="tf-disable-code">
+                    <Field label={m['ui.labels.authenticationCode']()} htmlFor="tf-disable-code">
                         <Input
                             id="tf-disable-code"
                             value={code}

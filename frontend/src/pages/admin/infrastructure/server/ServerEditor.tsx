@@ -267,7 +267,7 @@ export function ServerEditor() {
                 <section className={cn(panelClass(), tab !== 'settings' && 'hidden')}>
                     <PanelHeader title={m['admin.infrastructure.serverDetail.nav.settings']()} />
                     <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                        <FieldRow label={m['admin.infrastructure.serverDetail.field.name']()} error={errors.name?.message}>
+                        <FieldRow label={m['ui.labels.serverName']()} error={errors.name?.message}>
                             <Input invalid={!!errors.name} disabled={readOnly} {...register('name', { required: m['admin.infrastructure.common.required']() })} />
                         </FieldRow>
                         <FieldRow label={m['admin.infrastructure.serverDetail.field.externalId']()} desc={m['admin.infrastructure.serverDetail.field.externalIdDesc']()}>
@@ -282,7 +282,7 @@ export function ServerEditor() {
                                 disabled={readOnly}
                             />
                         </FieldRow>
-                        <FieldRow label={m['admin.infrastructure.serverDetail.field.description']()}>
+                        <FieldRow label={m['common.labels.description']()}>
                             <Input disabled={readOnly} {...register('description')} />
                         </FieldRow>
                     </div>
@@ -293,16 +293,16 @@ export function ServerEditor() {
                     <PanelHeader title={m['admin.infrastructure.serverDetail.nav.startup']()} />
                     <div className="flex flex-col gap-5">
                         <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                            <FieldRow label={m['admin.infrastructure.serverDetail.field.nest']()}>
+                            <FieldRow label={m['ui.labels.nest']()}>
                                 <Select
                                     value={nestId || undefined}
                                     onChange={v => { setValue('nestId', v, { shouldDirty: true }); }}
                                     options={(nestsQ.data ?? []).map(n => ({ value: String(n.id), label: n.name }))}
-                                    placeholder={m['admin.infrastructure.server.selectNest']()}
+                                    placeholder={m['ui.labels.selectNestPlaceholder']()}
                                     disabled={readOnly}
                                 />
                             </FieldRow>
-                            <FieldRow label={m['admin.infrastructure.serverDetail.field.egg']()} desc={m['admin.infrastructure.serverDetail.field.eggDesc']()}>
+                            <FieldRow label={m['ui.labels.egg']()} desc={m['admin.infrastructure.serverDetail.field.eggDesc']()}>
                                 <Select
                                     value={eggId || undefined}
                                     onChange={adoptEgg}
@@ -313,12 +313,12 @@ export function ServerEditor() {
                             </FieldRow>
                         </div>
 
-                        <FieldRow label={m['admin.infrastructure.serverDetail.field.startup']()} desc={m['admin.infrastructure.serverDetail.field.startupDesc']({ vars: '{{SERVER_MEMORY}}, {{SERVER_IP}}, {{SERVER_PORT}}' })}>
+                        <FieldRow label={m['ui.labels.startupCommand']()} desc={m['admin.infrastructure.serverDetail.field.startupDesc']({ vars: '{{SERVER_MEMORY}}, {{SERVER_IP}}, {{SERVER_PORT}}' })}>
                             <Input className="font-mono text-xs" disabled={readOnly} placeholder={eggDefault} {...register('startup')} />
                         </FieldRow>
 
                         <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                            <FieldRow label={m['admin.infrastructure.serverDetail.field.image']()} desc={m['admin.infrastructure.serverDetail.field.imageDesc']()}>
+                            <FieldRow label={m['ui.labels.dockerImage']()} desc={m['admin.infrastructure.serverDetail.field.imageDesc']()}>
                                 <Select
                                     value={watch('image')}
                                     onChange={v => setValue('image', v, { shouldDirty: true })}
@@ -365,16 +365,16 @@ export function ServerEditor() {
                             <FieldRow label={m['admin.infrastructure.serverDetail.field.threads']()} desc={m['admin.infrastructure.serverDetail.field.threadsDesc']()}>
                                 <Input disabled={readOnly} placeholder="0-1,3" {...register('threads')} />
                             </FieldRow>
-                            <FieldRow label={m['admin.infrastructure.serverDetail.field.memory']()}>
+                            <FieldRow label={m['ui.labels.memoryMib']()}>
                                 <Input type="number" {...register('memory', num)} />
                             </FieldRow>
-                            <FieldRow label={m['admin.infrastructure.serverDetail.field.swap']()}>
+                            <FieldRow label={m['ui.labels.swapMib']()}>
                                 <Input type="number" {...register('swap', num)} />
                             </FieldRow>
-                            <FieldRow label={m['admin.infrastructure.serverDetail.field.disk']()}>
+                            <FieldRow label={m['ui.labels.diskMib']()}>
                                 <Input type="number" {...register('disk', num)} />
                             </FieldRow>
-                            <FieldRow label={m['admin.infrastructure.serverDetail.field.io']()} desc={m['admin.infrastructure.serverDetail.field.ioDesc']()}>
+                            <FieldRow label={m['ui.labels.blockIoWeight']()} desc={m['admin.infrastructure.serverDetail.field.ioDesc']()}>
                                 <Input type="number" {...register('io', num)} />
                             </FieldRow>
                         </div>
@@ -387,12 +387,12 @@ export function ServerEditor() {
                         </label>
 
                         <div className="border-t border-[var(--color-border)] pt-4">
-                            <p className={cn(microLabel, 'mb-3')}>{m['admin.infrastructure.serverDetail.nav.limits']()}</p>
+                            <p className={cn(microLabel, 'mb-3')}>{m['ui.labels.featureLimits']()}</p>
                             <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-                                <FieldRow label={m['admin.infrastructure.serverDetail.field.allocations']()}><Input type="number" {...register('allocations', num)} /></FieldRow>
-                                <FieldRow label={m['admin.infrastructure.serverDetail.field.backups']()}><Input type="number" {...register('backups', num)} /></FieldRow>
-                                <FieldRow label={m['admin.infrastructure.serverDetail.field.databases']()}><Input type="number" {...register('databases', num)} /></FieldRow>
-                                <FieldRow label={m['admin.infrastructure.serverDetail.field.subusers']()}><Input type="number" {...register('subusers', num)} /></FieldRow>
+                                <FieldRow label={m['ui.labels.allocationLimit']()}><Input type="number" {...register('allocations', num)} /></FieldRow>
+                                <FieldRow label={m['ui.labels.backupLimit']()}><Input type="number" {...register('backups', num)} /></FieldRow>
+                                <FieldRow label={m['ui.labels.databaseLimit']()}><Input type="number" {...register('databases', num)} /></FieldRow>
+                                <FieldRow label={m['ui.labels.subuserLimit']()}><Input type="number" {...register('subusers', num)} /></FieldRow>
                             </div>
                         </div>
                     </div>

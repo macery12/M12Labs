@@ -51,9 +51,9 @@ export default function NestsWorkspace() {
             {/* Rail */}
             <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-72">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-lg font-semibold text-[var(--color-ink)]">{m['admin.nests.title']()}</h1>
+                    <h1 className="text-lg font-semibold text-[var(--color-ink)]">{m['ui.labels.nests']()}</h1>
                     <Button size="sm" onClick={() => setShowNew(true)}>
-                        <Plus className="h-4 w-4" /> {m['admin.nests.nest.new']()}
+                        <Plus className="h-4 w-4" /> {m['ui.labels.newNest']()}
                     </Button>
                 </div>
 
@@ -190,7 +190,7 @@ function NestDetailPane({ nest }: { nest: AdminNest }) {
                 <section className="rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70 p-5">
                     <h2 className="mb-4 text-sm font-semibold text-[var(--color-ink)]">{m['admin.nests.nest.editTitle']()}</h2>
                     <div className="flex flex-col gap-4">
-                        <Field label={m['admin.nests.nest.name']()} htmlFor="edit-nest-name">
+                        <Field label={m['ui.labels.name']()} htmlFor="edit-nest-name">
                             <Input id="edit-nest-name" value={name} onChange={e => setName(e.currentTarget.value)} />
                         </Field>
                         <Field label={m['common.labels.description']()} htmlFor="edit-nest-desc">
@@ -208,8 +208,8 @@ function NestDetailPane({ nest }: { nest: AdminNest }) {
                 <section className="rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70 p-5">
                     <h2 className="mb-4 text-sm font-semibold text-[var(--color-ink)]">{m['admin.nests.nest.detailsTitle']()}</h2>
                     <dl className="flex flex-col gap-3 text-sm">
-                        <DetailRow label={m['admin.nests.nest.id']()} value={String(nest.id)} onCopy={() => copy(String(nest.id))} mono />
-                        <DetailRow label={m['admin.nests.nest.uuid']()} value={nest.uuid} onCopy={() => copy(nest.uuid)} mono />
+                        <DetailRow label={m['ui.labels.id']()} value={String(nest.id)} onCopy={() => copy(String(nest.id))} mono />
+                        <DetailRow label={m['ui.labels.uuid']()} value={nest.uuid} onCopy={() => copy(nest.uuid)} mono />
                         <DetailRow label={m['admin.nests.nest.author']()} value={nest.author} onCopy={() => copy(nest.author)} />
                         <div className="flex items-center justify-between">
                             <dt className="text-[var(--color-ink-faint)]">{m['admin.nests.nest.eggsInNest']()}</dt>
@@ -222,7 +222,7 @@ function NestDetailPane({ nest }: { nest: AdminNest }) {
             {/* Eggs table */}
             <section className="rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70">
                 <header className="flex flex-wrap items-center gap-3 border-b border-[var(--color-border)] px-5 py-3.5">
-                    <h2 className="text-sm font-semibold text-[var(--color-ink)]">{m['admin.nests.eggs.title']()}</h2>
+                    <h2 className="text-sm font-semibold text-[var(--color-ink)]">{m['ui.labels.eggs']()}</h2>
                     <div className="relative ml-auto">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-faint)]" />
                         <Input
@@ -236,7 +236,7 @@ function NestDetailPane({ nest }: { nest: AdminNest }) {
                         <Upload className="h-4 w-4" /> {m['admin.nests.eggs.import']()}
                     </Button>
                     <Button size="sm" onClick={() => navigate(`/admin/nests/${nest.id}/eggs/new`)}>
-                        <Plus className="h-4 w-4" /> {m['admin.nests.eggs.new']()}
+                        <Plus className="h-4 w-4" /> {m['ui.labels.newEgg']()}
                     </Button>
                 </header>
 
@@ -251,10 +251,10 @@ function NestDetailPane({ nest }: { nest: AdminNest }) {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-[var(--color-border)] text-left text-xs font-medium uppercase tracking-wider text-[var(--color-ink-faint)]">
-                                    <th className="w-16 px-5 py-2.5">{m['admin.nests.eggs.colId']()}</th>
-                                    <th className="px-5 py-2.5">{m['admin.nests.eggs.colName']()}</th>
-                                    <th className="w-24 px-5 py-2.5">{m['admin.nests.eggs.colVariables']()}</th>
-                                    <th className="w-24 px-5 py-2.5">{m['admin.nests.eggs.colServers']()}</th>
+                                    <th className="w-16 px-5 py-2.5">{m['ui.labels.id']()}</th>
+                                    <th className="px-5 py-2.5">{m['ui.labels.name']()}</th>
+                                    <th className="w-24 px-5 py-2.5">{m['ui.labels.variables']()}</th>
+                                    <th className="w-24 px-5 py-2.5">{m['ui.labels.servers']()}</th>
                                     <th className="px-5 py-2.5">{m['common.labels.description']()}</th>
                                 </tr>
                             </thead>

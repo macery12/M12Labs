@@ -6,6 +6,7 @@ import { cn } from '@/lib/cn';
 import { useBilling } from '@/state/billing';
 import { useServerView } from './ServerContext';
 import { EditBillingModal } from './EditBillingModal';
+import { formatDate } from '@/lib/format';
 
 // Days/hours until a renewal, or nulls once it's in the past.
 function timeUntil(iso: string): { days: number; hours: number; overdue: boolean } {
@@ -37,9 +38,9 @@ export function BillingSection({ readOnly }: { readOnly: boolean }) {
 
             <div className="flex items-start justify-between gap-4">
                 <div className="grid flex-1 gap-x-6 gap-y-4 sm:grid-cols-3">
-                    <Summary label={m['admin.infrastructure.serverDetail.billing.summary.plan']()}>
+                    <Summary label={m['ui.labels.plan']()}>
                         {!s.billing.productId ? (
-                            <Muted>{m['admin.infrastructure.serverDetail.billing.none']()}</Muted>
+                            <Muted>{m['ui.states.none']()}</Muted>
                         ) : !product ? (
                             <Muted>{m['admin.infrastructure.serverDetail.billing.planMissing']()}</Muted>
                         ) : (
@@ -55,9 +56,9 @@ export function BillingSection({ readOnly }: { readOnly: boolean }) {
                         )}
                     </Summary>
 
-                    <Summary label={m['admin.infrastructure.serverDetail.billing.summary.renewal']()}>
+                    <Summary label={m['ui.labels.nextRenewal']()}>
                         {!s.billing.renewalDate ? (
-                            <Muted>{m['admin.infrastructure.serverDetail.billing.none']()}</Muted>
+                            <Muted>{m['ui.states.none']()}</Muted>
                         ) : (
                             <Renewal iso={s.billing.renewalDate} />
                         )}
@@ -65,7 +66,7 @@ export function BillingSection({ readOnly }: { readOnly: boolean }) {
 
                     <Summary label={m['admin.infrastructure.serverDetail.billing.summary.limits']()}>
                         {!product ? (
-                            <Muted>{m['admin.infrastructure.serverDetail.billing.none']()}</Muted>
+                            <Muted>{m['ui.states.none']()}</Muted>
                         ) : (
                             <span className="font-mono text-sm tabular-nums text-[var(--color-ink)]">
                                 {m['admin.infrastructure.serverDetail.billing.summary.limitsValue']({
@@ -95,7 +96,7 @@ function Renewal({ iso }: { iso: string }) {
     const { days, hours, overdue } = timeUntil(iso);
     return (
         <>
-            <span className="font-mono font-medium tabular-nums text-[var(--color-ink)]">{new Date(iso).toLocaleDateString()}</span>
+            <span className="font-mono font-medium tabular-nums text-[var(--color-ink)]">{formatDate(iso)}</span>
             <span className={cn('block font-mono text-xs tabular-nums', overdue ? 'text-[var(--color-warning)]' : 'text-[var(--color-ink-faint)]')}>
                 {overdue
                     ? m['admin.infrastructure.serverDetail.billing.summary.overdue']({ days, hours })

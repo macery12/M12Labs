@@ -276,7 +276,7 @@ export default function ProductEditorPage() {
                             : m['admin.billing.products.backToCatalog']()}
                     </Link>
                     <h1 className="mt-1 truncate text-xl font-semibold text-[var(--color-ink)]">
-                        {editing ? product?.name : m['admin.billing.products.newTitle']()}
+                        {editing ? product?.name : m['ui.labels.newProduct']()}
                     </h1>
                     {category && (
                         <p className="text-sm text-[var(--color-ink-muted)]">
@@ -312,7 +312,7 @@ export default function ProductEditorPage() {
                     >
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                             <LimitField
-                                label={m['admin.billing.products.limit.cpu']()}
+                                label={m['common.metrics.cpu']()}
                                 icon={Cpu}
                                 unit="%"
                                 hint={m['admin.billing.products.limitDesc.cpu']()}
@@ -347,12 +347,12 @@ export default function ProductEditorPage() {
                     <SectionCard
                         id="features"
                         icon={SlidersHorizontal}
-                        title={m['admin.billing.products.section.featureLimits']()}
+                        title={m['ui.labels.featureLimits']()}
                         desc={m['admin.billing.products.section.featureLimitsDesc']()}
                     >
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                             <LimitField
-                                label={m['admin.billing.products.limit.backup']()}
+                                label={m['ui.labels.backups']()}
                                 icon={Archive}
                                 hint={m['admin.billing.products.limitDesc.backup']()}
                                 value={backup}
@@ -360,7 +360,7 @@ export default function ProductEditorPage() {
                                 presets={[0, 1, 3, 7]}
                             />
                             <LimitField
-                                label={m['admin.billing.products.limit.database']()}
+                                label={m['ui.labels.databases']()}
                                 icon={Database}
                                 hint={m['admin.billing.products.limitDesc.database']()}
                                 value={database}
@@ -368,7 +368,7 @@ export default function ProductEditorPage() {
                                 presets={[0, 1, 2, 5]}
                             />
                             <LimitField
-                                label={m['admin.billing.products.limit.allocation']()}
+                                label={m['ui.labels.allocations']()}
                                 icon={Network}
                                 hint={m['admin.billing.products.limitDesc.allocation']()}
                                 value={allocation}
@@ -387,7 +387,7 @@ export default function ProductEditorPage() {
                     <SectionCard
                         id="cycles"
                         icon={CalendarClock}
-                        title={m['admin.billing.products.section.cycles']()}
+                        title={m['ui.labels.billingCycles']()}
                         desc={m['admin.billing.products.section.cyclesDesc']()}
                     >
                         <CycleEditor cycles={cycles} onChange={mutateCycles} price={price} />
@@ -402,23 +402,23 @@ export default function ProductEditorPage() {
                     <SectionCard
                         id="details"
                         icon={Info}
-                        title={m['admin.billing.products.section.details']()}
+                        title={m['ui.labels.details']()}
                         desc={m['admin.billing.products.section.detailsDesc']()}
                     >
                         <FieldRow
-                            label={m['admin.billing.products.name']()}
-                            error={errors.name && m['admin.billing.common.required']()}
+                            label={m['ui.labels.name']()}
+                            error={errors.name && m['ui.states.required']()}
                         >
                             <Input {...register('name', { required: true })} invalid={Boolean(errors.name)} />
                         </FieldRow>
                         <FieldRow
-                            label={m['admin.billing.products.icon']()}
+                            label={m['ui.labels.icon']()}
                             desc={m['admin.billing.products.iconDesc']()}
                         >
                             <Input {...register('icon')} placeholder="server" />
                         </FieldRow>
                         <FieldRow
-                            label={m['admin.billing.products.description']()}
+                            label={m['common.labels.description']()}
                             desc={m['admin.billing.products.descriptionDesc']()}
                         >
                             <Input {...register('description')} />
@@ -436,11 +436,11 @@ export default function ProductEditorPage() {
                     <SectionCard
                         id="pricing"
                         icon={Tag}
-                        title={m['admin.billing.products.section.price']()}
+                        title={m['ui.labels.price']()}
                         desc={m['admin.billing.products.section.priceDesc']()}
                     >
                         <FieldRow
-                            label={m['admin.billing.products.price']()}
+                            label={m['ui.labels.price']()}
                             desc={m['admin.billing.products.priceDesc']()}
                         >
                             <Input
@@ -504,7 +504,7 @@ function CategoryPicker() {
                     <ArrowLeft className="h-3.5 w-3.5" />
                     {m['admin.billing.products.backToCatalog']()}
                 </Link>
-                <h1 className="mt-1 text-xl font-semibold text-[var(--color-ink)]">{m['admin.billing.products.newTitle']()}</h1>
+                <h1 className="mt-1 text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.newProduct']()}</h1>
             </div>
             <SectionCard
                 icon={Boxes}
@@ -517,7 +517,7 @@ function CategoryPicker() {
                     <div className="flex flex-col items-start gap-3">
                         <p className="text-sm text-[var(--color-ink-muted)]">{m['admin.billing.products.pickCategoryEmpty']()}</p>
                         <Button size="sm" onClick={() => navigate('/admin/billing/products/categories/new')}>
-                            <Plus className="h-4 w-4" /> {m['admin.billing.categories.new']()}
+                            <Plus className="h-4 w-4" /> {m['ui.labels.newCategory']()}
                         </Button>
                     </div>
                 ) : (

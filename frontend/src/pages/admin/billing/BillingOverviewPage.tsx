@@ -210,7 +210,7 @@ export default function BillingOverviewPage() {
                         <PanelHeader
                             title={m['admin.billing.overview.topProducts']()}
                             to="/admin/billing/products"
-                            action={m['admin.overview.link.viewAll']()}
+                            action={m['ui.actions.viewAll']()}
                         />
                         <TopProducts products={data.topProducts} />
                     </section>
@@ -221,7 +221,7 @@ export default function BillingOverviewPage() {
                         <PanelHeader title={m['admin.billing.overview.upcomingRenewals']()} />
                         <RenewalBars
                             rows={[
-                                { label: m['admin.billing.overview.overdue'](), window: r.overdue, color: 'var(--color-danger)' },
+                                { label: m['ui.states.overdue'](), window: r.overdue, color: 'var(--color-danger)' },
                                 { label: m['admin.billing.overview.due7'](), window: r.in7Days, color: 'var(--color-warning)' },
                                 { label: m['admin.billing.overview.due8to14'](), window: r.in8to14Days, color: 'var(--color-accent)' },
                             ]}
@@ -253,7 +253,7 @@ export default function BillingOverviewPage() {
                                 ))}
                                 {r.overdue.count > 5 && (
                                     <p className="mt-1 font-mono text-xs text-[var(--color-ink-faint)]">
-                                        {m['admin.billing.overview.overdueMore']({ count: r.overdue.count - 5 })}
+                                        {m['ui.labels.countMore']({ count: r.overdue.count - 5 })}
                                     </p>
                                 )}
                             </div>
@@ -283,7 +283,7 @@ export default function BillingOverviewPage() {
                             </div>
                             {suspended.length > shownSuspended.length && (
                                 <p className="mt-2 font-mono text-xs text-[var(--color-ink-faint)]">
-                                    {m['admin.billing.overview.suspendedMore']({ count: suspended.length - shownSuspended.length })}
+                                    {m['ui.labels.countMore']({ count: suspended.length - shownSuspended.length })}
                                 </p>
                             )}
                         </div>
@@ -293,7 +293,7 @@ export default function BillingOverviewPage() {
                         <PanelHeader
                             title={m['admin.billing.overview.recentEvents']()}
                             to="/admin/billing/orders"
-                            action={m['admin.overview.link.viewAll']()}
+                            action={m['ui.actions.viewAll']()}
                         />
                         {data.recentEvents.length === 0 ? (
                             <p className="py-2 text-sm text-[var(--color-ink-faint)]">{m['admin.billing.overview.noEvents']()}</p>

@@ -56,7 +56,7 @@ export default function ProvidersPage() {
             qc.invalidateQueries({ queryKey: ['admin', 'marketplace', 'providers'] });
             push({ type: 'success', message: m['admin.marketplace.providers.saved']() });
         },
-        onError: err => push({ type: 'error', message: firstError(err) ?? m['admin.marketplace.settings.error']() }),
+        onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
     });
 
     if (rulesQ.isLoading || !draft) {
@@ -108,7 +108,7 @@ export default function ProvidersPage() {
                     reasonAlign="end"
                 >
                     {save.isPending ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                    {m['admin.marketplace.settings.save']()}
+                    {m['common.actions.saveChanges']()}
                 </Button>
             </div>
 

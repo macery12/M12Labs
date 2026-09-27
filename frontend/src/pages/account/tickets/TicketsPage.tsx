@@ -99,7 +99,7 @@ export default function TicketsPage() {
                                     : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]',
                             )}
                         >
-                            {f === 'all' ? m['tickets.filter.all']() : statusTabLabel(f)}
+                            {f === 'all' ? m['ui.states.all']() : statusTabLabel(f)}
                             <span className="text-[var(--color-ink-faint)]">{counts[f] ?? 0}</span>
                         </button>
                     ))}
@@ -140,7 +140,7 @@ export default function TicketsPage() {
                                         </div>
                                         <p className="mt-0.5 text-xs text-[var(--color-ink-faint)]">
                                             {m['tickets.ref']({ id: t.id })} ·{' '}
-                                            {m['tickets.updatedAgo']({ ago: timeAgo(t.lastReplyAt ?? t.createdAt) })}
+                                            {m['ui.labels.updatedAgo']({ ago: timeAgo(t.lastReplyAt ?? t.createdAt) })}
                                             {t.server ? ` · ${t.server.name}` : ''}
                                         </p>
                                     </div>
@@ -170,7 +170,7 @@ export default function TicketsPage() {
 function statusTabLabel(status: TicketStatus): string {
     switch (status) {
         case 'pending':
-            return m['tickets.status.pending']();
+            return m['ui.states.pending']();
         case 'in-progress':
             return m['tickets.status.inProgress']();
         case 'resolved':

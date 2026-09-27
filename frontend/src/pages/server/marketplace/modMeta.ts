@@ -52,5 +52,5 @@ export function providerLabel(key: string): string {
 
 // A mod's primary author display name.
 export function primaryAuthor(authors: Array<{ name: string }> | undefined): string {
-    return authors?.[0]?.name ?? m['server.mods.unknownAuthor']();
+    return authors?.[0]?.name ?? m['ui.states.unknown']();
 }

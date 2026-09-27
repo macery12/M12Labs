@@ -154,7 +154,7 @@ export default function Cockpit() {
             </Panel>
             <div className="grid grid-cols-3 gap-2.5">
                 <Gauge
-                    label={m['landing.cockpit.cpu']()}
+                    label={m['common.metrics.cpu']()}
                     value={`${Math.round(stats.cpu)}%`}
                     max="400%"
                     percent={stats.cpu / 4}

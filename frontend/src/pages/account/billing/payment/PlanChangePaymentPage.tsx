@@ -7,7 +7,7 @@ import { AlertTriangle, ArrowLeft, CheckCircle2, CreditCard } from 'lucide-react
 import { m } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 import { abs } from '@/lib/base';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatDateTime as formatPanelDateTime } from '@/lib/format';
 import { loadStripeOnce } from '@/lib/stripe';
 import { firstError } from '@/lib/apiError';
 import { Spinner } from '@/components/ui/Spinner';
@@ -246,7 +246,7 @@ export default function PlanChangePaymentPage() {
                             {m['billing.payment.orderSummary']()}
                         </p>
                         <dl className="mt-4 space-y-2 text-sm">
-                            <QuoteRow label={m['billing.payment.plan']()} value={productQ.data.name} />
+                            <QuoteRow label={m['ui.labels.plan']()} value={productQ.data.name} />
                             <QuoteRow
                                 label={m['server.billing.currentCyclePrice']()}
                                 value={money(liveQuote.current_cycle_price)}
@@ -417,7 +417,7 @@ function Notice({ tone, children }: { tone: 'success' | 'warning' | 'danger'; ch
 }
 
 function formatDateTime(value: string): string {
-    return new Date(value).toLocaleString(undefined, {
+    return formatPanelDateTime(value, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',

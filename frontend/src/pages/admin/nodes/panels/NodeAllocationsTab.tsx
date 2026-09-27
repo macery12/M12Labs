@@ -69,7 +69,7 @@ export function NodeAllocationsTab() {
     const del = useMutation({
         mutationFn: (id: number) => deleteAllocation(node.id, id),
         onSuccess: async () => {
-            push({ type: 'success', message: m['admin.infrastructure.alloc.deleted']() });
+            push({ type: 'success', message: m['ui.messages.allocationRemoved']() });
             await invalidate();
             setToDelete(null);
         },
@@ -80,7 +80,7 @@ export function NodeAllocationsTab() {
 
     return (
         <Panel
-            title={m['admin.nodes.allocationsTab.title']()}
+            title={m['ui.labels.allocations']()}
             icon={Network}
             right={
                 <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">

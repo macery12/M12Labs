@@ -25,7 +25,7 @@ import {
 } from '@/api/serverBilling';
 import type { RenewalSettings } from './billingModel';
 import { Notice } from './parts';
-import { cpuPercentHint, formatMib, formatVcpu } from '@/lib/format';
+import { cpuPercentHint, formatDateTime as formatPanelDateTime, formatMib, formatVcpu } from '@/lib/format';
 
 // A plan change never changes the server's billing cycle. More-expensive plans
 // are paid for now using a server-authoritative prorated quote; equal or cheaper
@@ -106,7 +106,7 @@ export function ChangePlanPanel({ currency }: { currency: string }) {
 
     if (plansQ.isLoading || scheduledQ.isLoading) {
         return (
-            <Panel title={m['server.billing.plans']()} icon={ArrowLeftRight}>
+            <Panel title={m['ui.actions.changePlan']()} icon={ArrowLeftRight}>
                 <div className="flex justify-center py-6">
                     <Spinner className="h-6 w-6" />
                 </div>
@@ -141,7 +141,7 @@ export function ChangePlanPanel({ currency }: { currency: string }) {
 
     return (
         <>
-            <Panel title={m['server.billing.plans']()} icon={ArrowLeftRight}>
+            <Panel title={m['ui.actions.changePlan']()} icon={ArrowLeftRight}>
                 <div className="space-y-3">
                     <p className="text-xs text-[var(--color-ink-muted)]">{m['server.billing.plansHint']()}</p>
 
@@ -238,7 +238,7 @@ export function ChangePlanPanel({ currency }: { currency: string }) {
                                                 >
                                                     {discount > 0
                                                         ? m['server.billing.discountShort']({ percent: Math.abs(discount).toFixed(1) })
-                                                        : m['server.billing.premiumShort']({ percent: Math.abs(discount).toFixed(1) })}
+                                                        : m['ui.labels.percentPremium']({ percent: Math.abs(discount).toFixed(1) })}
                                                 </span>
                                             )}
                                         </div>
@@ -261,7 +261,7 @@ export function ChangePlanPanel({ currency }: { currency: string }) {
                                         {pick.isPending && pick.variables?.id === plan.id ? (
                                             <Spinner className="h-4 w-4" />
                                         ) : (
-                                            m['server.billing.select']()
+                                            m['ui.actions.select']()
                                         )}
                                     </Button>
                                 </div>
@@ -333,8 +333,8 @@ export function ChangePlanPanel({ currency }: { currency: string }) {
                                 />
                                 <ResourceRow label={m['common.metrics.memory']()} value={formatMib(selected.limits.memory)} />
                                 <ResourceRow label={m['common.metrics.disk']()} value={formatMib(selected.limits.disk)} />
-                                <ResourceRow label={m['server.billing.databases']()} value={String(selected.limits.database)} />
-                                <ResourceRow label={m['server.billing.backups']()} value={String(selected.limits.backup)} />
+                                <ResourceRow label={m['ui.labels.databases']()} value={String(selected.limits.database)} />
+                                <ResourceRow label={m['ui.labels.backups']()} value={String(selected.limits.backup)} />
                             </dl>
                         </div>
 
@@ -353,7 +353,7 @@ export function ChangePlanPanel({ currency }: { currency: string }) {
                             />
                             <QuoteRow
                                 label={m['billing.payment.billingCycle']()}
-                                value={m['server.billing.cycleDays']({ days: quote.billing_days })}
+                                value={m['ui.labels.countDays']({ days: quote.billing_days })}
                             />
                         </dl>
 
@@ -412,7 +412,7 @@ function QuoteRow({ label, value }: { label: string; value: string }) {
 }
 
 function formatDateTime(value: string): string {
-    return new Date(value).toLocaleString(undefined, {
+    return formatPanelDateTime(value, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',

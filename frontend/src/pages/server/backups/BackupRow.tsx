@@ -3,7 +3,7 @@ import { Archive, Lock, Unlock, MoreVertical, Download, Box, Trash2, type Lucide
 import { m } from '@/i18n/messages';
 import { can } from '@/lib/can';
 import { cn } from '@/lib/cn';
-import { formatBytes, timeAgo } from '@/lib/format';
+import { formatBytes, formatDateTime, timeAgo } from '@/lib/format';
 import { useServer } from '@/components/server/ServerContext';
 import { Spinner } from '@/components/ui/Spinner';
 import type { Backup } from '@/api/backups';
@@ -90,11 +90,11 @@ export default function BackupRow({
             </div>
 
             <div className="hidden shrink-0 text-center md:block">
-                <p className="text-sm text-[var(--color-ink)]" title={new Date(backup.createdAt).toLocaleString()}>
+                <p className="text-sm text-[var(--color-ink)]" title={formatDateTime(backup.createdAt)}>
                     {timeAgo(backup.createdAt)}
                 </p>
                 <p className="mt-0.5 text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-                    {m['server.backups.created']()}
+                    {m['ui.labels.created']()}
                 </p>
             </div>
 
@@ -124,7 +124,7 @@ export default function BackupRow({
                                 className="z-[60] w-48 overflow-hidden rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-1 shadow-xl shadow-black/30"
                             >
                                 {canDownload && (
-                                    <Item icon={Download} label={m['server.backups.download']()} onSelect={onDownload} />
+                                    <Item icon={Download} label={m['ui.actions.download']()} onSelect={onDownload} />
                                 )}
                                 {canRestore && (
                                     <Item icon={Box} label={m['server.backups.restore']()} onSelect={onRestore} />

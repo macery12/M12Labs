@@ -39,15 +39,15 @@ function powerLabel(power: PowerView): string {
         case 'running':
             return m['admin.servers.power.running']();
         case 'starting':
-            return m['admin.servers.power.starting']();
+            return m['common.states.starting']();
         case 'stopping':
-            return m['admin.servers.power.stopping']();
+            return m['common.states.stopping']();
         case 'offline':
-            return m['admin.servers.power.offline']();
+            return m['common.states.offline']();
         case 'checking':
-            return m['admin.servers.power.checking']();
+            return m['ui.states.checking']();
         default:
-            return m['admin.servers.power.unknown']();
+            return m['ui.states.unknown']();
     }
 }
 

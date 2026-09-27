@@ -228,7 +228,7 @@ export default function AdminTicketDetailPage() {
                                     )}
                                 >
                                     <Lock className="h-3.5 w-3.5" />
-                                    {m['admin.tickets.internalNoteToggle']()}
+                                    {m['ui.labels.internalNote']()}
                                 </button>
                                 <Button onClick={() => replyMutation.mutate()} disabled={!canReply || replyMutation.isPending}>
                                     {replyMutation.isPending ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
@@ -260,7 +260,7 @@ export default function AdminTicketDetailPage() {
                                 )
                             )}
                         </div>
-                        <Field label={m['admin.tickets.col.status']()}>
+                        <Field label={m['ui.labels.status']()}>
                             <Select
                                 value={status}
                                 onChange={v => saveProperty({ status: v as TicketStatus })}
@@ -268,7 +268,7 @@ export default function AdminTicketDetailPage() {
                                 disabled={!canUpdate || updateMutation.isPending}
                             />
                         </Field>
-                        <Field label={m['admin.tickets.col.priority']()}>
+                        <Field label={m['ui.labels.priority']()}>
                             <Select
                                 value={priority}
                                 onChange={v => saveProperty({ priority: v as TicketPriority })}
@@ -301,12 +301,12 @@ export default function AdminTicketDetailPage() {
                     </div>
 
                     <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-xs text-[var(--color-ink-muted)]">
-                        <Meta label={m['admin.tickets.col.requester']()} value={ticket.user?.username ?? '—'} />
+                        <Meta label={m['ui.labels.requester']()} value={ticket.user?.username ?? '—'} />
                         <Meta label={m['admin.tickets.email']()} value={ticket.user?.email ?? '—'} />
-                        <Meta label={m['tickets.field.server']()} value={ticket.server?.name ?? '—'} />
-                        <Meta label={m['admin.tickets.opened']()} value={timeAgo(ticket.createdAt)} />
+                        <Meta label={m['ui.labels.server']()} value={ticket.server?.name ?? '—'} />
+                        <Meta label={m['ui.labels.opened']()} value={timeAgo(ticket.createdAt)} />
                         <Meta
-                            label={m['admin.tickets.col.lastReply']()}
+                            label={m['ui.labels.lastReply']()}
                             value={ticket.lastReplyAt ? timeAgo(ticket.lastReplyAt) : '—'}
                         />
                     </div>

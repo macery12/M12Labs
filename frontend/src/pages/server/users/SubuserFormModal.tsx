@@ -72,7 +72,7 @@ export default function SubuserFormModal({
             open
             onClose={onClose}
             size="lg"
-            title={isEdit ? m['server.users.editTitle']() : m['server.users.addTitle']()}
+            title={isEdit ? m['ui.actions.editUser']() : m['ui.actions.addUser']()}
             description={isEdit ? subuser!.email : m['server.users.addDesc']()}
             footer={
                 <>
@@ -124,7 +124,7 @@ export default function SubuserFormModal({
                                             <p className="text-xs text-[var(--color-ink-faint)]">{group.description}</p>
                                         </div>
                                         <label className="flex shrink-0 items-center gap-2 text-xs text-[var(--color-ink-muted)]">
-                                            {m['server.users.selectAll']()}
+                                            {m['ui.states.all']()}
                                             <Switch
                                                 checked={allOn}
                                                 disabled={grantableKeys.length === 0}
@@ -135,7 +135,7 @@ export default function SubuserFormModal({
                                                         return s;
                                                     })
                                                 }
-                                                label={m['server.users.selectAll']()}
+                                                label={m['ui.states.all']()}
                                             />
                                         </label>
                                     </div>

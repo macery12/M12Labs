@@ -66,7 +66,7 @@ export function ModSearchBar({
 
     const versionOptions = useMemo(
         () => [
-            { value: '', label: m['server.mods.filter.anyVersion']() },
+            { value: '', label: m['ui.labels.anyVersion']() },
             ...(versionsQ.data?.data ?? []).map(v => ({ value: v.versionString, label: v.versionString })),
         ],
         [versionsQ.data],
@@ -92,7 +92,7 @@ export function ModSearchBar({
                             type="button"
                             onClick={() => setText('')}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
-                            aria-label={m['server.mods.filter.clear']()}
+                            aria-label={m['common.actions.clear']()}
                         >
                             <X className="h-4 w-4" />
                         </button>
@@ -136,7 +136,7 @@ export function ModSearchBar({
                             value={filters.gameVersion ?? ''}
                             onChange={v => set({ gameVersion: v || undefined })}
                             options={versionOptions}
-                            placeholder={m['server.mods.filter.anyVersion']()}
+                            placeholder={m['ui.labels.anyVersion']()}
                         />
                     </div>
                 )}

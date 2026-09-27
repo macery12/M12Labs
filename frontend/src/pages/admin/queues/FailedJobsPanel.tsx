@@ -207,7 +207,7 @@ export function FailedJobsPanel({ summary }: { summary: QueueHealth['failed'] })
             {selected.length > 0 && (
                 <div className="flex flex-wrap items-center gap-3 border-b border-[var(--brand)]/40 bg-[var(--brand)]/10 px-4 py-2.5">
                     <span className="text-sm font-semibold text-[var(--color-ink)]">
-                        {m['admin.queues.failed.selected']({ count: selected.length })}
+                        {m['ui.labels.countSelected']({ count: selected.length })}
                     </span>
                     <div className="ml-auto flex items-center gap-2">
                         {canRetry && (
@@ -267,7 +267,7 @@ export function FailedJobsPanel({ summary }: { summary: QueueHealth['failed'] })
                                         </th>
                                     )}
                                     <th className="px-4 py-2 font-medium">{m['admin.queues.col.job']()}</th>
-                                    <th className="px-4 py-2 font-medium">{m['admin.queues.col.lane']()}</th>
+                                    <th className="px-4 py-2 font-medium">{m['ui.labels.queue']()}</th>
                                     <th className="px-4 py-2 font-medium">{m['admin.queues.failed.col.error']()}</th>
                                     <th className="px-4 py-2 font-medium">{m['admin.queues.failed.col.when']()}</th>
                                     <th className="px-4 py-2" />
@@ -352,7 +352,7 @@ export function FailedJobsPanel({ summary }: { summary: QueueHealth['failed'] })
 
                     <div className="flex flex-wrap items-center gap-3 border-t border-[var(--color-border)] px-4 py-2.5">
                         <span className="text-xs text-[var(--color-ink-faint)]">
-                            {m['admin.queues.failed.pageOf']({ current: page, total: pageCount })}
+                            {m['ui.labels.pageOfTotal']({ current: page, total: pageCount })}
                         </span>
 
                         {pageCount > 1 && (
@@ -366,7 +366,7 @@ export function FailedJobsPanel({ summary }: { summary: QueueHealth['failed'] })
                                     disabled={page >= pageCount}
                                     onClick={() => setPage(p => p + 1)}
                                 >
-                                    {m['admin.queues.failed.next']()}
+                                    {m['ui.actions.next']()}
                                 </Button>
                             </div>
                         )}

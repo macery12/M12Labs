@@ -155,7 +155,7 @@ export function PresetManager({ open, onClose, startNew = false }: { open: boole
             <ConfirmDialog
                 open={!!toDelete}
                 onClose={() => setToDelete(null)}
-                title={m['admin.infrastructure.presets.deleteTitle']()}
+                title={m['ui.actions.deletePreset']()}
                 body={m['admin.infrastructure.presets.deleteBody']({ name: toDelete?.name ?? '' })}
                 confirmLabel={m['common.actions.delete']()}
                 cancelLabel={m['common.actions.cancel']()}
@@ -248,13 +248,13 @@ function PresetForm({
         // form's submit event would bubble up and trigger server creation.
         <div className="flex flex-col gap-5">
             <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
-                <Field label={m['admin.infrastructure.presets.name']()} error={errors.name?.message}>
+                <Field label={m['ui.labels.name']()} error={errors.name?.message}>
                     <Input invalid={!!errors.name} {...register('name', req)} />
                 </Field>
-                <Field label={m['admin.infrastructure.presets.description']()}>
+                <Field label={m['common.labels.description']()}>
                     <Input {...register('description')} />
                 </Field>
-                <Field label={m['admin.infrastructure.presets.nest']()}>
+                <Field label={m['ui.labels.nest']()}>
                     <Select
                         value={nestId || undefined}
                         onChange={v => {
@@ -262,10 +262,10 @@ function PresetForm({
                             setValue('egg_id', '');
                         }}
                         options={nests}
-                        placeholder={m['admin.infrastructure.server.selectNest']()}
+                        placeholder={m['ui.labels.selectNestPlaceholder']()}
                     />
                 </Field>
-                <Field label={m['admin.infrastructure.presets.egg']()}>
+                <Field label={m['ui.labels.egg']()}>
                     <Select
                         value={watch('egg_id') || undefined}
                         onChange={v => setValue('egg_id', v)}
@@ -277,19 +277,19 @@ function PresetForm({
             </div>
 
             <PresetFieldset legend={m['admin.infrastructure.server.group.limits']()}>
-                <Field label={m['admin.infrastructure.presets.cpu']()}>
+                <Field label={m['ui.labels.cpuPercent']()}>
                     <Input type="number" min={0} {...register('cpu', num)} />
                 </Field>
-                <Field label={m['admin.infrastructure.presets.memory']()}>
+                <Field label={m['ui.labels.memoryMib']()}>
                     <Input type="number" min={0} {...register('memory', num)} />
                 </Field>
-                <Field label={m['admin.infrastructure.presets.disk']()}>
+                <Field label={m['ui.labels.diskMib']()}>
                     <Input type="number" min={0} {...register('disk', num)} />
                 </Field>
-                <Field label={m['admin.infrastructure.server.field.swap']()}>
+                <Field label={m['ui.labels.swapMib']()}>
                     <Input type="number" min={-1} {...register('swap', num)} />
                 </Field>
-                <Field label={m['admin.infrastructure.server.field.io']()} error={errors.io?.message}>
+                <Field label={m['ui.labels.blockIoWeight']()} error={errors.io?.message}>
                     <Input
                         type="number"
                         min={IO.min}
@@ -304,17 +304,17 @@ function PresetForm({
                 </Field>
             </PresetFieldset>
 
-            <PresetFieldset legend={m['admin.infrastructure.server.group.featureLimits']()}>
-                <Field label={m['admin.infrastructure.server.field.allocations']()}>
+            <PresetFieldset legend={m['ui.labels.featureLimits']()}>
+                <Field label={m['ui.labels.allocationLimit']()}>
                     <Input type="number" min={0} {...register('allocations', num)} />
                 </Field>
-                <Field label={m['admin.infrastructure.server.field.backups']()}>
+                <Field label={m['ui.labels.backupLimit']()}>
                     <Input type="number" min={0} {...register('backups', num)} />
                 </Field>
-                <Field label={m['admin.infrastructure.server.field.databases']()}>
+                <Field label={m['ui.labels.databaseLimit']()}>
                     <Input type="number" min={0} {...register('databases', num)} />
                 </Field>
-                <Field label={m['admin.infrastructure.server.field.subusers']()}>
+                <Field label={m['ui.labels.subuserLimit']()}>
                     <Input type="number" min={-1} {...register('subusers', num)} />
                 </Field>
             </PresetFieldset>

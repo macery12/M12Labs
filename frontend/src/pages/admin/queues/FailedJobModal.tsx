@@ -64,7 +64,7 @@ export function FailedJobModal({
                 <div className="flex w-full items-center gap-2">
                     <Button variant="ghost" size="sm" onClick={copyTrace} disabled={!trace}>
                         <Copy className="h-3.5 w-3.5" />
-                        {copied ? m['admin.queues.failed.copied']() : m['admin.queues.failed.copyTrace']()}
+                        {copied ? m['common.states.copied']() : m['admin.queues.failed.copyTrace']()}
                     </Button>
 
                     <div className="ml-auto flex items-center gap-2">
@@ -92,10 +92,10 @@ export function FailedJobModal({
             {job === null ? null : (
                 <div className="space-y-4">
                     <dl className="grid grid-cols-2 overflow-hidden rounded-md border border-[var(--color-border)] sm:grid-cols-4">
-                        <Field label={m['admin.queues.col.lane']()} value={job.lane ?? job.queue} />
+                        <Field label={m['ui.labels.queue']()} value={job.lane ?? job.queue} />
                         <Field label={m['admin.queues.failed.col.connection']()} value={job.connection} />
                         <Field
-                            label={m['admin.queues.failed.col.attempts']()}
+                            label={m['ui.labels.attempts']()}
                             value={job.attempts === null ? '—' : String(job.attempts)}
                         />
                         <Field

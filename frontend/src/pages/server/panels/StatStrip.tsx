@@ -56,7 +56,7 @@ export function StatStrip() {
             <Cell
                 label={m['common.metrics.uptime']()}
                 value={stats && !offline && stats.uptimeMs > 0 ? formatUptime(stats.uptimeMs) : '—'}
-                sub={offline ? m['server.stats.offline']() : m['server.stats.live']()}
+                sub={offline ? m['ui.states.offlineInline']() : m['ui.states.liveInline']()}
             />
             <Cell
                 label={m['common.metrics.cpu']()}
@@ -73,8 +73,8 @@ export function StatStrip() {
                 value={stats ? formatBytes(stats.diskBytes) : '—'}
                 percent={stats && diskTotal > 0 ? (stats.diskBytes / diskTotal) * 100 : null}
             />
-            <Cell label={m['server.stats.netIn']()} value={stats && !offline ? formatBytes(stats.rxBytes) : '—'} sub={m['server.stats.received']()} />
-            <Cell label={m['server.stats.netOut']()} value={stats && !offline ? formatBytes(stats.txBytes) : '—'} sub={m['server.stats.transmitted']()} />
+            <Cell label={m['ui.labels.netIn']()} value={stats && !offline ? formatBytes(stats.rxBytes) : '—'} sub={m['server.stats.received']()} />
+            <Cell label={m['ui.labels.netOut']()} value={stats && !offline ? formatBytes(stats.txBytes) : '—'} sub={m['server.stats.transmitted']()} />
         </div>
     );
 }

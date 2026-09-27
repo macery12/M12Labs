@@ -185,14 +185,14 @@ export default function EventsPage() {
                 <StatTile icon={LayoutGrid} label={m['admin.webhooks.events.stats.total']()} value={total} />
                 <StatTile
                     icon={CheckCircle2}
-                    label={m['admin.webhooks.events.stats.enabled']()}
+                    label={m['common.states.enabled']()}
                     value={enabled}
                     sub={m['admin.webhooks.events.stats.active']({ percent: pct })}
                     tone="accent"
                 />
                 <StatTile
                     icon={XCircle}
-                    label={m['admin.webhooks.events.stats.disabled']()}
+                    label={m['common.states.disabled']()}
                     value={disabled}
                     sub={m['admin.webhooks.events.stats.inactive']({ percent: 100 - pct })}
                 />

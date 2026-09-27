@@ -33,7 +33,7 @@ export const MODULE_FEATURES: FeatureDef[] = [
     {
         key: 'mods',
         icon: Boxes,
-        labelKey: 'admin.features.items.mods.label',
+        labelKey: 'ui.labels.marketplace',
         descKey: 'admin.features.items.mods.desc',
         settingsPath: '/admin/marketplace/settings',
         read: f => !!f.mods?.enabled,
@@ -49,7 +49,7 @@ export const MODULE_FEATURES: FeatureDef[] = [
     {
         key: 'webhooks',
         icon: Webhook,
-        labelKey: 'admin.features.items.webhooks.label',
+        labelKey: 'ui.labels.webhooks',
         descKey: 'admin.features.items.webhooks.desc',
         settingsPath: '/admin/webhooks',
         read: f => !!f.webhooks?.enabled,
@@ -57,7 +57,7 @@ export const MODULE_FEATURES: FeatureDef[] = [
     {
         key: 'extensions',
         icon: Puzzle,
-        labelKey: 'admin.features.items.extensions.label',
+        labelKey: 'ui.labels.extensions',
         descKey: 'admin.features.items.extensions.desc',
         settingsPath: '/admin/extensions',
         read: f => !!f.extensions?.enabled,
@@ -65,7 +65,7 @@ export const MODULE_FEATURES: FeatureDef[] = [
     {
         key: 'tickets',
         icon: LifeBuoy,
-        labelKey: 'admin.features.items.tickets.label',
+        labelKey: 'ui.labels.tickets',
         descKey: 'admin.features.items.tickets.desc',
         settingsPath: '/admin/tickets',
         read: f => !!f.tickets?.enabled,
@@ -75,7 +75,7 @@ export const MODULE_FEATURES: FeatureDef[] = [
 export const BILLING_FEATURE: FeatureDef = {
     key: 'billing',
     icon: CreditCard,
-    labelKey: 'admin.features.items.billing.label',
+    labelKey: 'ui.labels.billing',
     descKey: 'admin.features.items.billing.desc',
     settingsPath: '/admin/billing/settings',
     read: f => !!f.billing?.enabled,

@@ -40,7 +40,7 @@ export function orderTypeLabel(type: string): string {
         case 'new':
             return m['billing.orders.type.new']();
         case 'ren':
-            return m['billing.orders.type.ren']();
+            return m['ui.labels.renewal']();
         case 'upg':
             return m['billing.orders.type.upg']();
         default:
@@ -55,9 +55,9 @@ const PROCESSOR_TONE: Record<PaymentProcessor, string> = {
 };
 
 const PROCESSOR_LABEL: Record<PaymentProcessor, () => string> = {
-    stripe: () => m['billing.orders.processor.stripe'](),
-    paypal: () => m['billing.orders.processor.paypal'](),
-    free: () => m['billing.orders.processor.free'](),
+    stripe: () => m['ui.labels.stripe'](),
+    paypal: () => m['ui.labels.paypal'](),
+    free: () => m['ui.labels.free'](),
 };
 
 export function ProcessorBadge({ processor }: { processor: PaymentProcessor }) {
@@ -91,5 +91,5 @@ export function ThreatPill({ value }: { value: number }) {
 
 // Shared pagination controls for the billing tables.
 export function paginationLabel(current: number, total: number) {
-    return m['activity.pageOf']({ current, total });
+    return m['ui.labels.pageOfTotal']({ current, total });
 }

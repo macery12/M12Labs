@@ -142,7 +142,7 @@ function VariableFields({
 }) {
     return (
         <div className="flex flex-col gap-4">
-            <Field label={m['admin.nests.egg.variables.name']()} htmlFor="var-name">
+            <Field label={m['ui.labels.name']()} htmlFor="var-name">
                 <Input id="var-name" value={draft.name} onChange={e => patch({ name: e.currentTarget.value })} />
             </Field>
 
@@ -276,7 +276,7 @@ function NewVariableModal({
         <Modal
             open
             onClose={onClose}
-            title={m['admin.nests.egg.variables.newTitle']()}
+            title={m['ui.labels.newVariable']()}
             size="lg"
             footer={
                 <>
@@ -445,7 +445,7 @@ export function VariablesSection({
     return (
         <SectionCard
             icon={Variable}
-            title={m['admin.nests.egg.tabs.variables']()}
+            title={m['ui.labels.variables']()}
             desc={
                 eggId === null
                     ? m['admin.nests.egg.section.variablesDesc']()
@@ -454,7 +454,7 @@ export function VariablesSection({
             right={
                 eggId !== null && (
                     <Button type="button" variant="outline" size="sm" onClick={() => setShowNew(true)}>
-                        <Plus className="h-4 w-4" /> {m['admin.nests.egg.variables.new']()}
+                        <Plus className="h-4 w-4" /> {m['ui.labels.newVariable']()}
                     </Button>
                 )
             }
@@ -473,8 +473,8 @@ export function VariablesSection({
                         <thead>
                             <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/50 text-left text-xs font-medium uppercase tracking-wider text-[var(--color-ink-faint)]">
                                 <th className="px-4 py-2">{m['admin.nests.egg.variables.colVariable']()}</th>
-                                <th className="w-24 px-3 py-2">{m['admin.nests.egg.variables.colType']()}</th>
-                                <th className="hidden w-40 px-3 py-2 md:table-cell">{m['admin.nests.egg.variables.colDefault']()}</th>
+                                <th className="w-24 px-3 py-2">{m['ui.labels.type']()}</th>
+                                <th className="hidden w-40 px-3 py-2 md:table-cell">{m['ui.states.default']()}</th>
                                 <th className="hidden px-3 py-2 lg:table-cell">{m['admin.nests.egg.variables.colFlags']()}</th>
                                 <th className="w-24 px-3 py-2" />
                             </tr>

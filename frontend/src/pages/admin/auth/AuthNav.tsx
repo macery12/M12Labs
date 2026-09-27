@@ -35,8 +35,8 @@ export function AuthNav() {
         { to: BASE, end: true, icon: Puzzle, label: m['admin.auth.nav.modules']() },
         ...(jguardEnabled
             ? [
-                  { to: `${BASE}/jguard`, end: true, icon: ShieldHalf, label: m['admin.auth.nav.jguard']() },
-                  { to: `${BASE}/jguard/pending`, end: true, icon: UserCheck, label: m['admin.auth.nav.pending'](), badge: pendingCount },
+                  { to: `${BASE}/jguard`, end: true, icon: ShieldHalf, label: m['ui.labels.jguardSettings']() },
+                  { to: `${BASE}/jguard/pending`, end: true, icon: UserCheck, label: m['ui.labels.pendingAccounts'](), badge: pendingCount },
               ]
             : []),
     ];

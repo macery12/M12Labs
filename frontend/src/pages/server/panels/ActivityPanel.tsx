@@ -15,10 +15,10 @@ export function ActivityPanel() {
     });
 
     return (
-        <Panel title={m['server.activity.title']()} icon={ScrollText} bodyClassName="max-h-72 overflow-y-auto">
+        <Panel title={m['ui.labels.recentActivity']()} icon={ScrollText} bodyClassName="max-h-72 overflow-y-auto">
             {isLoading && <p className="text-sm text-[var(--color-ink-faint)]">{m['common.states.loading']()}</p>}
             {!isLoading && (!entries || entries.length === 0) && (
-                <p className="text-sm text-[var(--color-ink-faint)]">{m['server.activity.empty']()}</p>
+                <p className="text-sm text-[var(--color-ink-faint)]">{m['ui.messages.noRecentActivity']()}</p>
             )}
             <div className="flex flex-col">
                 {entries?.map((entry, i) => (

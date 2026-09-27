@@ -73,7 +73,7 @@ export function ModpackBrowser({ serverId }: { serverId: string }) {
                             type="button"
                             onClick={() => setText('')}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
-                            aria-label={m['server.mods.filter.clear']()}
+                            aria-label={m['common.actions.clear']()}
                         >
                             <X className="h-4 w-4" />
                         </button>
@@ -84,10 +84,10 @@ export function ModpackBrowser({ serverId }: { serverId: string }) {
                         value={gameVersion}
                         onChange={setGameVersion}
                         options={[
-                            { value: '', label: m['server.mods.filter.anyVersion']() },
+                            { value: '', label: m['ui.labels.anyVersion']() },
                             ...(versionsQ.data?.data ?? []).map(v => ({ value: v, label: v })),
                         ]}
-                        placeholder={m['server.mods.filter.anyVersion']()}
+                        placeholder={m['ui.labels.anyVersion']()}
                     />
                 </div>
                 <div className="w-36">

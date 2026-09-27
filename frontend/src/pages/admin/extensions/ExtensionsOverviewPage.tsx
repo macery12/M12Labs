@@ -401,10 +401,10 @@ export default function ExtensionsOverviewPage() {
     }, [extensions, filter, search]);
 
     const segments: Array<{ id: Filter; label: string }> = [
-        { id: 'all', label: m['extensions.filters.all']() },
-        { id: 'installed', label: m['extensions.filters.installed']() },
-        { id: 'available', label: m['extensions.filters.available']() },
-        { id: 'updates', label: m['extensions.filters.updates']() },
+        { id: 'all', label: m['ui.states.all']() },
+        { id: 'installed', label: m['ui.states.installed']() },
+        { id: 'available', label: m['ui.states.available']() },
+        { id: 'updates', label: m['ui.labels.updates']() },
     ];
 
     const togglingId = toggle.isPending ? toggle.variables?.id : undefined;
@@ -497,7 +497,7 @@ export default function ExtensionsOverviewPage() {
 
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">{m['extensions.title']()}</h1>
+                    <h1 className="text-2xl font-semibold tracking-tight">{m['ui.labels.extensions']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['extensions.subtitle']()}</p>
                 </div>
                 <button
@@ -530,25 +530,25 @@ export default function ExtensionsOverviewPage() {
                     <div className="grid grid-cols-2 divide-x divide-y divide-[var(--color-border)] overflow-hidden rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70 sm:divide-y-0 lg:grid-cols-4">
                         <SummaryCell
                             icon={Package}
-                            label={m['extensions.summary.installed']()}
+                            label={m['ui.states.installed']()}
                             value={String(counts.installed)}
                             sub={m['extensions.summary.ofInstalled']({ count: extensions.length })}
                         />
                         <SummaryCell
                             icon={Power}
-                            label={m['extensions.summary.enabled']()}
+                            label={m['common.states.enabled']()}
                             value={String(counts.enabled)}
                             sub={m['extensions.summary.available']({ count: extensions.filter(e => e.installable).length })}
                         />
                         <SummaryCell
                             icon={ArrowUpCircle}
-                            label={m['extensions.summary.updates']()}
+                            label={m['ui.labels.updates']()}
                             value={String(counts.updates)}
                             sub={counts.updates > 0 ? m['extensions.summary.needsAttention']({ count: counts.updates }) : m['extensions.summary.upToDate']()}
                         />
                         <SummaryCell
                             icon={GitBranch}
-                            label={m['extensions.summary.repositories']()}
+                            label={m['ui.labels.repositories']()}
                             value={String(repos.length)}
                             sub={repoIssues > 0 ? m['extensions.summary.withIssues']({ count: repoIssues }) : m['extensions.summary.connected']({ count: repos.filter(r => r.enabled).length })}
                         />

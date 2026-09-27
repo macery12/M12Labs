@@ -34,7 +34,7 @@ export default function WebhooksSection() {
         <div className="flex flex-col gap-6">
             <header>
                 <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
-                    {m['admin.webhooks.title']()}
+                    {m['ui.labels.webhooks']()}
                 </h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.webhooks.subtitle']()}</p>
             </header>

@@ -61,7 +61,7 @@ export default function GeneralTab() {
                 currency: { code: currency.toLowerCase(), symbol },
                 plan_change_cooldown_hours: hours,
             });
-            push({ type: 'success', message: m['admin.billing.settings.saved']() });
+            push({ type: 'success', message: m['ui.messages.settingsSaved']() });
         },
         onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
     });
@@ -73,7 +73,7 @@ export default function GeneralTab() {
         },
         onSuccess: () => {
             patchBilling({ links: { terms, privacy } });
-            push({ type: 'success', message: m['admin.billing.settings.saved']() });
+            push({ type: 'success', message: m['ui.messages.settingsSaved']() });
         },
         onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
     });
@@ -82,7 +82,7 @@ export default function GeneralTab() {
         mutationFn: (next: boolean) => updateInvoiceSettings({ require_billing_address: next }),
         onSuccess: (_d, next) => {
             patchBilling({ require_billing_address: next });
-            push({ type: 'success', message: m['admin.billing.settings.saved']() });
+            push({ type: 'success', message: m['ui.messages.settingsSaved']() });
         },
         onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
     });
@@ -95,7 +95,7 @@ export default function GeneralTab() {
             <SectionCard
                 id="general"
                 icon={Coins}
-                title={m['admin.billing.settings.general.title']()}
+                title={m['ui.labels.general']()}
                 desc={m['admin.billing.settings.general.desc']()}
                 right={
                     <Button

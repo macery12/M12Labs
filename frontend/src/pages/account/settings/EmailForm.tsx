@@ -55,7 +55,7 @@ export function EmailForm() {
                     />
                 </Field>
                 <Field
-                    label={m['account.email.currentPassword']()}
+                    label={m['ui.labels.currentPassword']()}
                     hint={m['account.email.passwordHint']()}
                     htmlFor="account-email-password"
                 >

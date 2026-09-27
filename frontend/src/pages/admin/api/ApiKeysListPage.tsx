@@ -9,7 +9,7 @@ import {
     type AdminApiKey,
 } from '@/api/adminApiKeys';
 import { getApiEligibleAccessProfiles } from '@/api/adminRoles';
-import { timeAgo } from '@/lib/format';
+import { formatDateTime, timeAgo } from '@/lib/format';
 import { can } from '@/lib/can';
 import { useAdminHeld } from '@/layouts/heldPermissions';
 import { useFlashes } from '@/state/flashes';
@@ -44,8 +44,8 @@ function ApiKeyRow({
                 </div>
                 <p className="mt-1.5 text-xs text-[var(--color-ink-faint)]">
                     {apiKey.lastUsedAt
-                        ? m['admin.api.meta.lastUsed']({ ago: timeAgo(apiKey.lastUsedAt) })
-                        : m['admin.api.neverUsed']()}
+                        ? m['ui.labels.lastUsedAgo']({ ago: timeAgo(apiKey.lastUsedAt) })
+                        : m['ui.labels.neverUsed']()}
                     {' · '}
                     {m['admin.api.meta.created']({ ago: timeAgo(apiKey.createdAt) })}
                     {' · '}
@@ -72,8 +72,8 @@ function ApiKeyRow({
                         <Clock3 className="h-3 w-3" />
                         {apiKey.expiresAt
                             ? new Date(apiKey.expiresAt).getTime() <= now
-                                ? m['admin.access.keys.expired']({ date: new Date(apiKey.expiresAt).toLocaleString() })
-                                : m['admin.access.keys.expires']({ date: new Date(apiKey.expiresAt).toLocaleString() })
+                                ? m['admin.access.keys.expired']({ date: formatDateTime(apiKey.expiresAt) })
+                                : m['admin.access.keys.expires']({ date: formatDateTime(apiKey.expiresAt) })
                             : m['admin.access.keys.neverExpires']()}
                     </span>
                 </div>
@@ -132,7 +132,7 @@ export default function ApiKeysListPage() {
     const del = useMutation({
         mutationFn: (id: number) => deleteAdminApiKey(id),
         onSuccess: async () => {
-            push({ type: 'success', message: m['admin.api.deleted']() });
+            push({ type: 'success', message: m['ui.messages.apiKeyDeleted']() });
             await qc.invalidateQueries({ queryKey: ['admin', 'api-keys'] });
             setToDelete(null);
         },
@@ -205,7 +205,7 @@ export default function ApiKeysListPage() {
             {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between">
                     <p className="text-xs text-[var(--color-ink-faint)]">
-                        {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                        {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                         {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                     </p>
                     <div className="flex gap-2">
@@ -224,7 +224,7 @@ export default function ApiKeysListPage() {
                             disabled={pagination.currentPage >= pagination.totalPages || isFetching}
                             onClick={() => setPage(p => p + 1)}
                         >
-                            {m['activity.next']()}
+                            {m['ui.actions.next']()}
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>

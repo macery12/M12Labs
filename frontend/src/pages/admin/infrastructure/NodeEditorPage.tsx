@@ -216,10 +216,10 @@ export default function NodeEditorPage() {
                     className="inline-flex items-center gap-1.5 text-xs text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
                 >
                     <ArrowLeft className="h-3.5 w-3.5" />
-                    {editing ? node?.name : m['admin.infrastructure.title']()}
+                    {editing ? node?.name : m['ui.labels.infrastructure']()}
                 </Link>
                 <h1 className="mt-1 truncate text-xl font-semibold text-[var(--color-ink)]">
-                    {editing ? m['admin.infrastructure.node.editTitle']() : m['admin.infrastructure.node.createTitle']()}
+                    {editing ? m['admin.infrastructure.node.editTitle']() : m['ui.labels.newNode']()}
                 </h1>
                 {!editing && (
                     <>
@@ -236,7 +236,7 @@ export default function NodeEditorPage() {
                     desc={m['admin.infrastructure.node.section.identityDesc']()}
                 >
                     <FieldGrid>
-                        <FieldRow label={m['admin.infrastructure.node.field.name']()} error={errors.name?.message}>
+                        <FieldRow label={m['ui.labels.name']()} error={errors.name?.message}>
                             <Input
                                 invalid={!!errors.name}
                                 {...register('name', {
@@ -262,7 +262,7 @@ export default function NodeEditorPage() {
                         >
                             <Input invalid={!!errors.fqdn} placeholder="node.example.com" {...register('fqdn', req)} />
                         </FieldRow>
-                        <FieldRow label={m['admin.infrastructure.node.field.description']()}>
+                        <FieldRow label={m['common.labels.description']()}>
                             <Input {...register('description')} />
                         </FieldRow>
                     </FieldGrid>
@@ -375,7 +375,7 @@ export default function NodeEditorPage() {
 
                 <SectionCard
                     icon={Network}
-                    title={m['admin.infrastructure.node.section.ports']()}
+                    title={m['ui.labels.ports']()}
                     desc={m['admin.infrastructure.node.section.portsDesc']()}
                 >
                     <FieldGrid>
@@ -396,7 +396,7 @@ export default function NodeEditorPage() {
 
                 <SectionCard
                     icon={SlidersHorizontal}
-                    title={m['admin.infrastructure.node.section.advanced']()}
+                    title={m['ui.labels.advanced']()}
                     desc={m['admin.infrastructure.node.section.advancedDesc']()}
                 >
                     {/* Full width: an absolute path needs the room. */}
@@ -434,10 +434,10 @@ export default function NodeEditorPage() {
                                 value={watch('database_host_id') == null ? '' : String(watch('database_host_id'))}
                                 onChange={v => setValue('database_host_id', v === '' ? null : Number(v), { shouldDirty: true })}
                                 options={[
-                                    { value: '', label: m['admin.infrastructure.node.field.databaseHostNone']() },
+                                    { value: '', label: m['ui.states.none']() },
                                     ...(hostsQ.data ?? []).map(h => ({ value: String(h.id), label: `${h.name} (${h.host}:${h.port})` })),
                                 ]}
-                                placeholder={m['admin.infrastructure.node.field.databaseHostNone']()}
+                                placeholder={m['ui.states.none']()}
                             />
                         </FieldRow>
                     </FieldGrid>

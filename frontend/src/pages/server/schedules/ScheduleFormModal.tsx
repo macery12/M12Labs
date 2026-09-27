@@ -52,7 +52,7 @@ export default function ScheduleFormModal({
         <Modal
             open
             onClose={onClose}
-            title={isEdit ? m['server.schedules.editTitle']() : m['server.schedules.createTitle']()}
+            title={isEdit ? m['ui.actions.editSchedule']() : m['ui.labels.newSchedule']()}
             footer={
                 <>
                     <Button variant="ghost" size="sm" onClick={onClose} disabled={save.isPending}>
@@ -66,7 +66,7 @@ export default function ScheduleFormModal({
             }
         >
             <div className="flex flex-col gap-5">
-                <Field label={m['server.schedules.name']()} htmlFor="schedule-name">
+                <Field label={m['ui.labels.name']()} htmlFor="schedule-name">
                     <Input
                         id="schedule-name"
                         value={name}

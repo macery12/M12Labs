@@ -73,10 +73,10 @@ export function CycleEditor({
                                     {m['admin.billing.cycles.customerPays']()}
                                 </th>
                                 <th className="hidden px-3 py-2 text-xs font-medium text-[var(--color-ink-muted)] sm:table-cell">
-                                    {m['admin.billing.cycles.adjustment']()}
+                                    {m['ui.labels.adjustment']()}
                                 </th>
                                 <th className="px-3 py-2 text-xs font-medium text-[var(--color-ink-muted)]">
-                                    {m['admin.billing.cycles.enabled']()}
+                                    {m['common.states.enabled']()}
                                 </th>
                                 <th className="w-10" />
                             </tr>
@@ -117,7 +117,7 @@ export function CycleEditor({
                                                         className="flex items-center gap-1 rounded-md bg-[var(--brand)]/12 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--brand-bright)]"
                                                     >
                                                         <Star className="h-3 w-3 fill-current" />
-                                                        {m['admin.billing.cycles.default']()}
+                                                        {m['ui.states.default']()}
                                                     </span>
                                                 )}
                                             </div>
@@ -132,7 +132,7 @@ export function CycleEditor({
                                             <Switch
                                                 checked={c.isEnabled}
                                                 onChange={v => patch(i, { isEnabled: v })}
-                                                label={m['admin.billing.cycles.enabled']()}
+                                                label={m['common.states.enabled']()}
                                             />
                                         </td>
                                         <td className="px-1 py-2">
@@ -157,7 +157,7 @@ export function CycleEditor({
             <div className="flex flex-wrap items-center gap-2">
                 {unusedCommon.map(d => (
                     <Button key={d} type="button" variant="outline" size="sm" onClick={() => addCycle(d)}>
-                        <Plus className="h-3.5 w-3.5" /> {m['admin.billing.cycles.nDays']({ days: d })}
+                        <Plus className="h-3.5 w-3.5" /> {m['ui.labels.countDays']({ days: d })}
                     </Button>
                 ))}
                 <Button

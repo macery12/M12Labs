@@ -10,6 +10,7 @@ import { FullPageSpinner, Spinner } from '@/components/ui/Spinner';
 import { getEmailLogs, getTemplateKeys, type EmailLogFilters } from '@/api/email';
 import { SettingsCard, StatusChip, LabeledField } from '../parts';
 import { EmailLogDetailModal } from './EmailLogDetailModal';
+import { formatDate, formatTime } from '@/lib/format';
 
 interface Filters {
     status: string;
@@ -80,7 +81,7 @@ export default function ActivityPage() {
     };
 
     const statusOptions = [
-        { value: '', label: m['admin.email.activity.allStatuses']() },
+        { value: '', label: m['ui.labels.allStatuses']() },
         { value: 'queued', label: m['admin.email.status.queued']() },
         { value: 'sending', label: m['admin.email.status.sending']() },
         { value: 'deferred', label: m['admin.email.status.deferred']() },
@@ -110,25 +111,25 @@ export default function ActivityPage() {
 
             {showFilters && (
                 <SettingsCard
-                    title={m['admin.email.activity.filters']()}
+                    title={m['ui.labels.filters']()}
                     right={
                         <Button variant="ghost" size="sm" onClick={clearAll}>
-                            {m['admin.email.activity.clearAll']()}
+                            {m['ui.actions.clearAll']()}
                         </Button>
                     }
                 >
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <LabeledField label={m['admin.email.activity.status']()}>
+                        <LabeledField label={m['ui.labels.status']()}>
                             <Select value={filters.status} onChange={v => set({ status: v })} options={statusOptions} />
                         </LabeledField>
-                        <LabeledField label={m['admin.email.activity.template']()}>
+                        <LabeledField label={m['ui.labels.template']()}>
                             <Select
                                 value={filters.template_key}
                                 onChange={v => set({ template_key: v })}
                                 options={templateOptions}
                             />
                         </LabeledField>
-                        <LabeledField label={m['admin.email.activity.recipient']()}>
+                        <LabeledField label={m['ui.labels.recipient']()}>
                             <Input
                                 value={recipientInput}
                                 onChange={e => onRecipient(e.target.value)}
@@ -172,12 +173,12 @@ export default function ActivityPage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-[var(--color-border)] text-left text-[11px] uppercase tracking-wide text-[var(--color-ink-faint)]">
-                                <Th>{m['admin.email.activity.colStatus']()}</Th>
+                                <Th>{m['ui.labels.status']()}</Th>
                                 <Th>{m['admin.email.activity.colTime']()}</Th>
-                                <Th>{m['admin.email.activity.colRecipient']()}</Th>
-                                <Th>{m['admin.email.activity.colTemplate']()}</Th>
-                                <Th>{m['admin.email.activity.colProvider']()}</Th>
-                                <Th>{m['admin.email.activity.colAttempts']()}</Th>
+                                <Th>{m['ui.labels.recipient']()}</Th>
+                                <Th>{m['ui.labels.template']()}</Th>
+                                <Th>{m['ui.labels.provider']()}</Th>
+                                <Th>{m['ui.labels.attempts']()}</Th>
                                 <Th> </Th>
                             </tr>
                         </thead>
@@ -189,9 +190,9 @@ export default function ActivityPage() {
                                         Date over time, and username under the address, keep every
                                         column visible at the usual content width. */}
                                     <Td className="whitespace-nowrap text-[var(--color-ink-muted)]">
-                                        <span className="block">{new Date(log.created_at).toLocaleDateString()}</span>
+                                        <span className="block">{formatDate(log.created_at)}</span>
                                         <span className="block text-xs text-[var(--color-ink-faint)]">
-                                            {new Date(log.created_at).toLocaleTimeString()}
+                                            {formatTime(log.created_at)}
                                         </span>
                                     </Td>
                                     <Td className="max-w-[16rem]">
@@ -238,7 +239,7 @@ export default function ActivityPage() {
                         {logsQ.isFetching ? (
                             <Spinner className="h-4 w-4" />
                         ) : (
-                            m['admin.email.activity.pageOf']({ current: logs.current_page, total: logs.last_page })
+                            m['ui.labels.pageOfTotal']({ current: logs.current_page, total: logs.last_page })
                         )}
                     </span>
                     <Button
@@ -247,7 +248,7 @@ export default function ActivityPage() {
                         onClick={() => set({ page: filters.page + 1 })}
                         disabled={filters.page >= logs.last_page}
                     >
-                        {m['admin.email.activity.next']()} <ChevronRight className="h-4 w-4" />
+                        {m['ui.actions.next']()} <ChevronRight className="h-4 w-4" />
                     </Button>
                 </div>
             )}

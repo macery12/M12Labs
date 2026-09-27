@@ -116,7 +116,7 @@ export default function StartupPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.startup.title']()}</h1>
+                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.startup']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.startup.subtitle']()}</p>
             </div>
 
@@ -175,7 +175,7 @@ export default function StartupPage() {
                 )}
             </SectionCard>
 
-            <SectionCard icon={Box} title={m['server.startup.imageTitle']()} desc={m['server.startup.imageDesc']()}>
+            <SectionCard icon={Box} title={m['ui.labels.dockerImage']()} desc={m['server.startup.imageDesc']()}>
                 <FieldGrid>
                     <DockerImage
                         data={data}
@@ -424,7 +424,7 @@ function DockerImage({
 
     return (
         <ReadOnlyValue
-            label={matched?.label ?? m['server.startup.imageTitle']()}
+            label={matched?.label ?? m['ui.labels.dockerImage']()}
             desc={isCustom ? m['server.startup.imageCustom']() : undefined}
             mono
         >
@@ -448,7 +448,7 @@ function CommandCard({ invocation }: { invocation: string }) {
     return (
         <SectionCard
             icon={Terminal}
-            title={m['server.startup.commandTitle']()}
+            title={m['ui.labels.startupCommand']()}
             desc={m['server.startup.commandDesc']()}
             right={
                 <div className="flex items-center gap-2">

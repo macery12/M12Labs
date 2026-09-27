@@ -223,7 +223,7 @@ function CouponBox({ checkout }: { checkout: CheckoutController }) {
             <div className="flex gap-2">
                 <Input
                     value={code}
-                    placeholder={m['billing.coupon.placeholder']()}
+                    placeholder={m['ui.labels.couponCode']()}
                     className="h-10"
                     onChange={e => setCode(e.target.value)}
                 />
@@ -235,7 +235,7 @@ function CouponBox({ checkout }: { checkout: CheckoutController }) {
                     disabled={checkout.couponBusy}
                     onClick={async () => setFeedback(await checkout.applyCoupon(code))}
                 >
-                    {checkout.couponBusy ? <Spinner className="h-4 w-4" /> : m['billing.coupon.apply']()}
+                    {checkout.couponBusy ? <Spinner className="h-4 w-4" /> : m['common.actions.apply']()}
                 </Button>
             </div>
             {feedback && !feedback.ok && <p className="text-xs text-[var(--color-danger)]">{feedback.message}</p>}
@@ -288,9 +288,9 @@ export function SummaryCart({
             </div>
 
             <div className="mt-4 space-y-2">
-                <Row label={m['billing.summary.location']()} value={node?.name ?? '—'} />
-                <Row label={m['billing.summary.software']()} value={egg?.name ?? '—'} />
-                <Row label={m['billing.summary.serverName']()} value={checkout.serverName.trim() || m['billing.summary.notSet']()} />
+                <Row label={m['ui.labels.location']()} value={node?.name ?? '—'} />
+                <Row label={m['ui.labels.software']()} value={egg?.name ?? '—'} />
+                <Row label={m['ui.labels.serverName']()} value={checkout.serverName.trim() || m['ui.states.notSet']()} />
                 <Row
                     label={m['billing.summary.billingCycle']()}
                     value={checkout.selectedCycle?.label ?? `${checkout.cycleDays} days`}
@@ -300,7 +300,7 @@ export function SummaryCart({
             <div className="my-4 h-px bg-[var(--color-border)]" />
 
             <div className="space-y-2">
-                <Row label={m['billing.summary.subtotal']()} value={money(checkout.basePrice)} />
+                <Row label={m['ui.labels.subtotal']()} value={money(checkout.basePrice)} />
                 {couponSavings > 0 && (
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-[var(--color-accent)]">
@@ -314,7 +314,7 @@ export function SummaryCart({
             <div className="mt-4 flex items-end justify-between">
                 <span className="text-sm text-[var(--color-ink-muted)]">{m['billing.summary.totalDue']()}</span>
                 <span className="text-2xl font-bold text-[var(--color-ink)]">
-                    {checkout.isFree ? m['billing.summary.free']() : money(checkout.total)}
+                    {checkout.isFree ? m['ui.labels.free']() : money(checkout.total)}
                 </span>
             </div>
 

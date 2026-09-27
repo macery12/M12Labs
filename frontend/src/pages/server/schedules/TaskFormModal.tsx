@@ -68,7 +68,7 @@ export default function TaskFormModal({
         <Modal
             open
             onClose={onClose}
-            title={isEdit ? m['server.schedules.editTaskTitle']() : m['server.schedules.addTaskTitle']()}
+            title={isEdit ? m['server.schedules.editTaskTitle']() : m['ui.actions.addTask']()}
             footer={
                 <>
                     <Button variant="ghost" size="sm" onClick={onClose} disabled={save.isPending}>

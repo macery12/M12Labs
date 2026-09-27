@@ -44,8 +44,8 @@ function ViewToggle({
     available: ViewMode[];
 }) {
     const opts: { id: ViewMode; label: string; icon: typeof Server }[] = [
-        { id: 'nodes', label: m['admin.infrastructure.view.nodes'](), icon: Server },
-        { id: 'servers', label: m['admin.infrastructure.view.servers'](), icon: Layers },
+        { id: 'nodes', label: m['ui.labels.nodes'](), icon: Server },
+        { id: 'servers', label: m['ui.labels.servers'](), icon: Layers },
     ];
     return (
         <div className="inline-flex rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-0.5">
@@ -107,7 +107,7 @@ function NewMenu({ onNewServer, onNewNode }: { onNewServer: () => void; onNewNod
                             }}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]"
                         >
-                            <Layers className="h-4 w-4 text-[var(--color-ink-muted)]" /> {m['admin.infrastructure.new.server']()}
+                            <Layers className="h-4 w-4 text-[var(--color-ink-muted)]" /> {m['ui.labels.newServer']()}
                         </button>
                     )}
                     {canNode && (
@@ -118,7 +118,7 @@ function NewMenu({ onNewServer, onNewNode }: { onNewServer: () => void; onNewNod
                             }}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]"
                         >
-                            <Server className="h-4 w-4 text-[var(--color-ink-muted)]" /> {m['admin.infrastructure.new.node']()}
+                            <Server className="h-4 w-4 text-[var(--color-ink-muted)]" /> {m['ui.labels.newNode']()}
                         </button>
                     )}
                 </div>
@@ -151,12 +151,12 @@ function FleetSummary({
         <div className="grid grid-cols-2 divide-x divide-y divide-[var(--color-border)] overflow-hidden rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70 sm:grid-cols-3 sm:divide-y-0 lg:grid-cols-5">
             {showNodes && (
                 <>
-                    <SummaryCell icon={Server} label={m['admin.infrastructure.summary.nodes']()} value={String(nodes.length)} sub={maintenance > 0 ? m['admin.infrastructure.summary.inMaintenance']({ count: maintenance }) : m['admin.infrastructure.summary.allOnline']()} />
-                    <SummaryCell icon={Zap} label={m['admin.infrastructure.summary.supercharged']()} value={String(supercharged)} sub={m['admin.infrastructure.summary.standard']({ count: nodes.length - supercharged })} />
+                    <SummaryCell icon={Server} label={m['ui.labels.nodes']()} value={String(nodes.length)} sub={maintenance > 0 ? m['ui.labels.countInMaintenance']({ count: maintenance }) : m['admin.infrastructure.summary.allOnline']()} />
+                    <SummaryCell icon={Zap} label={m['ui.labels.supercharged']()} value={String(supercharged)} sub={m['admin.infrastructure.summary.standard']({ count: nodes.length - supercharged })} />
                 </>
             )}
             {showServers && (
-                <SummaryCell icon={Layers} label={m['admin.infrastructure.summary.servers']()} value={totalServers == null ? '—' : String(totalServers)} sub={runningServers == null ? m['admin.servers.power.checking']() : m['admin.infrastructure.summary.running']({ count: runningServers })} />
+                <SummaryCell icon={Layers} label={m['ui.labels.servers']()} value={totalServers == null ? '—' : String(totalServers)} sub={runningServers == null ? m['ui.states.checking']() : m['admin.infrastructure.summary.running']({ count: runningServers })} />
             )}
             {showNodes && (
                 <>
@@ -269,7 +269,7 @@ export default function InfrastructureOverviewPage() {
 
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">{m['admin.infrastructure.title']()}</h1>
+                    <h1 className="text-2xl font-semibold tracking-tight">{m['ui.labels.infrastructure']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.infrastructure.subtitle']()}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -307,7 +307,7 @@ export default function InfrastructureOverviewPage() {
 
                     {mode === 'servers' ? (
                         servers.length === 0 ? (
-                            <EmptyState icon={Layers} title={m['admin.servers.empty.title']()} body={m['admin.servers.empty.body']()} />
+                            <EmptyState icon={Layers} title={m['ui.labels.noServersYet']()} body={m['admin.servers.empty.body']()} />
                         ) : (
                             <ServersTable servers={servers} />
                         )

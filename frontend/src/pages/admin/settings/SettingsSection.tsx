@@ -155,7 +155,7 @@ export default function SettingsSection() {
         <div className="flex flex-col gap-6">
             <header>
                 <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
-                    {m['admin.settings.title']()}
+                    {m['ui.labels.settings']()}
                 </h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
                     {m['admin.settings.subtitle']({ name: saved.name || 'M12Labs' })}
@@ -164,7 +164,7 @@ export default function SettingsSection() {
 
             <SectionCard
                 icon={Paintbrush}
-                title={m['admin.settings.general.title']()}
+                title={m['ui.labels.general']()}
                 subtitle={m['admin.settings.general.subtitle']()}
             >
                 <div className="grid gap-5 md:grid-cols-2">
@@ -179,7 +179,7 @@ export default function SettingsSection() {
                         />
                         <p className="text-xs text-[var(--color-ink-faint)]">{m['admin.settings.general.nameHelp']()}</p>
                     </Field>
-                    <Field label={m['admin.settings.general.logo']()} htmlFor="app-logo">
+                    <Field label={m['ui.labels.logoUrl']()} htmlFor="app-logo">
                         <div className="flex items-center gap-3">
                             <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-2)]">
                                 {form.logo.trim() ? (
@@ -217,7 +217,7 @@ export default function SettingsSection() {
                     />
                     <ToggleRow
                         icon={Zap}
-                        label={m['admin.settings.general.commandPalette']()}
+                        label={m['ui.labels.commandPalette']()}
                         help={m['admin.settings.general.commandPaletteHelp']()}
                         checked={form.commandPalette}
                         onChange={v => set('commandPalette', v)}
@@ -258,7 +258,7 @@ export default function SettingsSection() {
                                 </span>
                                 {isDefault && (
                                     <span className="shrink-0 rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-accent)]">
-                                        {m['admin.settings.language.current']()}
+                                        {m['ui.states.default']()}
                                     </span>
                                 )}
                                 {selected && !isDefault && <Check className="h-4 w-4 shrink-0 text-[var(--brand)]" />}

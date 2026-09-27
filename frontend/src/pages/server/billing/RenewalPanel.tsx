@@ -91,7 +91,7 @@ export function RenewalPanel({
 
     if (server.isDeletionScheduled) {
         return (
-            <Panel title={m['server.billing.renewal']()} icon={CreditCard}>
+            <Panel title={m['ui.labels.renewal']()} icon={CreditCard}>
                 <div className="space-y-3">
                     <Notice tone="warning">{m['server.billing.deletionBlocksRenewal']()}</Notice>
                     <Link to={`/server/${server.id}/settings`}>
@@ -106,7 +106,7 @@ export function RenewalPanel({
 
     if (model.paymentDisabled) {
         return (
-            <Panel title={m['server.billing.renewal']()} icon={CreditCard}>
+            <Panel title={m['ui.labels.renewal']()} icon={CreditCard}>
                 <Notice tone="danger" icon={AlertTriangle}>
                     {m['server.billing.suspendedTooLong']({ days: model.maxSuspensionDays })}
                 </Notice>
@@ -118,7 +118,7 @@ export function RenewalPanel({
     // grace window.
     if (model.isFree && model.daysRemaining > model.gracePeriod) {
         return (
-            <Panel title={m['server.billing.renewal']()} icon={CreditCard}>
+            <Panel title={m['ui.labels.renewal']()} icon={CreditCard}>
                 <div className="space-y-3">
                     <p className="text-xs text-[var(--color-ink-muted)]">
                         {m['server.billing.freeServerNote']({ days: model.gracePeriod })}
@@ -132,7 +132,7 @@ export function RenewalPanel({
     }
 
     return (
-        <Panel title={m['server.billing.renewal']()} icon={CreditCard}>
+        <Panel title={m['ui.labels.renewal']()} icon={CreditCard}>
             <div className="space-y-4">
                 {model.isFree ? (
                     <p className="text-xs text-[var(--color-ink-muted)]">
@@ -305,7 +305,7 @@ function PaymentMethods({
                                     : 'border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-strong)] disabled:cursor-not-allowed disabled:opacity-50'
                             }`}
                         >
-                            {option === 'stripe' ? m['server.billing.card']() : m['server.billing.paypal']()}
+                            {option === 'stripe' ? m['server.billing.card']() : m['ui.labels.paypal']()}
                         </button>
                     ))}
                 </div>

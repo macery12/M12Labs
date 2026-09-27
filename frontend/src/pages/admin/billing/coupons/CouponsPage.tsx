@@ -14,10 +14,11 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { getCoupons, deleteCoupon, type Coupon } from '@/api/adminBillingCoupons';
 import CouponEditorModal from './CouponEditorModal';
+import { formatDate } from '@/lib/format';
 
 function fmtDate(input: string | null): string {
-    if (!input) return m['admin.billing.coupons.never']();
-    return new Date(input).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+    if (!input) return m['ui.states.never']();
+    return formatDate(input, { year: 'numeric', month: 'short', day: '2-digit' });
 }
 
 export default function CouponsPage() {
@@ -89,11 +90,11 @@ export default function CouponsPage() {
                         <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/40">
                             <tr>
                                 {[
-                                    m['admin.billing.coupons.code'](),
+                                    m['ui.labels.couponCode'](),
                                     m['admin.billing.coupons.type'](),
                                     m['admin.billing.coupons.value'](),
                                     m['admin.billing.coupons.usage'](),
-                                    m['admin.billing.coupons.status'](),
+                                    m['ui.labels.status'](),
                                     m['admin.billing.coupons.expiresAt'](),
                                     '',
                                 ].map((h, i) => (
@@ -146,7 +147,7 @@ export default function CouponsPage() {
                                                     : 'border-[var(--color-danger)]/30 bg-[var(--color-danger)]/12 text-[var(--color-danger)]',
                                             )}
                                         >
-                                            {c.isActive ? m['admin.billing.coupons.active']() : m['admin.billing.coupons.inactive']()}
+                                            {c.isActive ? m['ui.states.active']() : m['ui.states.inactive']()}
                                         </span>
                                     </td>
                                     <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--color-ink-faint)]">{fmtDate(c.expiresAt)}</td>

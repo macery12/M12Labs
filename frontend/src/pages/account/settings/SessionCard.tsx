@@ -119,7 +119,7 @@ export function SessionCard({
             {!revoked && !session.isCurrent && onRevoke && (
                 <Button variant="ghost" size="sm" onClick={onRevoke} className="shrink-0">
                     <LogOut className="h-4 w-4" />
-                    {m['account.devices.revoke']()}
+                    {m['ui.actions.signOut']()}
                 </Button>
             )}
         </div>

@@ -183,7 +183,7 @@ export function RenameMoveModal({
             }
         >
             <label className="mb-1.5 block text-sm text-[var(--color-ink-muted)]">
-                {isMove ? m['server.files.destination']() : m['server.files.fileName']()}
+                {isMove ? m['ui.labels.destination']() : m['server.files.fileName']()}
             </label>
             <Input
                 autoFocus

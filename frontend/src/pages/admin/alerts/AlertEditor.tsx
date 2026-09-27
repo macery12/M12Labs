@@ -299,7 +299,7 @@ export default function AlertEditor({
                 <div className="min-w-0">
                     <h2 className="truncate text-lg font-semibold text-[var(--color-ink)]">
                         {isNew
-                            ? m['admin.alerts.editor.newTitle']()
+                            ? m['ui.labels.newAlert']()
                             : m['admin.alerts.editor.editTitle']({ title: alert.title || `#${alert.id}` })}
                     </h2>
                     <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">
@@ -318,7 +318,7 @@ export default function AlertEditor({
                 invalid CSS, so the preview always fell below the whole form. */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
                 <div className="flex min-w-0 flex-col gap-6">
-                    <Card title={m['admin.alerts.editor.basic']()}>
+                    <Card title={m['ui.labels.basicInformation']()}>
                         <div className="flex flex-col gap-4">
                             <Field label={m['admin.alerts.field.title']()} hint={m['admin.alerts.field.titleHint']()} htmlFor="alert-title">
                                 <Input id="alert-title" value={form.title} onChange={e => set('title', e.target.value)} />
@@ -331,7 +331,7 @@ export default function AlertEditor({
 
                     <Card title={m['admin.alerts.editor.appearance']()}>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Field label={m['admin.alerts.field.type']()} htmlFor="alert-type">
+                            <Field label={m['ui.labels.type']()} htmlFor="alert-type">
                                 <Select id="alert-type" value={form.type} onChange={v => set('type', v as AlertType)} options={TYPE_OPTIONS} />
                             </Field>
                             <Field label={m['admin.alerts.field.position']()} htmlFor="alert-position">
@@ -342,7 +342,7 @@ export default function AlertEditor({
                                     <Select id="alert-scope" value={form.scope} onChange={v => set('scope', v as AlertScope)} options={SCOPE_OPTIONS} />
                                 </Field>
                             )}
-                            <Field label={m['admin.alerts.field.priority']()} hint={m['admin.alerts.field.priorityHint']()} htmlFor="alert-priority">
+                            <Field label={m['ui.labels.priority']()} hint={m['admin.alerts.field.priorityHint']()} htmlFor="alert-priority">
                                 <Input
                                     id="alert-priority"
                                     type="number"
@@ -357,7 +357,7 @@ export default function AlertEditor({
                     <Card title={m['admin.alerts.editor.behaviour']()}>
                         <div className="flex flex-col gap-4">
                             <label className="flex items-center justify-between gap-4">
-                                <span className="text-sm text-[var(--color-ink)]">{m['admin.alerts.field.enabled']()}</span>
+                                <span className="text-sm text-[var(--color-ink)]">{m['common.states.enabled']()}</span>
                                 <Switch checked={form.enabled} onChange={v => set('enabled', v)} />
                             </label>
                             <label className="flex items-center justify-between gap-4">

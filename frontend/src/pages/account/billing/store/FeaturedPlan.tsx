@@ -35,7 +35,7 @@ export function FeaturedPlan({
                 </div>
                 <div className="shrink-0 sm:text-right">
                     <p className="text-3xl font-bold text-[var(--color-ink)]">
-                        {product.price === 0 ? m['billing.store.free']() : money(product.price)}
+                        {product.price === 0 ? m['ui.labels.free']() : money(product.price)}
                     </p>
                     {product.price > 0 && (
                         <p className="text-xs text-[var(--color-ink-faint)]">{m['billing.store.perMonth']()}</p>

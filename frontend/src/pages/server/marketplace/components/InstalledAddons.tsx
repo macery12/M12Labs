@@ -181,7 +181,7 @@ export function InstalledAddons({
                             <Switch
                                 checked={addon.enabled}
                                 onChange={() => toggle.mutate(addon)}
-                                label={addon.enabled ? m['server.mods.installed.disable']() : m['server.mods.installed.enable']()}
+                                label={addon.enabled ? m['ui.actions.disable']() : m['ui.actions.enable']()}
                             />
                         </li>
                     ))}

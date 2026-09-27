@@ -89,7 +89,7 @@ export default function ApiKeyFormModal({ open, onClose }: { open: boolean; onCl
             <Modal
                 open={open}
                 onClose={onClose}
-                title={m['admin.api.tokenTitle']()}
+                title={m['ui.labels.apiKeyCreated']()}
                 description={m['admin.api.tokenSubtitle']()}
                 footer={
                     <Button size="sm" onClick={onClose}>
@@ -117,7 +117,7 @@ export default function ApiKeyFormModal({ open, onClose }: { open: boolean; onCl
                             }
                         >
                             {copied ? <Check className="h-4 w-4 text-[var(--color-accent)]" /> : <Copy className="h-4 w-4" />}
-                            {copied ? m['admin.api.copied']() : m['common.actions.copy']()}
+                            {copied ? m['common.states.copied']() : m['common.actions.copy']()}
                         </Button>
                     </div>
                 </div>
@@ -130,7 +130,7 @@ export default function ApiKeyFormModal({ open, onClose }: { open: boolean; onCl
             open={open}
             onClose={onClose}
             size="lg"
-            title={m['admin.api.createTitle']()}
+            title={m['ui.actions.createApiKey']()}
             description={m['admin.api.createSubtitle']()}
             footer={
                 <>
@@ -156,7 +156,7 @@ export default function ApiKeyFormModal({ open, onClose }: { open: boolean; onCl
 
                 <Field
                     htmlFor="admin-api-key-memo"
-                    label={m['admin.api.form.memo']()}
+                    label={m['common.labels.description']()}
                     hint={m['admin.api.form.memoHint']()}
                 >
                     <Input
@@ -171,7 +171,7 @@ export default function ApiKeyFormModal({ open, onClose }: { open: boolean; onCl
                 <div className="grid gap-4 md:grid-cols-2">
                     <Field
                         htmlFor="admin-api-key-profile"
-                        label={m['admin.access.keys.form.profile']()}
+                        label={m['ui.labels.accessProfile']()}
                         hint={m['admin.access.keys.form.profileHint']()}
                         error={
                             profilesQuery.isError

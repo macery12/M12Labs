@@ -192,7 +192,7 @@ export default function NavigationSection() {
                 <div className="min-w-0">
                     <h1 className="flex items-center gap-2 text-xl font-semibold text-[var(--color-ink)]">
                         <PanelLeft className="h-5 w-5 text-[var(--brand)]" />
-                        {m['admin.navigation.title']()}
+                        {m['ui.labels.navigation']()}
                     </h1>
                     <p className="mt-1 max-w-3xl text-sm text-[var(--color-ink-muted)]">{m['admin.navigation.subtitle']()}</p>
                 </div>
@@ -305,10 +305,10 @@ function GroupCard({
         >
             <div className="flex items-center gap-2">
                 <DragHandle
-                    label={m['admin.navigation.reorder']({ name: title })}
+                    label={m['ui.actions.reorderName']({ name: title })}
                     hint={m['admin.navigation.reorderGroupHint']()}
-                    upLabel={m['admin.navigation.moveUp']()}
-                    downLabel={m['admin.navigation.moveDown']()}
+                    upLabel={m['ui.actions.moveUp']()}
+                    downLabel={m['ui.actions.moveDown']()}
                     index={index}
                     count={count}
                     disabled={!canEdit}
@@ -387,10 +387,10 @@ function GroupCard({
                                 )}
                             >
                                 <DragHandle
-                                    label={m['admin.navigation.reorder']({ name: itemName })}
+                                    label={m['ui.actions.reorderName']({ name: itemName })}
                                     hint={m['admin.navigation.reorderHint']()}
-                                    upLabel={m['admin.navigation.moveUp']()}
-                                    downLabel={m['admin.navigation.moveDown']()}
+                                    upLabel={m['ui.actions.moveUp']()}
+                                    downLabel={m['ui.actions.moveDown']()}
                                     index={ii}
                                     count={group.items.length}
                                     disabled={!canEdit}
@@ -408,12 +408,12 @@ function GroupCard({
                                         <span className="mt-0.5 flex flex-wrap gap-1">
                                             {extension && (
                                                 <span className="rounded border border-[var(--color-border)] px-1.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
-                                                    {m['admin.navigation.extensionTag']()}
+                                                    {m['ui.labels.extension']()}
                                                 </span>
                                             )}
                                             {off && (
                                                 <span title={m['admin.navigation.offHint']()} className="rounded bg-[var(--color-surface-2)] px-1.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
-                                                    {m['admin.navigation.offTag']()}
+                                                    {m['ui.states.off']()}
                                                 </span>
                                             )}
                                         </span>

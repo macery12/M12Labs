@@ -14,12 +14,12 @@ export function ComparisonTable({ products }: { products: StoreProduct[] }) {
     const { money } = useBilling();
 
     const rows: { label: string; value: (p: StoreProduct) => string; hint?: (p: StoreProduct) => string | undefined; emphasis?: boolean }[] = [
-        { label: m['billing.store.compare.cpu'](), value: p => formatVcpu(p.limits.cpu), hint: p => cpuPercentHint(p.limits.cpu) },
+        { label: m['common.metrics.cpu'](), value: p => formatVcpu(p.limits.cpu), hint: p => cpuPercentHint(p.limits.cpu) },
         { label: m['billing.store.compare.memory'](), value: p => gb(p.limits.memory) },
-        { label: m['billing.store.compare.disk'](), value: p => gb(p.limits.disk) },
-        { label: m['billing.store.compare.backups'](), value: p => String(p.limits.backup) },
-        { label: m['billing.store.compare.databases'](), value: p => String(p.limits.database) },
-        { label: m['billing.store.compare.price'](), value: p => (p.price === 0 ? m['billing.store.free']() : money(p.price)), emphasis: true },
+        { label: m['ui.labels.storage'](), value: p => gb(p.limits.disk) },
+        { label: m['ui.labels.backups'](), value: p => String(p.limits.backup) },
+        { label: m['ui.labels.databases'](), value: p => String(p.limits.database) },
+        { label: m['ui.labels.price'](), value: p => (p.price === 0 ? m['ui.labels.free']() : money(p.price)), emphasis: true },
     ];
 
     const stickyCol =
@@ -32,7 +32,7 @@ export function ComparisonTable({ products }: { products: StoreProduct[] }) {
                 <thead>
                     <tr className="border-b border-[var(--color-border)]">
                         <th className={`${stickyCol} text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]`}>
-                            {m['billing.store.compare.plan']()}
+                            {m['ui.labels.plan']()}
                         </th>
                         {products.map(p => (
                             <th key={p.id} className={`${planCol} font-semibold text-[var(--color-ink)]`}>
@@ -66,7 +66,7 @@ export function ComparisonTable({ products }: { products: StoreProduct[] }) {
                             <td key={p.id} className={planCol}>
                                 <Link to={`/checkout/configure/${p.id}`}>
                                     <Button size="sm" className="w-full">
-                                        {m['billing.store.compare.configure']()}
+                                        {m['ui.actions.configure']()}
                                     </Button>
                                 </Link>
                             </td>

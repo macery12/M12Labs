@@ -169,10 +169,10 @@ export function CommandPalette() {
                     'hidden items-center gap-2 rounded-lg px-3 py-2 text-sm sm:inline-flex',
                     'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]',
                 )}
-                aria-label={m['nav.commandPalette.title']()}
+                aria-label={m['ui.labels.commandPalette']()}
             >
                 <Search className="h-4 w-4" />
-                <span className="hidden xl:inline">{m['nav.commandPalette.trigger']()}</span>
+                <span className="hidden xl:inline">{m['common.actions.search']()}</span>
                 <kbd className="hidden rounded border border-[var(--color-border)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-ink-faint)] xl:block">
                     {IS_MAC ? '⌘K' : 'Ctrl K'}
                 </kbd>
@@ -187,7 +187,7 @@ export function CommandPalette() {
                         'focus:outline-none',
                     )}
                 >
-                    <Dialog.Title className="sr-only">{m['nav.commandPalette.title']()}</Dialog.Title>
+                    <Dialog.Title className="sr-only">{m['ui.labels.commandPalette']()}</Dialog.Title>
                     <Dialog.Description className="sr-only">
                         {m['nav.commandPalette.description']()}
                     </Dialog.Description>

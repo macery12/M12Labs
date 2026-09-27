@@ -305,7 +305,7 @@ export function ExtensionManageDrawer({
                             <span className="font-mono text-[var(--color-ink-muted)]">
                                 {e.compatiblePanelVersions.length > 0
                                     ? e.compatiblePanelVersions.join(', ')
-                                    : m['extensions.drawer.anyVersion']()}
+                                    : m['ui.labels.anyVersion']()}
                             </span>
                         </span>
                         {e.source.homepageUrl && (
@@ -352,7 +352,7 @@ export function ExtensionManageDrawer({
                     {e.installable ? null : (
                         <>
                             {/* enable */}
-                            <Section icon={Settings2} title={m['extensions.drawer.enableTitle']()}>
+                            <Section icon={Settings2} title={m['common.states.enabled']()}>
                                 <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-3 py-2.5">
                                     <span className="text-xs text-[var(--color-ink-muted)]">{m['extensions.drawer.enableHint']()}</span>
                                     <Switch
@@ -365,7 +365,7 @@ export function ExtensionManageDrawer({
                             </Section>
 
                             {/* settings schema */}
-                            <Section title={m['extensions.drawer.settings']()}>
+                            <Section title={m['ui.labels.settings']()}>
                                 {/* A package with its own settings page owns the full
                                     form; the fields below are the same values. */}
                                 {e.adminSettingsPath && (
@@ -428,7 +428,7 @@ export function ExtensionManageDrawer({
                                 <div className="space-y-3">
                                     <div>
                                         <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">
-                                            {m['extensions.drawer.nests']()}
+                                            {m['ui.labels.nests']()}
                                         </p>
                                         <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 p-2">
                                             {nests.length === 0 && (
@@ -447,7 +447,7 @@ export function ExtensionManageDrawer({
                                     </div>
                                     <div>
                                         <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">
-                                            {m['extensions.drawer.eggs']()}
+                                            {m['ui.labels.eggs']()}
                                         </p>
                                         <div className="max-h-44 space-y-2 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 p-2">
                                             {eggs.length === 0 && (
@@ -496,7 +496,7 @@ export function ExtensionManageDrawer({
                                             className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-danger)]/40 px-3 text-xs font-medium text-[var(--color-danger)] transition-colors hover:bg-[var(--color-danger)]/10 disabled:opacity-50"
                                         >
                                             {remove.isPending ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
-                                            {remove.isPending ? m['extensions.drawer.uninstalling']() : m['extensions.drawer.uninstall']()}
+                                            {remove.isPending ? m['extensions.drawer.uninstalling']() : m['ui.actions.uninstall']()}
                                         </button>
                                     </div>
                                 </Section>

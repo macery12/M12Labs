@@ -63,7 +63,7 @@ export function TopNav({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
                         )}
                     >
                         <Shield className="h-4 w-4" />
-                        {inAdmin ? m['nav.topnav.exitAdmin']() : m['nav.topnav.admin']()}
+                        {inAdmin ? m['nav.topnav.exitAdmin']() : m['ui.labels.admin']()}
                     </Link>
                 )}
 
@@ -74,7 +74,7 @@ export function TopNav({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
                             alt=""
                             className="h-8 w-8 rounded-full bg-[var(--color-surface-2)] object-cover"
                         />
-                        <span className="hidden font-medium sm:block">{user?.username ?? m['nav.topnav.accountFallback']()}</span>
+                        <span className="hidden font-medium sm:block">{user?.username ?? m['ui.labels.account']()}</span>
                         <ChevronDown className="h-4 w-4 text-[var(--color-ink-faint)]" />
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Portal>
@@ -88,7 +88,7 @@ export function TopNav({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
                                     to="/"
                                     className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--color-ink-muted)] outline-none hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
                                 >
-                                    <UserIcon className="h-4 w-4" /> {m['nav.topnav.account']()}
+                                    <UserIcon className="h-4 w-4" /> {m['ui.labels.account']()}
                                 </Link>
                             </DropdownMenu.Item>
                             <DropdownMenu.Separator className="my-1 h-px bg-[var(--color-border)]" />
@@ -96,7 +96,7 @@ export function TopNav({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
                                 onSelect={() => void logout()}
                                 className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--color-danger)] outline-none hover:bg-[var(--color-danger)]/10"
                             >
-                                <LogOut className="h-4 w-4" /> {m['nav.topnav.signOut']()}
+                                <LogOut className="h-4 w-4" /> {m['ui.actions.signOut']()}
                             </DropdownMenu.Item>
                         </DropdownMenu.Content>
                     </DropdownMenu.Portal>

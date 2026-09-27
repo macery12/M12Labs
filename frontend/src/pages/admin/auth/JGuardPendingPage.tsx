@@ -13,9 +13,10 @@ import {
     rejectJGuardUser,
     type JGuardPendingUser,
 } from '@/api/adminAuth';
+import { formatDateTime } from '@/lib/format';
 
 function formatDate(iso: string): string {
-    return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    return formatDateTime(iso, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 // Relative "time until" for delayed-mode expiry (future timestamp).
@@ -85,7 +86,7 @@ export default function JGuardPendingPage() {
             <header className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
-                        {m['admin.auth.pending.title']()}
+                        {m['ui.labels.pendingAccounts']()}
                     </h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
                         {isLoading ? m['common.states.loading']() : m['admin.auth.pending.count']({ count: entries.length })}
@@ -111,12 +112,12 @@ export default function JGuardPendingPage() {
                     <table className="w-full min-w-[52rem] text-sm">
                         <thead>
                             <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-wider text-[var(--color-ink-faint)]">
-                                <th className="px-4 py-3 font-medium">{m['admin.auth.pending.colUsername']()}</th>
+                                <th className="px-4 py-3 font-medium">{m['ui.labels.username']()}</th>
                                 <th className="px-4 py-3 font-medium">{m['admin.auth.pending.colEmail']()}</th>
-                                <th className="px-4 py-3 font-medium">{m['admin.auth.pending.colMode']()}</th>
+                                <th className="px-4 py-3 font-medium">{m['ui.labels.mode']()}</th>
                                 <th className="px-4 py-3 font-medium">{m['admin.auth.pending.colRegistered']()}</th>
                                 <th className="px-4 py-3 font-medium">{m['admin.auth.pending.colRemaining']()}</th>
-                                <th className="px-4 py-3 text-right font-medium">{m['admin.auth.pending.colActions']()}</th>
+                                <th className="px-4 py-3 text-right font-medium">{m['ui.labels.actions']()}</th>
                             </tr>
                         </thead>
                         <tbody>

@@ -72,9 +72,9 @@ export default function OverviewPage() {
                     </div>
                 </Panel>
 
-                <Panel title={m['admin.marketplace.overview.queue']()}>
+                <Panel title={m['ui.labels.queue']()}>
                     <div className="flex flex-col gap-2 p-1">
-                        <QueueRow label={m['admin.marketplace.overview.pending']()} value={a.queue.pending} />
+                        <QueueRow label={m['ui.states.pending']()} value={a.queue.pending} />
                         <QueueRow label={m['admin.marketplace.overview.downloading']()} value={a.queue.downloading} />
                         <QueueRow label={m['admin.marketplace.overview.failed24h']()} value={a.queue.failed_24h} />
                     </div>

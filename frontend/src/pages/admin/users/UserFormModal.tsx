@@ -95,7 +95,7 @@ export default function UserFormModal({
         <Modal
             open={open}
             onClose={onClose}
-            title={editing ? m['admin.users.editTitle']() : m['admin.users.createTitle']()}
+            title={editing ? m['ui.actions.editUser']() : m['ui.actions.createUser']()}
             description={editing ? m['admin.users.editSubtitle']() : m['admin.users.createSubtitle']()}
             footer={
                 <>
@@ -104,7 +104,7 @@ export default function UserFormModal({
                     </Button>
                     <Button size="sm" onClick={() => mutation.mutate()} disabled={!canSubmit || mutation.isPending}>
                         {mutation.isPending && <Spinner className="h-4 w-4" />}
-                        {editing ? m['common.actions.saveChanges']() : m['admin.users.create']()}
+                        {editing ? m['common.actions.saveChanges']() : m['ui.actions.createUser']()}
                     </Button>
                 </>
             }
@@ -117,7 +117,7 @@ export default function UserFormModal({
                 )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label={m['admin.users.form.username']()}>
+                    <Field label={m['ui.labels.username']()}>
                         <Input value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" />
                     </Field>
                     <Field label={m['admin.users.form.email']()}>
@@ -126,7 +126,7 @@ export default function UserFormModal({
                 </div>
 
                 <Field
-                    label={editing ? m['admin.users.form.newPassword']() : m['admin.users.form.password']()}
+                    label={editing ? m['ui.labels.newPassword']() : m['ui.labels.password']()}
                     hint={editing ? m['admin.users.form.newPasswordHint']() : undefined}
                 >
                     <Input
@@ -134,7 +134,7 @@ export default function UserFormModal({
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         autoComplete="new-password"
-                        placeholder={editing ? m['admin.users.form.unchanged']() : undefined}
+                        placeholder={editing ? m['ui.states.unchanged']() : undefined}
                     />
                 </Field>
 
@@ -144,7 +144,7 @@ export default function UserFormModal({
 
                 {isOwner ? (
                     <Field
-                        label={m['admin.access.users.profileField']()}
+                        label={m['ui.labels.accessProfile']()}
                         hint={m['admin.access.users.profileHint']()}
                     >
                         <Select value={accessProfile} onChange={setAccessProfile} options={roleOptions} />

@@ -73,7 +73,7 @@ export function LanguageCard() {
 
     return (
         <SettingsCard
-            title={m['account.language.title']()}
+            title={m['ui.labels.language']()}
             description={m['account.language.description']()}
             icon={Languages}
         >

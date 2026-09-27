@@ -27,7 +27,7 @@ export default function SettingsPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.settings.title']()}</h1>
+                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.settings']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.settings.subtitle']()}</p>
             </div>
 
@@ -94,15 +94,15 @@ function GeneralCard({ canRename }: { canRename: boolean }) {
     const dirty = name.trim() !== server.name || description.trim() !== (server.description ?? '');
 
     return (
-        <SectionCard icon={Cog} title={m['server.settings.general.title']()} desc={m['server.settings.general.desc']()}>
+        <SectionCard icon={Cog} title={m['ui.labels.general']()} desc={m['server.settings.general.desc']()}>
             {!canRename ? (
                 <p className="text-sm text-[var(--color-ink-muted)]">{m['server.settings.general.noPermission']()}</p>
             ) : (
                 <div className="flex max-w-xl flex-col gap-4">
-                    <Field label={m['server.settings.general.name']()} htmlFor="server-name">
+                    <Field label={m['ui.labels.serverName']()} htmlFor="server-name">
                         <Input id="server-name" value={name} onChange={e => setName(e.target.value)} />
                     </Field>
-                    <Field label={m['server.settings.general.description']()} htmlFor="server-desc">
+                    <Field label={m['common.labels.description']()} htmlFor="server-desc">
                         <Textarea
                             id="server-desc"
                             rows={2}
@@ -130,19 +130,19 @@ function ServerInfoCard() {
     return (
         <SectionCard icon={Info} title={m['server.settings.info.title']()} desc={m['server.settings.info.desc']()}>
             <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
-                <ReadOnlyValue label={m['server.settings.info.uuid']()} mono copy={server.uuid}>
+                <ReadOnlyValue label={m['ui.labels.uuid']()} mono copy={server.uuid}>
                     {server.uuid}
                 </ReadOnlyValue>
                 <ReadOnlyValue label={m['server.settings.info.id']()} mono copy={server.id}>
                     {server.id}
                 </ReadOnlyValue>
-                <ReadOnlyValue label={m['server.settings.info.node']()}>{server.node}</ReadOnlyValue>
-                <ReadOnlyValue label={m['server.settings.info.image']()} mono>
+                <ReadOnlyValue label={m['ui.labels.node']()}>{server.node}</ReadOnlyValue>
+                <ReadOnlyValue label={m['ui.labels.dockerImage']()} mono>
                     {server.dockerImage || '—'}
                 </ReadOnlyValue>
                 <ReadOnlyValue label={m['server.settings.info.memory']()}>{limit(server.limits.memory)}</ReadOnlyValue>
                 <ReadOnlyValue label={m['server.settings.info.disk']()}>{limit(server.limits.disk)}</ReadOnlyValue>
-                <ReadOnlyValue label={m['server.settings.info.cpu']()}>
+                <ReadOnlyValue label={m['common.metrics.cpu']()}>
                     {server.limits.cpu === 0 ? m['common.states.unlimited']() : `${server.limits.cpu}%`}
                 </ReadOnlyValue>
             </div>
@@ -218,7 +218,7 @@ function ActionsCard({ canReinstall, billingEnabled }: { canReinstall: boolean; 
                 {billingEnabled && (
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-border)] pt-5">
                         <div className="min-w-0">
-                            <p className="text-sm font-medium text-[var(--color-ink)]">{m['server.settings.actions.deletion']()}</p>
+                            <p className="text-sm font-medium text-[var(--color-ink)]">{m['ui.actions.scheduleDeletion']()}</p>
                             <p className="text-xs text-[var(--color-ink-faint)]">{m['server.settings.actions.deletionDesc']()}</p>
                         </div>
                         {server.isDeletionScheduled ? (
@@ -227,7 +227,7 @@ function ActionsCard({ canReinstall, billingEnabled }: { canReinstall: boolean; 
                             </Button>
                         ) : (
                             <Button variant="danger" onClick={() => setDeleteOpen(true)} disabled={schedule.isPending}>
-                                <Trash2 className="h-4 w-4" /> {m['server.settings.actions.scheduleDeletion']()}
+                                <Trash2 className="h-4 w-4" /> {m['ui.actions.scheduleDeletion']()}
                             </Button>
                         )}
                     </div>
@@ -237,7 +237,7 @@ function ActionsCard({ canReinstall, billingEnabled }: { canReinstall: boolean; 
             <ConfirmDialog
                 open={reinstallOpen}
                 onClose={() => setReinstallOpen(false)}
-                title={m['server.settings.reinstallTitle']()}
+                title={m['ui.messages.reinstallServerTitle']()}
                 body={m['server.settings.reinstallBody']()}
                 confirmLabel={m['server.settings.actions.reinstall']()}
                 cancelLabel={m['common.actions.cancel']()}
@@ -249,7 +249,7 @@ function ActionsCard({ canReinstall, billingEnabled }: { canReinstall: boolean; 
                 onClose={() => setDeleteOpen(false)}
                 title={m['server.settings.deletionTitle']()}
                 body={m['server.settings.deletionBody']()}
-                confirmLabel={m['server.settings.actions.scheduleDeletion']()}
+                confirmLabel={m['ui.actions.scheduleDeletion']()}
                 cancelLabel={m['common.actions.cancel']()}
                 busy={schedule.isPending}
                 onConfirm={() => schedule.mutate()}

@@ -58,7 +58,7 @@ export default function DatabasesPage() {
         <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.databases.title']()}</h1>
+                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.databases']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.databases.subtitle']()}</p>
                 </div>
                 {canCreate && (
@@ -112,7 +112,7 @@ export default function DatabasesPage() {
                                     <Link to={`/server/${server.id}/billing`}>
                                         <Button size="sm">
                                             <CreditCard className="h-4 w-4" />
-                                            {m['server.databases.changePlan']()}
+                                            {m['ui.actions.changePlan']()}
                                         </Button>
                                     </Link>
                                 )}
@@ -156,17 +156,17 @@ export default function DatabasesPage() {
                                 </p>
                                 <Cell label={m['server.databases.endpoint']()} value={connectionString(db)} />
                                 <Cell label={m['server.databases.connectionsFrom']()} value={db.connectionsFrom} />
-                                <Cell label={m['server.databases.username']()} value={db.username} />
+                                <Cell label={m['ui.labels.username']()} value={db.username} />
                                 <div className="flex shrink-0 items-center gap-2">
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setViewing(db)}
-                                        title={m['server.databases.viewConnection']()}
+                                        title={m['ui.labels.details']()}
                                     >
                                         <Eye className="h-4 w-4" />
                                         <span className="hidden sm:inline">
-                                            {m['server.databases.viewConnection']()}
+                                            {m['ui.labels.details']()}
                                         </span>
                                     </Button>
                                     {canDelete && (

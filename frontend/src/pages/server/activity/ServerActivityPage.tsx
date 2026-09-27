@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Activity, ChevronLeft, ChevronRight, Code2, Search, Terminal, FolderOpen, XCircle } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
-import { timeAgo } from '@/lib/format';
+import { formatDateTime, timeAgo } from '@/lib/format';
 import { useFlags } from '@/state/flags';
 import { useServer } from '@/components/server/ServerContext';
 import {
@@ -105,7 +105,7 @@ function ActivityRow({
                             </p>
                             {count > 1 && (
                                 <span className="shrink-0 rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 font-mono text-[10px] font-medium text-[var(--color-ink-muted)]">
-                                    {m['server.activity.repeated']({ count })}
+                                    {m['ui.labels.timesCount']({ count })}
                                 </span>
                             )}
                             {viaSftp && (
@@ -122,7 +122,7 @@ function ActivityRow({
                             )}
                             {entry.context === 'admin' && (
                                 <span className="shrink-0 rounded-full bg-[var(--color-danger)]/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-danger)]">
-                                    {m['server.activity.admin']()}
+                                    {m['ui.labels.admin']()}
                                 </span>
                             )}
                             {entry.isApi && (
@@ -139,10 +139,10 @@ function ActivityRow({
 
                         <p className="mt-0.5 truncate text-xs text-[var(--color-ink-faint)]">
                             <span className="text-[var(--color-ink-muted)]" title={entry.actor?.email ?? undefined}>
-                                {entry.actor?.username ?? m['server.activity.system']()}
+                                {entry.actor?.username ?? m['ui.labels.system']()}
                             </span>
                             {' · '}
-                            <span title={new Date(entry.timestamp).toLocaleString()}>{timeAgo(entry.timestamp)}</span>
+                            <span title={formatDateTime(entry.timestamp)}>{timeAgo(entry.timestamp)}</span>
                             {entry.ip ? ` · ${entry.ip}` : ''}
                         </p>
                     </div>
@@ -293,7 +293,7 @@ export default function ServerActivityPage() {
         return (
             <div className="flex flex-col gap-6">
                 <div>
-                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.activity.page.title']()}</h1>
+                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.activity']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.activity.subtitle']()}</p>
                 </div>
                 <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-14 text-center">
@@ -307,13 +307,13 @@ export default function ServerActivityPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.activity.page.title']()}</h1>
+                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.activity']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.activity.subtitle']()}</p>
             </div>
 
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
                 <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:w-64 lg:shrink-0">
-                    <RailField label={m['admin.activity.filter.search']()}>
+                    <RailField label={m['common.actions.search']()}>
                         <div className="relative">
                             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-faint)]" />
                             <Input
@@ -345,7 +345,7 @@ export default function ServerActivityPage() {
                             options={eventOptions}
                         />
                     </RailField>
-                    <RailField label={m['admin.activity.filter.sort']()}>
+                    <RailField label={m['ui.labels.order']()}>
                         <Select
                             value={sort}
                             onChange={v => {
@@ -358,7 +358,7 @@ export default function ServerActivityPage() {
                     {hasActiveFilters && (
                         <Button variant="outline" size="sm" onClick={clearFilters} className="justify-center">
                             <XCircle className="h-4 w-4" />
-                            {m['admin.activity.clearFilters']()}
+                            {m['common.empty.clearFilters']()}
                         </Button>
                     )}
                 </aside>
@@ -394,7 +394,7 @@ export default function ServerActivityPage() {
                     {pagination && pagination.totalPages > 1 && (
                         <div className="mt-4 flex items-center justify-between">
                             <p className="text-xs text-[var(--color-ink-faint)]">
-                                {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                                {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                                 {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                             </p>
                             <div className="flex gap-2">
@@ -413,7 +413,7 @@ export default function ServerActivityPage() {
                                     disabled={pagination.currentPage >= pagination.totalPages || isFetching}
                                     onClick={() => setPage(p => p + 1)}
                                 >
-                                    {m['activity.next']()}
+                                    {m['ui.actions.next']()}
                                     <ChevronRight className="h-4 w-4" />
                                 </Button>
                             </div>

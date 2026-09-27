@@ -149,9 +149,9 @@ export default function OrdersTab() {
 
     const processorOptions = [
         { value: '', label: m['billing.orders.filter.anyProcessor']() },
-        { value: 'stripe', label: m['billing.orders.processor.stripe']() },
-        { value: 'paypal', label: m['billing.orders.processor.paypal']() },
-        { value: 'free', label: m['billing.orders.processor.free']() },
+        { value: 'stripe', label: m['ui.labels.stripe']() },
+        { value: 'paypal', label: m['ui.labels.paypal']() },
+        { value: 'free', label: m['ui.labels.free']() },
     ];
     const statusOptions = [
         { value: '', label: m['billing.orders.filter.anyStatus']() },
@@ -164,7 +164,7 @@ export default function OrdersTab() {
     const typeOptions = [
         { value: '', label: m['billing.orders.filter.anyType']() },
         { value: 'new', label: m['billing.orders.type.new']() },
-        { value: 'ren', label: m['billing.orders.type.ren']() },
+        { value: 'ren', label: m['ui.labels.renewal']() },
         { value: 'upg', label: m['billing.orders.type.upg']() },
     ];
 
@@ -184,7 +184,7 @@ export default function OrdersTab() {
                     </div>
                     <Button variant={showFilters ? 'secondary' : 'outline'} onClick={() => setShowFilters(v => !v)}>
                         <ListFilter className="h-4 w-4" />
-                        {m['billing.orders.filters']()}
+                        {m['ui.labels.filters']()}
                         {activeFilterCount > 0 && (
                             <span className="ml-1 rounded-full bg-[var(--brand)]/20 px-1.5 text-xs text-[var(--brand)]">
                                 {activeFilterCount}
@@ -245,20 +245,20 @@ export default function OrdersTab() {
                                     desc={sortDesc}
                                     onClick={() => toggleSort('id')}
                                 />
-                                <PlainHeader label={m['billing.orders.col.server']()} />
+                                <PlainHeader label={m['ui.labels.server']()} />
                                 <PlainHeader label={m['billing.orders.col.product']()} />
-                                <PlainHeader label={m['billing.orders.col.type']()} />
-                                <PlainHeader label={m['billing.orders.col.provider']()} />
-                                <PlainHeader label={m['billing.orders.col.status']()} />
+                                <PlainHeader label={m['ui.labels.type']()} />
+                                <PlainHeader label={m['ui.labels.provider']()} />
+                                <PlainHeader label={m['ui.labels.status']()} />
                                 <SortHeader
-                                    label={m['billing.orders.col.amount']()}
+                                    label={m['ui.labels.amount']()}
                                     active={sort === 'total'}
                                     desc={sortDesc}
                                     onClick={() => toggleSort('total')}
                                 />
                                 <PlainHeader label={m['billing.orders.col.period']()} />
                                 <SortHeader
-                                    label={m['billing.orders.col.created']()}
+                                    label={m['ui.labels.created']()}
                                     active={sort === 'created_at'}
                                     desc={sortDesc}
                                     onClick={() => toggleSort('created_at')}
@@ -347,7 +347,7 @@ export default function OrdersTab() {
             {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between">
                     <p className="text-xs text-[var(--color-ink-faint)]">
-                        {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                        {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                         {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                     </p>
                     <div className="flex gap-2">
@@ -366,7 +366,7 @@ export default function OrdersTab() {
                             disabled={pagination.currentPage >= pagination.totalPages || isFetching}
                             onClick={() => setPage(p => p + 1)}
                         >
-                            {m['activity.next']()}
+                            {m['ui.actions.next']()}
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>

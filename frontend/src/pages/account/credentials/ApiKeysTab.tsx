@@ -24,8 +24,8 @@ function ApiKeyRow({ apiKey, onDelete }: { apiKey: AccountApiKey; onDelete: (k: 
                 </div>
                 <p className="mt-1.5 text-xs text-[var(--color-ink-faint)]">
                     {apiKey.lastUsedAt
-                        ? m['account.credentials.api.lastUsed']({ ago: timeAgo(apiKey.lastUsedAt) })
-                        : m['account.credentials.api.neverUsed']()}
+                        ? m['ui.labels.lastUsedAgo']({ ago: timeAgo(apiKey.lastUsedAt) })
+                        : m['ui.labels.neverUsed']()}
                     {' · '}
                     {apiKey.allowedIps.length > 0
                         ? apiKey.allowedIps.join(', ')
@@ -55,7 +55,7 @@ export default function ApiKeysTab() {
     const del = useMutation({
         mutationFn: (identifier: string) => deleteApiKey(identifier),
         onSuccess: async () => {
-            push({ type: 'success', message: m['account.credentials.api.deleted']() });
+            push({ type: 'success', message: m['ui.messages.apiKeyDeleted']() });
             await qc.invalidateQueries({ queryKey: ['account', 'api-keys'] });
             setToDelete(null);
         },

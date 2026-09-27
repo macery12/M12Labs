@@ -77,7 +77,7 @@ function ThreatHeader() {
     return (
         <th className="px-2.5 py-3 text-left text-xs font-medium text-[var(--color-ink-muted)]">
             <span className="inline-flex items-center gap-1">
-                {m['admin.billing.orders.col.threat']()}
+                {m['ui.labels.threat']()}
                 <Popover.Root>
                     <Popover.Trigger
                         aria-label={m['admin.billing.orders.threatHelpLabel']()}
@@ -211,9 +211,9 @@ export default function OrdersPage() {
 
     const processorOptions = [
         { value: '', label: m['billing.orders.filter.anyProcessor']() },
-        { value: 'stripe', label: m['billing.orders.processor.stripe']() },
-        { value: 'paypal', label: m['billing.orders.processor.paypal']() },
-        { value: 'free', label: m['billing.orders.processor.free']() },
+        { value: 'stripe', label: m['ui.labels.stripe']() },
+        { value: 'paypal', label: m['ui.labels.paypal']() },
+        { value: 'free', label: m['ui.labels.free']() },
     ];
     const statusOptions = [
         { value: '', label: m['billing.orders.filter.anyStatus']() },
@@ -226,14 +226,14 @@ export default function OrdersPage() {
     const typeOptions = [
         { value: '', label: m['billing.orders.filter.anyType']() },
         { value: 'new', label: m['billing.orders.type.new']() },
-        { value: 'ren', label: m['billing.orders.type.ren']() },
+        { value: 'ren', label: m['ui.labels.renewal']() },
         { value: 'upg', label: m['billing.orders.type.upg']() },
     ];
 
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['admin.billing.orders.title']()}</h1>
+                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.orders']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.billing.orders.subtitle']()}</p>
             </div>
 
@@ -251,7 +251,7 @@ export default function OrdersPage() {
                     </div>
                     <Button variant={showFilters ? 'secondary' : 'outline'} onClick={() => setShowFilters(v => !v)}>
                         <ListFilter className="h-4 w-4" />
-                        {m['billing.orders.filters']()}
+                        {m['ui.labels.filters']()}
                         {activeFilterCount > 0 && (
                             <span className="ml-1 rounded-full bg-[var(--brand)]/20 px-1.5 text-xs text-[var(--brand)]">
                                 {activeFilterCount}
@@ -311,8 +311,8 @@ export default function OrdersPage() {
                             </p>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                                 <Input value={txnId} onChange={e => setTxnId(e.target.value)} placeholder={m['admin.billing.orders.txnId']()} />
-                                <Input value={capId} onChange={e => setCapId(e.target.value)} placeholder={m['admin.billing.orders.capId']()} />
-                                <Input value={payerId} onChange={e => setPayerId(e.target.value)} placeholder={m['admin.billing.orders.payerId']()} />
+                                <Input value={capId} onChange={e => setCapId(e.target.value)} placeholder={m['ui.labels.captureId']()} />
+                                <Input value={payerId} onChange={e => setPayerId(e.target.value)} placeholder={m['ui.labels.payerId']()} />
                                 <Input value={payerEmail} onChange={e => setPayerEmail(e.target.value)} placeholder={m['admin.billing.orders.payerEmail']()} />
                             </div>
                         </div>
@@ -327,13 +327,13 @@ export default function OrdersPage() {
                         <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/40">
                             <tr>
                                 <SortHeader label={m['billing.orders.col.id']()} active={sort === 'id'} desc={sortDesc} onClick={() => toggleSort('id')} />
-                                <PlainHeader label={m['admin.billing.orders.col.customer']()} />
-                                <PlainHeader label={m['billing.orders.col.server']()} />
+                                <PlainHeader label={m['ui.labels.customer']()} />
+                                <PlainHeader label={m['ui.labels.server']()} />
                                 <PlainHeader label={m['billing.orders.col.product']()} />
-                                <PlainHeader label={m['billing.orders.col.status']()} />
+                                <PlainHeader label={m['ui.labels.status']()} />
                                 <ThreatHeader />
-                                <SortHeader label={m['billing.orders.col.amount']()} active={sort === 'total'} desc={sortDesc} onClick={() => toggleSort('total')} />
-                                <SortHeader label={m['billing.orders.col.created']()} active={sort === 'created_at'} desc={sortDesc} onClick={() => toggleSort('created_at')} />
+                                <SortHeader label={m['ui.labels.amount']()} active={sort === 'total'} desc={sortDesc} onClick={() => toggleSort('total')} />
+                                <SortHeader label={m['ui.labels.created']()} active={sort === 'created_at'} desc={sortDesc} onClick={() => toggleSort('created_at')} />
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--color-border)]">
@@ -416,7 +416,7 @@ export default function OrdersPage() {
             {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between">
                     <p className="text-xs text-[var(--color-ink-faint)]">
-                        {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                        {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                         {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                     </p>
                     <div className="flex gap-2">
@@ -425,7 +425,7 @@ export default function OrdersPage() {
                             {m['activity.prev']()}
                         </Button>
                         <Button variant="outline" size="sm" disabled={pagination.currentPage >= pagination.totalPages || isFetching} onClick={() => setPage(p => p + 1)}>
-                            {m['activity.next']()}
+                            {m['ui.actions.next']()}
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>

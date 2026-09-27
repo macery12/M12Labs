@@ -23,7 +23,7 @@ import { useFlags } from '@/state/flags';
 import { useAdminHeld } from '@/layouts/heldPermissions';
 import { can } from '@/lib/can';
 import { Spinner } from '@/components/ui/Spinner';
-import { formatMib, formatCurrency, timeAgo } from '@/lib/format';
+import { formatCurrency, formatMib, formatNumber, timeAgo } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
     type Tone,
@@ -215,7 +215,7 @@ function buildAttention(
         });
     }
     if (data.fleet.nodes.maintenance > 0) {
-        items.push({ key: 'maint', label: m['admin.overview.attention.maintenance']({ count: data.fleet.nodes.maintenance }), to: '/admin/infrastructure' });
+        items.push({ key: 'maint', label: m['ui.labels.countInMaintenance']({ count: data.fleet.nodes.maintenance }), to: '/admin/infrastructure' });
     }
     if (data.fleet.servers.installFailed > 0) {
         items.push({ key: 'install', label: m['admin.overview.attention.installFailed']({ count: data.fleet.servers.installFailed }), to: '/admin/infrastructure' });
@@ -279,7 +279,7 @@ export default function OverviewPage() {
     return (
         <div className="flex flex-col gap-6">
             <header>
-                <h1 className="text-2xl font-semibold tracking-tight">{m['admin.overview.title']()}</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">{m['ui.labels.overview']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.overview.subtitle']()}</p>
             </header>
 
@@ -306,14 +306,14 @@ export default function OverviewPage() {
                     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                         <KpiTile
                             icon={Server}
-                            label={m['admin.overview.kpi.servers']()}
+                            label={m['ui.labels.servers']()}
                             value={String(data.fleet.servers.total)}
-                            sub={m['admin.overview.kpi.serversActive']({ count: data.fleet.servers.active })}
+                            sub={m['ui.labels.countActive']({ count: data.fleet.servers.active })}
                             to="/admin/infrastructure?view=servers"
                         />
                         <KpiTile
                             icon={Boxes}
-                            label={m['admin.overview.kpi.nodes']()}
+                            label={m['ui.labels.nodes']()}
                             value={String(data.fleet.nodes.total)}
                             sub={m['admin.overview.kpi.nodesCapacity']({
                                 percent: Math.max(data.fleet.capacity.memoryPercent, data.fleet.capacity.diskPercent),
@@ -328,8 +328,8 @@ export default function OverviewPage() {
                         />
                         <KpiTile
                             icon={Users}
-                            label={m['admin.overview.kpi.users']()}
-                            value={data.kpis.users.total.toLocaleString()}
+                            label={m['ui.labels.users']()}
+                            value={formatNumber(data.kpis.users.total)}
                             sub={
                                 data.kpis.users.newThisWeek > 0 ? (
                                     <span className="inline-flex items-center gap-0.5 text-[var(--color-accent)]">
@@ -351,7 +351,7 @@ export default function OverviewPage() {
                         ) : (
                             <KpiTile
                                 icon={LifeBuoy}
-                                label={m['admin.overview.kpi.openTickets']()}
+                                label={m['ui.actions.openTickets']()}
                                 value={String(data.queues.tickets.pending + data.queues.tickets.inProgress)}
                                 tone={data.queues.tickets.pending > 0 ? 'warning' : undefined}
                                 to={ticketsEnabled ? '/admin/tickets' : undefined}
@@ -365,7 +365,7 @@ export default function OverviewPage() {
                             <PanelHeader
                                 title={m['admin.overview.section.fleetHealth']()}
                                 to="/admin/infrastructure"
-                                action={m['admin.overview.link.infrastructure']()}
+                                action={m['ui.labels.infrastructure']()}
                             />
                             <div className="mb-3 flex h-2 overflow-hidden rounded-sm bg-[var(--color-surface-2)]">
                                 <div
@@ -382,7 +382,7 @@ export default function OverviewPage() {
                                 />
                             </div>
                             <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-[var(--color-ink-muted)]">
-                                <LegendDot color="var(--color-accent)" label={m['admin.overview.fleet.active']({ count: data.fleet.servers.active })} />
+                                <LegendDot color="var(--color-accent)" label={m['ui.labels.countActive']({ count: data.fleet.servers.active })} />
                                 <LegendDot color="var(--color-warning)" label={m['admin.overview.fleet.suspended']({ count: data.fleet.servers.suspended })} />
                                 {data.fleet.servers.installFailed > 0 && (
                                     <LegendDot color="var(--color-danger)" label={m['admin.overview.fleet.installFailed']({ count: data.fleet.servers.installFailed })} />
@@ -470,9 +470,9 @@ export default function OverviewPage() {
                             {/* Recent activity */}
                             <div className={panelClass()}>
                                 <PanelHeader
-                                    title={m['admin.overview.section.recentActivity']()}
+                                    title={m['ui.labels.recentActivity']()}
                                     to="/admin/activity"
-                                    action={m['admin.overview.link.viewAll']()}
+                                    action={m['ui.actions.viewAll']()}
                                 />
                                 {activity.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
@@ -495,7 +495,7 @@ export default function OverviewPage() {
                                                 </span>
                                                 {count > 1 && (
                                                     <span className="shrink-0 rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 font-mono text-[10px] font-medium text-[var(--color-ink-muted)]">
-                                                        {m['admin.overview.activity.repeated']({ count })}
+                                                        {m['ui.labels.timesCount']({ count })}
                                                     </span>
                                                 )}
                                                 <span className="shrink-0 font-mono text-[11px] tabular-nums text-[var(--color-ink-faint)]">

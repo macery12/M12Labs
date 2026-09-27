@@ -117,7 +117,7 @@ export default function BackupsPage() {
         <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.backups.title']()}</h1>
+                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.backups']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.backups.subtitle']()}</p>
                 </div>
                 {canCreate && !disabled && (
@@ -186,7 +186,7 @@ export default function BackupsPage() {
             {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between">
                     <p className="text-xs text-[var(--color-ink-faint)]">
-                        {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                        {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                         {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                     </p>
                     <div className="flex gap-2">
@@ -205,7 +205,7 @@ export default function BackupsPage() {
                             disabled={pagination.currentPage >= pagination.totalPages || isFetching}
                             onClick={() => setPage(p => p + 1)}
                         >
-                            {m['activity.next']()}
+                            {m['ui.actions.next']()}
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>

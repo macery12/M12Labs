@@ -79,7 +79,7 @@ export default function ConfigureCheckout() {
             <div className="space-y-4">
                 <BackLink />
                 <div className="flex items-center gap-2 rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-3 text-sm text-[var(--color-danger)]">
-                    <AlertTriangle className="h-4 w-4" /> {firstError(checkout.error) ?? m['billing.configure.loadError']()}
+                    <AlertTriangle className="h-4 w-4" /> {firstError(checkout.error) ?? m['ui.messages.productLoadError']()}
                 </div>
             </div>
         );
@@ -172,7 +172,7 @@ export default function ConfigureCheckout() {
 
             <div className="grid gap-6 lg:grid-cols-12">
                 <div className="space-y-6 lg:col-span-8">
-                    <Section icon={MapPin} step={1} title={m['billing.configure.locationTitle']()} subtitle={m['billing.configure.locationSubtitle']()}>
+                    <Section icon={MapPin} step={1} title={m['ui.labels.location']()} subtitle={m['billing.configure.locationSubtitle']()}>
                         {checkout.nodes.length === 0 ? (
                             <Empty>{m['billing.configure.noNodes']()}</Empty>
                         ) : (
@@ -207,7 +207,7 @@ export default function ConfigureCheckout() {
                         )}
                     </Section>
 
-                    <Section icon={Boxes} step={3} title={m['billing.configure.softwareTitle']()} subtitle={m['billing.configure.softwareSubtitle']()}>
+                    <Section icon={Boxes} step={3} title={m['ui.labels.software']()} subtitle={m['billing.configure.softwareSubtitle']()}>
                         {checkout.eggs.length === 0 ? (
                             <Empty>{m['billing.configure.noEggs']()}</Empty>
                         ) : (
@@ -300,7 +300,7 @@ export default function ConfigureCheckout() {
                                         {submitting ? (
                                             <Spinner className="h-5 w-5" />
                                         ) : checkout.isFree ? (
-                                            m['billing.configure.createServer']()
+                                            m['ui.actions.createServer']()
                                         ) : (
                                             m['billing.configure.continueToPayment']()
                                         )}
@@ -321,7 +321,7 @@ function BackLink() {
             to="/billing/order"
             className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
         >
-            <ArrowLeft className="h-4 w-4" /> {m['billing.configure.back']()}
+            <ArrowLeft className="h-4 w-4" /> {m['ui.actions.backToStore']()}
         </Link>
     );
 }

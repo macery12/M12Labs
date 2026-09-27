@@ -25,7 +25,7 @@ const DEFINITIONS: Definition[] = [
         name: 'onboarding',
         icon: DoorOpen,
         tint: 'var(--color-accent)',
-        title: 'admin.auth.modules.onboarding.title',
+        title: 'ui.labels.onboarding',
         description: 'admin.auth.modules.onboarding.description',
         recommended: 'admin.auth.modules.onboarding.recommended',
     },
@@ -33,21 +33,21 @@ const DEFINITIONS: Definition[] = [
         name: 'jguard',
         icon: ShieldHalf,
         tint: 'var(--brand)',
-        title: 'admin.auth.modules.jguard.title',
+        title: 'ui.labels.jguard',
         description: 'admin.auth.modules.jguard.description',
     },
     {
         name: 'discord',
         icon: MessageCircle,
         tint: 'var(--brand)',
-        title: 'admin.auth.modules.discord.title',
+        title: 'ui.labels.discordSso',
         description: 'admin.auth.modules.discord.description',
     },
     {
         name: 'google',
         icon: Globe,
         tint: 'var(--color-warning)',
-        title: 'admin.auth.modules.google.title',
+        title: 'ui.labels.googleSso',
         description: 'admin.auth.modules.google.description',
     },
 ];
@@ -124,7 +124,7 @@ export function AddModuleModal({
                                     className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3.5 text-sm font-medium text-[var(--color-brand-ink)] transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
                                 >
                                     {loading ? <Spinner className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                                    {m['admin.auth.add.enable']()}
+                                    {m['ui.actions.enable']()}
                                 </button>
                             </div>
                         );

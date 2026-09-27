@@ -40,7 +40,7 @@ function RowActions({ server, onEdit, onDelete }: { server: AdminServer; onEdit:
     return (
         <Dropdown.Root>
             <Dropdown.Trigger
-                aria-label={m['admin.infrastructure.server.actionsLabel']()}
+                aria-label={m['ui.labels.actions']()}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)] focus:outline-none"
             >
                 <MoreVertical className="h-4 w-4" />
@@ -53,11 +53,11 @@ function RowActions({ server, onEdit, onDelete }: { server: AdminServer; onEdit:
                 >
                     {canUpdate && (
                         <>
-                            <Item icon={Pencil} label={m['admin.infrastructure.server.edit']()} onSelect={onEdit} />
+                            <Item icon={Pencil} label={m['common.actions.edit']()} onSelect={onEdit} />
                             {suspended ? (
-                                <Item icon={Power} label={m['admin.infrastructure.server.unsuspend']()} onSelect={() => act(() => unsuspendServer(server.id), m['admin.infrastructure.server.unsuspended']())} />
+                                <Item icon={Power} label={m['ui.actions.unsuspend']()} onSelect={() => act(() => unsuspendServer(server.id), m['admin.infrastructure.server.unsuspended']())} />
                             ) : (
-                                <Item icon={PowerOff} label={m['admin.infrastructure.server.suspend']()} onSelect={() => act(() => suspendServer(server.id), m['admin.infrastructure.server.suspended']())} />
+                                <Item icon={PowerOff} label={m['ui.actions.suspend']()} onSelect={() => act(() => suspendServer(server.id), m['admin.infrastructure.server.suspended']())} />
                             )}
                             <Item icon={RefreshCw} label={m['admin.infrastructure.server.reinstall']()} onSelect={() => act(() => reinstallServer(server.id), m['admin.infrastructure.server.reinstalled']())} />
                         </>
@@ -106,11 +106,11 @@ export function ServersTable({ servers }: { servers: AdminServer[] }) {
             <table className="w-full border-collapse text-sm">
                 <thead>
                     <tr className="border-b border-[var(--color-border-strong)] text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
-                        <th className="px-4 py-2.5 font-semibold">{m['admin.servers.table.status']()}</th>
-                        <th className="px-4 py-2.5 font-semibold">{m['admin.servers.table.server']()}</th>
-                        <th className="hidden px-4 py-2.5 font-semibold md:table-cell">{m['admin.servers.table.node']()}</th>
+                        <th className="px-4 py-2.5 font-semibold">{m['ui.labels.status']()}</th>
+                        <th className="px-4 py-2.5 font-semibold">{m['ui.labels.server']()}</th>
+                        <th className="hidden px-4 py-2.5 font-semibold md:table-cell">{m['ui.labels.node']()}</th>
                         <th className="hidden px-4 py-2.5 font-semibold lg:table-cell">{m['admin.servers.table.owner']()}</th>
-                        <th className="px-4 py-2.5 text-right font-semibold">{m['admin.servers.table.limits']()}</th>
+                        <th className="px-4 py-2.5 text-right font-semibold">{m['ui.labels.limits']()}</th>
                         <th className="w-8 px-4 py-2.5" />
                     </tr>
                 </thead>
@@ -137,7 +137,7 @@ export function ServersTable({ servers }: { servers: AdminServer[] }) {
                             </td>
                             <td className="px-4 py-3">
                                 <div className="flex items-center justify-end gap-3 font-mono text-[11px] tabular-nums text-[var(--color-ink-muted)]">
-                                    <span className="flex items-center gap-1" title={m['admin.servers.table.cpuLimit']()}>
+                                    <span className="flex items-center gap-1" title={m['ui.labels.cpuLimit']()}>
                                         <Cpu className="h-3 w-3 text-[var(--color-ink-faint)]" />
                                         {s.limits.cpu > 0 ? `${s.limits.cpu}%` : '∞'}
                                     </span>

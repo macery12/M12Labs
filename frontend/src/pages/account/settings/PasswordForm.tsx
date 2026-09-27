@@ -43,7 +43,7 @@ export function PasswordForm() {
                     if (valid) mutation.mutate();
                 }}
             >
-                <Field label={m['account.password.current']()} htmlFor="account-current-password">
+                <Field label={m['ui.labels.currentPassword']()} htmlFor="account-current-password">
                     <Input
                         id="account-current-password"
                         type="password"
@@ -53,7 +53,7 @@ export function PasswordForm() {
                     />
                 </Field>
                 <Field
-                    label={m['account.password.new']()}
+                    label={m['ui.labels.newPassword']()}
                     error={tooShort ? m['account.password.tooShort']() : undefined}
                     htmlFor="account-new-password"
                 >

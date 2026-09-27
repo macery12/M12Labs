@@ -157,7 +157,7 @@ export default function InvoiceSettingsPage() {
                     <FieldRow label={m['admin.billing.invoiceSettings.company.address']()}>
                         <Input value={form.companyAddress} onChange={e => set('companyAddress', e.target.value)} />
                     </FieldRow>
-                    <FieldRow label={m['admin.billing.invoiceSettings.company.city']()}>
+                    <FieldRow label={m['ui.labels.city']()}>
                         <Input value={form.companyCity} onChange={e => set('companyCity', e.target.value)} />
                     </FieldRow>
                     <FieldRow label={m['admin.billing.invoiceSettings.company.state']()}>
@@ -169,7 +169,7 @@ export default function InvoiceSettingsPage() {
                     <FieldRow label={m['admin.billing.invoiceSettings.company.country']()}>
                         <Input value={form.companyCountry} onChange={e => set('companyCountry', e.target.value)} />
                     </FieldRow>
-                    <FieldRow label={m['admin.billing.invoiceSettings.company.logo']()} desc={m['admin.billing.invoiceSettings.company.logoDesc']()}>
+                    <FieldRow label={m['ui.labels.logoUrl']()} desc={m['admin.billing.invoiceSettings.company.logoDesc']()}>
                         <Input value={form.companyLogoUrl ?? ''} onChange={e => set('companyLogoUrl', e.target.value || null)} placeholder="https://…" />
                     </FieldRow>
                 </div>

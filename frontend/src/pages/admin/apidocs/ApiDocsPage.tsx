@@ -198,7 +198,7 @@ export default function ApiDocsPage() {
                 <div className="flex flex-wrap items-center gap-2">
                     <Button variant="outline" size="sm" onClick={handleDownload} disabled={!doc}>
                         <Download className="h-4 w-4" />
-                        {m['admin.apiDocs.download']()}
+                        {m['ui.actions.downloadJson']()}
                     </Button>
                     <a
                         href={OPENAPI_DOCS_URL}
@@ -464,7 +464,7 @@ function EndpointDetail({ doc, endpoint }: { doc: OpenApiDoc; endpoint: Endpoint
                         </span>
                     ) : (
                         <span className="inline-flex items-center gap-1 rounded-md border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2 py-0.5 text-[var(--color-accent)]">
-                            {m['admin.apiDocs.public']()}
+                            {m['ui.labels.public']()}
                         </span>
                     )}
                     <span className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-[var(--color-ink-faint)]">
@@ -546,10 +546,10 @@ function PropertyTable({ rows }: { rows: PropertyRow[] }) {
             <table className="w-full min-w-[520px] border-collapse text-left text-sm">
                 <thead>
                     <tr className="border-b border-[var(--color-border)] text-[11px] uppercase tracking-wide text-[var(--color-ink-faint)]">
-                        <th className="px-3 py-2 font-medium">{m['admin.apiDocs.col.name']()}</th>
-                        <th className="px-3 py-2 font-medium">{m['admin.apiDocs.col.type']()}</th>
-                        <th className="px-3 py-2 font-medium">{m['admin.apiDocs.col.required']()}</th>
-                        <th className="px-3 py-2 font-medium">{m['admin.apiDocs.col.description']()}</th>
+                        <th className="px-3 py-2 font-medium">{m['ui.labels.name']()}</th>
+                        <th className="px-3 py-2 font-medium">{m['ui.labels.type']()}</th>
+                        <th className="px-3 py-2 font-medium">{m['ui.states.required']()}</th>
+                        <th className="px-3 py-2 font-medium">{m['common.labels.description']()}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -559,9 +559,9 @@ function PropertyTable({ rows }: { rows: PropertyRow[] }) {
                             <td className="px-3 py-2 font-mono text-xs text-[var(--color-ink-muted)]">{row.type}</td>
                             <td className="px-3 py-2 text-xs">
                                 {row.required ? (
-                                    <span className="text-[var(--color-danger)]">{m['admin.apiDocs.required.yes']()}</span>
+                                    <span className="text-[var(--color-danger)]">{m['ui.states.required']()}</span>
                                 ) : (
-                                    <span className="text-[var(--color-ink-faint)]">{m['admin.apiDocs.required.no']()}</span>
+                                    <span className="text-[var(--color-ink-faint)]">{m['ui.states.optional']()}</span>
                                 )}
                             </td>
                             <td className="px-3 py-2 text-xs text-[var(--color-ink-muted)]">
@@ -675,7 +675,7 @@ function CurlBlock({ doc, endpoint }: { doc: OpenApiDoc; endpoint: Endpoint }) {
                     className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border-strong)] px-2 py-1 text-xs text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)]"
                 >
                     {copied ? <Check className="h-3.5 w-3.5 text-[var(--color-accent)]" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copied ? m['admin.apiDocs.copied']() : m['admin.apiDocs.copyCurl']()}
+                    {copied ? m['common.states.copied']() : m['admin.apiDocs.copyCurl']()}
                 </button>
             </div>
             <pre className="overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3 font-mono text-xs text-[var(--color-ink)]">

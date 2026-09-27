@@ -71,7 +71,7 @@ export default function NetworkPage() {
     const remove = useMutation({
         mutationFn: (id: number) => deleteAllocation(server.uuid, id),
         onSuccess: () => {
-            push({ type: 'success', message: m['server.network.deleted']() });
+            push({ type: 'success', message: m['ui.messages.allocationRemoved']() });
             setToDelete(null);
             invalidate();
         },
@@ -128,7 +128,7 @@ export default function NetworkPage() {
                                         </span>
                                         {a.isDefault && (
                                             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brand-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--brand)]">
-                                                <Star className="h-3 w-3" /> {m['server.network.primary']()}
+                                                <Star className="h-3 w-3" /> {m['ui.labels.primary']()}
                                             </span>
                                         )}
                                     </div>
@@ -149,7 +149,7 @@ export default function NetworkPage() {
                                             onClick={() => primary.mutate(a.id)}
                                             disabled={primary.isPending}
                                         >
-                                            <Star className="h-4 w-4" /> {m['server.network.makePrimary']()}
+                                            <Star className="h-4 w-4" /> {m['ui.actions.makePrimary']()}
                                         </Button>
                                     )}
                                     {canUpdate && (

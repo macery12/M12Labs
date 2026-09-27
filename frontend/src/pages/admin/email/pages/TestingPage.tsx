@@ -51,7 +51,7 @@ export default function TestingPage() {
                 title={m['admin.email.testing.title']()}
                 description={m['admin.email.testing.desc']({ transport: settings.transport === 'smtp' ? m['admin.email.overview.smtp']() : m['admin.email.overview.resend']() })}
             >
-                <LabeledField label={m['admin.email.testing.recipient']()}>
+                <LabeledField label={m['ui.labels.recipient']()}>
                     <div className="flex flex-col gap-3 sm:flex-row">
                         <Input
                             type="email"

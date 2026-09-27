@@ -24,9 +24,9 @@ import StoreCanvas from '@/pages/account/billing/store/StoreCanvas';
 
 const SECTION_META: Record<StoreSectionId, { titleKey: string; descKey: string }> = {
     hero: { titleKey: 'storeAdmin.hero.title', descKey: 'storeAdmin.hero.desc' },
-    features: { titleKey: 'storeAdmin.features.title', descKey: 'storeAdmin.features.desc' },
+    features: { titleKey: 'ui.labels.featureCards', descKey: 'ui.messages.featureCardsHint' },
     catalog: { titleKey: 'storeAdmin.catalog.title', descKey: 'storeAdmin.catalog.desc' },
-    custom: { titleKey: 'storeAdmin.custom.title', descKey: 'storeAdmin.custom.desc' },
+    custom: { titleKey: 'ui.labels.customBlock', descKey: 'ui.messages.customBlockHint' },
     trust: { titleKey: 'storeAdmin.trust.title', descKey: 'storeAdmin.trust.desc' },
 };
 
@@ -180,7 +180,7 @@ export default function StoreEditor() {
                 {/* Left rail: section list — select, toggle, reorder. */}
                 <div>
                     <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
-                        {m['storeAdmin.sectionsLabel']()}
+                        {m['ui.labels.sections']()}
                     </h2>
                     <ul className="flex flex-col gap-1">
                         {sections.map((section, index) => (
@@ -221,9 +221,9 @@ export default function StoreEditor() {
                 {/* Right: live, scaled preview of the store page. */}
                 <div className="lg:col-span-2 2xl:sticky 2xl:top-6 2xl:col-span-1 2xl:self-start">
                     <h2 className="mb-1 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
-                        {m['storeAdmin.previewLabel']()}
+                        {m['ui.labels.livePreview']()}
                     </h2>
-                    <p className="mb-2 px-1 text-xs text-[var(--color-ink-faint)]">{m['storeAdmin.previewHint']()}</p>
+                    <p className="mb-2 px-1 text-xs text-[var(--color-ink-faint)]">{m['ui.messages.livePreviewHint']()}</p>
                     <div className="max-h-[80vh] overflow-y-auto rounded-lg border border-[var(--color-border-strong)] p-4">
                         <PreviewFrame>
                             <StoreCanvas sections={config.sections} highlightId={selectedId} />
@@ -343,7 +343,7 @@ function SectionListRow({
                     disabled={isFirst}
                     onClick={() => onMove(-1)}
                     className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] disabled:opacity-30"
-                    aria-label={m['storeAdmin.moveUp']()}
+                    aria-label={m['ui.actions.moveUp']()}
                 >
                     <ChevronUp className="h-3.5 w-3.5" />
                 </button>
@@ -352,7 +352,7 @@ function SectionListRow({
                     disabled={isLast}
                     onClick={() => onMove(1)}
                     className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] disabled:opacity-30"
-                    aria-label={m['storeAdmin.moveDown']()}
+                    aria-label={m['ui.actions.moveDown']()}
                 >
                     <ChevronDown className="h-3.5 w-3.5" />
                 </button>
@@ -363,7 +363,7 @@ function SectionListRow({
                 </span>
                 {!section.enabled && (
                     <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
-                        {m['storeAdmin.hiddenBadge']()}
+                        {m['ui.states.hidden']()}
                     </span>
                 )}
             </button>
@@ -379,16 +379,16 @@ function SectionFields({ section, onData }: { section: StoreSection; onData: (da
         case 'hero':
             return (
                 <div className="grid gap-5">
-                    <Field label={m['storeAdmin.field.badge']()} hint={m['storeAdmin.field.fallbackHint']()}>
+                    <Field label={m['ui.labels.badge']()} hint={m['storeAdmin.field.fallbackHint']()}>
                         <Input value={d.badge ?? ''} maxLength={120} onChange={e => onData({ badge: e.target.value })} />
                     </Field>
-                    <Field label={m['storeAdmin.field.heading']()} hint={m['storeAdmin.field.fallbackHint']()}>
+                    <Field label={m['ui.labels.heading']()} hint={m['storeAdmin.field.fallbackHint']()}>
                         <Input value={d.title ?? ''} maxLength={200} onChange={e => onData({ title: e.target.value })} />
                     </Field>
-                    <Field label={m['storeAdmin.field.subtitle']()} hint={m['storeAdmin.field.fallbackHint']()}>
+                    <Field label={m['ui.labels.subtitle']()} hint={m['storeAdmin.field.fallbackHint']()}>
                         <Textarea value={d.subtitle ?? ''} maxLength={600} onChange={e => onData({ subtitle: e.target.value })} />
                     </Field>
-                    <Field label={m['storeAdmin.field.backgroundImage']()} hint={m['storeAdmin.field.backgroundImageHelp']()}>
+                    <Field label={m['ui.labels.backgroundImageUrl']()} hint={m['ui.messages.heroBackgroundHint']()}>
                         <Input type="url" value={d.backgroundImage ?? ''} maxLength={500} onChange={e => onData({ backgroundImage: e.target.value })} />
                     </Field>
                     <Field label={m['storeAdmin.field.promoText']()} hint={m['storeAdmin.field.promoTextHelp']()}>
@@ -396,7 +396,7 @@ function SectionFields({ section, onData }: { section: StoreSection; onData: (da
                     </Field>
                     <CtaEditor
                         label={m['storeAdmin.field.primaryCta']()}
-                        hint={m['storeAdmin.field.primaryCtaHelp']()}
+                        hint={m['ui.messages.primaryButtonHint']()}
                         cta={d.primaryCta ?? { label: '', href: '' }}
                         hrefPlaceholder="#plans"
                         onChange={cta => onData({ primaryCta: cta })}
@@ -408,23 +408,23 @@ function SectionFields({ section, onData }: { section: StoreSection; onData: (da
             const items = (d.items ?? []) as StoreFeatureItem[];
             return (
                 <div className="grid gap-5">
-                    <Field label={m['storeAdmin.field.heading']()} hint={m['storeAdmin.field.fallbackHint']()}>
+                    <Field label={m['ui.labels.heading']()} hint={m['storeAdmin.field.fallbackHint']()}>
                         <Input value={d.heading ?? ''} maxLength={200} onChange={e => onData({ heading: e.target.value })} />
                     </Field>
                     <ItemList
                         items={items}
                         onChange={next => onData({ items: next })}
                         blank={{ icon: 'Zap', title: '', body: '' }}
-                        addLabel={m['storeAdmin.addFeature']()}
+                        addLabel={m['ui.actions.addFeature']()}
                         render={(item, update) => (
                             <div className="grid gap-3">
-                                <Field label={m['storeAdmin.field.icon']()}>
+                                <Field label={m['ui.labels.icon']()}>
                                     <IconPicker value={item.icon} onChange={icon => update({ icon })} />
                                 </Field>
                                 <Field label={m['storeAdmin.field.itemTitle']()}>
                                     <Input value={item.title} maxLength={160} onChange={e => update({ title: e.target.value })} />
                                 </Field>
-                                <Field label={m['storeAdmin.field.body']()}>
+                                <Field label={m['ui.labels.body']()}>
                                     <Textarea value={item.body} maxLength={800} onChange={e => update({ body: e.target.value })} />
                                 </Field>
                             </div>
@@ -440,10 +440,10 @@ function SectionFields({ section, onData }: { section: StoreSection; onData: (da
         case 'custom':
             return (
                 <div className="grid gap-5">
-                    <Field label={m['storeAdmin.field.heading']()} hint={m['storeAdmin.field.customHeadingHelp']()}>
+                    <Field label={m['ui.labels.heading']()} hint={m['ui.messages.blockHeadingHint']()}>
                         <Input value={d.title ?? ''} maxLength={200} onChange={e => onData({ title: e.target.value })} />
                     </Field>
-                    <Field label={m['storeAdmin.field.body']()} hint={m['storeAdmin.field.customBodyHelp']()}>
+                    <Field label={m['ui.labels.body']()} hint={m['ui.messages.plainTextHint']()}>
                         <Textarea value={d.body ?? ''} maxLength={5000} className="min-h-[160px]" onChange={e => onData({ body: e.target.value })} />
                     </Field>
                 </div>
@@ -466,13 +466,13 @@ function SectionFields({ section, onData }: { section: StoreSection; onData: (da
                         addLabel={m['storeAdmin.addTile']()}
                         render={(item, update) => (
                             <div className="grid gap-3">
-                                <Field label={m['storeAdmin.field.icon']()}>
+                                <Field label={m['ui.labels.icon']()}>
                                     <IconPicker value={item.icon} onChange={icon => update({ icon })} />
                                 </Field>
                                 <Field label={m['storeAdmin.field.itemTitle']()}>
                                     <Input value={item.title} maxLength={160} onChange={e => update({ title: e.target.value })} />
                                 </Field>
-                                <Field label={m['storeAdmin.field.body']()}>
+                                <Field label={m['ui.labels.body']()}>
                                     <Textarea value={item.body} maxLength={800} onChange={e => update({ body: e.target.value })} />
                                 </Field>
                             </div>
@@ -509,10 +509,10 @@ function CatalogFields({ data, onData }: { data: StoreSectionData; onData: (data
 
     return (
         <div className="grid gap-5">
-            <Field label={m['storeAdmin.field.heading']()} hint={m['storeAdmin.field.fallbackHint']()}>
+            <Field label={m['ui.labels.heading']()} hint={m['storeAdmin.field.fallbackHint']()}>
                 <Input value={data.heading ?? ''} maxLength={200} onChange={e => onData({ heading: e.target.value })} />
             </Field>
-            <Field label={m['storeAdmin.field.subtitle']()} hint={m['storeAdmin.field.fallbackHint']()}>
+            <Field label={m['ui.labels.subtitle']()} hint={m['storeAdmin.field.fallbackHint']()}>
                 <Input value={data.subheading ?? ''} maxLength={600} onChange={e => onData({ subheading: e.target.value })} />
             </Field>
 
@@ -567,7 +567,7 @@ function CtaEditor({
             <legend className="px-1 text-sm font-medium text-[var(--color-ink-muted)]">{label}</legend>
             {hint && <p className="mb-2 text-xs text-[var(--color-ink-faint)]">{hint}</p>}
             <div className="grid gap-3">
-                <Input placeholder={m['storeAdmin.field.ctaLabel']()} value={cta.label} maxLength={60} onChange={e => onChange({ ...cta, label: e.target.value })} />
+                <Input placeholder={m['ui.labels.buttonLabel']()} value={cta.label} maxLength={60} onChange={e => onChange({ ...cta, label: e.target.value })} />
                 <Input placeholder={hrefPlaceholder ?? m['storeAdmin.field.ctaHref']()} value={cta.href} maxLength={300} onChange={e => onChange({ ...cta, href: e.target.value })} />
             </div>
         </fieldset>
@@ -590,7 +590,7 @@ function ChipList({ values, onChange, placeholder }: { values: string[]; onChang
                     {values.map(v => (
                         <span key={v} className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] px-2 py-1 text-xs text-[var(--color-ink)]">
                             {v}
-                            <button type="button" onClick={() => onChange(values.filter(x => x !== v))} aria-label={m['storeAdmin.removeItem']()} className="text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]">
+                            <button type="button" onClick={() => onChange(values.filter(x => x !== v))} aria-label={m['common.actions.remove']()} className="text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]">
                                 <X className="h-3 w-3" />
                             </button>
                         </span>
@@ -642,7 +642,7 @@ function ItemList<T extends object>({
                             type="button"
                             onClick={() => onChange(items.filter((_, idx) => idx !== i))}
                             className="text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
-                            aria-label={m['storeAdmin.removeItem']()}
+                            aria-label={m['common.actions.remove']()}
                         >
                             <Trash2 className="h-4 w-4" />
                         </button>

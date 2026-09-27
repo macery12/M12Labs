@@ -79,11 +79,11 @@ export function CyclePicker({
                     >
                         <span className="flex items-center gap-2">
                             <span className="text-sm font-medium text-[var(--color-ink)]">
-                                {m['server.billing.cycleDays']({ days: cycle.days })}
+                                {m['ui.labels.countDays']({ days: cycle.days })}
                             </span>
                             {cycle.isDefault && (
                                 <span className="rounded bg-[var(--brand-soft)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--brand)]">
-                                    {m['server.billing.cycleDefault']()}
+                                    {m['ui.states.default']()}
                                 </span>
                             )}
                         </span>
@@ -177,7 +177,7 @@ export function CouponField({
                 <Input
                     value={code}
                     disabled={disabled || busy}
-                    placeholder={m['billing.coupon.placeholder']()}
+                    placeholder={m['ui.labels.couponCode']()}
                     className="h-9"
                     onChange={e => setCode(e.target.value)}
                 />
@@ -189,7 +189,7 @@ export function CouponField({
                     disabled={disabled || busy}
                     onClick={apply}
                 >
-                    {busy ? <Spinner className="h-4 w-4" /> : m['billing.coupon.apply']()}
+                    {busy ? <Spinner className="h-4 w-4" /> : m['common.actions.apply']()}
                 </Button>
             </div>
             {error && <p className="text-xs text-[var(--color-danger)]">{error}</p>}

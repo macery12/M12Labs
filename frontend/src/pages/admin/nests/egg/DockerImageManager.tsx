@@ -41,7 +41,7 @@ export function DockerImageManager({
                             />
                             {index === defaultIndex && (
                                 <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-accent)]">
-                                    {m['admin.nests.egg.docker.default']()}
+                                    {m['ui.states.default']()}
                                 </span>
                             )}
                         </div>

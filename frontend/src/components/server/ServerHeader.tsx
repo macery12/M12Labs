@@ -60,7 +60,7 @@ export function ServerHeader() {
         statusLabel = td('common.states.installing');
         statusDot = 'bg-[var(--color-warning)] animate-pulse';
     } else if (!connected) {
-        statusLabel = td('server.header.connecting');
+        statusLabel = td('ui.states.connecting');
     }
 
     return (

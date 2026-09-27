@@ -52,9 +52,9 @@ export default function JGuardSettingsPage() {
             <ConfirmDialog
                 open={confirmDisable}
                 onClose={() => setConfirmDisable(false)}
-                title={m['admin.auth.jguard.disableTitle']()}
+                title={m['ui.actions.disableJguard']()}
                 body={m['admin.auth.jguard.disableBody']()}
-                confirmLabel={m['admin.auth.jguard.disableConfirm']()}
+                confirmLabel={m['ui.actions.disableJguard']()}
                 cancelLabel={m['common.actions.cancel']()}
                 busy={disabling}
                 onConfirm={async () => {
@@ -69,7 +69,7 @@ export default function JGuardSettingsPage() {
                 }}
             />
 
-            <ModuleCard icon={ShieldHalf} title={m['admin.auth.jguard.title']()} subtitle={m['admin.auth.jguard.subtitle']()} status={status}>
+            <ModuleCard icon={ShieldHalf} title={m['ui.labels.jguardSettings']()} subtitle={m['admin.auth.jguard.subtitle']()} status={status}>
                 <Field label={m['admin.auth.jguard.modeLabel']()} htmlFor="jguard-mode">
                     <Select
                         id="jguard-mode"
@@ -121,7 +121,7 @@ export default function JGuardSettingsPage() {
                                 message.status === 'saved' && (
                                     <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-accent)]">
                                         <Check className="h-3.5 w-3.5" />
-                                        {m['admin.auth.saved']()}
+                                        {m['common.states.saved']()}
                                     </span>
                                 )
                             )}

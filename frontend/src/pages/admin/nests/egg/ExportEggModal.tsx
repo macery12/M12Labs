@@ -53,7 +53,7 @@ export function ExportEggModal({ eggId, onClose }: { eggId: number; onClose: () 
                         {m['common.actions.close']()}
                     </Button>
                     <Button size="sm" onClick={download} disabled={!content}>
-                        <Download className="h-4 w-4" /> {m['admin.nests.egg.export.download']()}
+                        <Download className="h-4 w-4" /> {m['ui.actions.downloadJson']()}
                     </Button>
                 </>
             }

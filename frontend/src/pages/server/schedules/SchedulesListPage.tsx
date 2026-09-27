@@ -65,7 +65,7 @@ export default function SchedulesListPage() {
                 {canCreate && (
                     <Button onClick={() => setFormOpen(true)}>
                         <Plus className="h-4 w-4" />
-                        {m['server.schedules.create']()}
+                        {m['ui.labels.newSchedule']()}
                     </Button>
                 )}
             </div>
@@ -166,8 +166,8 @@ function StatusBadge({ schedule }: { schedule: Schedule }) {
     const [label, cls] = schedule.isProcessing
         ? [m['server.schedules.status.processing'](), 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]']
         : schedule.isActive
-          ? [m['server.schedules.status.active'](), 'bg-[var(--color-accent)]/15 text-[var(--color-accent)]']
-          : [m['server.schedules.status.inactive'](), 'bg-[var(--color-surface-2)] text-[var(--color-ink-muted)]'];
+          ? [m['ui.states.active'](), 'bg-[var(--color-accent)]/15 text-[var(--color-accent)]']
+          : [m['ui.states.inactive'](), 'bg-[var(--color-surface-2)] text-[var(--color-ink-muted)]'];
     return (
         <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
             <CircleDot className="h-2.5 w-2.5" /> {label}

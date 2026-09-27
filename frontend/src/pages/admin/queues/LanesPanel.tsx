@@ -1,8 +1,13 @@
-import { m } from '@/i18n/messages';
+import { m, td } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 import type { QueueLane } from '@/api/adminQueues';
 import { Sparkline } from './Sparkline';
 import { formatMs } from './format';
+
+// Lane titles come from config/queue.php in English; the known lanes are
+// catalogued by their stable key, and anything else (a lane added later)
+// keeps the server's wording.
+const laneTitle = (lane: QueueLane) => td(`admin.queues.laneMeta.${lane.lane}.title`, lane.title);
 
 /**
  * Lanes, with the busy ones promoted.
@@ -119,7 +124,7 @@ function LaneCard({ lane }: { lane: QueueLane }) {
 
             <header className="flex items-baseline gap-2">
                 <h3 className="text-sm font-semibold text-[var(--color-ink)]">{lane.lane}</h3>
-                <p className="truncate text-[11px] text-[var(--color-ink-faint)]">{lane.title}</p>
+                <p className="truncate text-[11px] text-[var(--color-ink-faint)]">{laneTitle(lane)}</p>
                 <span className={cn('ml-auto shrink-0 text-[11px] font-medium', workerTone(lane))}>
                     {workerLabel(lane)}
                 </span>
@@ -130,7 +135,7 @@ function LaneCard({ lane }: { lane: QueueLane }) {
                     {lane.depth ?? '—'}
                 </span>
                 <span className="pb-0.5 font-mono text-[11px] text-[var(--color-ink-faint)]">
-                    {m['admin.queues.lane.queued']()}
+                    {m['ui.states.queuedInline']()}
                 </span>
                 <span className="ml-auto pb-0.5 font-mono text-[11px] tabular-nums text-[var(--color-ink-muted)]">
                     {lane.waitSeconds === null ? '—' : `${lane.waitSeconds}s`} · {formatMs(lane.avgRuntimeMs)}
@@ -191,7 +196,7 @@ function QuietLanes({
                 <table className="w-full min-w-[46rem] text-sm">
                     <thead className="text-left text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
                         <tr className="border-b border-[var(--color-border)]">
-                            <th className="px-4 py-2 font-medium">{m['admin.queues.col.lane']()}</th>
+                            <th className="px-4 py-2 font-medium">{m['ui.labels.queue']()}</th>
                             <th className="px-4 py-2 font-medium">{m['admin.queues.col.consumer']()}</th>
                             <th className="px-4 py-2 text-right font-medium">{m['admin.queues.col.depth']()}</th>
                             <th className="px-4 py-2 text-right font-medium">{m['admin.queues.col.processed']()}</th>
@@ -228,7 +233,7 @@ function QuietLaneRow({ lane }: { lane: QueueLane }) {
                         aria-hidden="true"
                     />
                     <span className="font-medium text-[var(--color-ink)]">{lane.lane}</span>
-                    <span className="truncate text-xs text-[var(--color-ink-faint)]">{lane.title}</span>
+                    <span className="truncate text-xs text-[var(--color-ink-faint)]">{laneTitle(lane)}</span>
                     {lane.long && (
                         <span className="rounded border border-[var(--color-border)] px-1 font-mono text-[9px] uppercase tracking-wide text-[var(--color-ink-faint)]">
                             {m['admin.queues.lane.long']()}
@@ -260,11 +265,11 @@ function QuietLaneRow({ lane }: { lane: QueueLane }) {
 }
 
 function workerLabel(lane: QueueLane): string {
-    if (!lane.expected) return m['admin.queues.consumer.na']();
-    if (!lane.consumed) return m['admin.queues.consumer.none']();
+    if (!lane.expected) return m['ui.states.notNeeded']();
+    if (!lane.consumed) return m['ui.states.none']();
 
     return lane.processes === null
-        ? m['admin.queues.consumer.yes']()
+        ? m['ui.states.active']()
         : m['admin.queues.lane.workers']({ count: lane.processes });
 }
 

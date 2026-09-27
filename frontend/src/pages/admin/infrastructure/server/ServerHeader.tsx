@@ -72,7 +72,7 @@ export function ServerHeader() {
                 <Link
                     to="/admin/infrastructure"
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-strong)] text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)]"
-                    title={m['admin.infrastructure.title']()}
+                    title={m['ui.labels.infrastructure']()}
                 >
                     <ChevronLeft className="h-4 w-4" />
                 </Link>
@@ -106,11 +106,11 @@ export function ServerHeader() {
                             <>
                                 {suspended ? (
                                     <Button variant="outline" size="sm" disabled={busy} onClick={() => run(() => unsuspendServer(server.id), m['admin.infrastructure.server.unsuspended']())}>
-                                        <Power className="h-4 w-4" /> {m['admin.infrastructure.server.unsuspend']()}
+                                        <Power className="h-4 w-4" /> {m['ui.actions.unsuspend']()}
                                     </Button>
                                 ) : (
                                     <Button variant="outline" size="sm" disabled={busy} onClick={() => run(() => suspendServer(server.id), m['admin.infrastructure.server.suspended']())}>
-                                        <PowerOff className="h-4 w-4" /> {m['admin.infrastructure.server.suspend']()}
+                                        <PowerOff className="h-4 w-4" /> {m['ui.actions.suspend']()}
                                     </Button>
                                 )}
                             </>
@@ -120,7 +120,7 @@ export function ServerHeader() {
                             behind a menu now, away from the everyday actions. */}
                         <DropdownMenu.Root>
                             <DropdownMenu.Trigger asChild>
-                                <Button variant="outline" size="icon" className="h-9 w-9" aria-label={m['admin.infrastructure.server.moreActions']()} disabled={busy}>
+                                <Button variant="outline" size="icon" className="h-9 w-9" aria-label={m['ui.labels.moreActions']()} disabled={busy}>
                                     <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                             </DropdownMenu.Trigger>
@@ -160,7 +160,7 @@ export function ServerHeader() {
             <ConfirmDialog
                 open={reinstalling}
                 onClose={() => setReinstalling(false)}
-                title={m['admin.infrastructure.server.reinstallTitle']()}
+                title={m['ui.messages.reinstallServerTitle']()}
                 body={m['admin.infrastructure.server.reinstallBody']({ name: server.name })}
                 confirmLabel={m['admin.infrastructure.server.reinstall']()}
                 cancelLabel={m['common.actions.cancel']()}

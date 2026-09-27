@@ -42,7 +42,7 @@ function RailRow({ alert, active, onClick }: { alert: Alert; active: boolean; on
                 </span>
                 {!alert.enabled && (
                     <span className="shrink-0 rounded bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
-                        {m['admin.alerts.rail.off']()}
+                        {m['ui.states.off']()}
                     </span>
                 )}
             </span>
@@ -103,7 +103,7 @@ export default function AlertsSection() {
                 </div>
                 <Button size="sm" onClick={() => setSelection({ mode: 'new' })}>
                     <Plus className="h-4 w-4" />
-                    {m['admin.alerts.newAlert']()}
+                    {m['ui.labels.newAlert']()}
                 </Button>
             </header>
 
@@ -160,7 +160,7 @@ export default function AlertsSection() {
                                 action={
                                     <Button size="sm" onClick={() => setSelection({ mode: 'new' })}>
                                         <Plus className="h-4 w-4" />
-                                        {m['admin.alerts.newAlert']()}
+                                        {m['ui.labels.newAlert']()}
                                     </Button>
                                 }
                             />

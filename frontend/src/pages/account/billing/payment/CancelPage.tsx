@@ -33,7 +33,7 @@ export default function CancelPage() {
                         <Button>
                             {planChangeServer
                                 ? m['server.billing.backToServerBilling']()
-                                : m['billing.cancel.back']()}
+                                : m['ui.actions.backToStore']()}
                         </Button>
                     </Link>
                 </div>

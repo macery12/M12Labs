@@ -14,7 +14,7 @@ export const TICKET_PRIORITIES: TicketPriority[] = ['low', 'medium', 'high', 'cr
 export function statusLabel(status: TicketStatus): string {
     switch (status) {
         case 'pending':
-            return m['tickets.status.pending']();
+            return m['ui.states.pending']();
         case 'in-progress':
             return m['tickets.status.inProgress']();
         case 'resolved':

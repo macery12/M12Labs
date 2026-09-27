@@ -14,6 +14,7 @@ import {
     type ExtensionSettingField,
 } from '@/api/extensions';
 import { isVisible } from './settingVisibility';
+import { formatDateTime } from '@/lib/format';
 
 /**
  * Credential fields for an installed extension.
@@ -100,11 +101,11 @@ export function ExtensionSecretsPanel({
                             {secret.configured ? (
                                 <span className="inline-flex items-center gap-1 text-[11px] text-[var(--color-success)]">
                                     <Check className="h-3 w-3" />
-                                    {m['extensions.secrets.configured']()}
+                                    {m['ui.states.configured']()}
                                 </span>
                             ) : (
                                 <span className="text-[11px] text-[var(--color-ink-faint)]">
-                                    {m['extensions.secrets.notConfigured']()}
+                                    {m['ui.states.notSet']()}
                                 </span>
                             )}
                         </div>
@@ -134,7 +135,7 @@ export function ExtensionSecretsPanel({
                                 className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-ink)] transition-colors hover:bg-[var(--color-surface-2)] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <KeyRound className="h-3.5 w-3.5" />
-                                {m['extensions.secrets.save']()}
+                                {m['common.actions.save']()}
                             </button>
                             {secret.configured && (
                                 <button
@@ -152,7 +153,7 @@ export function ExtensionSecretsPanel({
                         {secret.updatedAt && (
                             <p className="mt-1.5 text-[11px] text-[var(--color-ink-faint)]">
                                 {m['extensions.secrets.lastChanged']({
-                                    when: new Date(secret.updatedAt).toLocaleString(),
+                                    when: formatDateTime(secret.updatedAt),
                                 })}
                             </p>
                         )}

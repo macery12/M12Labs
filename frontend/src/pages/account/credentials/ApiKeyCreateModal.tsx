@@ -60,7 +60,7 @@ export default function ApiKeyCreateModal({ open, onClose }: { open: boolean; on
         <Modal
             open={open}
             onClose={onClose}
-            title={revealed ? m['account.credentials.api.tokenTitle']() : m['account.credentials.api.createTitle']()}
+            title={revealed ? m['ui.labels.apiKeyCreated']() : m['ui.actions.createApiKey']()}
             description={revealed ? m['account.credentials.api.tokenSubtitle']() : m['account.credentials.api.createSubtitle']()}
             footer={
                 revealed ? (
@@ -118,7 +118,7 @@ export default function ApiKeyCreateModal({ open, onClose }: { open: boolean; on
                     )}
 
                     <Field
-                        label={m['account.credentials.api.form.description']()}
+                        label={m['common.labels.description']()}
                         hint={m['account.credentials.api.form.descriptionHint']()}
                     >
                         <Input

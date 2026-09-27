@@ -26,7 +26,7 @@ export function RecoveryCodeRow() {
     const badge = status?.seen ? (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs font-medium text-[var(--color-accent)]">
             <Check className="h-3.5 w-3.5" />
-            {m['account.recoveryCode.saved']()}
+            {m['common.states.saved']()}
         </span>
     ) : (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-warning)]/10 px-2.5 py-1 text-xs font-medium text-[var(--color-warning)]">

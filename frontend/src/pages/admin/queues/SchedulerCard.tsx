@@ -117,7 +117,7 @@ export function SchedulerCard({ scheduler }: { scheduler: QueueScheduler }) {
 function statusLabel(scheduler: QueueScheduler): string {
     switch (scheduler.severity) {
         case 'down':
-            return m['admin.queues.scheduler.down']();
+            return m['ui.states.notRunning']();
         case 'stale':
             return m['admin.queues.scheduler.stale']();
         case 'unknown':

@@ -116,7 +116,7 @@ export default function SmtpPage() {
     const mismatch = expected && form.encryption !== expected ? expected : null;
 
     const encryptionOptions = [
-        { value: 'none', label: m['admin.email.smtp.encNone']() },
+        { value: 'none', label: m['ui.states.none']() },
         { value: 'tls', label: 'TLS' },
         { value: 'ssl', label: 'SSL' },
     ];
@@ -128,19 +128,19 @@ export default function SmtpPage() {
                 description={m['admin.email.smtp.desc']()}
                 right={
                     <TonePill tone={active ? 'success' : 'neutral'}>
-                        {active ? m['admin.email.smtp.active']() : m['admin.email.smtp.inactive']()}
+                        {active ? m['ui.labels.activeTransport']() : m['ui.states.inactive']()}
                     </TonePill>
                 }
             >
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <LabeledField label={m['admin.email.smtp.host']()}>
+                    <LabeledField label={m['ui.labels.host']()}>
                         <Input
                             value={form.host}
                             onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
                             placeholder="smtp.yourdomain.com"
                         />
                     </LabeledField>
-                    <LabeledField label={m['admin.email.smtp.port']()}>
+                    <LabeledField label={m['ui.labels.port']()}>
                         <Input
                             type="number"
                             value={form.port}
@@ -148,7 +148,7 @@ export default function SmtpPage() {
                             placeholder="587"
                         />
                     </LabeledField>
-                    <LabeledField label={m['admin.email.smtp.username']()}>
+                    <LabeledField label={m['ui.labels.username']()}>
                         <Input
                             value={form.username}
                             onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
@@ -168,7 +168,7 @@ export default function SmtpPage() {
                                 {m['admin.email.smtp.portMismatch']({
                                     port: form.port,
                                     expected: mismatch.toUpperCase(),
-                                    actual: form.encryption ? form.encryption.toUpperCase() : m['admin.email.smtp.encNone'](),
+                                    actual: form.encryption ? form.encryption.toUpperCase() : m['ui.states.none'](),
                                 })}
                             </span>
                             <button
@@ -181,7 +181,7 @@ export default function SmtpPage() {
                         </div>
                     )}
                     <LabeledField
-                        label={m['admin.email.smtp.password']()}
+                        label={m['ui.labels.password']()}
                         hint={m['admin.email.smtp.passwordHint']()}
                     >
                         <Input
@@ -212,17 +212,17 @@ export default function SmtpPage() {
             </SettingsCard>
 
             <SettingsCard
-                title={m['admin.email.smtp.checkTitle']()}
+                title={m['ui.labels.connectionCheck']()}
                 description={m['admin.email.smtp.checkDesc']()}
                 right={
                     <Button variant="secondary" size="sm" onClick={runTest} disabled={testing}>
                         {testing ? <Spinner className="h-4 w-4" /> : <FlaskConical className="h-4 w-4" />}
-                        {m['admin.email.smtp.checkButton']()}
+                        {m['ui.actions.checkConnection']()}
                     </Button>
                 }
             >
                 <p className="text-xs text-[var(--color-ink-faint)]">
-                    {m['admin.email.smtp.configuredState']({ state: configured ? m['admin.email.overview.configured']() : m['admin.email.overview.incomplete']() })}
+                    {m['admin.email.smtp.configuredState']({ state: configured ? m['ui.states.configured']() : m['admin.email.overview.incomplete']() })}
                 </p>
                 {result && <TestResultBanner result={result} />}
             </SettingsCard>

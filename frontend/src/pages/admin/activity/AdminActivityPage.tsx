@@ -43,11 +43,11 @@ function Avatar({ actor }: { actor: AdminActivityEntry['actor'] }) {
 // categories get one, with a label instead of the raw key.
 const CATEGORY_LABELS: Record<string, () => string> = {
     auth: m['admin.activity.category.auth'],
-    backups: m['admin.activity.category.backups'],
-    billing: m['admin.activity.category.billing'],
+    backups: m['ui.labels.backups'],
+    billing: m['ui.labels.billing'],
     files: m['admin.activity.category.files'],
     plugins: m['admin.activity.category.plugins'],
-    server: m['admin.activity.category.server'],
+    server: m['ui.labels.server'],
 };
 
 function ActivityRow({ entry, onInspect }: { entry: AdminActivityEntry; onInspect: (e: AdminActivityEntry) => void }) {
@@ -89,7 +89,7 @@ function ActivityRow({ entry, onInspect }: { entry: AdminActivityEntry; onInspec
                     )}
                 </div>
                 <p className="mt-0.5 truncate text-xs text-[var(--color-ink-faint)]">
-                    <span className="text-[var(--color-ink-muted)]">{entry.actor?.username ?? m['admin.activity.system']()}</span>
+                    <span className="text-[var(--color-ink-muted)]">{entry.actor?.username ?? m['ui.labels.system']()}</span>
                     {' · '}
                     {timeAgo(entry.timestamp)}
                     {entry.ip ? ` · ${entry.ip}` : ''}
@@ -191,7 +191,7 @@ export default function AdminActivityPage() {
         return (
             <div className="flex flex-col gap-6">
                 <div>
-                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['admin.activity.title']()}</h1>
+                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.activity']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.activity.subtitle']()}</p>
                 </div>
                 <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-14 text-center">
@@ -205,14 +205,14 @@ export default function AdminActivityPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['admin.activity.title']()}</h1>
+                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.activity']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.activity.subtitle']()}</p>
             </div>
 
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
                 {/* Filter rail */}
                 <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:w-64 lg:shrink-0">
-                    <RailField label={m['admin.activity.filter.search']()}>
+                    <RailField label={m['common.actions.search']()}>
                         <div className="relative">
                             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-faint)]" />
                             <Input
@@ -223,7 +223,7 @@ export default function AdminActivityPage() {
                             />
                         </div>
                     </RailField>
-                    <RailField label={m['admin.activity.filter.user']()}>
+                    <RailField label={m['ui.labels.administrator']()}>
                         <Select
                             value={actor}
                             onChange={v => {
@@ -243,7 +243,7 @@ export default function AdminActivityPage() {
                             options={eventOptions}
                         />
                     </RailField>
-                    <RailField label={m['admin.activity.filter.sort']()}>
+                    <RailField label={m['ui.labels.order']()}>
                         <Select
                             value={sort}
                             onChange={v => {
@@ -256,7 +256,7 @@ export default function AdminActivityPage() {
                     {hasActiveFilters && (
                         <Button variant="outline" size="sm" onClick={clearFilters} className="justify-center">
                             <XCircle className="h-4 w-4" />
-                            {m['admin.activity.clearFilters']()}
+                            {m['common.empty.clearFilters']()}
                         </Button>
                     )}
                 </aside>
@@ -291,7 +291,7 @@ export default function AdminActivityPage() {
                     {pagination && pagination.totalPages > 1 && (
                         <div className="mt-4 flex items-center justify-between">
                             <p className="text-xs text-[var(--color-ink-faint)]">
-                                {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                                {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                                 {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                             </p>
                             <div className="flex gap-2">
@@ -310,7 +310,7 @@ export default function AdminActivityPage() {
                                     disabled={pagination.currentPage >= pagination.totalPages || isFetching}
                                     onClick={() => setPage(p => p + 1)}
                                 >
-                                    {m['activity.next']()}
+                                    {m['ui.actions.next']()}
                                     <ChevronRight className="h-4 w-4" />
                                 </Button>
                             </div>

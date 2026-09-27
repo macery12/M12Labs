@@ -141,7 +141,7 @@ function TemplateCard({
                 {template.is_customized ? (
                     <TonePill tone="success">{m['admin.email.templates.customized']()}</TonePill>
                 ) : (
-                    <TonePill tone="neutral">{m['admin.email.templates.default']()}</TonePill>
+                    <TonePill tone="neutral">{m['ui.states.default']()}</TonePill>
                 )}
             </div>
             <div className="min-w-0">
@@ -169,7 +169,7 @@ function TemplateCard({
                         className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-ink-muted)] hover:text-[var(--brand)]"
                     >
                         <Pencil className="h-3.5 w-3.5" />
-                        {m['admin.email.templates.edit']()}
+                        {m['common.actions.edit']()}
                     </button>
                 </div>
             </div>

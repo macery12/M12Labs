@@ -41,7 +41,7 @@ export default function DeleteDatabaseModal({
         <Modal
             open
             onClose={onClose}
-            title={m['server.databases.deleteTitle']()}
+            title={m['ui.actions.deleteDatabase']()}
             size="sm"
             footer={
                 <>
@@ -55,7 +55,7 @@ export default function DeleteDatabaseModal({
                         disabled={!valid || remove.isPending}
                     >
                         {remove.isPending && <Spinner className="h-4 w-4" />}
-                        {m['server.databases.deleteSubmit']()}
+                        {m['ui.actions.deleteDatabase']()}
                     </Button>
                 </>
             }

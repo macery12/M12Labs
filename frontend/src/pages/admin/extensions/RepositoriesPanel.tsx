@@ -56,7 +56,7 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
     return (
         <>
             <Panel
-                title={m['extensions.repos.title']()}
+                title={m['ui.labels.repositories']()}
                 icon={GitBranch}
                 right={
                     <button
@@ -64,7 +64,7 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
                         onClick={() => setAdding(true)}
                         className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[var(--color-border-strong)] px-2.5 text-[11px] font-medium text-[var(--color-ink)] transition-colors hover:bg-[var(--color-surface-2)]"
                     >
-                        <Plus className="h-3.5 w-3.5" /> {m['extensions.repos.add']()}
+                        <Plus className="h-3.5 w-3.5" /> {m['ui.actions.addRepository']()}
                     </button>
                 }
             >
@@ -107,7 +107,7 @@ export function RepositoriesPanel({ repositories }: { repositories: Repository[]
                                             checked={repo.enabled}
                                             disabled={toggle.isPending}
                                             onChange={() => toggle.mutate(repo)}
-                                            label={repo.enabled ? m['extensions.repos.disable']() : m['extensions.repos.enable']()}
+                                            label={repo.enabled ? m['ui.actions.disable']() : m['ui.actions.enable']()}
                                         />
                                         {repo.homepageUrl && (
                                             <a
@@ -219,7 +219,7 @@ function RepoFormModal({
             >
                 <header className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
                     <h3 className="text-sm font-semibold text-[var(--color-ink)]">
-                        {repo ? m['extensions.repos.form.editTitle']() : m['extensions.repos.form.addTitle']()}
+                        {repo ? m['extensions.repos.form.editTitle']() : m['ui.actions.addRepository']()}
                     </h3>
                     <button
                         type="button"
@@ -240,7 +240,7 @@ function RepoFormModal({
                 >
                     <label className="block">
                         <span className="mb-1 block text-xs font-medium text-[var(--color-ink-muted)]">
-                            {m['extensions.repos.form.name']()}
+                            {m['ui.labels.name']()}
                         </span>
                         <Input value={name} onChange={e => setName(e.target.value)} placeholder={m['extensions.repos.form.namePlaceholder']()} />
                     </label>

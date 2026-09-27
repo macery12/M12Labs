@@ -46,7 +46,7 @@ function StatusBadge({ status }: { status: SaveStatus }) {
         return (
             <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-accent)]">
                 <Check className="h-3.5 w-3.5" />
-                {m['admin.auth.saved']()}
+                {m['common.states.saved']()}
             </span>
         );
     }

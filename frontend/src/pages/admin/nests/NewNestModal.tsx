@@ -37,7 +37,7 @@ export function NewNestModal({ onClose, onCreated }: { onClose: () => void; onCr
         <Modal
             open
             onClose={onClose}
-            title={m['admin.nests.nest.newTitle']()}
+            title={m['ui.labels.newNest']()}
             footer={
                 <>
                     <Button variant="ghost" size="sm" onClick={onClose} disabled={saving}>
@@ -51,7 +51,7 @@ export function NewNestModal({ onClose, onCreated }: { onClose: () => void; onCr
             }
         >
             <div className="flex flex-col gap-4">
-                <Field label={m['admin.nests.nest.name']()} hint={m['admin.nests.nest.nameHint']()} htmlFor="nest-name">
+                <Field label={m['ui.labels.name']()} hint={m['admin.nests.nest.nameHint']()} htmlFor="nest-name">
                     <Input id="nest-name" autoFocus value={name} onChange={e => setName(e.currentTarget.value)} />
                 </Field>
                 <Field label={m['common.labels.description']()} htmlFor="nest-desc">

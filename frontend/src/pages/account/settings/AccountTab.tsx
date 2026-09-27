@@ -13,6 +13,7 @@ import { RecoveryCodeRow } from './RecoveryCodeRow';
 import { LinkedAccountsRow } from './LinkedAccountsRow';
 import { BillingAddressRow } from './BillingAddressRow';
 import { LanguageCard } from './LanguageCard';
+import { formatDate } from '@/lib/format';
 
 // "Account" tab of the settings page: identity summary, the email and password
 // forms, and a single "Sign-in & security" card of compact rows (2FA, recovery
@@ -28,7 +29,7 @@ export function AccountTab() {
     // Admins can disable per-user language selection (app:user_locale).
     const userLocaleAllowed = window.SiteConfiguration?.user_locale !== false;
 
-    const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString() : null;
+    const memberSince = user?.created_at ? formatDate(user.created_at) : null;
 
     return (
         <div className="flex flex-col gap-6">
@@ -47,7 +48,7 @@ export function AccountTab() {
                                 </span>
                                 {user.root_admin && (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)]/10 px-2 py-0.5 text-[11px] font-medium text-[var(--color-accent)]">
-                                        {m['account.profile.admin']()}
+                                        {m['ui.labels.administrator']()}
                                     </span>
                                 )}
                             </div>

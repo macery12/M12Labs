@@ -13,6 +13,7 @@ import { testResendConnection, type EmailResponse, type ResendPlanKey } from '@/
 import { useEmailSettings } from '../useEmailSettings';
 import { SettingsCard, SaveBar, LabeledField, TonePill } from '../parts';
 import { TestResultBanner } from './TestResultBanner';
+import { formatNumber } from '@/lib/format';
 
 // Resend transport configuration: API key, plan tier, optional custom quotas,
 // live usage meters, and a connection check.
@@ -107,7 +108,7 @@ export default function ResendPage() {
     const meterPercent = (sent: number, limit: number | null) =>
         limit && limit > 0 ? Math.round((sent / limit) * 100) : null;
     const meterValue = (sent: number, limit: number | null, applies: boolean) =>
-        !applies ? m['admin.email.resend.noCap']() : `${sent.toLocaleString()} / ${limit == null ? '∞' : limit.toLocaleString()}`;
+        !applies ? m['admin.email.resend.noCap']() : `${formatNumber(sent)} / ${limit == null ? '∞' : formatNumber(limit)}`;
 
     const dailyApplies = Boolean(activePlan.enforce_daily);
     const monthlyApplies = Boolean(activePlan.enforce_monthly);
@@ -121,7 +122,7 @@ export default function ResendPage() {
                 description={m['admin.email.resend.desc']()}
                 right={
                     <TonePill tone={active ? 'success' : 'neutral'}>
-                        {active ? m['admin.email.smtp.active']() : m['admin.email.smtp.inactive']()}
+                        {active ? m['ui.labels.activeTransport']() : m['ui.states.inactive']()}
                     </TonePill>
                 }
             >
@@ -212,18 +213,18 @@ export default function ResendPage() {
             </SettingsCard>
 
             <SettingsCard
-                title={m['admin.email.resend.checkTitle']()}
+                title={m['ui.labels.connectionCheck']()}
                 description={m['admin.email.resend.checkDesc']()}
                 right={
                     <Button variant="secondary" size="sm" onClick={runTest} disabled={testing}>
                         {testing ? <Spinner className="h-4 w-4" /> : <FlaskConical className="h-4 w-4" />}
-                        {m['admin.email.resend.checkButton']()}
+                        {m['ui.actions.checkConnection']()}
                     </Button>
                 }
             >
                 <p className="text-xs text-[var(--color-ink-faint)]">
                     {m['admin.email.smtp.configuredState']({ state: settings.resend.api_key
-                            ? m['admin.email.overview.configured']()
+                            ? m['ui.states.configured']()
                             : m['admin.email.overview.incomplete']() })}
                 </p>
                 {result && <TestResultBanner result={result} />}

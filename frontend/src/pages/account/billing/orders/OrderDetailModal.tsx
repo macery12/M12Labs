@@ -5,12 +5,13 @@ import { cn } from '@/lib/cn';
 import { Modal } from '@/components/ui/Modal';
 import type { Order } from '@/api/orders';
 import { StatusPill, ProcessorBadge, orderTypeLabel, money } from './parts';
+import { formatDateTime } from '@/lib/format';
 
 type DetailTab = 'overview' | 'payment' | 'timeline';
 
 function fmtDate(input: string | null): string {
     if (!input) return '—';
-    return new Date(input).toLocaleString(undefined, {
+    return formatDateTime(input, {
         year: 'numeric',
         month: 'short',
         day: '2-digit',
@@ -47,16 +48,16 @@ function mono(v: string) {
 function OverviewTab({ order }: { order: Order }) {
     return (
         <div className="flex flex-col gap-5">
-            <Card title={m['billing.orders.detail.orderInfo']()}>
+            <Card title={m['ui.labels.orderInformation']()}>
                 <Row label={m['billing.orders.col.id']()}>{mono(`#${order.id}`)}</Row>
                 <Row label={m['billing.orders.detail.name']()}>{order.name || '—'}</Row>
-                <Row label={m['billing.orders.col.type']()}>{orderTypeLabel(order.type)}</Row>
-                <Row label={m['billing.orders.col.status']()}>
+                <Row label={m['ui.labels.type']()}>{orderTypeLabel(order.type)}</Row>
+                <Row label={m['ui.labels.status']()}>
                     <StatusPill status={order.status} />
                 </Row>
-                <Row label={m['billing.orders.detail.created']()}>{fmtDate(order.createdAt)}</Row>
+                <Row label={m['ui.labels.created']()}>{fmtDate(order.createdAt)}</Row>
                 {order.updatedAt && (
-                    <Row label={m['billing.orders.detail.updated']()}>{fmtDate(order.updatedAt)}</Row>
+                    <Row label={m['ui.labels.lastUpdated']()}>{fmtDate(order.updatedAt)}</Row>
                 )}
             </Card>
 
@@ -65,10 +66,10 @@ function OverviewTab({ order }: { order: Order }) {
                     {order.productName ?? `#${order.productId}`}
                 </Row>
                 {order.description && (
-                    <Row label={m['billing.orders.detail.description']()}>{order.description}</Row>
+                    <Row label={m['common.labels.description']()}>{order.description}</Row>
                 )}
                 {order.serverName && (
-                    <Row label={m['billing.orders.col.server']()}>{order.serverName}</Row>
+                    <Row label={m['ui.labels.server']()}>{order.serverName}</Row>
                 )}
                 {order.billingDays != null && (
                     <Row label={m['billing.orders.col.period']()}>
@@ -76,12 +77,12 @@ function OverviewTab({ order }: { order: Order }) {
                     </Row>
                 )}
                 {order.subtotal != null && (
-                    <Row label={m['billing.orders.detail.subtotal']()}>{money(order.subtotal)}</Row>
+                    <Row label={m['ui.labels.subtotal']()}>{money(order.subtotal)}</Row>
                 )}
                 {order.discount != null && order.discount > 0 && (
                     <Row label={m['billing.orders.detail.discount']()}>−{money(order.discount)}</Row>
                 )}
-                <Row label={m['billing.orders.detail.total']()}>
+                <Row label={m['ui.labels.total']()}>
                     <span className="font-semibold">{money(order.total)}</span>
                 </Row>
             </Card>
@@ -103,8 +104,8 @@ function PaymentTab({ order }: { order: Order }) {
 
     return (
         <div className="flex flex-col gap-5">
-            <Card title={m['billing.orders.detail.provider']()}>
-                <Row label={m['billing.orders.detail.provider']()}>
+            <Card title={m['ui.labels.provider']()}>
+                <Row label={m['ui.labels.provider']()}>
                     <ProcessorBadge processor={order.paymentProcessor} />
                 </Row>
                 {url && (
@@ -124,7 +125,7 @@ function PaymentTab({ order }: { order: Order }) {
 
             <Card title={m['billing.orders.detail.transaction']()}>
                 {order.paymentProcessor === 'free' ? (
-                    <Row label={m['billing.orders.detail.payment']()}>
+                    <Row label={m['ui.labels.payment']()}>
                         {m['billing.orders.detail.noPayment']()}
                     </Row>
                 ) : tx ? (
@@ -133,15 +134,15 @@ function PaymentTab({ order }: { order: Order }) {
                             <Row label={m['billing.orders.detail.reference']()}>{mono(tx.externalId)}</Row>
                         )}
                         {tx.captureId && (
-                            <Row label={m['billing.orders.detail.captureId']()}>{mono(tx.captureId)}</Row>
+                            <Row label={m['ui.labels.captureId']()}>{mono(tx.captureId)}</Row>
                         )}
                         {tx.amount != null && (
-                            <Row label={m['billing.orders.detail.amount']()}>
+                            <Row label={m['ui.labels.amount']()}>
                                 {money(tx.amount, tx.currency ?? 'USD')}
                             </Row>
                         )}
                         {tx.status && (
-                            <Row label={m['billing.orders.col.status']()}>
+                            <Row label={m['ui.labels.status']()}>
                                 <span className="capitalize">{tx.status}</span>
                             </Row>
                         )}
@@ -153,7 +154,7 @@ function PaymentTab({ order }: { order: Order }) {
                         )}
                     </>
                 ) : (
-                    <Row label={m['billing.orders.detail.payment']()}>
+                    <Row label={m['ui.labels.payment']()}>
                         {m['billing.orders.detail.noTransaction']()}
                     </Row>
                 )}
@@ -168,7 +169,7 @@ function TimelineTab({ order }: { order: Order }) {
         order.transaction?.capturedAt
             ? { label: m['billing.orders.timeline.captured'](), at: order.transaction.capturedAt }
             : null,
-        order.updatedAt ? { label: m['billing.orders.timeline.updated'](), at: order.updatedAt } : null,
+        order.updatedAt ? { label: m['ui.labels.lastUpdated'](), at: order.updatedAt } : null,
     ].filter(Boolean) as { label: string; at: string | null }[];
 
     return (
@@ -195,8 +196,8 @@ export default function OrderDetailModal({ order, onClose }: { order: Order | nu
     if (!order) return null;
 
     const tabs: { id: DetailTab; label: string }[] = [
-        { id: 'overview', label: m['billing.orders.detail.tabs.overview']() },
-        { id: 'payment', label: m['billing.orders.detail.tabs.payment']() },
+        { id: 'overview', label: m['ui.labels.overview']() },
+        { id: 'payment', label: m['ui.labels.payment']() },
         { id: 'timeline', label: m['billing.orders.detail.tabs.timeline']() },
     ];
 
@@ -205,7 +206,7 @@ export default function OrderDetailModal({ order, onClose }: { order: Order | nu
             open={!!order}
             onClose={onClose}
             size="lg"
-            title={`${order.serverName || order.name || m['billing.orders.detail.order']()} · #${order.id}`}
+            title={`${order.serverName || order.name || m['ui.labels.order']()} · #${order.id}`}
             description={
                 order.productName
                     ? `${order.productName} — ${money(order.total)}`

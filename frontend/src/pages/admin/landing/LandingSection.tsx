@@ -30,11 +30,11 @@ import { ContentIssues, type ContentIssue } from '@/components/ui/ContentIssues'
 
 const SECTION_META: Record<LandingSectionId, { titleKey: string; descKey: string }> = {
     hero: { titleKey: 'landingAdmin.hero.title', descKey: 'landingAdmin.hero.desc' },
-    features: { titleKey: 'landingAdmin.features.title', descKey: 'landingAdmin.features.desc' },
-    pricing: { titleKey: 'landingAdmin.pricing.title', descKey: 'landingAdmin.pricing.desc' },
+    features: { titleKey: 'ui.labels.featureCards', descKey: 'ui.messages.featureCardsHint' },
+    pricing: { titleKey: 'ui.labels.pricing', descKey: 'landingAdmin.pricing.desc' },
     faq: { titleKey: 'landingAdmin.faq.title', descKey: 'landingAdmin.faq.desc' },
     testimonials: { titleKey: 'landingAdmin.testimonials.title', descKey: 'landingAdmin.testimonials.desc' },
-    custom: { titleKey: 'landingAdmin.custom.title', descKey: 'landingAdmin.custom.desc' },
+    custom: { titleKey: 'ui.labels.customBlock', descKey: 'ui.messages.customBlockHint' },
 };
 
 function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
@@ -185,7 +185,7 @@ export default function LandingSection() {
                 {/* Left rail: section list — select, toggle, reorder. */}
                 <div>
                     <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
-                        {m['landingAdmin.sectionsLabel']()}
+                        {m['ui.labels.sections']()}
                     </h2>
                     <ul className="flex flex-col gap-1">
                         {sections.map((section, index) => (
@@ -226,9 +226,9 @@ export default function LandingSection() {
                 {/* Right: live, scaled preview of the whole page. */}
                 <div className="xl:sticky xl:top-6 xl:self-start">
                     <h2 className="mb-1 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
-                        {m['landingAdmin.previewLabel']()}
+                        {m['ui.labels.livePreview']()}
                     </h2>
-                    <p className="mb-2 px-1 text-xs text-[var(--color-ink-faint)]">{m['landingAdmin.previewHint']()}</p>
+                    <p className="mb-2 px-1 text-xs text-[var(--color-ink-faint)]">{m['ui.messages.livePreviewHint']()}</p>
                     <div className="max-h-[80vh] overflow-y-auto rounded-lg border border-[var(--color-border-strong)]">
                         <PreviewFrame>
                             <LandingCanvas sections={config.sections} name={name} logo={site?.logo} highlightId={selectedId} />
@@ -352,7 +352,7 @@ function SectionListRow({
                     disabled={isFirst}
                     onClick={() => onMove(-1)}
                     className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] disabled:opacity-30"
-                    aria-label={m['landingAdmin.moveUp']()}
+                    aria-label={m['ui.actions.moveUp']()}
                 >
                     <ChevronUp className="h-3.5 w-3.5" />
                 </button>
@@ -361,7 +361,7 @@ function SectionListRow({
                     disabled={isLast}
                     onClick={() => onMove(1)}
                     className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] disabled:opacity-30"
-                    aria-label={m['landingAdmin.moveDown']()}
+                    aria-label={m['ui.actions.moveDown']()}
                 >
                     <ChevronDown className="h-3.5 w-3.5" />
                 </button>
@@ -372,7 +372,7 @@ function SectionListRow({
                 </span>
                 {!section.enabled && (
                     <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
-                        {m['landingAdmin.hiddenBadge']()}
+                        {m['ui.states.hidden']()}
                     </span>
                 )}
             </button>
@@ -399,22 +399,22 @@ function SectionFields({
                     {/* Placeholders are the real default copy, so a blank field shows
                         exactly what the page will say. */}
                     <p className="text-xs text-[var(--color-ink-faint)]">{m['landingAdmin.field.defaultsNote']()}</p>
-                    <Field label={m['landingAdmin.field.badge']()} hint={m['landingAdmin.field.badgeHelp']()}>
+                    <Field label={m['ui.labels.badge']()} hint={m['landingAdmin.field.badgeHelp']()}>
                         <Input value={d.badge ?? ''} maxLength={120} placeholder={m['landing.eyebrow']()} onChange={e => onData({ badge: e.target.value })} />
                     </Field>
-                    <Field label={m['landingAdmin.field.heading']()} hint={m['landingAdmin.field.heroHeadingHelp']()}>
+                    <Field label={m['ui.labels.heading']()} hint={m['landingAdmin.field.heroHeadingHelp']()}>
                         <Input value={d.title ?? ''} maxLength={200} placeholder={m['landing.heroTitle']()} onChange={e => onData({ title: e.target.value })} />
                     </Field>
-                    <Field label={m['landingAdmin.field.subtitle']()} hint={m['landingAdmin.field.subtitleHelp']()}>
+                    <Field label={m['ui.labels.subtitle']()} hint={m['landingAdmin.field.subtitleHelp']()}>
                         <Textarea value={d.subtitle ?? ''} maxLength={600} placeholder={m['landing.subtitle']({ name })} onChange={e => onData({ subtitle: e.target.value })} />
                     </Field>
-                    <Field label={m['landingAdmin.field.backgroundImage']()} hint={m['landingAdmin.field.backgroundImageHelp']()}>
+                    <Field label={m['ui.labels.backgroundImageUrl']()} hint={m['ui.messages.heroBackgroundHint']()}>
                         <Input type="url" value={d.backgroundImage ?? ''} maxLength={500} onChange={e => onData({ backgroundImage: e.target.value })} />
                     </Field>
                     <div className="grid gap-5 md:grid-cols-2">
                         <CtaEditor
                             label={m['landingAdmin.field.primaryCta']()}
-                            hint={m['landingAdmin.field.primaryCtaHelp']()}
+                            hint={m['ui.messages.primaryButtonHint']()}
                             cta={d.primaryCta ?? { label: '', href: '' }}
                             labelPlaceholder={m['landing.getStarted']()}
                             hrefPlaceholder={abs('/auth/login')}
@@ -438,13 +438,13 @@ function SectionFields({
                     items={items}
                     onChange={next => onData({ items: next })}
                     blank={{ icon: 'Gauge', title: '', body: '' }}
-                    addLabel={m['landingAdmin.addFeature']()}
+                    addLabel={m['ui.actions.addFeature']()}
                     render={(item, update, index) => (
                         <div className="grid gap-3">
-                            <Field label={m['landingAdmin.field.icon']()} hint={m['landingAdmin.field.iconHelp']()}>
+                            <Field label={m['ui.labels.icon']()} hint={m['landingAdmin.field.iconHelp']()}>
                                 <IconPicker value={item.icon} onChange={icon => update({ icon })} />
                             </Field>
-                            <Field label={m['landingAdmin.field.heading']()} hint={m['landingAdmin.field.featureHeadingHelp']()}>
+                            <Field label={m['ui.labels.heading']()} hint={m['landingAdmin.field.featureHeadingHelp']()}>
                                 <Input
                                     value={item.title}
                                     maxLength={160}
@@ -452,7 +452,7 @@ function SectionFields({
                                     onChange={e => update({ title: e.target.value })}
                                 />
                             </Field>
-                            <Field label={m['landingAdmin.field.body']()} hint={m['landingAdmin.field.featureBodyHelp']()}>
+                            <Field label={m['ui.labels.body']()} hint={m['landingAdmin.field.featureBodyHelp']()}>
                                 <Textarea
                                     value={item.body}
                                     maxLength={800}
@@ -469,7 +469,7 @@ function SectionFields({
         case 'pricing':
             return (
                 <div className="grid gap-5">
-                    <Field label={m['landingAdmin.field.heading']()} hint={m['landingAdmin.field.pricingHeadingHelp']()}>
+                    <Field label={m['ui.labels.heading']()} hint={m['landingAdmin.field.pricingHeadingHelp']()}>
                         <Input value={d.heading ?? ''} maxLength={200} placeholder={m['landing.pricing.heading']()} onChange={e => onData({ heading: e.target.value })} />
                     </Field>
                     <p className="text-xs text-[var(--color-ink-faint)]">{m['landingAdmin.pricing.note']()}</p>
@@ -528,10 +528,10 @@ function SectionFields({
         case 'custom':
             return (
                 <div className="grid gap-5">
-                    <Field label={m['landingAdmin.field.heading']()} hint={m['landingAdmin.field.customHeadingHelp']()}>
+                    <Field label={m['ui.labels.heading']()} hint={m['ui.messages.blockHeadingHint']()}>
                         <Input value={d.title ?? ''} maxLength={200} onChange={e => onData({ title: e.target.value })} />
                     </Field>
-                    <Field label={m['landingAdmin.field.body']()} hint={m['landingAdmin.field.customBodyHelp']()}>
+                    <Field label={m['ui.labels.body']()} hint={m['ui.messages.plainTextHint']()}>
                         <Textarea value={d.body ?? ''} maxLength={5000} className="min-h-[160px]" onChange={e => onData({ body: e.target.value })} />
                     </Field>
                 </div>
@@ -562,7 +562,7 @@ function CtaEditor({
             <legend className="px-1 text-sm font-medium text-[var(--color-ink-muted)]">{label}</legend>
             {hint && <p className="mb-2 text-xs text-[var(--color-ink-faint)]">{hint}</p>}
             <div className="grid gap-3">
-                <Input placeholder={labelPlaceholder ?? m['landingAdmin.field.ctaLabel']()} value={cta.label} maxLength={60} onChange={e => onChange({ ...cta, label: e.target.value })} />
+                <Input placeholder={labelPlaceholder ?? m['ui.labels.buttonLabel']()} value={cta.label} maxLength={60} onChange={e => onChange({ ...cta, label: e.target.value })} />
                 <Input placeholder={hrefPlaceholder ?? m['landingAdmin.field.ctaHref']()} value={cta.href} maxLength={300} onChange={e => onChange({ ...cta, href: e.target.value })} />
             </div>
         </fieldset>
@@ -593,7 +593,7 @@ function ItemList<T extends object>({
                             type="button"
                             onClick={() => onChange(items.filter((_, idx) => idx !== i))}
                             className="text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
-                            aria-label={m['landingAdmin.removeItem']()}
+                            aria-label={m['common.actions.remove']()}
                         >
                             <Trash2 className="h-4 w-4" />
                         </button>

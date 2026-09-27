@@ -140,7 +140,7 @@ export function DevicesTab() {
                 onClose={() => setConfirmRevoke(null)}
                 title={m['account.devices.revokeConfirmTitle']()}
                 body={m['account.devices.revokeConfirmBody']()}
-                confirmLabel={m['account.devices.revoke']()}
+                confirmLabel={m['ui.actions.signOut']()}
                 cancelLabel={m['common.actions.cancel']()}
                 busy={revoke.isPending}
                 onConfirm={() => confirmRevoke && revoke.mutate(confirmRevoke)}

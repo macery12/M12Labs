@@ -13,8 +13,8 @@ interface Item {
 const BASE = '/admin/marketplace';
 
 const ITEMS: Item[] = [
-    { to: BASE, end: true, icon: LayoutDashboard, labelKey: 'admin.marketplace.nav.overview' },
-    { to: `${BASE}/settings`, icon: Settings, labelKey: 'admin.marketplace.nav.settings' },
+    { to: BASE, end: true, icon: LayoutDashboard, labelKey: 'ui.labels.overview' },
+    { to: `${BASE}/settings`, icon: Settings, labelKey: 'ui.labels.settings' },
     { to: `${BASE}/providers`, icon: ShieldCheck, labelKey: 'admin.marketplace.nav.providers' },
 ];
 

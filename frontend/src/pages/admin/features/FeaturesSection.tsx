@@ -131,7 +131,7 @@ export default function FeaturesSection() {
                     <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['admin.features.title']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.features.subtitle']()}</p>
                 </div>
-                <HelpButton title={m['admin.features.help.title']()} label={m['admin.features.help.label']()}>
+                <HelpButton title={m['ui.labels.howFeaturesWork']()} label={m['ui.labels.howFeaturesWork']()}>
                     <p className="mb-5 text-sm text-[var(--color-ink-muted)]">{m['admin.features.help.intro']()}</p>
                     <HelpSteps
                         steps={[
@@ -186,7 +186,7 @@ export default function FeaturesSection() {
 
                     <SectionCard
                         icon={CreditCard}
-                        title={m['admin.features.billing.title']()}
+                        title={m['ui.labels.billing']()}
                         subtitle={m['admin.features.billing.subtitle']()}
                     >
                         <FeatureToggleRow
@@ -233,7 +233,7 @@ function PanelStateCard({ debug, mode }: { debug: boolean; mode: string }) {
                     title={m['admin.features.state.standard']()}
                     desc={m['admin.features.state.standardDesc']()}
                     active={mode === 'standard'}
-                    activeLabel={m['admin.features.state.active']()}
+                    activeLabel={m['ui.states.active']()}
                 />
                 <StateCard
                     icon={Terminal}

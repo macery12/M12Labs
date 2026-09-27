@@ -51,7 +51,7 @@ export function RecoveryCodeDisplay({ code }: { code: string }) {
                     ) : (
                         <Copy className="h-3.5 w-3.5" />
                     )}
-                    {copied ? m['common.states.copied']() : m['account.recoveryCode.copy']()}
+                    {copied ? m['common.states.copied']() : m['common.actions.copy']()}
                 </button>
                 <button
                     type="button"

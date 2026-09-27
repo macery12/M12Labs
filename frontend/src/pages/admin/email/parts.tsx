@@ -99,7 +99,7 @@ export function SaveBar({
                         dirty ? 'bg-[var(--color-warning)]' : 'bg-[var(--color-ink-faint)]',
                     )}
                 />
-                {dirty ? m['admin.email.saveBar.dirty']() : m['admin.email.saveBar.clean']()}
+                {dirty ? m['common.editor.unsaved']() : m['common.editor.allSaved']()}
             </span>
             <div className="flex items-center gap-2">
                 <Button type="button" variant="ghost" size="sm" onClick={onDiscard} disabled={!dirty || saving}>

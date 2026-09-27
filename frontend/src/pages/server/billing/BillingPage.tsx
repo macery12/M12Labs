@@ -13,6 +13,7 @@ import { buildBillingModel, type RenewalSettings, type RenewalState } from './bi
 import { RenewalPanel } from './RenewalPanel';
 import { ChangePlanPanel } from './ChangePlanPanel';
 import { Notice } from './parts';
+import { formatDate as formatPanelDate } from '@/lib/format';
 
 // Server billing cockpit: renewal state up top, then the actions (renew,
 // change plan, change server type). Ported from V1's ServerBillingContainer +
@@ -76,7 +77,7 @@ export default function BillingPage() {
     return (
         <div className="flex flex-col gap-4">
             <div>
-                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.billing.title']()}</h1>
+                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.billing']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.billing.subtitle']()}</p>
             </div>
 
@@ -159,7 +160,7 @@ function StatusStrip({
                               })
                             : m['server.billing.overdueValue']({ days: model.daysOverdue })}
                     </Metric>
-                    <Metric icon={Box} label={m['server.billing.package']()}>
+                    <Metric icon={Box} label={m['ui.labels.package']()}>
                         {product?.name ?? m['server.billing.unknownPackage']()}
                     </Metric>
                     <Metric icon={CalendarDays} label={m['server.billing.cost']()}>
@@ -208,10 +209,10 @@ const STATE_STYLES: Record<RenewalState, { tone: string; icon: typeof Clock }> =
 };
 
 const STATE_LABEL: Record<RenewalState, () => string> = {
-    active: () => m['server.billing.state.active'](),
+    active: () => m['ui.states.active'](),
     available: () => m['server.billing.state.available'](),
     grace: () => m['server.billing.state.grace'](),
-    overdue: () => m['server.billing.state.overdue'](),
+    overdue: () => m['ui.states.overdue'](),
 };
 
 function StateBadge({ state }: { state: RenewalState }) {
@@ -250,7 +251,7 @@ function Metric({
 }
 
 function formatDate(value: string): string {
-    return new Date(value).toLocaleDateString(undefined, {
+    return formatPanelDate(value, {
         weekday: 'long',
         year: 'numeric',
         month: 'long',

@@ -144,7 +144,7 @@ function StorePaymentPage() {
         return (
             <div className="space-y-4">
                 <BackLink />
-                <Notice tone="danger">{m['billing.payment.loadError']()}</Notice>
+                <Notice tone="danger">{m['ui.messages.productLoadError']()}</Notice>
             </div>
         );
     }
@@ -173,10 +173,10 @@ function StorePaymentPage() {
     };
 
     const summaryRows: [string, string][] = [
-        [m['billing.payment.plan'](), product.name],
-        [m['billing.payment.serverName'](), draft.serverName],
-        [m['billing.payment.location'](), node?.name ?? '—'],
-        [m['billing.payment.software'](), eggQ.data?.name ?? '—'],
+        [m['ui.labels.plan'](), product.name],
+        [m['ui.labels.serverName'](), draft.serverName],
+        [m['ui.labels.location'](), node?.name ?? '—'],
+        [m['ui.labels.software'](), eggQ.data?.name ?? '—'],
         [m['billing.payment.billingCycle'](), cycle?.label ?? `${draft.cycleDays} days`],
     ];
 
@@ -184,7 +184,7 @@ function StorePaymentPage() {
         <div className="flex flex-col gap-6">
             <div>
                 <BackLink />
-                <h1 className="mt-3 text-2xl font-semibold tracking-tight">{m['billing.payment.title']()}</h1>
+                <h1 className="mt-3 text-2xl font-semibold tracking-tight">{m['ui.labels.payment']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['billing.payment.subtitle']()}</p>
             </div>
 
@@ -218,7 +218,7 @@ function StorePaymentPage() {
                                     {couponId ? m['billing.payment.freeNoticeCoupon']() : m['billing.payment.freeNotice']()}
                                 </Notice>
                                 <Button size="lg" className="w-full" disabled={creatingFree} onClick={createFree}>
-                                    {creatingFree ? <Spinner className="h-5 w-5" /> : m['billing.payment.createServer']()}
+                                    {creatingFree ? <Spinner className="h-5 w-5" /> : m['ui.actions.createServer']()}
                                 </Button>
                             </div>
                         ) : availableMethods.length === 0 ? (
@@ -292,11 +292,11 @@ function StorePaymentPage() {
                 <div className="lg:col-span-4">
                     <div className="sticky top-24 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)]/80 p-5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
-                            {m['billing.payment.total']()}
+                            {m['ui.labels.total']()}
                         </p>
                         <div className="mt-3 space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-[var(--color-ink-muted)]">{m['billing.payment.subtotal']()}</span>
+                                <span className="text-[var(--color-ink-muted)]">{m['ui.labels.subtotal']()}</span>
                                 <span className="font-medium text-[var(--color-ink)]">{money(basePrice)}</span>
                             </div>
                             {couponData && couponData.discount > 0 && (
@@ -311,7 +311,7 @@ function StorePaymentPage() {
                         <div className="mt-4 flex items-end justify-between border-t border-[var(--color-border)] pt-4">
                             <span className="text-sm text-[var(--color-ink-muted)]">{m['billing.payment.dueToday']()}</span>
                             <span className="text-2xl font-bold text-[var(--color-ink)]">
-                                {isFree ? m['billing.payment.free']() : money(total)}
+                                {isFree ? m['ui.labels.free']() : money(total)}
                             </span>
                         </div>
                         <p className="mt-3 text-[11px] text-[var(--color-ink-faint)]">
@@ -345,7 +345,7 @@ function BackLink() {
             to="/billing/order"
             className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
         >
-            <ArrowLeft className="h-4 w-4" /> {m['billing.payment.back']()}
+            <ArrowLeft className="h-4 w-4" /> {m['ui.actions.backToStore']()}
         </Link>
     );
 }

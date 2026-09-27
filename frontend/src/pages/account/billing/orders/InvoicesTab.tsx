@@ -17,9 +17,9 @@ const INVOICE_TONE: Record<Invoice['status'], string> = {
 };
 
 const INVOICE_LABEL: Record<Invoice['status'], () => string> = {
-    active: () => m['billing.invoices.status.active'](),
+    active: () => m['ui.states.active'](),
     expired: () => m['billing.invoices.status.expired'](),
-    void: () => m['billing.invoices.status.void'](),
+    void: () => m['ui.states.void'](),
 };
 
 function InvoiceStatusPill({ status }: { status: Invoice['status'] }) {
@@ -76,10 +76,10 @@ export default function InvoicesTab() {
                             <tr>
                                 {[
                                     m['billing.invoices.col.number'](),
-                                    m['billing.invoices.col.type'](),
-                                    m['billing.invoices.col.amount'](),
-                                    m['billing.invoices.col.status'](),
-                                    m['billing.invoices.col.generated'](),
+                                    m['ui.labels.type'](),
+                                    m['ui.labels.amount'](),
+                                    m['ui.labels.status'](),
+                                    m['ui.labels.generated'](),
                                     '',
                                 ].map((h, i) => (
                                     <th
@@ -132,7 +132,7 @@ export default function InvoicesTab() {
             {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between">
                     <p className="text-xs text-[var(--color-ink-faint)]">
-                        {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                        {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                         {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                     </p>
                     <div className="flex gap-2">
@@ -151,7 +151,7 @@ export default function InvoicesTab() {
                             disabled={pagination.currentPage >= pagination.totalPages || isFetching}
                             onClick={() => setPage(p => p + 1)}
                         >
-                            {m['activity.next']()}
+                            {m['ui.actions.next']()}
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>

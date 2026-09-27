@@ -81,10 +81,10 @@ export function PackageRequirementsModal({
                     <table className="w-full min-w-[36rem] text-left text-xs">
                         <thead className="bg-[var(--color-surface-2)] text-[var(--color-ink-muted)]">
                             <tr>
-                                <th className="px-3 py-2 font-medium">{m['extensions.requirements.type']()}</th>
-                                <th className="px-3 py-2 font-medium">{m['extensions.requirements.package']()}</th>
-                                <th className="px-3 py-2 font-medium">{m['extensions.requirements.required']()}</th>
-                                <th className="px-3 py-2 font-medium">{m['extensions.requirements.installed']()}</th>
+                                <th className="px-3 py-2 font-medium">{m['ui.labels.type']()}</th>
+                                <th className="px-3 py-2 font-medium">{m['ui.labels.package']()}</th>
+                                <th className="px-3 py-2 font-medium">{m['ui.states.required']()}</th>
+                                <th className="px-3 py-2 font-medium">{m['ui.states.installed']()}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--color-border)]">
@@ -130,7 +130,7 @@ export function PackageRequirementsModal({
                                     className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[var(--color-border-strong)] px-2 text-xs text-[var(--color-ink-muted)] hover:bg-[var(--color-surface)]"
                                 >
                                     {copied === manager ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                                    {copied === manager ? m['extensions.requirements.copied']() : m['extensions.requirements.copy']()}
+                                    {copied === manager ? m['common.states.copied']() : m['common.actions.copy']()}
                                 </button>
                             </div>
                         ))}

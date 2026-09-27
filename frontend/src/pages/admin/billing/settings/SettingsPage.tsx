@@ -20,10 +20,10 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-    { to: BASE, end: true, icon: Coins, label: m['admin.billing.settings.tabs.general'] },
-    { to: `${BASE}/pricing`, icon: SlidersHorizontal, label: m['admin.billing.settings.tabs.pricing'] },
+    { to: BASE, end: true, icon: Coins, label: m['ui.labels.general'] },
+    { to: `${BASE}/pricing`, icon: SlidersHorizontal, label: m['ui.labels.pricing'] },
     { to: `${BASE}/payments`, icon: CreditCard, label: m['admin.billing.settings.tabs.payments'] },
-    { to: `${BASE}/advanced`, icon: Wrench, label: m['admin.billing.settings.tabs.advanced'] },
+    { to: `${BASE}/advanced`, icon: Wrench, label: m['ui.labels.advanced'] },
 ];
 
 // Billing settings, split across four routed tabs. It was one page of six cards

@@ -25,13 +25,13 @@ const SORTS = [
     { value: '-last_reply_at', key: 'admin.tickets.sort.recentReply' },
     { value: '-created_at', key: 'admin.tickets.sort.newest' },
     { value: 'created_at', key: 'admin.tickets.sort.oldest' },
-    { value: '-priority', key: 'admin.tickets.sort.priority' },
+    { value: '-priority', key: 'ui.labels.priority' },
 ] as const;
 
 function statusTab(status: TicketStatus): string {
     switch (status) {
         case 'pending':
-            return m['tickets.status.pending']();
+            return m['ui.states.pending']();
         case 'in-progress':
             return m['tickets.status.inProgress']();
         case 'resolved':
@@ -50,7 +50,7 @@ function sortLabel(key: string): string {
         case 'admin.tickets.sort.oldest':
             return m['admin.tickets.sort.oldest']();
         default:
-            return m['admin.tickets.sort.priority']();
+            return m['ui.labels.priority']();
     }
 }
 
@@ -91,7 +91,7 @@ export default function TicketsListPage() {
                     <LifeBuoy className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
-                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['admin.tickets.title']()}</h1>
+                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.tickets']()}</h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.tickets.subtitle']()}</p>
                 </div>
             </div>
@@ -115,13 +115,13 @@ export default function TicketsListPage() {
                                         : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]',
                                 )}
                             >
-                                {f === 'all' ? m['tickets.filter.all']() : statusTab(f)}
+                                {f === 'all' ? m['ui.states.all']() : statusTab(f)}
                             </button>
                         ))}
                     </div>
                     <div className="grid grid-cols-2 gap-2 @4xl:w-80 @4xl:shrink-0">
                         <div className="min-w-0">
-                            <label htmlFor="ticket-priority" className="sr-only">{m['admin.tickets.col.priority']()}</label>
+                            <label htmlFor="ticket-priority" className="sr-only">{m['ui.labels.priority']()}</label>
                             <Select
                                 id="ticket-priority"
                                 value={priority}
@@ -166,11 +166,11 @@ export default function TicketsListPage() {
                     ) : (
                         <>
                             <div aria-hidden="true" className="hidden grid-cols-[minmax(0,1fr)_7.5rem_7.5rem_8rem_6rem] gap-4 border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-[var(--color-ink-faint)] @3xl:grid">
-                                <span>{m['admin.tickets.col.subject']()}</span>
-                                <span>{m['admin.tickets.col.requester']()}</span>
+                                <span>{m['ui.labels.subject']()}</span>
+                                <span>{m['ui.labels.requester']()}</span>
                                 <span>{m['admin.tickets.col.assignee']()}</span>
-                                <span>{m['admin.tickets.col.status']()} / {m['admin.tickets.col.priority']()}</span>
-                                <span className="text-right">{m['admin.tickets.col.lastReply']()}</span>
+                                <span>{m['ui.labels.status']()} / {m['ui.labels.priority']()}</span>
+                                <span className="text-right">{m['ui.labels.lastReply']()}</span>
                             </div>
                             <ul className="divide-y divide-[var(--color-border)]">
                                 {items.map(t => (
@@ -187,7 +187,7 @@ export default function TicketsListPage() {
                                                 </span>
                                             </div>
                                             <div className="min-w-0 text-xs text-[var(--color-ink-muted)] @3xl:text-sm">
-                                                <span className="sr-only">{m['admin.tickets.col.requester']()}: </span>
+                                                <span className="sr-only">{m['ui.labels.requester']()}: </span>
                                                 <span className="block truncate" title={t.user?.username}>{t.user?.username ?? '—'}</span>
                                                 <span className="mt-1 block truncate text-[var(--color-ink-faint)] @3xl:hidden">
                                                     {m['admin.tickets.col.assignee']()}: {t.assignedTo?.username ?? m['admin.tickets.unassigned']()}
@@ -205,7 +205,7 @@ export default function TicketsListPage() {
                                             </div>
                                             <span className="col-span-2 flex items-center gap-1.5 text-xs text-[var(--color-ink-faint)] @3xl:col-span-1 @3xl:justify-end @3xl:text-right">
                                                 <Clock3 className="h-3 w-3 shrink-0 @3xl:hidden" aria-hidden="true" />
-                                                <span className="sr-only">{m['admin.tickets.col.lastReply']()}: </span>
+                                                <span className="sr-only">{m['ui.labels.lastReply']()}: </span>
                                                 {timeAgo(t.lastReplyAt ?? t.createdAt)}
                                             </span>
                                         </Link>
@@ -219,7 +219,7 @@ export default function TicketsListPage() {
                 {pagination && pagination.totalPages > 1 && !isError && (
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-border)] bg-[var(--color-surface-2)]/30 px-4 py-3">
                         <p className="text-xs text-[var(--color-ink-faint)]">
-                            {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                            {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                             {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                         </p>
                         <div className="flex gap-2">
@@ -238,7 +238,7 @@ export default function TicketsListPage() {
                                 disabled={pagination.currentPage >= pagination.totalPages || isFetching}
                                 onClick={() => setPage(p => p + 1)}
                             >
-                                {m['activity.next']()}
+                                {m['ui.actions.next']()}
                                 <ChevronRight className="h-4 w-4" />
                             </Button>
                         </div>

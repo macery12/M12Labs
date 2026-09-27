@@ -268,7 +268,7 @@ export function EditBillingModal({ open, onClose, server }: { open: boolean; onC
                             </Field>
                         )}
 
-                        <Field label={m['admin.infrastructure.serverDetail.billing.renewalDate']()} desc={m['admin.infrastructure.serverDetail.billing.renewalDateDesc']()}>
+                        <Field label={m['ui.labels.nextRenewal']()} desc={m['admin.infrastructure.serverDetail.billing.renewalDateDesc']()}>
                             <Input type="datetime-local" value={draft.renewalDate} onChange={e => set('renewalDate', e.target.value)} />
                         </Field>
                     </>
@@ -308,7 +308,7 @@ function CycleCard({
                 </span>
                 {cycle.isDefault && (
                     <span className="rounded-sm bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-                        {m['admin.infrastructure.serverDetail.billing.cycleDefault']()}
+                        {m['ui.states.default']()}
                     </span>
                 )}
             </div>
@@ -322,7 +322,7 @@ function CycleCard({
                 >
                     {cycle.discountPercent > 0
                         ? m['admin.infrastructure.serverDetail.billing.cycleDiscount']({ percent: cycle.discountPercent })
-                        : m['admin.infrastructure.serverDetail.billing.cyclePremium']({ percent: Math.abs(cycle.discountPercent) })}
+                        : m['ui.labels.percentPremium']({ percent: Math.abs(cycle.discountPercent) })}
                 </div>
             )}
         </button>

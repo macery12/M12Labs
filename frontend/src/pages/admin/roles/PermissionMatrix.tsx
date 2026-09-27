@@ -48,13 +48,13 @@ const isExtensionGroup = (groupKey: string) => groupKey.startsWith('ext.');
 // Paraglide resolves messages through static property access, so the label set is
 // a literal map rather than a computed `m[...]` lookup.
 const SECTION_LABELS: Record<string, () => string> = {
-    system: m['admin.roles.section.system'],
+    system: m['ui.labels.system'],
     access: m['admin.roles.section.access'],
-    infrastructure: m['admin.roles.section.infrastructure'],
-    servers: m['admin.roles.section.servers'],
+    infrastructure: m['ui.labels.infrastructure'],
+    servers: m['ui.labels.servers'],
     communication: m['admin.roles.section.communication'],
     content: m['admin.roles.section.content'],
-    billing: m['admin.roles.section.billing'],
+    billing: m['ui.labels.billing'],
     customization: m['admin.roles.section.customization'],
     [EXTENSION_SECTION]: m['admin.roles.section.extensionsContributed'],
     other: m['admin.roles.section.other'],
@@ -314,7 +314,7 @@ export default function PermissionMatrix({
                                         onClick={() => onToggleAll(sectionIds, !allSelected)}
                                         className="rounded-md px-2 py-0.5 text-[11px] font-medium text-[var(--brand)] transition-colors hover:bg-[var(--color-surface-2)]"
                                     >
-                                        {allSelected ? m['admin.roles.deselectAll']() : m['admin.roles.selectAll']()}
+                                        {allSelected ? m['admin.roles.deselectAll']() : m['ui.actions.selectAll']()}
                                     </button>
                                 )}
                             </div>

@@ -60,7 +60,7 @@ export function ExtensionHealthPanel({ extensionId }: { extensionId: string }) {
         return (
             <p className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)]">
                 <Spinner className="h-3.5 w-3.5" />
-                {m['extensions.health.loading']()}
+                {m['ui.states.checking']()}
             </p>
         );
     }
@@ -159,7 +159,7 @@ export function ExtensionHealthPanel({ extensionId }: { extensionId: string }) {
                 className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-ink)] transition-colors hover:bg-[var(--color-surface-2)]"
             >
                 {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                {copied ? m['extensions.health.copied']() : m['extensions.health.copyExport']()}
+                {copied ? m['common.states.copied']() : m['extensions.health.copyExport']()}
             </button>
             <p className="text-[11px] text-[var(--color-ink-faint)]">{m['extensions.health.exportHint']()}</p>
         </div>

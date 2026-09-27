@@ -192,8 +192,8 @@ export function QueueTab({ serverId }: { serverId: string }) {
                 onClose={() => setConfirmClear(false)}
                 title={m['server.mods.queue.clearActiveTitle']()}
                 body={m['server.mods.queue.clearActiveBody']()}
-                confirmLabel={m['server.mods.queue.clearConfirm']()}
-                cancelLabel={m['server.mods.filter.clear']()}
+                confirmLabel={m['ui.actions.clearAll']()}
+                cancelLabel={m['common.actions.clear']()}
                 busy={clear.isPending}
                 onConfirm={() => clear.mutate(true)}
             />

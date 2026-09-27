@@ -37,7 +37,7 @@ export default function EnableWebhooks() {
             </div>
             <div className="flex flex-col gap-2">
                 <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
-                    {m['admin.webhooks.enable.title']()}
+                    {m['ui.labels.webhooks']()}
                 </h1>
                 <p className="text-sm leading-relaxed text-[var(--color-ink-muted)]">
                     {m['admin.webhooks.enable.body']()}

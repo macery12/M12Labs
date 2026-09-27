@@ -94,7 +94,7 @@ export default function OverviewPage() {
                 right={
                     <div className="flex items-center gap-3">
                         <TonePill tone={settings.enabled ? 'success' : 'warning'}>
-                            {settings.enabled ? m['admin.email.overview.on']() : m['admin.email.overview.off']()}
+                            {settings.enabled ? m['admin.email.overview.on']() : m['ui.states.off']()}
                         </TonePill>
                         <Switch
                             checked={settings.enabled}
@@ -108,14 +108,14 @@ export default function OverviewPage() {
                 <p className="text-xs text-[var(--color-ink-faint)]">{m['admin.email.overview.deliveryHint']()}</p>
             </SettingsCard>
 
-            <SettingsCard title={m['admin.email.overview.transportTitle']()} description={m['admin.email.overview.transportDesc']()}>
+            <SettingsCard title={m['ui.labels.activeTransport']()} description={m['admin.email.overview.transportDesc']()}>
                 <div className="grid grid-cols-2 gap-3 sm:max-w-md">
                     <TransportTile
                         icon={Server}
                         label={m['admin.email.overview.smtp']()}
                         active={transport === 'smtp'}
                         configured={smtpConfigured}
-                        configuredLabel={m['admin.email.overview.configured']()}
+                        configuredLabel={m['ui.states.configured']()}
                         incompleteLabel={m['admin.email.overview.incomplete']()}
                         onClick={() => setTransport('smtp')}
                     />
@@ -124,7 +124,7 @@ export default function OverviewPage() {
                         label={m['admin.email.overview.resend']()}
                         active={transport === 'resend'}
                         configured={resendConfigured}
-                        configuredLabel={m['admin.email.overview.configured']()}
+                        configuredLabel={m['ui.states.configured']()}
                         incompleteLabel={m['admin.email.overview.incomplete']()}
                         onClick={() => setTransport('resend')}
                     />

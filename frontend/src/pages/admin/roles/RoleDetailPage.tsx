@@ -257,7 +257,7 @@ export default function RoleDetailPage() {
                     {m['admin.access.profiles.details']()}
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
-                    <Field label={m['admin.roles.form.name']()}>
+                    <Field label={m['ui.labels.name']()}>
                             <Input value={name} onChange={e => setName(e.target.value)} maxLength={64} disabled={readOnly || role.isSystem || role.isOwner} />
                     </Field>
                     <Field label={m['admin.roles.form.color']()}>
@@ -280,7 +280,7 @@ export default function RoleDetailPage() {
                         </div>
                     </Field>
                     <div className="md:col-span-2">
-                        <Field label={m['admin.roles.form.description']()}>
+                        <Field label={m['common.labels.description']()}>
                             <Input value={description} onChange={e => setDescription(e.target.value)} maxLength={255} disabled={readOnly || role.isSystem || role.isOwner} />
                         </Field>
                     </div>
@@ -327,7 +327,7 @@ export default function RoleDetailPage() {
                     {!readOnly && !role.isSystem && !role.isOwner && (
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => setSelected(new Set(allPermissions))}>
-                                {m['admin.roles.selectAll']()}
+                                {m['ui.actions.selectAll']()}
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
                                 {m['admin.roles.deselectAll']()}

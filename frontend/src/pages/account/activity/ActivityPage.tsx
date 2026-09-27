@@ -94,12 +94,12 @@ export default function ActivityPage() {
 
     const scopeOptions = [
         { value: 'all', label: m['activity.scope.all']() },
-        { value: 'account', label: m['activity.scope.account']() },
-        { value: 'server', label: m['activity.scope.server']() },
+        { value: 'account', label: m['ui.labels.account']() },
+        { value: 'server', label: m['ui.labels.servers']() },
     ];
 
     const serverOptions = [
-        { value: '', label: m['activity.allServers']() },
+        { value: '', label: m['ui.labels.allServers']() },
         ...(servers ?? []).map(s => ({ value: s.uuid, label: s.name })),
     ];
 
@@ -115,7 +115,7 @@ export default function ActivityPage() {
     return (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
             <div>
-                <h1 className="text-2xl font-semibold tracking-tight">{m['activity.title']()}</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">{m['ui.labels.activity']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['activity.subtitle']()}</p>
             </div>
 
@@ -176,7 +176,7 @@ export default function ActivityPage() {
             {pagination && pagination.total_pages > 1 && (
                 <div className="flex items-center justify-between">
                     <p className="text-xs text-[var(--color-ink-faint)]">
-                        {m['activity.pageOf']({ current: pagination.current_page, total: pagination.total_pages })}
+                        {m['ui.labels.pageOfTotal']({ current: pagination.current_page, total: pagination.total_pages })}
                         {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                     </p>
                     <div className="flex gap-2">
@@ -195,7 +195,7 @@ export default function ActivityPage() {
                             disabled={pagination.current_page >= pagination.total_pages || isFetching}
                             onClick={() => setPage(p => p + 1)}
                         >
-                            {m['activity.next']()}
+                            {m['ui.actions.next']()}
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>

@@ -84,16 +84,16 @@ export default function ScheduleDetailPage() {
                     </div>
                     {canUpdate && (
                         <Button variant="outline" size="sm" onClick={() => setEditSchedule(true)}>
-                            <Pencil className="h-4 w-4" /> {m['server.schedules.editSchedule']()}
+                            <Pencil className="h-4 w-4" /> {m['ui.actions.editSchedule']()}
                         </Button>
                     )}
                 </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Stat label={m['server.schedules.status.label']()} value={schedule.isActive ? m['server.schedules.status.active']() : m['server.schedules.status.inactive']()} />
+                <Stat label={m['ui.labels.status']()} value={schedule.isActive ? m['ui.states.active']() : m['ui.states.inactive']()} />
                 <Stat label={m['server.schedules.onlyOnlineLabel']()} value={schedule.onlyWhenOnline ? m['common.states.yes']() : m['common.states.no']()} />
-                <Stat label={m['server.schedules.lastRun']()} value={schedule.lastRunAt ? timeAgo(schedule.lastRunAt) : m['server.schedules.never']()} />
+                <Stat label={m['server.schedules.lastRun']()} value={schedule.lastRunAt ? timeAgo(schedule.lastRunAt) : m['ui.states.never']()} />
                 <Stat label={m['server.schedules.nextRunLabel']()} value={schedule.nextRunAt ? timeAgo(schedule.nextRunAt) : '—'} />
             </div>
 
@@ -101,7 +101,7 @@ export default function ScheduleDetailPage() {
                 <h2 className="text-sm font-semibold text-[var(--color-ink)]">{m['server.schedules.tasksTitle']()}</h2>
                 {canUpdate && (
                     <Button size="sm" onClick={() => setTaskForm({ task: null })}>
-                        <Plus className="h-4 w-4" /> {m['server.schedules.addTask']()}
+                        <Plus className="h-4 w-4" /> {m['ui.actions.addTask']()}
                     </Button>
                 )}
             </div>

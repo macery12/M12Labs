@@ -81,7 +81,7 @@ function RailRow({
             {reorder && (
                 <div className="pr-1.5">
                     <DragHandle
-                        label={m['admin.links.reorder']({ name: link.name })}
+                        label={m['ui.actions.reorderName']({ name: link.name })}
                         hint={m['admin.links.reorderHint']()}
                         upLabel={m['admin.links.moveUp']({ name: link.name })}
                         downLabel={m['admin.links.moveDown']({ name: link.name })}

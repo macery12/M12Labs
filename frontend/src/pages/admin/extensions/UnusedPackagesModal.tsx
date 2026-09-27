@@ -67,7 +67,7 @@ export function UnusedPackagesModal({
                             className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[var(--color-border-strong)] px-2 text-xs text-[var(--color-ink-muted)] hover:bg-[var(--color-surface)]"
                         >
                             {copied === manager ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                            {copied === manager ? m['extensions.requirements.copied']() : m['extensions.requirements.copy']()}
+                            {copied === manager ? m['common.states.copied']() : m['common.actions.copy']()}
                         </button>
                     </div>
                 ))}

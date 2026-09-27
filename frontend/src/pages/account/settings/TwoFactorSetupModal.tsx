@@ -133,7 +133,7 @@ export function TwoFactorSetupModal({
             <p className="mt-5 text-sm text-[var(--color-ink-muted)]">{m['account.twoFactor.scanHint']()}</p>
 
             <div className="mt-4 flex flex-col gap-4">
-                <Field label={m['account.twoFactor.code']()} htmlFor="tf-code">
+                <Field label={m['ui.labels.authenticationCode']()} htmlFor="tf-code">
                     <Input
                         id="tf-code"
                         value={code}

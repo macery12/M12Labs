@@ -86,7 +86,7 @@ function Meter({ label, data, tone }: { label: string; data: Track; tone: Tone }
                 </span>
                 <span className="font-mono text-[11px] tabular-nums text-[var(--color-ink-muted)]">
                     {data.unlimited ? (
-                        m['admin.infrastructure.capacity.unlimited']()
+                        m['common.states.unlimited']()
                     ) : (
                         <>
                             {/* "14 GB / 9.8 GB" read as used-of-total; say which is which,
@@ -179,7 +179,7 @@ export function CapacityRack({
                         : m['admin.infrastructure.capacity.allHeadroom']()}
                 </p>
                 <p className="font-mono text-[11px] text-[var(--color-ink-faint)]">
-                    {m['admin.infrastructure.capacity.updated']({ ago: timeAgo(updatedAt) })}
+                    {m['ui.labels.updatedAgo']({ ago: timeAgo(updatedAt) })}
                 </p>
             </div>
 
@@ -187,11 +187,11 @@ export function CapacityRack({
                 own surface so it reads as a table head rather than floating on canvas. */}
             <div className="hidden grid-cols-[0.25rem_minmax(11rem,1.4fr)_9rem_minmax(9rem,1fr)_minmax(9rem,1fr)_6.5rem] items-center gap-x-4 rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface-2)]/60 py-2 pl-0 pr-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)] lg:grid">
                 <span />
-                <span>{m['admin.infrastructure.capacity.col.node']()}</span>
-                <span>{m['admin.infrastructure.capacity.col.status']()}</span>
+                <span>{m['ui.labels.node']()}</span>
+                <span>{m['ui.labels.status']()}</span>
                 <span>{m['common.metrics.memory']()}</span>
                 <span>{m['common.metrics.disk']()}</span>
-                <span className="text-right">{m['admin.infrastructure.capacity.col.servers']()}</span>
+                <span className="text-right">{m['ui.labels.servers']()}</span>
             </div>
 
             <div className="flex flex-col gap-2">

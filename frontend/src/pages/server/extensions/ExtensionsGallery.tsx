@@ -22,7 +22,7 @@ export default function ExtensionsGallery() {
     return (
         <div className="flex flex-col gap-4">
             <div>
-                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.extensions.title']()}</h1>
+                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['ui.labels.extensions']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.extensions.subtitle']()}</p>
             </div>
 

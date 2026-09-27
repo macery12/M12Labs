@@ -126,7 +126,7 @@ export function LiveServerCard({
             <div className="mt-auto flex items-center justify-between border-t border-[var(--color-border)] px-5 pb-5 pt-3">
                 <span className="flex items-center gap-1.5 text-xs text-[var(--color-ink-muted)]">
                     <Clock className="h-3.5 w-3.5" />
-                    {resources && isRunning ? formatUptime(resources.uptimeMs) : pending ? '…' : m['dashboard.offlineShort']()}
+                    {resources && isRunning ? formatUptime(resources.uptimeMs) : pending ? '…' : m['ui.states.offlineInline']()}
                 </span>
                 <div className="flex items-center gap-1.5">
                     <PowerButton

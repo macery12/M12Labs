@@ -43,25 +43,25 @@ export function BatchActionBar({
                 className="pointer-events-auto flex max-w-full flex-wrap items-center gap-2 border border-[var(--color-border-strong)] bg-[var(--color-surface)]/95 px-3 py-2 shadow-2xl shadow-black/30 backdrop-blur"
             >
                 <span className="px-1 text-xs font-semibold tabular-nums text-[var(--color-ink)]">
-                    {m['extensions.select.count']({ count })}
+                    {m['ui.labels.countSelected']({ count })}
                 </span>
 
                 <span className="h-5 w-px bg-[var(--color-border)]" aria-hidden />
 
                 {counts.install > 0 && (
-                    <BatchButton icon={Download} label={m['extensions.select.install']()} n={counts.install} disabled={busy} onClick={onInstall} variant="brand" />
+                    <BatchButton icon={Download} label={m['ui.actions.install']()} n={counts.install} disabled={busy} onClick={onInstall} variant="brand" />
                 )}
                 {counts.update > 0 && (
                     <BatchButton icon={ArrowUpCircle} label={m['extensions.select.update']()} n={counts.update} disabled={busy} onClick={onUpdate} />
                 )}
                 {counts.enable > 0 && (
-                    <BatchButton icon={Power} label={m['extensions.select.enable']()} n={counts.enable} disabled={busy} onClick={onEnable} />
+                    <BatchButton icon={Power} label={m['ui.actions.enable']()} n={counts.enable} disabled={busy} onClick={onEnable} />
                 )}
                 {counts.disable > 0 && (
-                    <BatchButton icon={PowerOff} label={m['extensions.select.disable']()} n={counts.disable} disabled={busy} onClick={onDisable} />
+                    <BatchButton icon={PowerOff} label={m['ui.actions.disable']()} n={counts.disable} disabled={busy} onClick={onDisable} />
                 )}
                 {counts.uninstall > 0 && (
-                    <BatchButton icon={Trash2} label={m['extensions.select.uninstall']()} n={counts.uninstall} disabled={busy} onClick={onUninstall} variant="danger" />
+                    <BatchButton icon={Trash2} label={m['ui.actions.uninstall']()} n={counts.uninstall} disabled={busy} onClick={onUninstall} variant="danger" />
                 )}
 
                 <span className="h-5 w-px bg-[var(--color-border)]" aria-hidden />
@@ -69,11 +69,11 @@ export function BatchActionBar({
                 <button
                     type="button"
                     onClick={onClear}
-                    aria-label={m['extensions.select.clear']()}
+                    aria-label={m['common.actions.clear']()}
                     className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
                 >
                     <X className="h-3.5 w-3.5" />
-                    {m['extensions.select.clear']()}
+                    {m['common.actions.clear']()}
                 </button>
             </div>
         </div>

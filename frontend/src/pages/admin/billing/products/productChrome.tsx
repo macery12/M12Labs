@@ -60,10 +60,10 @@ export function LimitField({
                     <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-1 text-xs font-medium text-[var(--color-ink-faint)]">
                         {unlimitable ? (
                             <>
-                                <InfinityIcon className="h-3.5 w-3.5" /> {m['admin.billing.products.unlimited']()}
+                                <InfinityIcon className="h-3.5 w-3.5" /> {m['common.states.unlimited']()}
                             </>
                         ) : (
-                            m['admin.billing.products.none']()
+                            m['ui.states.none']()
                         )}
                     </span>
                 )}
@@ -76,7 +76,7 @@ export function LimitField({
                             key={p}
                             type="button"
                             onClick={() => onChange(p)}
-                            title={p === 0 && unlimitable ? m['admin.billing.products.unlimited']() : undefined}
+                            title={p === 0 && unlimitable ? m['common.states.unlimited']() : undefined}
                             className={cn(
                                 'rounded-md border px-2.5 py-1 font-mono text-xs tabular-nums transition-colors',
                                 value === p
@@ -122,9 +122,9 @@ export function ProductPreview({
     const { money } = useBilling();
 
     const stats: [LucideIcon, string][] = [
-        [Cpu, cpu === 0 ? m['admin.billing.products.unlimited']() : `${cpu}%`],
-        [MemoryStick, memory === 0 ? m['admin.billing.products.unlimited']() : formatMib(memory)],
-        [HardDrive, disk === 0 ? m['admin.billing.products.unlimited']() : formatMib(disk)],
+        [Cpu, cpu === 0 ? m['common.states.unlimited']() : `${cpu}%`],
+        [MemoryStick, memory === 0 ? m['common.states.unlimited']() : formatMib(memory)],
+        [HardDrive, disk === 0 ? m['common.states.unlimited']() : formatMib(disk)],
     ];
 
     return (
@@ -136,7 +136,7 @@ export function ProductPreview({
                 <p className="mt-0.5 line-clamp-2 text-xs text-[var(--color-ink-muted)]">{description.trim()}</p>
             )}
             <p className="mt-2 font-mono text-xl font-semibold tabular-nums text-[var(--brand-bright)]">
-                {price === 0 ? m['admin.billing.products.free']() : money(price)}
+                {price === 0 ? m['ui.labels.free']() : money(price)}
             </p>
             <ul className="mt-3 flex flex-col gap-1.5 text-xs text-[var(--color-ink-muted)]">
                 {stats.map(([Icon, label], i) => (

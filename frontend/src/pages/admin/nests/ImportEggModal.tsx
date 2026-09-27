@@ -45,7 +45,7 @@ export function ImportEggModal({ nestId, onClose, onImported }: { nestId: number
         <Modal
             open
             onClose={onClose}
-            title={m['admin.nests.import.title']()}
+            title={m['ui.actions.importEgg']()}
             description={m['admin.nests.import.desc']()}
             size="lg"
             footer={
@@ -55,7 +55,7 @@ export function ImportEggModal({ nestId, onClose, onImported }: { nestId: number
                     </Button>
                     <Button size="sm" onClick={submit} disabled={saving}>
                         {saving && <Spinner className="h-4 w-4" />}
-                        {m['admin.nests.import.action']()}
+                        {m['ui.actions.importEgg']()}
                     </Button>
                 </>
             }

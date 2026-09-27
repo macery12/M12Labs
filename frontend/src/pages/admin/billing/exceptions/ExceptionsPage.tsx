@@ -121,11 +121,11 @@ export default function ExceptionsPage() {
                         <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/40">
                             <tr>
                                 {[
-                                    m['admin.billing.exceptions.col.id'](),
+                                    m['ui.labels.id'](),
                                     m['admin.billing.exceptions.col.exception'](),
                                     m['admin.billing.exceptions.col.detail'](),
-                                    m['admin.billing.exceptions.col.type'](),
-                                    m['admin.billing.exceptions.col.created'](),
+                                    m['ui.labels.type'](),
+                                    m['ui.labels.created'](),
                                     '',
                                 ].map((h, i) => (
                                     <th key={i} className="px-4 py-3 text-left text-xs font-medium text-[var(--color-ink-muted)]">
@@ -176,7 +176,7 @@ export default function ExceptionsPage() {
             {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between">
                     <p className="text-xs text-[var(--color-ink-faint)]">
-                        {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                        {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                         {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                     </p>
                     <div className="flex gap-2">
@@ -185,7 +185,7 @@ export default function ExceptionsPage() {
                             {m['activity.prev']()}
                         </Button>
                         <Button variant="outline" size="sm" disabled={pagination.currentPage >= pagination.totalPages || isFetching} onClick={() => setPage(p => p + 1)}>
-                            {m['activity.next']()}
+                            {m['ui.actions.next']()}
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>

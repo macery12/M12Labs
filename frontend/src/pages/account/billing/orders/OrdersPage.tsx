@@ -12,7 +12,7 @@ export default function OrdersPage() {
     const [tab, setTab] = useState<TabId>('orders');
 
     const tabs: { id: TabId; label: string }[] = [
-        { id: 'orders', label: m['billing.orders.tabs.orders']() },
+        { id: 'orders', label: m['ui.labels.orders']() },
         { id: 'invoices', label: m['billing.orders.tabs.invoices']() },
     ];
 

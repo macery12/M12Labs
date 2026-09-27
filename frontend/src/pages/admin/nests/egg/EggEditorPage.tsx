@@ -151,12 +151,12 @@ const PAYLOAD_KEY: Record<keyof EggForm, keyof EggPayload> = {
 type SectionId = 'general' | 'startup' | 'variables' | 'configuration' | 'install' | 'advanced';
 
 const SECTIONS: { id: SectionId; label: () => string; icon: LucideIcon }[] = [
-    { id: 'general', label: () => m['admin.nests.egg.section.general'](), icon: Info },
-    { id: 'startup', label: () => m['admin.nests.egg.section.startup'](), icon: SquareTerminal },
-    { id: 'variables', label: () => m['admin.nests.egg.tabs.variables'](), icon: Variable },
-    { id: 'configuration', label: () => m['admin.nests.egg.section.configuration'](), icon: FileCog },
-    { id: 'install', label: () => m['admin.nests.egg.tabs.install'](), icon: ScrollText },
-    { id: 'advanced', label: () => m['admin.nests.egg.tabs.advanced'](), icon: Settings2 },
+    { id: 'general', label: () => m['ui.labels.general'](), icon: Info },
+    { id: 'startup', label: () => m['ui.labels.startup'](), icon: SquareTerminal },
+    { id: 'variables', label: () => m['ui.labels.variables'](), icon: Variable },
+    { id: 'configuration', label: () => m['ui.labels.configuration'](), icon: FileCog },
+    { id: 'install', label: () => m['ui.actions.installScript'](), icon: ScrollText },
+    { id: 'advanced', label: () => m['ui.labels.advanced'](), icon: Settings2 },
 ];
 
 // The draft fields each section owns — drives the nav's unsaved dots.
@@ -430,7 +430,7 @@ export default function EggEditorPage() {
                 <div className="mt-1 flex flex-wrap items-start gap-3">
                     <div className="min-w-0 flex-1">
                         <h1 className="truncate text-xl font-semibold text-[var(--color-ink)]">
-                            {isCreate ? m['admin.nests.egg.newTitle']() : baseline.name}
+                            {isCreate ? m['ui.labels.newEgg']() : baseline.name}
                         </h1>
                         {egg ? (
                             <EggMeta egg={egg} onVariables={() => setSection('variables')} />
@@ -446,8 +446,8 @@ export default function EggEditorPage() {
                             <Dropdown.Root>
                                 <Dropdown.Trigger
                                     type="button"
-                                    aria-label={m['admin.nests.egg.moreActions']()}
-                                    title={m['admin.nests.egg.moreActions']()}
+                                    aria-label={m['ui.labels.moreActions']()}
+                                    title={m['ui.labels.moreActions']()}
                                     className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border-strong)] text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)] focus:outline-none"
                                 >
                                     <MoreHorizontal className="h-4 w-4" />
@@ -535,11 +535,11 @@ export default function EggEditorPage() {
                     {section === 'general' && (
                         <SectionCard
                             icon={Info}
-                            title={m['admin.nests.egg.section.general']()}
+                            title={m['ui.labels.general']()}
                             desc={m['admin.nests.egg.section.generalDesc']()}
                         >
                             <FieldGrid>
-                                <FieldRow label={m['admin.nests.egg.about.name']()}>
+                                <FieldRow label={m['ui.labels.name']()}>
                                     <Input value={form.name} onChange={e => patch({ name: e.currentTarget.value })} />
                                 </FieldRow>
                                 <FieldRow
@@ -567,11 +567,11 @@ export default function EggEditorPage() {
                         <>
                             <SectionCard
                                 icon={SquareTerminal}
-                                title={m['admin.nests.egg.section.startup']()}
+                                title={m['ui.labels.startup']()}
                                 desc={m['admin.nests.egg.section.startupDesc']()}
                             >
                                 <FieldGrid>
-                                    <FieldRow label={m['admin.nests.egg.about.startup']()} wide>
+                                    <FieldRow label={m['ui.labels.startupCommand']()} wide>
                                         <StartupCommandField
                                             value={form.startup}
                                             onChange={startup => patch({ startup })}
@@ -654,7 +654,7 @@ export default function EggEditorPage() {
                         <>
                             <SectionCard
                                 icon={ScrollText}
-                                title={m['admin.nests.egg.install.script']()}
+                                title={m['ui.actions.installScript']()}
                                 desc={m['admin.nests.egg.section.installDesc']()}
                             >
                                 <CodeEditor
@@ -706,7 +706,7 @@ export default function EggEditorPage() {
                     {section === 'advanced' && (
                         <SectionCard
                             icon={Settings2}
-                            title={m['admin.nests.egg.tabs.advanced']()}
+                            title={m['ui.labels.advanced']()}
                             desc={m['admin.nests.egg.section.advancedDesc']()}
                         >
                             <ToggleGroup>
@@ -807,7 +807,7 @@ function EggMeta({ egg, onVariables }: { egg: AdminEggDetail; onVariables: () =>
     return (
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--color-ink-faint)]">
             <span>
-                {m['admin.nests.egg.stat.id']()} {egg.id}
+                {m['ui.labels.id']()} {egg.id}
             </span>
             <span aria-hidden>·</span>
             <span className="truncate">{egg.author}</span>

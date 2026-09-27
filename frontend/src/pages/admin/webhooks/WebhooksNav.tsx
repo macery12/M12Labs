@@ -14,7 +14,7 @@ interface Item {
 const BASE = '/admin/webhooks';
 
 const ITEMS: Item[] = [
-    { to: BASE, end: true, icon: Cog, label: m['admin.webhooks.nav.configuration']() },
+    { to: BASE, end: true, icon: Cog, label: m['ui.labels.configuration']() },
     { to: `${BASE}/events`, icon: CalendarClock, label: m['admin.webhooks.nav.events']() },
 ];
 

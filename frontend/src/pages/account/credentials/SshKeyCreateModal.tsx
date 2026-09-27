@@ -40,7 +40,7 @@ export default function SshKeyCreateModal({ open, onClose }: { open: boolean; on
         <Modal
             open={open}
             onClose={onClose}
-            title={m['account.credentials.ssh.createTitle']()}
+            title={m['ui.actions.addSshKey']()}
             description={m['account.credentials.ssh.createSubtitle']()}
             footer={
                 <>
@@ -61,7 +61,7 @@ export default function SshKeyCreateModal({ open, onClose }: { open: boolean; on
                     </p>
                 )}
 
-                <Field label={m['account.credentials.ssh.form.name']()}>
+                <Field label={m['ui.labels.name']()}>
                     <Input value={name} onChange={e => setName(e.target.value)} autoComplete="off" maxLength={191} />
                 </Field>
 

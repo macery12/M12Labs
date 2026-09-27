@@ -2,6 +2,7 @@ import { m, td } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 import type { EmailResponse } from '@/api/email';
 import { getStatusPresentation, type EmailTone } from '../status';
+import { formatDateTime } from '@/lib/format';
 
 // Result banner for a connection check / delivery test. Tone-driven via theme
 // tokens; resolves the human message from the API response.
@@ -24,7 +25,7 @@ export function TestResultBanner({ result }: { result: EmailResponse }) {
                     {transport && ` — ${transport}`}
                 </span>
                 {when && (
-                    <span className="text-xs text-[var(--color-ink-faint)]">{new Date(when).toLocaleString()}</span>
+                    <span className="text-xs text-[var(--color-ink-faint)]">{formatDateTime(when)}</span>
                 )}
             </div>
             <p className="mt-1 text-[var(--color-ink)]">{message}</p>

@@ -10,7 +10,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
 import { m } from '@/i18n/messages';
 import { firstError } from '@/lib/apiError';
-import { formatBytes } from '@/lib/format';
+import { formatBytes, formatDateTime } from '@/lib/format';
 import { searchFiles, type SearchResult } from '@/api/files';
 import { encodePathSegments } from '../paths';
 
@@ -75,7 +75,7 @@ export function FileSearchModal({
                     />
                     <Button size="sm" onClick={run} disabled={search.isPending || !pattern.trim()}>
                         {search.isPending ? <Spinner className="h-4 w-4" /> : <Search className="h-4 w-4" />}
-                        {m['server.files.search.run']()}
+                        {m['common.actions.search']()}
                     </Button>
                 </div>
 
@@ -134,7 +134,7 @@ export function FileSearchModal({
                                             </p>
                                             <p className="text-xs text-[var(--color-ink-faint)]">
                                                 {formatBytes(r.size)}
-                                                {r.modified && ` · ${new Date(r.modified).toLocaleString()}`}
+                                                {r.modified && ` · ${formatDateTime(r.modified)}`}
                                             </p>
                                         </div>
                                     </button>

@@ -12,14 +12,14 @@ export default function AccountPage() {
     const [tab, setTab] = useState<TabId>('account');
 
     const tabs: { id: TabId; label: string }[] = [
-        { id: 'account', label: m['account.tabs.account']() },
+        { id: 'account', label: m['ui.labels.account']() },
         { id: 'devices', label: m['account.tabs.devices']() },
     ];
 
     return (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
             <div>
-                <h1 className="text-2xl font-semibold tracking-tight">{m['account.title']()}</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">{m['ui.labels.account']()}</h1>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['account.subtitle']()}</p>
             </div>
 

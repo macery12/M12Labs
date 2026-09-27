@@ -48,7 +48,7 @@ export function AccountHealth() {
                     ok={user.use_totp}
                     okIcon={ShieldCheck}
                     badIcon={ShieldAlert}
-                    okLabel={m['dashboard.twoFactorEnabled']()}
+                    okLabel={m['ui.labels.twoFactorEnabled']()}
                     badLabel={m['dashboard.enableTwoFactor']()}
                     to="/settings"
                 />

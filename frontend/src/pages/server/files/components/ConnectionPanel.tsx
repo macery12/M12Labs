@@ -31,8 +31,8 @@ function SshAccess({ uuid }: { uuid: string }) {
         <div className="mt-5 flex flex-col gap-3 border-t border-[var(--color-border)] pt-5">
             <span className="text-sm font-semibold text-[var(--color-ink)]">{m['server.files.ssh.title']()}</span>
             <CopyField label={m['server.files.ssh.command']()} value={command} />
-            <CopyField label={m['server.files.ssh.host']()} value={`${data.host}:${data.port}`} />
-            <CopyField label={m['server.files.ssh.username']()} value={data.username} />
+            <CopyField label={m['ui.labels.host']()} value={`${data.host}:${data.port}`} />
+            <CopyField label={m['ui.labels.username']()} value={data.username} />
             <div className="border-l-2 border-[var(--color-accent)] pl-3">
                 <p className="text-xs text-[var(--color-ink-muted)]">
                     {data.containerSupported ? `${m['server.files.ssh.containerSupported']()} ` : ''}
@@ -79,7 +79,7 @@ export function ConnectionPanel({ open, onClose }: { open: boolean; onClose: () 
                     <div className="flex items-center gap-2">
                         <Network className="h-4 w-4 text-[var(--color-ink-muted)]" />
                         <h3 className="text-sm font-semibold text-[var(--color-ink)]">
-                            {m['server.files.connection.title']()}
+                            {m['ui.labels.connectionDetails']()}
                         </h3>
                     </div>
                     <button

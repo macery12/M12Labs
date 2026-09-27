@@ -133,7 +133,7 @@ export default function FileDiffViewer({ diff }: { diff: FileDiff }) {
                 <span className="truncate font-mono text-xs text-[var(--color-ink-muted)]">{filename}</span>
                 {diff.is_new_file ? (
                     <span className="shrink-0 rounded-full bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-medium text-[var(--color-accent)]">
-                        {m['server.activity.diff.newFile']()}
+                        {m['ui.labels.newFile']()}
                     </span>
                 ) : (
                     <DiffStats additions={diff.additions} deletions={diff.deletions} />
@@ -158,7 +158,7 @@ export default function FileDiffViewer({ diff }: { diff: FileDiff }) {
                     <span className="truncate font-mono text-xs text-[var(--color-ink-muted)]">{filename}</span>
                     {diff.is_new_file && (
                         <span className="shrink-0 rounded-full bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-medium text-[var(--color-accent)]">
-                            {m['server.activity.diff.newFile']()}
+                            {m['ui.labels.newFile']()}
                         </span>
                     )}
                 </span>

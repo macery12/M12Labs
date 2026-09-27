@@ -29,9 +29,9 @@ const STATUS_TONE: Record<AdminInvoiceStatus, string> = {
 };
 
 const STATUS_LABEL: Record<AdminInvoiceStatus, () => string> = {
-    active: () => m['billing.invoices.status.active'](),
+    active: () => m['ui.states.active'](),
     expired: () => m['billing.invoices.status.expired'](),
-    void: () => m['billing.invoices.status.void'](),
+    void: () => m['ui.states.void'](),
 };
 
 function StatusPill({ status }: { status: AdminInvoiceStatus }) {
@@ -129,10 +129,10 @@ export default function InvoicesPage() {
     const busy = resend.isPending || regenerate.isPending || doVoid.isPending;
 
     const statusOptions = [
-        { value: '', label: m['admin.billing.invoices.filter.allStatuses']() },
-        { value: 'active', label: m['billing.invoices.status.active']() },
+        { value: '', label: m['ui.labels.allStatuses']() },
+        { value: 'active', label: m['ui.states.active']() },
         { value: 'expired', label: m['billing.invoices.status.expired']() },
-        { value: 'void', label: m['billing.invoices.status.void']() },
+        { value: 'void', label: m['ui.states.void']() },
     ];
 
     return (
@@ -164,13 +164,13 @@ export default function InvoicesPage() {
                             <tr>
                                 {[
                                     m['billing.invoices.col.number'](),
-                                    m['admin.billing.invoices.col.user'](),
-                                    m['billing.invoices.col.amount'](),
-                                    m['billing.invoices.col.status'](),
-                                    m['admin.billing.invoices.col.generated'](),
-                                    m['admin.billing.invoices.col.size'](),
+                                    m['ui.labels.user'](),
+                                    m['ui.labels.amount'](),
+                                    m['ui.labels.status'](),
+                                    m['ui.labels.generated'](),
+                                    m['ui.labels.size'](),
                                     m['admin.billing.invoices.col.pdf'](),
-                                    m['admin.billing.invoices.col.actions'](),
+                                    m['ui.labels.actions'](),
                                 ].map(h => (
                                     <th key={h} className="px-4 py-3 text-left text-xs font-medium text-[var(--color-ink-muted)]">
                                         {h}
@@ -209,7 +209,7 @@ export default function InvoicesPage() {
                                             )}
                                             <Dropdown.Root>
                                                 <Dropdown.Trigger asChild>
-                                                    <Button variant="ghost" size="icon" aria-label={m['admin.billing.invoices.moreActions']()} disabled={busy}>
+                                                    <Button variant="ghost" size="icon" aria-label={m['ui.labels.moreActions']()} disabled={busy}>
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </Dropdown.Trigger>
@@ -250,7 +250,7 @@ export default function InvoicesPage() {
             {pagination && pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between">
                     <p className="text-xs text-[var(--color-ink-faint)]">
-                        {m['activity.pageOf']({ current: pagination.currentPage, total: pagination.totalPages })}
+                        {m['ui.labels.pageOfTotal']({ current: pagination.currentPage, total: pagination.totalPages })}
                         {isFetching && <Spinner className="ml-2 inline h-3 w-3" />}
                     </p>
                     <div className="flex gap-2">
@@ -259,7 +259,7 @@ export default function InvoicesPage() {
                             {m['activity.prev']()}
                         </Button>
                         <Button variant="outline" size="sm" disabled={pagination.currentPage >= pagination.totalPages || isFetching} onClick={() => setPage(p => p + 1)}>
-                            {m['activity.next']()}
+                            {m['ui.actions.next']()}
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>
@@ -271,7 +271,7 @@ export default function InvoicesPage() {
                 onClose={() => setVoidTarget(null)}
                 title={m['admin.billing.invoices.voidTitle']()}
                 body={m['admin.billing.invoices.voidBody']({ number: voidTarget?.invoiceNumber ?? '' })}
-                confirmLabel={m['admin.billing.invoices.void']()}
+                confirmLabel={m['ui.states.void']()}
                 cancelLabel={m['common.actions.cancel']()}
                 busy={doVoid.isPending}
                 onConfirm={() => voidTarget && doVoid.mutate(voidTarget)}

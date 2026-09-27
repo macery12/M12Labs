@@ -158,14 +158,14 @@ function Toolbar({ data }: { data: QueueHealth }) {
                 />
                 <span className={cn(!running && 'font-semibold text-[var(--color-danger)]')}>
                     {!running
-                        ? m['admin.queues.status.stopped']()
+                        ? m['ui.states.notRunning']()
                         : paused
                           ? m['admin.queues.status.paused']()
                           : m['admin.queues.status.running']()}
                 </span>
                 <Sep />
                 <span className="text-[var(--color-ink)]">{data.totalDepth}</span>
-                {m['admin.queues.bar.queued']()}
+                {m['ui.states.queuedInline']()}
                 <Sep />
                 <span className={cn(overTarget ? 'font-semibold text-[var(--color-warning)]' : 'text-[var(--color-ink)]')}>
                     {longestWait}s

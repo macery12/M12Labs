@@ -291,21 +291,21 @@ export function NodeWingsRsTab() {
                                 right={
                                     <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
                                         <span className={`h-1.5 w-1.5 rounded-full ${statsError ? 'bg-[var(--color-danger)]' : 'bg-[var(--color-accent)]'}`} />
-                                        {statsError ? m['admin.nodes.overview.unreachable']() : m['admin.nodes.overview.live']()}
+                                        {statsError ? m['admin.nodes.overview.unreachable']() : m['ui.states.liveInline']()}
                                     </span>
                                 }
                             >
                                 {!stats ? (
                                     <div className="py-6 text-sm text-[var(--color-ink-faint)]">
-                                        {statsError ? m['admin.nodes.wingsRs.daemonUnreachable']() : m['admin.nodes.wingsRs.connecting']()}
+                                        {statsError ? m['admin.nodes.wingsRs.daemonUnreachable']() : m['ui.states.connecting']()}
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-4">
                                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                                             <StatCell icon={Cpu} label={m['common.metrics.cpu']()} value={`${stats.cpu.used.toFixed(1)}%`} sub={m['admin.nodes.wingsRs.threads']({ count: stats.cpu.threads })} />
                                             <StatCell icon={MemoryStick} label={m['common.metrics.memory']()} value={formatBytes(stats.memory.used)} sub={m['admin.nodes.wingsRs.ofSize']({ size: formatBytes(stats.memory.total) })} />
-                                            <StatCell icon={ArrowDown} label={m['admin.nodes.wingsRs.netIn']()} value={rate(stats.network.receivedRate)} />
-                                            <StatCell icon={ArrowUp} label={m['admin.nodes.wingsRs.netOut']()} value={rate(stats.network.sentRate)} />
+                                            <StatCell icon={ArrowDown} label={m['ui.labels.netIn']()} value={rate(stats.network.receivedRate)} />
+                                            <StatCell icon={ArrowUp} label={m['ui.labels.netOut']()} value={rate(stats.network.sentRate)} />
                                         </div>
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Meter
@@ -329,21 +329,21 @@ export function NodeWingsRsTab() {
                             </Panel>
                         </div>
 
-                        <Panel title={m['admin.nodes.wingsRs.overview']()} icon={Info}>
+                        <Panel title={m['ui.labels.overview']()} icon={Info}>
                             {!overview ? (
                                 <div className="py-6 text-sm text-[var(--color-ink-faint)]">{m['common.states.loading']()}</div>
                             ) : (
                                 <div className="flex flex-col">
-                                    <Row label={m['admin.nodes.wingsRs.version']()} value={overview.version} />
-                                    <Row label={m['admin.nodes.wingsRs.kernel']()} value={overview.kernel} />
+                                    <Row label={m['ui.labels.version']()} value={overview.version} />
+                                    <Row label={m['ui.labels.kernel']()} value={overview.kernel} />
                                     <Row label={m['admin.nodes.wingsRs.arch']()} value={overview.arch} />
-                                    <Row label={m['admin.nodes.wingsRs.cpu']()} value={overview.cpuModel ?? '—'} />
+                                    <Row label={m['common.metrics.cpu']()} value={overview.cpuModel ?? '—'} />
                                     <Row
                                         label={m['admin.nodes.wingsRs.containerType']()}
                                         value={overview.containerType ?? '—'}
                                     />
                                     <Row
-                                        label={m['admin.nodes.wingsRs.servers']()}
+                                        label={m['ui.labels.servers']()}
                                         value={
                                             overview.servers
                                                 ? m['admin.nodes.wingsRs.serversValue']({
