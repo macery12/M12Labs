@@ -2140,6 +2140,8 @@
   "admin.links.placement.everywhere": "Dashboard and server pages",
   "admin.links.placement.dashboard": "Dashboard only",
   "admin.links.placement.server": "Server pages only",
+  "admin.links.reorder": "Reorder {name}",
+  "admin.links.reorderHint": "Drag to reorder, or focus the handle and use the arrow keys.",
   "admin.links.moveUp": "Move {name} up",
   "admin.links.moveDown": "Move {name} down",
   "admin.links.flash.created": "Custom link created.",

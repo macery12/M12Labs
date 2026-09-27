@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Link2, Search, Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Link2, Search, Eye, EyeOff } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -9,56 +9,45 @@ import { cn } from '@/lib/cn';
 import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
 import { getLinks, linkHost, reorderLinks, type CustomLink } from '@/api/adminLinks';
+import { DragHandle, dropIndicator, useDragReorder } from '@/components/ui/DragReorder';
 import LinkEditor from './LinkEditor';
 
 type Selection = { mode: 'edit'; id: number } | { mode: 'new' } | null;
 
-function MoveButton({
-    label,
-    disabled,
-    onClick,
-    children,
-}: {
-    label: string;
-    disabled: boolean;
-    onClick: () => void;
-    children: React.ReactNode;
-}) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            disabled={disabled}
-            aria-label={label}
-            title={label}
-            className="rounded p-0.5 text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)] disabled:pointer-events-none disabled:opacity-30"
-        >
-            {children}
-        </button>
-    );
-}
+type Reorder = ReturnType<typeof useDragReorder>;
 
 function RailRow({
     link,
     active,
     onClick,
-    move,
+    index,
+    count,
+    reorder,
+    onMove,
+    busy,
 }: {
     link: CustomLink;
     active: boolean;
     onClick: () => void;
+    index: number;
+    count: number;
     // Absent while a search filter is active: moving within a filtered view
     // would reorder against rows the operator can't see.
-    move?: { up: (() => void) | null; down: (() => void) | null; busy: boolean };
+    reorder?: Reorder;
+    onMove: (from: number, to: number) => void;
+    busy: boolean;
 }) {
     const Visibility = link.visible ? Eye : EyeOff;
     return (
         <div
+            {...(reorder?.rowProps(index) ?? {})}
             className={cn(
                 'flex items-center border-l-2 transition-colors',
                 active
                     ? 'border-[var(--brand)] bg-[var(--brand-soft)]'
                     : 'border-transparent hover:bg-[var(--color-surface-2)]',
+                reorder && reorder.dragIndex === index && 'opacity-50',
+                reorder && dropIndicator(reorder.dragIndex, reorder.overIndex, index),
             )}
         >
             <button
@@ -87,22 +76,21 @@ function RailRow({
                     </span>
                 </span>
             </button>
-            {move && (
-                <div className="flex shrink-0 flex-col pr-2">
-                    <MoveButton
-                        label={m['admin.links.moveUp']({ name: link.name })}
-                        disabled={!move.up || move.busy}
-                        onClick={() => move.up?.()}
-                    >
-                        <ChevronUp className="h-3.5 w-3.5" />
-                    </MoveButton>
-                    <MoveButton
-                        label={m['admin.links.moveDown']({ name: link.name })}
-                        disabled={!move.down || move.busy}
-                        onClick={() => move.down?.()}
-                    >
-                        <ChevronDown className="h-3.5 w-3.5" />
-                    </MoveButton>
+            {/* The old 14px chevrons were hard to hit; a grip (drag, or arrow
+                keys when focused) replaces them, with larger buttons on touch. */}
+            {reorder && (
+                <div className="pr-1.5">
+                    <DragHandle
+                        label={m['admin.links.reorder']({ name: link.name })}
+                        hint={m['admin.links.reorderHint']()}
+                        upLabel={m['admin.links.moveUp']({ name: link.name })}
+                        downLabel={m['admin.links.moveDown']({ name: link.name })}
+                        index={index}
+                        count={count}
+                        disabled={busy}
+                        handleProps={reorder.handleProps(index, count)}
+                        onMove={onMove}
+                    />
                 </div>
             )}
         </div>
@@ -144,13 +132,14 @@ export default function LinksSection() {
         },
     });
 
-    const move = (index: number, delta: -1 | 1) => {
-        if (!links) return;
+    const move = (from: number, to: number) => {
+        if (!links || from === to || to < 0 || to >= links.length) return;
         const ordered = [...links];
-        const [row] = ordered.splice(index, 1);
-        ordered.splice(index + delta, 0, row!);
+        const [row] = ordered.splice(from, 1);
+        ordered.splice(to, 0, row!);
         reorderMutation.mutate(ordered);
     };
+    const reorder = useDragReorder(move);
 
     // Auto-select the first link once loaded so the detail pane is never blank
     // when links exist; fall back to the create form on an empty list.
@@ -240,15 +229,11 @@ export default function LinksSection() {
                                         link={link}
                                         active={selection?.mode === 'edit' && selection.id === link.id}
                                         onClick={() => setSelection({ mode: 'edit', id: link.id })}
-                                        move={
-                                            searching
-                                                ? undefined
-                                                : {
-                                                      up: index > 0 ? () => move(index, -1) : null,
-                                                      down: index < filtered.length - 1 ? () => move(index, 1) : null,
-                                                      busy: reorderMutation.isPending,
-                                                  }
-                                        }
+                                        index={index}
+                                        count={filtered.length}
+                                        reorder={searching ? undefined : reorder}
+                                        onMove={move}
+                                        busy={reorderMutation.isPending}
                                     />
                                 ))}
                             </div>
