@@ -1372,7 +1372,6 @@
   "admin.infrastructure.node.updated": "Noden er opdateret.",
   "admin.infrastructure.node.validation.minOne": "Skal være mindst 1.",
   "admin.infrastructure.node.validation.name": "Brug kun bogstaver, tal, mellemrum, prikker, bindestreger og understregninger (maks. 100).",
-  "admin.infrastructure.node.validation.overallocate": "Skal være -1 (ubegrænset) eller højere.",
   "admin.infrastructure.node.validation.port": "Det skal være en port mellem 1 og 65535.",
   "admin.infrastructure.node.validation.uploadSize": "Værdien skal ligge mellem 1 og 1024 MiB.",
   "admin.infrastructure.presets.cpu": "CPU (%)",

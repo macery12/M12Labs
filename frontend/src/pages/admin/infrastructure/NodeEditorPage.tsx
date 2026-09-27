@@ -13,6 +13,7 @@ import { useFlags } from '@/state/flags';
 import { firstError, applyFieldErrors } from '@/lib/apiError';
 import { createNode, updateNode, getNode, type NodeFormValues } from '@/api/nodes';
 import { getDatabaseHosts } from '@/api/adminDatabases';
+import { formatMib } from '@/lib/format';
 
 type FormShape = NodeFormValues;
 
@@ -44,6 +45,57 @@ const DEFAULTS: FormShape = {
 // coming back as an opaque 422. Keep these in sync with app/Models/Node.php.
 const NAME_PATTERN = /^[\w .-]{1,100}$/;
 const PORT = { min: 1, max: 65535 };
+
+type OverMode = 'none' | 'percent' | 'unlimited';
+
+const overMode = (value: number): OverMode => (value < 0 ? 'unlimited' : value === 0 ? 'none' : 'percent');
+
+/**
+ * Over-allocation as a choice instead of a number with magic values: the
+ * column stores -1 for unlimited and 0 for none, which the form used to ask
+ * admins to type. The percent input only appears for "Allow up to".
+ */
+function OverallocateField({
+    label,
+    value,
+    onMode,
+    error,
+    children,
+}: {
+    label: string;
+    value: number;
+    onMode: (next: number) => void;
+    error?: string;
+    children: React.ReactNode;
+}) {
+    const mode = overMode(value);
+
+    return (
+        <FieldRow label={label} desc={m['admin.infrastructure.node.field.overHint']()} error={error}>
+            <div className="flex gap-2">
+                <div className="min-w-0 flex-1">
+                    <Select
+                        value={mode}
+                        onChange={v => onMode(v === 'unlimited' ? -1 : v === 'none' ? 0 : value > 0 ? value : 25)}
+                        options={[
+                            { value: 'none', label: m['admin.infrastructure.node.field.overMode.none']() },
+                            { value: 'percent', label: m['admin.infrastructure.node.field.overMode.percent']() },
+                            { value: 'unlimited', label: m['admin.infrastructure.node.field.overMode.unlimited']() },
+                        ]}
+                    />
+                </div>
+                {mode === 'percent' && (
+                    <div className="relative w-28 shrink-0">
+                        {children}
+                        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center font-mono text-xs text-[var(--color-ink-faint)]">
+                            %
+                        </span>
+                    </div>
+                )}
+            </div>
+        </FieldRow>
+    );
+}
 
 export default function NodeEditorPage() {
     const navigate = useNavigate();
@@ -144,6 +196,15 @@ export default function NodeEditorPage() {
 
     // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() opts out of the react compiler
     const scheme = watch('scheme');
+    const memory = watch('memory');
+    const disk = watch('disk');
+    const memoryOver = watch('memory_overallocate');
+    const diskOver = watch('disk_overallocate');
+    const approx = (mib: number) => (mib > 0 ? m['admin.infrastructure.node.field.mibApprox']({ size: formatMib(mib) }) : undefined);
+    const overPercent = {
+        ...num,
+        min: { value: 1, message: m['admin.infrastructure.node.validation.overPercent']() },
+    };
 
     return (
         <form onSubmit={onSubmit} className="flex flex-col gap-5">
@@ -246,7 +307,12 @@ export default function NodeEditorPage() {
                     desc={m['admin.infrastructure.node.section.capacityDesc']()}
                 >
                     <FieldGrid>
-                        <FieldRow label={m['admin.infrastructure.node.field.memory']()} mono="MiB" error={errors.memory?.message}>
+                        <FieldRow
+                            label={m['admin.infrastructure.node.field.memory']()}
+                            mono="MiB"
+                            desc={approx(memory)}
+                            error={errors.memory?.message}
+                        >
                             <Input
                                 type="number"
                                 min={1}
@@ -254,23 +320,27 @@ export default function NodeEditorPage() {
                                 {...register('memory', { ...num, min: { value: 1, message: m['admin.infrastructure.node.validation.minOne']() } })}
                             />
                         </FieldRow>
-                        <FieldRow
+                        <OverallocateField
                             label={m['admin.infrastructure.node.field.memoryOver']()}
-                            desc={m['admin.infrastructure.node.field.overHint']()}
-                            mono="%"
+                            value={memoryOver}
+                            onMode={v => setValue('memory_overallocate', v, { shouldDirty: true, shouldValidate: true })}
                             error={errors.memory_overallocate?.message}
                         >
                             <Input
                                 type="number"
-                                min={-1}
+                                min={1}
+                                className="pr-7"
+                                aria-label={m['admin.infrastructure.node.field.memoryOver']()}
                                 invalid={!!errors.memory_overallocate}
-                                {...register('memory_overallocate', {
-                                    ...num,
-                                    min: { value: -1, message: m['admin.infrastructure.node.validation.overallocate']() },
-                                })}
+                                {...register('memory_overallocate', overPercent)}
                             />
-                        </FieldRow>
-                        <FieldRow label={m['admin.infrastructure.node.field.disk']()} mono="MiB" error={errors.disk?.message}>
+                        </OverallocateField>
+                        <FieldRow
+                            label={m['admin.infrastructure.node.field.disk']()}
+                            mono="MiB"
+                            desc={approx(disk)}
+                            error={errors.disk?.message}
+                        >
                             <Input
                                 type="number"
                                 min={1}
@@ -278,17 +348,21 @@ export default function NodeEditorPage() {
                                 {...register('disk', { ...num, min: { value: 1, message: m['admin.infrastructure.node.validation.minOne']() } })}
                             />
                         </FieldRow>
-                        <FieldRow label={m['admin.infrastructure.node.field.diskOver']()} mono="%" error={errors.disk_overallocate?.message}>
+                        <OverallocateField
+                            label={m['admin.infrastructure.node.field.diskOver']()}
+                            value={diskOver}
+                            onMode={v => setValue('disk_overallocate', v, { shouldDirty: true, shouldValidate: true })}
+                            error={errors.disk_overallocate?.message}
+                        >
                             <Input
                                 type="number"
-                                min={-1}
+                                min={1}
+                                className="pr-7"
+                                aria-label={m['admin.infrastructure.node.field.diskOver']()}
                                 invalid={!!errors.disk_overallocate}
-                                {...register('disk_overallocate', {
-                                    ...num,
-                                    min: { value: -1, message: m['admin.infrastructure.node.validation.overallocate']() },
-                                })}
+                                {...register('disk_overallocate', overPercent)}
                             />
-                        </FieldRow>
+                        </OverallocateField>
                     </FieldGrid>
                 </SectionCard>
 

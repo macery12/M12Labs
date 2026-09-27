@@ -1339,7 +1339,6 @@
   "admin.infrastructure.node.updated": "Узел обновлен.",
   "admin.infrastructure.node.validation.minOne": "Минимум 1.",
   "admin.infrastructure.node.validation.name": "Допустимы только буквы, цифры, пробелы, точки, дефисы и подчёркивания (макс. 100).",
-  "admin.infrastructure.node.validation.overallocate": "Должно быть -1 (без ограничений) или выше.",
   "admin.infrastructure.node.validation.port": "Порт должен быть от 1 до 65535.",
   "admin.infrastructure.node.validation.uploadSize": "Должно быть от 1 до 1024 МиБ.",
   "admin.infrastructure.presets.cpu": "Процессор (%)",
