@@ -3,19 +3,29 @@ import { m, td } from '@/i18n/messages';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
-import { eventLabel, type WebhookEvent } from '@/api/webhooks';
+import type { WebhookEvent } from '@/api/webhooks';
+import { activityEventLabel } from '@/lib/activity';
 
 interface Props {
     category: string;
     events: WebhookEvent[];
+    /** A search is active: show the matches instead of a folded header. */
+    searching: boolean;
     onToggleEvent: (id: number, enabled: boolean) => void;
     onToggleCategory: (events: WebhookEvent[], enabled: boolean) => Promise<void>;
 }
 
+// Seeded events all carry "The event admin:x:y was executed" as a description,
+// which says nothing the key doesn't. Treat that as no description.
+const PLACEHOLDER = /^The event \S+ was executed$/;
+
 // One collapsible category group. The header shows the enabled/total ratio and
 // per-category enable/disable-all controls; the body is a grid of toggle cards.
-export function EventCategorySection({ category, events, onToggleEvent, onToggleCategory }: Props) {
-    const [open, setOpen] = useState(true);
+// Groups start folded: 59 open cards made a 4,500px page where the counts in
+// the headers are what an admin scans for.
+export function EventCategorySection({ category, events, searching, onToggleEvent, onToggleCategory }: Props) {
+    const [folded, setFolded] = useState(true);
+    const open = searching || !folded;
     const [busy, setBusy] = useState(false);
 
     const enabledCount = events.filter(e => e.enabled).length;
@@ -36,7 +46,8 @@ export function EventCategorySection({ category, events, onToggleEvent, onToggle
             <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--color-surface)]/70 px-4 py-3">
                 <button
                     type="button"
-                    onClick={() => setOpen(o => !o)}
+                    onClick={() => setFolded(open)}
+                    aria-expanded={open}
                     className="flex min-w-0 items-center gap-3 text-left"
                 >
                     {open ? (
@@ -88,7 +99,8 @@ export function EventCategorySection({ category, events, onToggleEvent, onToggle
                             type="button"
                             role="switch"
                             aria-checked={event.enabled}
-                            aria-label={eventLabel(event.key)}
+                            aria-label={activityEventLabel(event.key)}
+                            title={event.key}
                             onClick={() => onToggleEvent(event.id, !event.enabled)}
                             className={cn(
                                 'flex items-start justify-between gap-3 rounded-lg border p-3.5 text-left transition-colors',
@@ -99,10 +111,16 @@ export function EventCategorySection({ category, events, onToggleEvent, onToggle
                             )}
                         >
                             <div className="min-w-0">
-                                <h4 className="truncate text-sm font-medium capitalize text-[var(--color-ink)]">
-                                    {eventLabel(event.key)}
+                                <h4 className="text-sm font-medium text-[var(--color-ink)]">
+                                    {activityEventLabel(event.key)}
                                 </h4>
-                                <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">{event.description}</p>
+                                {event.description && !PLACEHOLDER.test(event.description) && (
+                                    <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">{event.description}</p>
+                                )}
+                                {/* The key is what arrives in the payload's "event" field. */}
+                                <p className="mt-1 font-mono text-[11px] text-[var(--color-ink-faint)]">
+                                    {m['admin.webhooks.events.payloadKey']({ key: event.key })}
+                                </p>
                             </div>
                             <div className="flex flex-col items-end gap-1.5">
                                 <span

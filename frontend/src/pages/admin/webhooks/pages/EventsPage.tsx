@@ -1,7 +1,8 @@
 import { m } from '@/i18n/messages';
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, LayoutGrid, CheckCircle2, XCircle, Tag, Send } from 'lucide-react';
+import { Search, LayoutGrid, CheckCircle2, XCircle, Tag, Send, Info } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { FullPageSpinner } from '@/components/ui/Spinner';
@@ -14,6 +15,7 @@ import {
     eventCategory,
     type WebhookEvent,
 } from '@/api/webhooks';
+import { activityEventLabel } from '@/lib/activity';
 import { EventCategorySection } from '../EventCategorySection';
 import { webhookConfig } from '../WebhooksSection';
 
@@ -139,7 +141,10 @@ export default function EventsPage() {
         const q = search.trim().toLowerCase();
         if (!q) return events;
         return events.filter(
-            e => e.key.toLowerCase().includes(q) || e.description.toLowerCase().includes(q),
+            e =>
+                e.key.toLowerCase().includes(q)
+                || e.description.toLowerCase().includes(q)
+                || activityEventLabel(e.key).toLowerCase().includes(q),
         );
     }, [events, search]);
 
@@ -162,6 +167,20 @@ export default function EventsPage() {
 
     return (
         <div className="flex flex-col gap-5">
+            {/* D7: events can be chosen before a URL exists, but the page says
+                that nothing goes out until one is saved. */}
+            {!urlConfigured && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-2)]/60 px-4 py-3 text-sm text-[var(--color-ink)]">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-ink-faint)]" />
+                    <p className="min-w-0 flex-1">
+                        {m['admin.webhooks.events.noUrl']()}{' '}
+                        <Link to="/admin/webhooks" className="font-medium text-[var(--brand)] hover:underline">
+                            {m['admin.webhooks.events.noUrlLink']()}
+                        </Link>
+                    </p>
+                </div>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatTile icon={LayoutGrid} label={m['admin.webhooks.events.stats.total']()} value={total} />
                 <StatTile
@@ -200,7 +219,14 @@ export default function EventsPage() {
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" onClick={test} disabled={testing}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={test}
+                        disabled={testing}
+                        disabledReason={urlConfigured ? null : m['admin.webhooks.config.testNoUrl']()}
+                        reasonAlign="end"
+                    >
                         <Send className="h-4 w-4" />
                         {m['admin.webhooks.config.actions.test']()}
                     </Button>
@@ -224,6 +250,7 @@ export default function EventsPage() {
                             key={category}
                             category={category}
                             events={group}
+                            searching={search.trim() !== ''}
                             onToggleEvent={toggleEvent}
                             onToggleCategory={toggleCategory}
                         />

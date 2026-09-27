@@ -56,13 +56,3 @@ export async function sendTestWebhook(): Promise<void> {
 export function eventCategory(key: string): string {
     return key.split(':')[1] ?? 'other';
 }
-
-// Human label for an event: drop the leading `admin:` namespace, then space out
-// the remaining segments (mirrors V1's card title formatting).
-export function eventLabel(key: string): string {
-    return key
-        .split(':')
-        .slice(1)
-        .join(' · ')
-        .replace(/-/g, ' ');
-}
