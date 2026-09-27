@@ -12,16 +12,18 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { Select } from '@/components/ui/Select';
+import type { TicketPrefill } from '@/components/tickets/link';
 
 const NO_SERVER = 'none';
 
-export function NewTicketModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function NewTicketModal({ open, onClose, prefill }: { open: boolean; onClose: () => void; prefill?: TicketPrefill | null }) {
     const qc = useQueryClient();
     const navigate = useNavigate();
     const { push } = useFlashes();
-    const [title, setTitle] = useState('');
-    const [message, setMessage] = useState('');
-    const [serverId, setServerId] = useState(NO_SERVER);
+    // Read once on mount; the page remounts the modal (key) for a new prefill.
+    const [title, setTitle] = useState(prefill?.title ?? '');
+    const [message, setMessage] = useState(prefill?.message ?? '');
+    const [serverId, setServerId] = useState(prefill?.serverId ? String(prefill.serverId) : NO_SERVER);
 
     const { data: servers = [], isLoading: serversLoading } = useQuery({
         queryKey: ['account', 'servers'],
@@ -36,6 +38,10 @@ export function NewTicketModal({ open, onClose }: { open: boolean; onClose: () =
             .map(server => ({ value: String(server.internalId), label: server.name })),
     ];
 
+    // A prefilled server the user doesn't own isn't in the list, and a Select
+    // holding a value it has no option for renders blank.
+    const selectedServer = serverOptions.some(o => o.value === serverId) ? serverId : NO_SERVER;
+
     const reset = () => {
         setTitle('');
         setMessage('');
@@ -47,7 +53,7 @@ export function NewTicketModal({ open, onClose }: { open: boolean; onClose: () =
             createTicket({
                 title: title.trim(),
                 message: message.trim(),
-                serverId: serverId === NO_SERVER ? null : Number(serverId),
+                serverId: selectedServer === NO_SERVER ? null : Number(selectedServer),
             }),
         onSuccess: ticket => {
             qc.invalidateQueries({ queryKey: ['account', 'tickets'] });
@@ -102,7 +108,7 @@ export function NewTicketModal({ open, onClose }: { open: boolean; onClose: () =
                 >
                     <Select
                         id="ticket-server"
-                        value={serverId}
+                        value={serversLoading ? serverId : selectedServer}
                         onChange={setServerId}
                         options={serverOptions}
                         disabled={serversLoading}

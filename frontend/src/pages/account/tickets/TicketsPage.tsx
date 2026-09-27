@@ -1,6 +1,6 @@
 import { m } from '@/i18n/messages';
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, LifeBuoy, ChevronRight } from 'lucide-react';
 import { getTickets } from '@/api/tickets';
@@ -14,6 +14,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { StatusBadge, PriorityBadge, TICKET_STATUSES, type TicketStatus } from '@/components/tickets/meta';
 import { VerifyEmailNotice } from '@/components/account/VerifyEmailNotice';
 import { NewTicketModal } from './NewTicketModal';
+import { readTicketPrefill, type TicketPrefill } from '@/components/tickets/link';
 import { ErrorState } from '@/components/ui/EmptyState';
 
 type Filter = 'all' | TicketStatus;
@@ -21,7 +22,10 @@ type Filter = 'all' | TicketStatus;
 export default function TicketsPage() {
     const tickets = useFlags(s => s.everest?.tickets);
     const [filter, setFilter] = useState<Filter>('all');
-    const [creating, setCreating] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+    // A newTicketLink() from elsewhere in the panel opens the form filled in.
+    const [prefill, setPrefill] = useState<TicketPrefill | null>(() => readTicketPrefill(searchParams));
+    const [creating, setCreating] = useState(prefill !== null);
 
     const gate = useVerificationGate('tickets');
 
@@ -45,6 +49,13 @@ export default function TicketsPage() {
         () => (filter === 'all' ? data ?? [] : (data ?? []).filter(t => t.status === filter)),
         [data, filter],
     );
+
+    // Drop the parameters once the form can open, so a reload or Back doesn't
+    // reopen it. Until then keep them: someone sent here before verifying
+    // their email gets the filled-in form when they reload afterwards.
+    useEffect(() => {
+        if (searchParams.has('new') && canCreate) setSearchParams({}, { replace: true });
+    }, [searchParams, setSearchParams, canCreate]);
 
     const maxCount = tickets?.maxCount ?? 0;
     const atLimit = maxCount > 0 && (data?.length ?? 0) >= maxCount;
@@ -143,7 +154,15 @@ export default function TicketsPage() {
                 )}
             </div>
 
-            <NewTicketModal open={creating} onClose={() => setCreating(false)} />
+            <NewTicketModal
+                key={prefill ? 'prefill' : 'blank'}
+                open={creating && canCreate && !atLimit}
+                prefill={prefill}
+                onClose={() => {
+                    setCreating(false);
+                    setPrefill(null);
+                }}
+            />
         </div>
     );
 }
