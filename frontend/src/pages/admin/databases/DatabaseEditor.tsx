@@ -177,7 +177,7 @@ export default function DatabaseEditor({
                         >
                             <Input id="db-name" value={form.name} onChange={e => set('name', e.target.value)} maxLength={191} />
                         </Field>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr,8rem]">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_8rem]">
                             <Field
                                 label={m['admin.databases.field.host']()}
                                 hint={m['admin.databases.field.hostHint']()}
