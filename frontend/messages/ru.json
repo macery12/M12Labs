@@ -1644,7 +1644,6 @@
   "admin.marketplace.overview.rateLimit": "{used}/{limit} в минуту",
   "admin.marketplace.overview.trend7d": "Установки (за последние 7 дней)",
   "admin.marketplace.providers.allowlist": "Список разрешенных доменов для Egg",
-  "admin.marketplace.providers.allowlistHint": "Выберите, какие яйца могут использовать данного поставщика. Оставьте все пункты невыбранными, чтобы разрешить использование для всех яиц.",
   "admin.marketplace.providers.enabledGlobal": "Включено для всех пользователей",
   "admin.marketplace.providers.enabledGlobalHint": "Включите или отключите этот провайдер для всей панели.",
   "admin.marketplace.providers.global": "Глобальный",

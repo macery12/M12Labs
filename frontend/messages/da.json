@@ -1677,7 +1677,6 @@
   "admin.marketplace.overview.rateLimit": "{used}/{limit} pr. min.",
   "admin.marketplace.overview.trend7d": "Installationer (de seneste 7 dage)",
   "admin.marketplace.providers.allowlist": "Tilladelsesliste for æg",
-  "admin.marketplace.providers.allowlistHint": "Vælg, hvilke æg der må benytte denne udbyder. Lad alle felter være uafkrydsede for at tillade alle æg.",
   "admin.marketplace.providers.enabledGlobal": "Aktiveret på verdensplan",
   "admin.marketplace.providers.enabledGlobalHint": "Aktivér eller deaktiver denne udbyder på hele panelet.",
   "admin.marketplace.providers.global": "Globalt",
