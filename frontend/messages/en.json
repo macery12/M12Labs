@@ -2751,6 +2751,37 @@
   "admin.queues.failed.trace": "Stack trace",
   "admin.queues.failed.unavailable": "No database failed-job store is configured.",
   "admin.queues.healthy": "Every queue has a worker and nothing needs attention.",
+  "admin.queues.healthyButFailed": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "Every queue has a worker, but 1 job failed and is waiting in the Failed tab.",
+        "countPlural=other": "Every queue has a worker, but {count} jobs failed and are waiting in the Failed tab."
+      }
+    }
+  ],
+  "admin.queues.failedNotice": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "1 job failed and is waiting in the Failed tab.",
+        "countPlural=other": "{count} jobs failed and are waiting in the Failed tab."
+      }
+    }
+  ],
+  "admin.queues.failedNoticeAction": "Review failed jobs",
   "admin.queues.jobs.none": "No job has been measured yet. Figures appear once work has run.",
   "admin.queues.jobs.title": "Busiest jobs",
   "admin.queues.lane.clear": "clear · {runtime}",

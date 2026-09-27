@@ -50,11 +50,33 @@ export default function QueuesPage() {
         <div className="space-y-4">
             <Toolbar data={data} />
 
-            {data.warnings.length > 0 ? (
+            {/* Failed jobs aren't a health warning on the backend, so the page
+                adds its own line: the all-clear used to sit right under
+                "1 failed" and a red badge on the Failed tab. */}
+            {data.warnings.length > 0 || failedCount > 0 ? (
                 <ul className="space-y-2">
                     {data.warnings.map((warning, index) => (
                         <WarningRow key={`${warning.code}-${index}`} warning={warning} />
                     ))}
+                    {failedCount > 0 && (
+                        <li className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-3 py-2.5 text-sm">
+                            <AlertTriangle className="h-4 w-4 shrink-0 text-[var(--color-warning)]" />
+                            <span className="min-w-0 flex-1 text-[var(--color-ink)]">
+                                {data.warnings.length === 0
+                                    ? m['admin.queues.healthyButFailed']({ count: failedCount })
+                                    : m['admin.queues.failedNotice']({ count: failedCount })}
+                            </span>
+                            {tab !== 'failed' && (
+                                <button
+                                    type="button"
+                                    onClick={() => setParams(new URLSearchParams({ tab: 'failed' }))}
+                                    className="text-sm font-medium text-[var(--brand)] hover:underline"
+                                >
+                                    {m['admin.queues.failedNoticeAction']()}
+                                </button>
+                            )}
+                        </li>
+                    )}
                 </ul>
             ) : (
                 <p className="flex items-center gap-2 rounded-md border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2.5 text-sm text-[var(--color-ink)]">
