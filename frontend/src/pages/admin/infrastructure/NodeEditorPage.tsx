@@ -171,7 +171,9 @@ export default function NodeEditorPage() {
                 const created = await createNode(values);
                 await qc.invalidateQueries({ queryKey: ['admin', 'nodes'] });
                 push({ type: 'success', message: m['admin.infrastructure.node.created']() });
-                navigate(`/admin/infrastructure/nodes/${created.id}`);
+                // A new node does nothing until the daemon has its config, so
+                // land on the tab that has it.
+                navigate(`/admin/infrastructure/nodes/${created.id}?tab=configuration`);
             }
         } catch (err) {
             // Attach per-field 422s inline; only fall back to a toast when the
@@ -219,7 +221,12 @@ export default function NodeEditorPage() {
                 <h1 className="mt-1 truncate text-xl font-semibold text-[var(--color-ink)]">
                     {editing ? m['admin.infrastructure.node.editTitle']() : m['admin.infrastructure.node.createTitle']()}
                 </h1>
-                {!editing && <p className="mt-0.5 text-sm text-[var(--color-ink-faint)]">{m['admin.infrastructure.node.createSubtitle']()}</p>}
+                {!editing && (
+                    <>
+                        <p className="mt-0.5 text-sm text-[var(--color-ink-faint)]">{m['admin.infrastructure.node.createSubtitle']()}</p>
+                        <p className="mt-0.5 text-sm text-[var(--color-ink-faint)]">{m['admin.infrastructure.node.createNext']()}</p>
+                    </>
+                )}
             </div>
 
             <div className="flex flex-col gap-5">

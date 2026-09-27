@@ -1737,6 +1737,7 @@
   "admin.infrastructure.new.label": "New",
   "admin.infrastructure.new.node": "New node",
   "admin.infrastructure.new.server": "New server",
+  "admin.infrastructure.node.createNext": "After saving you'll get the configuration to copy onto the machine, so the daemon can connect.",
   "admin.infrastructure.node.createSubtitle": "Register a daemon host the panel can deploy servers onto.",
   "admin.infrastructure.node.createTitle": "New node",
   "admin.infrastructure.node.created": "Node created.",

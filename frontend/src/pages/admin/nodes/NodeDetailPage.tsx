@@ -1,6 +1,6 @@
 import { m, td } from '@/i18n/messages';
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, Network, Layers, FileCog, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -29,7 +29,9 @@ const TABS: { id: TabId; labelKey: string; icon: LucideIcon; supercharged?: bool
 
 export default function NodeDetailPage() {
     const { id } = useParams();
-    const [tab, setTab] = useState<TabId>('overview');
+    // ?tab= picks the opening tab; a newly created node lands on configuration.
+    const [params] = useSearchParams();
+    const [tab, setTab] = useState<TabId>(() => TABS.find(t => t.id === params.get('tab'))?.id ?? 'overview');
     const held = useAdminHeld();
     const visibleTabs = TABS.filter(tabDef => tabDef.id !== 'allocations' || can(held, 'allocations.read'));
 
