@@ -433,7 +433,7 @@ export default function EggEditorPage() {
                             {isCreate ? m['admin.nests.egg.newTitle']() : baseline.name}
                         </h1>
                         {egg ? (
-                            <EggMeta egg={egg} />
+                            <EggMeta egg={egg} onVariables={() => setSection('variables')} />
                         ) : (
                             <p className="mt-0.5 text-sm text-[var(--color-ink-faint)]">{m['admin.nests.egg.createSubtitle']()}</p>
                         )}
@@ -793,7 +793,10 @@ export default function EggEditorPage() {
 
 // ─── Header meta line ─────────────────────────────────────────────────────────
 
-function EggMeta({ egg }: { egg: AdminEggDetail }) {
+// The variable count opens its section; it used to be a number to go and find.
+// Servers have no tab (and the servers list can't filter by egg yet), so that
+// count stays plain text.
+function EggMeta({ egg, onVariables }: { egg: AdminEggDetail; onVariables: () => void }) {
     const [copied, setCopied] = useState(false);
     const copy = () =>
         void navigator.clipboard?.writeText(egg.uuid).then(() => {
@@ -810,6 +813,14 @@ function EggMeta({ egg }: { egg: AdminEggDetail }) {
             <span className="truncate">{egg.author}</span>
             <span aria-hidden>·</span>
             <span>{m['admin.nests.egg.meta.servers']({ count: egg.serverCount })}</span>
+            <span aria-hidden>·</span>
+            <button
+                type="button"
+                onClick={onVariables}
+                className="rounded px-1 underline-offset-2 transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)] hover:underline"
+            >
+                {m['admin.nests.egg.meta.variables']({ count: egg.variables.length })}
+            </button>
             <span aria-hidden>·</span>
             <button
                 type="button"

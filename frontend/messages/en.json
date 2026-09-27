@@ -2430,6 +2430,21 @@
       }
     }
   ],
+  "admin.nests.egg.meta.variables": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "1 variable",
+        "countPlural=other": "{count} variables"
+      }
+    }
+  ],
   "admin.nests.eggCount": [
     {
       "declarations": [
