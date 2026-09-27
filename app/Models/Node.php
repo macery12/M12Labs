@@ -299,10 +299,12 @@ class Node extends Model
     {
         $this->loadServerSums();
 
-        $memoryLimit = $this->memory * (1.0 + ($this->memory_overallocate / 100.0));
-        $diskLimit = $this->disk * (1.0 + ($this->disk_overallocate / 100.0));
+        // -1 over-allocation is unlimited, matching FindViableNodesService.
+        $fits = fn (int $used, int $size, int $overallocate) => $overallocate < 0
+            || $used <= $size * (1.0 + ($overallocate / 100.0));
 
-        return ($this->sum_memory + $memory) <= $memoryLimit && ($this->sum_disk + $disk) <= $diskLimit;
+        return $fits($this->sum_memory + $memory, $this->memory, $this->memory_overallocate)
+            && $fits($this->sum_disk + $disk, $this->disk, $this->disk_overallocate);
     }
 
     /**

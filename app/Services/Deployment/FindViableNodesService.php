@@ -64,9 +64,13 @@ class FindViableNodesService
             ->leftJoin('servers', 'servers.node_id', '=', 'nodes.id')
             ->where('nodes.public', 1);
 
+        // A negative over-allocation (-1) means "unlimited", as the node form
+        // and `p:node:make` describe it. The bare formula read it as 99% of
+        // capacity, so an "unlimited" node was the only kind that could never
+        // be filled to its own size.
         $results = $query->groupBy('nodes.id')
-            ->havingRaw('(COALESCE(SUM(servers.memory), 0) + ?) <= (nodes.memory * (1.0 + (nodes.memory_overallocate / 100.0)))', [$this->memory])
-            ->havingRaw('(COALESCE(SUM(servers.disk), 0) + ?) <= (nodes.disk * (1.0 + (nodes.disk_overallocate / 100.0)))', [$this->disk]);
+            ->havingRaw('(nodes.memory_overallocate < 0 OR (COALESCE(SUM(servers.memory), 0) + ?) <= (nodes.memory * (1.0 + (nodes.memory_overallocate / 100.0))))', [$this->memory])
+            ->havingRaw('(nodes.disk_overallocate < 0 OR (COALESCE(SUM(servers.disk), 0) + ?) <= (nodes.disk * (1.0 + (nodes.disk_overallocate / 100.0))))', [$this->disk]);
 
         if (!is_null($page)) {
             $results = $results->paginate($perPage ?? 50, ['*'], 'page', $page);
