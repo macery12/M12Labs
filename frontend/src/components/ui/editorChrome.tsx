@@ -16,13 +16,14 @@ export interface SectionCardProps {
     title: string;
     desc: string;
     right?: React.ReactNode;
-    children: React.ReactNode;
+    /** Omit for a header-only card, e.g. a section that is collapsed. */
+    children?: React.ReactNode;
 }
 
 export function SectionCard({ id, icon: Icon, title, desc, right, children }: SectionCardProps) {
     return (
         <section id={id} className="scroll-mt-6 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/70">
-            <header className="flex flex-col items-stretch gap-3 border-b border-[var(--color-border)] px-5 py-3.5 sm:flex-row sm:items-center">
+            <header className={cn('flex flex-col items-stretch gap-3 px-5 py-3.5 sm:flex-row sm:items-center', children && 'border-b border-[var(--color-border)]')}>
                 <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-ink-muted)]">
                         <Icon className="h-4 w-4" />
@@ -34,7 +35,7 @@ export function SectionCard({ id, icon: Icon, title, desc, right, children }: Se
                 </div>
                 {right && <div className="flex shrink-0 items-center sm:ml-auto">{right}</div>}
             </header>
-            <div className="flex flex-col gap-5 p-5">{children}</div>
+            {children && <div className="flex flex-col gap-5 p-5">{children}</div>}
         </section>
     );
 }
