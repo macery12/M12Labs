@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Egg, ChevronRight, Copy, Upload, Trash2, Save } from 'lucide-react';
 import { m } from '@/i18n/messages';
@@ -40,6 +40,11 @@ export default function NestsWorkspace() {
 
     const selectedId = nestId ? Number(nestId) : null;
     const selected = nests?.find(n => n.id === selectedId) ?? null;
+
+    // Open the first nest rather than half a page of "Select a nest". Also where
+    // deleting a nest lands.
+    const first = nests?.[0];
+    if (!nestId && first) return <Navigate to={`/admin/nests/${first.id}`} replace />;
 
     return (
         <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
@@ -137,6 +142,8 @@ function NestDetailPane({ nest }: { nest: AdminNest }) {
         queryFn: () => listNestEggs(nest.id),
     });
 
+    const serversUsing = (eggs ?? []).reduce((sum, egg) => sum + egg.serverCount, 0);
+
     const filteredEggs = useMemo(() => {
         const list = eggs ?? [];
         const q = eggSearch.trim().toLowerCase();
@@ -189,10 +196,7 @@ function NestDetailPane({ nest }: { nest: AdminNest }) {
                         <Field label={m['common.labels.description']()} htmlFor="edit-nest-desc">
                             <Input id="edit-nest-desc" value={description} onChange={e => setDescription(e.currentTarget.value)} />
                         </Field>
-                        <div className="flex items-center justify-between">
-                            <Button variant="danger" size="sm" onClick={() => setShowDelete(true)}>
-                                <Trash2 className="h-4 w-4" /> {m['admin.nests.nest.delete']()}
-                            </Button>
+                        <div className="flex items-center justify-end">
                             <Button size="sm" onClick={save} disabled={!dirty || saving}>
                                 {saving ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
                                 {m['common.actions.saveChanges']()}
@@ -269,8 +273,14 @@ function NestDetailPane({ nest }: { nest: AdminNest }) {
                                         <td className="px-5 py-3 font-medium text-[var(--brand)]">{egg.name}</td>
                                         <td className="px-5 py-3 text-[var(--color-ink-muted)]">{egg.variableCount}</td>
                                         <td className="px-5 py-3 text-[var(--color-ink-muted)]">{egg.serverCount}</td>
+                                        {/* Two lines at most: a full egg description made single
+                                            rows several hundred pixels tall. */}
                                         <td className="px-5 py-3 text-[var(--color-ink-muted)]">
-                                            {egg.description || (
+                                            {egg.description ? (
+                                                <span className="line-clamp-2" title={egg.description}>
+                                                    {egg.description}
+                                                </span>
+                                            ) : (
                                                 <span className="text-[var(--color-ink-faint)]">{m['admin.nests.eggs.noDescription']()}</span>
                                             )}
                                         </td>
@@ -281,6 +291,21 @@ function NestDetailPane({ nest }: { nest: AdminNest }) {
                     </div>
                 )}
             </section>
+
+            {/* Delete sat next to Save in the edit card, one slip away. It lives
+                on its own now, and says up front when servers would block it. */}
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-danger)]/30 px-5 py-3.5">
+                <p className="min-w-0 flex-1 text-xs text-[var(--color-ink-muted)]">{m['admin.nests.nest.deleteHint']()}</p>
+                <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => setShowDelete(true)}
+                    disabledReason={serversUsing > 0 ? m['admin.nests.nest.deleteBlocked']({ count: serversUsing }) : null}
+                    reasonAlign="end"
+                >
+                    <Trash2 className="h-4 w-4" /> {m['admin.nests.nest.delete']()}
+                </Button>
+            </div>
 
             {showImport && (
                 <ImportEggModal

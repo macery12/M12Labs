@@ -2438,8 +2438,24 @@
   "admin.nests.nest.createValidation": "A nest name and author email are required.",
   "admin.nests.nest.created": "Nest created.",
   "admin.nests.nest.delete": "Delete nest",
+  "admin.nests.nest.deleteBlocked": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "1 server still uses an egg in this nest. Move or delete it first.",
+        "countPlural=other": "{count} servers still use eggs in this nest. Move or delete them first."
+      }
+    }
+  ],
   "admin.nests.nest.deleteBody": "Are you sure you want to delete this nest? Deleting a nest also deletes every egg assigned to it.",
   "admin.nests.nest.deleteConfirm": "Yes, delete nest",
+  "admin.nests.nest.deleteHint": "Deleting a nest also deletes every egg in it.",
   "admin.nests.nest.deleteTitle": "Delete nest?",
   "admin.nests.nest.deleted": "Nest deleted.",
   "admin.nests.nest.detailsTitle": "Nest details",
