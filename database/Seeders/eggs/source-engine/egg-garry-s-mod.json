@@ -1,10 +1,10 @@
 {
     "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
     "meta": {
-        "version": "PTDL_v1",
+        "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2022-01-18T07:04:20-05:00",
+    "exported_at": "2025-10-20T14:48:44+02:00",
     "name": "Garrys Mod",
     "author": "support@pterodactyl.io",
     "description": "Garrys Mod, is a sandbox physics game created by Garry Newman, and developed by his company, Facepunch Studios.",
@@ -12,11 +12,11 @@
         "gsl_token",
         "steam_disk_space"
     ],
-    "images": [
-        "ghcr.io\/pterodactyl\/games:source"
-    ],
+    "docker_images": {
+        "ghcr.io\/ptero-eggs\/games:source": "ghcr.io\/ptero-eggs\/games:source"
+    },
     "file_denylist": [],
-    "startup": ".\/srcds_run -game garrysmod -console -port {{SERVER_PORT}} +ip 0.0.0.0 +host_workshop_collection {{WORKSHOP_ID}} +map {{SRCDS_MAP}} +gamemode {{GAMEMODE}} -strictportbind -norestart +sv_setsteamaccount {{STEAM_ACC}} +maxplayers {{MAX_PLAYERS}}  -tickrate {{TICKRATE}}  $( [ \"$LUA_REFRESH\" == \"1\" ] || printf %s '-disableluarefresh' )",
+    "startup": ".\/srcds_run -game garrysmod -console -port {{SERVER_PORT}} +ip 0.0.0.0 +host_workshop_collection {{WORKSHOP_ID}} +map {{SRCDS_MAP}} +gamemode {{GAMEMODE}} -strictportbind -norestart +sv_setsteamaccount {{STEAM_TOKEN}} +maxplayers {{MAX_PLAYERS}}  -tickrate {{TICKRATE}}  $( [ \"$LUA_REFRESH\" == \"1\" ] || printf %s '-disableluarefresh' )",
     "config": {
         "files": "{}",
         "startup": "{\r\n    \"done\": \"gameserver Steam ID\"\r\n}",
@@ -38,16 +38,18 @@
             "default_value": "gm_flatgrass",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "required|string|alpha_dash"
+            "rules": "required|string|alpha_dash",
+            "field_type": "text"
         },
         {
             "name": "Steam Account Token",
             "description": "The Steam Account Token required for the server to be displayed publicly.",
-            "env_variable": "STEAM_ACC",
+            "env_variable": "STEAM_TOKEN",
             "default_value": "",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "nullable|string|alpha_num|size:32"
+            "rules": "nullable|string|alpha_num|size:32",
+            "field_type": "text"
         },
         {
             "name": "Source AppID",
@@ -56,7 +58,8 @@
             "default_value": "4020",
             "user_viewable": false,
             "user_editable": false,
-            "rules": "required|string|max:20"
+            "rules": "required|integer|in:4020",
+            "field_type": "text"
         },
         {
             "name": "Workshop ID",
@@ -65,7 +68,8 @@
             "default_value": "",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "nullable|integer"
+            "rules": "nullable|integer",
+            "field_type": "text"
         },
         {
             "name": "Gamemode",
@@ -74,7 +78,8 @@
             "default_value": "sandbox",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "required|string"
+            "rules": "required|string",
+            "field_type": "text"
         },
         {
             "name": "Max Players",
@@ -83,7 +88,8 @@
             "default_value": "32",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "required|integer|max:128"
+            "rules": "required|integer|max:128",
+            "field_type": "text"
         },
         {
             "name": "Tickrate",
@@ -92,7 +98,8 @@
             "default_value": "22",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "required|integer|max:100"
+            "rules": "required|integer|max:100",
+            "field_type": "text"
         },
         {
             "name": "Lua Refresh",
@@ -101,7 +108,8 @@
             "default_value": "0",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "required|boolean"
+            "rules": "required|boolean",
+            "field_type": "text"
         }
     ]
 }

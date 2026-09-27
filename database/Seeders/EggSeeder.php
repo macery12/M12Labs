@@ -7,11 +7,59 @@ use Everest\Models\Nest;
 use Illuminate\Support\Str;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Everest\Services\Eggs\Sharing\EggImporterService;
 use Everest\Services\Eggs\Sharing\EggUpdateImporterService;
 
 class EggSeeder extends Seeder
 {
+    /**
+     * Previous identities for bundled eggs whose canonical catalog entry was renamed
+     * or transferred to a different maintainer. Include the current name so that an
+     * egg upgraded from a legacy identity continues to match on later seed runs: the
+     * update importer intentionally preserves the original author.
+     *
+     * @var array<string, array{author: string, names: list<string>}>
+     */
+    private const LEGACY_IDENTITIES = [
+        'minecraft/egg-forge-enhanced.json' => [
+            'author' => 'support@pterodactyl.io',
+            'names' => ['Forge Minecraft', 'Forge Enhanced'],
+        ],
+        'minecraft/egg-sponge-vanilla.json' => [
+            'author' => 'support@pterodactyl.io',
+            'names' => ['Sponge (SpongeVanilla)', 'SpongeVanilla'],
+        ],
+        'source-engine/egg-counter--strike2.json' => [
+            'author' => 'support@pterodactyl.io',
+            'names' => ['Counter-Strike: Global Offensive', 'Counter-Strike 2'],
+        ],
+        'source-engine/egg-insurgency--sandstorm.json' => [
+            'author' => 'support@pterodactyl.io',
+            'names' => ['Insurgency', 'Insurgency: Sandstorm'],
+        ],
+        'source-engine/egg-team-fortress-2.json' => [
+            'author' => 'support@pterodactyl.io',
+            'names' => ['Team Fortress 2'],
+        ],
+    ];
+
+    /**
+     * Previous nest locations for bundled eggs that have been reorganized.
+     *
+     * @var array<string, list<string>>
+     */
+    private const LEGACY_NESTS = [
+        'steam-games/egg-ark--survival-evolved.json' => ['ARK', 'Source Engine'],
+        'steam-games/egg-ark-survival-ascended.json' => ['ARK'],
+        'steam-games/egg-palworld.json' => ['Palworld'],
+        'steam-games/egg-project-zomboid.json' => ['Project Zomboid'],
+        'steam-games/egg-satisfactory.json' => ['Satisfactory'],
+        'steam-games/egg-valheim.json' => ['Valheim'],
+        'steam-games/egg-factorio.json' => ['Factorio'],
+    ];
+
     /**
      * @var list<array{Egg, string, string}>
      */
@@ -22,6 +70,7 @@ class EggSeeder extends Seeder
      */
     public static array $import = [
         'Minecraft',
+        'Steam Games',
         'Source Engine',
         'Voice Servers',
         'Rust',
@@ -143,7 +192,8 @@ class EggSeeder extends Seeder
      */
     protected function parseEggFiles(Nest $nest): array
     {
-        $files = new \DirectoryIterator(database_path('Seeders/eggs/' . Str::kebab($nest->name)));
+        $directory = Str::kebab($nest->name);
+        $files = new \DirectoryIterator(database_path('Seeders/eggs/' . $directory));
         $created = [];
         $existing = [];
 
@@ -161,6 +211,35 @@ class EggSeeder extends Seeder
                 ->where('name', $decoded['name'])
                 ->first();
 
+            $relativePath = $directory . '/' . $file->getFilename();
+            $legacyIdentity = self::LEGACY_IDENTITIES[$relativePath] ?? null;
+
+            if (!$egg instanceof Egg && $legacyIdentity !== null) {
+                $egg = $nest->eggs()
+                    ->where('author', $legacyIdentity['author'])
+                    ->whereIn('name', $legacyIdentity['names'])
+                    ->first();
+            }
+
+            $legacyNests = self::LEGACY_NESTS[$relativePath] ?? null;
+
+            if (!$egg instanceof Egg && $legacyNests !== null) {
+                $legacyNestIds = Nest::query()
+                    ->where('author', 'support@pterodactyl.io')
+                    ->whereIn('name', $legacyNests)
+                    ->pluck('id');
+
+                $egg = Egg::query()
+                    ->whereIn('nest_id', $legacyNestIds)
+                    ->where('author', $decoded['author'])
+                    ->where('name', $decoded['name'])
+                    ->first();
+
+                if ($egg instanceof Egg) {
+                    $this->moveEggToNest($egg, $nest);
+                }
+            }
+
             if ($egg instanceof Egg) {
                 $existing[] = [$egg, $path, $decoded['name']];
             } else {
@@ -171,5 +250,20 @@ class EggSeeder extends Seeder
         }
 
         return [$created, $existing];
+    }
+
+    private function moveEggToNest(Egg $egg, Nest $nest): void
+    {
+        DB::transaction(function () use ($egg, $nest): void {
+            $egg->forceFill(['nest_id' => $nest->id])->save();
+
+            foreach (['servers', 'server_presets', 'categories'] as $table) {
+                if (Schema::hasTable($table)) {
+                    DB::table($table)
+                        ->where('egg_id', $egg->id)
+                        ->update(['nest_id' => $nest->id]);
+                }
+            }
+        });
     }
 }

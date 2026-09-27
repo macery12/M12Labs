@@ -138,6 +138,9 @@ class SafeReseedingTest extends TestCase
         Schema::dropIfExists('email_notification_settings');
         Schema::dropIfExists('webhook_events');
         Schema::dropIfExists('theme_presets');
+        Schema::dropIfExists('categories');
+        Schema::dropIfExists('server_presets');
+        Schema::dropIfExists('servers');
         Schema::dropIfExists('egg_variables');
         Schema::dropIfExists('eggs');
         Schema::dropIfExists('nests');
@@ -201,6 +204,188 @@ class SafeReseedingTest extends TestCase
             'My custom definition',
             Egg::query()->where('name', 'Bungeecord')->value('description'),
         );
+    }
+
+    public function testEggReseedingRecognizesLegacyIdentitiesAfterCatalogRenames(): void
+    {
+        $this->seedEggs();
+        $total = Egg::query()->count();
+        $identities = [
+            'Forge Enhanced' => 'Forge Minecraft',
+            'SpongeVanilla' => 'Sponge (SpongeVanilla)',
+            'Counter-Strike 2' => 'Counter-Strike: Global Offensive',
+            'Insurgency: Sandstorm' => 'Insurgency',
+            'Team Fortress 2' => 'Team Fortress 2',
+        ];
+
+        $ids = [];
+        foreach ($identities as $currentName => $legacyName) {
+            $egg = Egg::query()->where('name', $currentName)->firstOrFail();
+            $ids[$currentName] = $egg->id;
+            $egg->forceFill([
+                'name' => $legacyName,
+                'author' => 'support@pterodactyl.io',
+            ])->save();
+        }
+
+        $status = Artisan::call('db:seed', [
+            '--class' => EggSeeder::class,
+            '--force' => true,
+            '--no-interaction' => true,
+        ]);
+
+        $this->assertSame(0, $status);
+        $this->assertStringContainsString(
+            sprintf('Added 0 missing eggs; found %d existing eggs.', $total),
+            Artisan::output(),
+        );
+        $this->assertSame($total, Egg::query()->count());
+
+        $this->artisan('db:seed', ['--class' => EggSeeder::class, '--force' => true])
+            ->expectsConfirmation(
+                sprintf(
+                    'Would you like to overwrite the %d existing eggs with the shipped definitions? This will replace any custom changes.',
+                    $total,
+                ),
+                'yes',
+            )
+            ->expectsOutputToContain(sprintf('Overwrote %d existing eggs.', $total))
+            ->assertSuccessful();
+
+        foreach ($ids as $currentName => $id) {
+            $egg = Egg::query()->findOrFail($id);
+            $this->assertSame($currentName, $egg->name);
+            $this->assertSame('support@pterodactyl.io', $egg->author);
+        }
+
+        $status = Artisan::call('db:seed', [
+            '--class' => EggSeeder::class,
+            '--force' => true,
+            '--no-interaction' => true,
+        ]);
+
+        $this->assertSame(0, $status);
+        $this->assertSame($total, Egg::query()->count());
+    }
+
+    public function testRequestedEggsAreImportedIntoOrganizedNests(): void
+    {
+        $this->seedEggs();
+
+        $expected = [
+            'Minecraft' => ['Fabric', 'NeoForge', 'Vanilla Bedrock'],
+            'Steam Games' => [
+                'Ark: Survival Evolved',
+                'ARK: Survival Ascended',
+                'Palworld',
+                'Project Zomboid',
+                'Satisfactory',
+                'Valheim',
+                'Factorio',
+            ],
+        ];
+
+        foreach ($expected as $nestName => $eggNames) {
+            foreach ($eggNames as $eggName) {
+                $this->assertTrue(
+                    Egg::query()
+                        ->where('name', $eggName)
+                        ->whereHas('nest', fn ($query) => $query->where('name', $nestName))
+                        ->exists(),
+                    sprintf('Expected %s to be imported into the %s nest.', $eggName, $nestName),
+                );
+            }
+        }
+    }
+
+    public function testSteamGamesAreMovedFromTheirLegacyNests(): void
+    {
+        $this->seedEggs();
+        $total = Egg::query()->count();
+        $now = now();
+        $legacyNests = [];
+
+        foreach (['ARK', 'Palworld'] as $name) {
+            $legacyNests[$name] = DB::table('nests')->insertGetId([
+                'uuid' => Str::uuid()->toString(),
+                'author' => 'support@pterodactyl.io',
+                'name' => $name,
+                'description' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $sourceEngineNestId = DB::table('nests')->where('name', 'Source Engine')->value('id');
+        $steamGamesNestId = DB::table('nests')->where('name', 'Steam Games')->value('id');
+
+        $legacyLocations = [
+            'Ark: Survival Evolved' => $sourceEngineNestId,
+            'ARK: Survival Ascended' => $legacyNests['ARK'],
+            'Palworld' => $legacyNests['Palworld'],
+        ];
+        $eggIds = [];
+
+        foreach ($legacyLocations as $eggName => $legacyNestId) {
+            $egg = Egg::query()->where('name', $eggName)->firstOrFail();
+            $eggIds[$eggName] = $egg->id;
+            $egg->forceFill(['nest_id' => $legacyNestId])->save();
+        }
+
+        foreach (['servers', 'server_presets', 'categories'] as $table) {
+            Schema::create($table, function (Blueprint $table): void {
+                $table->increments('id');
+                $table->unsignedInteger('egg_id');
+                $table->unsignedInteger('nest_id');
+            });
+
+            DB::table($table)->insert([
+                'egg_id' => $eggIds['Palworld'],
+                'nest_id' => $legacyNests['Palworld'],
+            ]);
+        }
+
+        $status = Artisan::call('db:seed', [
+            '--class' => EggSeeder::class,
+            '--force' => true,
+            '--no-interaction' => true,
+        ]);
+
+        $this->assertSame(0, $status);
+        $this->assertSame($total, Egg::query()->count());
+
+        foreach ($eggIds as $eggId) {
+            $this->assertSame($steamGamesNestId, Egg::query()->findOrFail($eggId)->nest_id);
+        }
+
+        foreach (['servers', 'server_presets', 'categories'] as $table) {
+            $this->assertSame($steamGamesNestId, DB::table($table)->value('nest_id'));
+        }
+
+        $this->assertSame(
+            ['ARK', 'Palworld'],
+            DB::table('nests')
+                ->whereIn('name', ['ARK', 'Palworld'])
+                ->orderBy('id')
+                ->pluck('name')
+                ->all(),
+            'Routine egg seeding must not delete legacy nests automatically.',
+        );
+    }
+
+    public function testNestReseedingCreatesTheSteamGamesNest(): void
+    {
+        DB::table('nests')->where('name', 'Steam Games')->delete();
+
+        $this->artisan('db:seed', [
+            '--class' => NestSeeder::class,
+            '--force' => true,
+            '--no-interaction' => true,
+        ])
+            ->expectsOutputToContain('Added 1 missing nest; found 4 existing nests.')
+            ->assertSuccessful();
+
+        $this->assertTrue(DB::table('nests')->where('name', 'Steam Games')->exists());
     }
 
     public function testThemeReseedingAddsMissingPresetsAndPreservesExistingPresetsNonInteractively(): void
@@ -281,6 +466,7 @@ class SafeReseedingTest extends TestCase
             '--no-interaction' => true,
         ])->assertSuccessful();
 
+        $eggCount = Egg::query()->count();
         Egg::query()->where('name', 'Rust')->delete();
         DB::table('theme_presets')->where('name', 'Iris Purple')->delete();
 
@@ -300,7 +486,7 @@ class SafeReseedingTest extends TestCase
 
         $themeSummaryPosition = strpos($output, 'Added 1 missing theme preset;');
         $overwriteReviewPosition = strpos($output, 'Overwrite Review');
-        $eggDecisionPosition = strpos($output, 'Preserved 14 existing eggs.');
+        $eggDecisionPosition = strpos($output, sprintf('Preserved %d existing eggs.', $eggCount - 1));
 
         $this->assertIsInt($themeSummaryPosition);
         $this->assertIsInt($overwriteReviewPosition);
