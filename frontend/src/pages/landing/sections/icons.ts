@@ -46,6 +46,11 @@ export const LANDING_ICONS: Record<string, LucideIcon> = {
 
 export const LANDING_ICON_NAMES = Object.keys(LANDING_ICONS);
 
+/** True for a name on the allowlist, as opposed to a URL or free text. */
+export function isIconName(name: string | null | undefined): name is string {
+    return !!name && name in LANDING_ICONS;
+}
+
 export function resolveIcon(name: string | undefined): LucideIcon {
     return (name && LANDING_ICONS[name]) || Gauge;
 }

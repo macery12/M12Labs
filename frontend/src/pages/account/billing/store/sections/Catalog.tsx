@@ -1,5 +1,5 @@
 import { m } from '@/i18n/messages';
-import { useEffect, useState } from 'react';
+import { createElement, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, AlertTriangle, ArrowRight, LayoutGrid, Table2 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { useBilling } from '@/state/billing';
 import { getStoreCategories, getCategoryProducts, getStoreProduct, getProductBillingCycles, type StoreProduct } from '@/api/accountBilling';
 import type { StoreSectionData } from '@/lib/globals';
+import { isIconName, resolveIcon } from '@/pages/landing/sections/icons';
 import { FeaturedPlan } from '../FeaturedPlan';
 import { SavingsCallout } from '../SavingsCallout';
 import { ComparisonTable } from '../ComparisonTable';
@@ -101,11 +102,7 @@ export default function Catalog({ data }: { data: StoreSectionData }) {
                                             : 'border-[var(--color-border-strong)] text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]',
                                     )}
                                 >
-                                    {cat.icon ? (
-                                        <img src={cat.icon} alt="" className="h-4 w-4 rounded" />
-                                    ) : (
-                                        <ShoppingBag className="h-4 w-4 text-[var(--color-ink-faint)]" />
-                                    )}
+                                    <CategoryIcon icon={cat.icon} />
                                     {cat.name}
                                 </button>
                             ))}
@@ -252,4 +249,17 @@ function EmptyState({ message }: { message: string }) {
             <p className="max-w-sm text-sm text-[var(--color-ink-muted)]">{message}</p>
         </div>
     );
+}
+
+// A category icon is an allowlisted icon name (the category editor's picker)
+// or an image URL. Anything else, like the old "server" placeholder, gets the
+// default bag rather than a broken image.
+function CategoryIcon({ icon }: { icon: string | null }) {
+    if (isIconName(icon)) {
+        return createElement(resolveIcon(icon), { className: 'h-4 w-4 text-[var(--color-ink-muted)]' });
+    }
+    if (icon && /^(https?:\/\/|\/)/.test(icon)) {
+        return <img src={icon} alt="" className="h-4 w-4 rounded" />;
+    }
+    return <ShoppingBag className="h-4 w-4 text-[var(--color-ink-faint)]" />;
 }

@@ -26,6 +26,8 @@ import { getNests, getNestEggs } from '@/api/nests';
 import { getProducts, deleteProduct, type BillingProduct } from '@/api/billingProducts';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { IconPicker } from '@/components/ui/IconPicker';
+import { isIconName } from '@/pages/landing/sections/icons';
 import { Select } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -235,8 +237,17 @@ function CategoryForm({ category, initial }: { category: BillingCategory | null;
                     <FieldRow label={m['admin.billing.categories.name']()}>
                         <Input value={form.name} onChange={e => set('name', e.target.value)} />
                     </FieldRow>
+                    {/* The store draws an allowlisted name as an icon and anything
+                        else as an image URL. The old free-text field suggested
+                        "server", which the store then tried to load as an image. */}
                     <FieldRow label={m['admin.billing.categories.icon']()} desc={m['admin.billing.categories.iconDesc']()}>
-                        <Input value={form.icon} onChange={e => set('icon', e.target.value)} placeholder="server" />
+                        <IconPicker value={isIconName(form.icon) ? form.icon : ''} onChange={v => set('icon', v)} allowNone />
+                        <Input
+                            value={isIconName(form.icon) ? '' : form.icon}
+                            onChange={e => set('icon', e.target.value)}
+                            placeholder="https://…"
+                            aria-label={m['admin.billing.categories.iconUrl']()}
+                        />
                     </FieldRow>
                     <FieldRow label={m['admin.billing.categories.description']()}>
                         <Input value={form.description} onChange={e => set('description', e.target.value)} />
