@@ -15,6 +15,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 // Focus lifts the field's own border a step instead of painting a
                 // brand halo around it — see --color-focus in tailwind.css.
                 'transition-colors focus:outline-none focus:ring-1 focus:ring-[var(--color-focus-ring)]',
+                // Dim like Select/Combobox, or a disabled field reads as editable.
+                'disabled:cursor-not-allowed disabled:opacity-50',
                 invalid
                     ? 'border-[var(--color-danger)]'
                     : 'border-[var(--color-border-strong)] focus:border-[var(--color-focus)]',
