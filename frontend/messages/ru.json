@@ -588,7 +588,6 @@
   "admin.billing.categories.deleteTitle": "Удалить категорию",
   "admin.billing.categories.deleted": "Категория удалена.",
   "admin.billing.categories.description": "Описание",
-  "admin.billing.categories.edit": "Изменить категорию",
   "admin.billing.categories.editTitle": "Изменить категорию",
   "admin.billing.categories.egg": "Первичное яйцо",
   "admin.billing.categories.eggId": "Яйцо № {id}",

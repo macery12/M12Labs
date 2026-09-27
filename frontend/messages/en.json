@@ -815,7 +815,6 @@
   "admin.billing.categories.deleteTitle": "Delete category",
   "admin.billing.categories.deleted": "Category deleted.",
   "admin.billing.categories.description": "Description",
-  "admin.billing.categories.edit": "Edit category",
   "admin.billing.categories.editTitle": "Edit category",
   "admin.billing.categories.egg": "Primary egg",
   "admin.billing.categories.eggId": "Egg #{id}",
@@ -1273,6 +1272,7 @@
   "admin.billing.products.clone": "Duplicate",
   "admin.billing.products.cloned": "Plan duplicated.",
   "admin.billing.products.copyOf": "{name} (copy)",
+  "admin.billing.products.addFirst": "Add the first product",
   "admin.billing.products.count": [
     {
       "declarations": [
@@ -1344,8 +1344,23 @@
   "admin.billing.products.section.resourcesDesc": "Hardware the provisioned server gets. Use 0 for unlimited.",
   "admin.billing.products.sectionDesc": "Plans customers can buy in this category.",
   "admin.billing.products.shown": "On sale",
-  "admin.billing.products.subtitle": "Manage product categories and the plans inside them. Click a category to view its products.",
+  "admin.billing.products.subtitle": "Products are grouped into categories. Open a category to see, add and edit its products.",
   "admin.billing.products.title": "Products",
+  "admin.billing.products.viewProducts": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "View {count} product",
+        "countPlural=other": "View {count} products"
+      }
+    }
+  ],
   "admin.billing.products.unlimited": "Unlimited",
   "admin.billing.products.untitled": "Untitled plan",
   "admin.billing.products.updated": "Product updated.",

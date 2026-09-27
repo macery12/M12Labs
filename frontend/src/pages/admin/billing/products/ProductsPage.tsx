@@ -2,7 +2,7 @@ import { m } from '@/i18n/messages';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, Boxes, Egg as EggIcon, Search } from 'lucide-react';
+import { Plus, Trash2, Boxes, Egg as EggIcon, Search, ArrowRight } from 'lucide-react';
 import { getCategories, deleteCategory, type BillingCategory } from '@/api/billingCategories';
 import { getProducts } from '@/api/billingProducts';
 import { getNestEggs } from '@/api/nests';
@@ -75,7 +75,6 @@ export default function ProductsPage() {
     });
 
     const canCreateCat = can(held, 'billing.categories-create');
-    const canUpdateCat = can(held, 'billing.categories-update');
     const canDeleteCat = can(held, 'billing.categories-delete');
 
     // Search spans product names too, so "find the plan called X" doesn't mean
@@ -227,17 +226,21 @@ export default function ProductsPage() {
                                     </div>
                                 </button>
 
+                                {/* An explicit way in: the whole card was clickable, but its only
+                                    visible controls were edit and delete icons, so it read as a
+                                    category editor rather than the way to the products. */}
                                 <div className="flex items-center gap-1 border-t border-[var(--color-border)] px-2 py-1.5">
-                                    {canUpdateCat && (
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            aria-label={m['admin.billing.categories.edit']()}
-                                            onClick={() => navigate(`/admin/billing/products/categories/${cat.id}`)}
-                                        >
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-[var(--brand-bright)]"
+                                        onClick={() => navigate(`/admin/billing/products/categories/${cat.id}`)}
+                                    >
+                                        {products.length > 0
+                                            ? m['admin.billing.products.viewProducts']({ count: products.length })
+                                            : m['admin.billing.products.addFirst']()}
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Button>
                                     {canDeleteCat && (
                                         <Button
                                             variant="ghost"

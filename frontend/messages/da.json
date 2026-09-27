@@ -592,7 +592,6 @@
   "admin.billing.categories.deleteTitle": "Slet kategori",
   "admin.billing.categories.deleted": "Kategorien er slettet.",
   "admin.billing.categories.description": "Beskrivelse",
-  "admin.billing.categories.edit": "Rediger kategori",
   "admin.billing.categories.editTitle": "Rediger kategori",
   "admin.billing.categories.egg": "Primært æg",
   "admin.billing.categories.eggId": "Æg #{id}",
