@@ -2175,7 +2175,6 @@
   "admin.tickets.opened": "Открыто",
   "admin.tickets.openedBy": "открыто {name}",
   "admin.tickets.properties": "Свойства",
-  "admin.tickets.saved": "Билет обновлен.",
   "admin.tickets.sort.newest": "Последние",
   "admin.tickets.sort.oldest": "Самый старый",
   "admin.tickets.sort.priority": "Приоритет",

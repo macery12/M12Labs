@@ -9,6 +9,9 @@ export interface ThreadMessage {
     authorName: string;
     /** Author is a staff member / admin (drives the "Staff" label). */
     isStaff: boolean;
+    /** Author opened the ticket. The staff console sets this so a requester
+     *  who happens to be an admin reads as the requester, not as staff. */
+    isRequester?: boolean;
     /** Authored by the person currently viewing — their own messages sit on the
      *  left; everyone else's replies sit on the right. */
     isMine: boolean;
@@ -67,10 +70,16 @@ function Bubble({ msg }: { msg: ThreadMessage }) {
             <div className={cn('flex min-w-0 max-w-[85%] flex-col gap-1', onRight && 'items-end')}>
                 <div className="flex items-center gap-2 text-xs text-[var(--color-ink-faint)]">
                     <span className="font-medium text-[var(--color-ink-muted)]">{msg.authorName}</span>
-                    {msg.isStaff && (
-                        <span className="rounded-full bg-[var(--brand)]/12 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--brand)]">
-                            {m['tickets.thread.staff']()}
+                    {msg.isRequester ? (
+                        <span className="rounded-full bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-ink-muted)] ring-1 ring-inset ring-[var(--color-border)]">
+                            {m['tickets.thread.requester']()}
                         </span>
+                    ) : (
+                        msg.isStaff && (
+                            <span className="rounded-full bg-[var(--brand)]/12 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--brand)]">
+                                {m['tickets.thread.staff']()}
+                            </span>
+                        )
                     )}
                     <span>{timeAgo(msg.createdAt)}</span>
                 </div>

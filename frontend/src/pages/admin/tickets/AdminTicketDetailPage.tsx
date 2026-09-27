@@ -2,7 +2,7 @@ import { m } from '@/i18n/messages';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Send, Trash2, Lock, Save } from 'lucide-react';
+import { ArrowLeft, Send, Trash2, Lock, Check } from 'lucide-react';
 import {
     getAdminTicket,
     updateAdminTicket,
@@ -35,12 +35,19 @@ import {
 } from '@/components/tickets/meta';
 import { Thread, type ThreadMessage } from '@/components/tickets/Thread';
 
-function toThread(messages: AdminTicketMessage[], myEmail: string | undefined): ThreadMessage[] {
+function toThread(
+    messages: AdminTicketMessage[],
+    myEmail: string | undefined,
+    requesterId: number | undefined,
+): ThreadMessage[] {
     return messages.map(msg => ({
         id: msg.id,
         body: msg.message,
         authorName: msg.author?.username ?? m['tickets.thread.unknown'](),
-        isStaff: Boolean(msg.author?.admin),
+        // The requester's own messages are tagged as theirs even when they are
+        // an admin; "Staff" on both sides made it unclear who asked.
+        isRequester: requesterId !== undefined && msg.author?.id === requesterId,
+        isStaff: Boolean(msg.author?.admin) && msg.author?.id !== requesterId,
         // Viewer-relative: my own replies left, other staff / the requester right.
         isMine: !!myEmail && msg.author?.email === myEmail,
         internalNote: msg.internalNote,
@@ -86,26 +93,49 @@ export default function AdminTicketDetailPage() {
         setAssignee(ticket.assignedTo ? String(ticket.assignedTo.id) : '');
     }, [ticket]);
 
-    const thread = useMemo(() => toThread(ticket?.messages ?? [], myEmail), [ticket, myEmail]);
+    const thread = useMemo(
+        () => toThread(ticket?.messages ?? [], myEmail, ticket?.user?.id),
+        [ticket, myEmail],
+    );
 
+    // Properties save as soon as one changes. A separate "Save changes" beside
+    // "Send reply" meant a status picked before replying was easy to lose.
+    const [saved, setSaved] = useState(false);
     const updateMutation = useMutation({
-        mutationFn: () => {
+        mutationFn: (next: { status: TicketStatus; priority: TicketPriority; assignee: string }) => {
             if (!ticket?.user) throw new Error('missing requester');
             return updateAdminTicket(ticketId, {
                 title: ticket.title,
                 userId: ticket.user.id,
-                status,
-                priority,
-                assignedTo: assignee ? Number(assignee) : null,
+                status: next.status,
+                priority: next.priority,
+                assignedTo: next.assignee ? Number(next.assignee) : null,
             });
         },
         onSuccess: () => {
+            setSaved(true);
             qc.invalidateQueries({ queryKey: ['admin', 'tickets', ticketId] });
             qc.invalidateQueries({ queryKey: ['admin', 'tickets'] });
-            push({ type: 'success', message: m['admin.tickets.saved']() });
         },
-        onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
+        onError: err => {
+            // Put the pickers back to what the server holds.
+            if (ticket) {
+                setStatus(ticket.status);
+                setPriority(ticket.priority);
+                setAssignee(ticket.assignedTo ? String(ticket.assignedTo.id) : '');
+            }
+            push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() });
+        },
     });
+
+    const saveProperty = (change: Partial<{ status: TicketStatus; priority: TicketPriority; assignee: string }>) => {
+        const next = { status, priority, assignee, ...change };
+        setStatus(next.status);
+        setPriority(next.priority);
+        setAssignee(next.assignee);
+        setSaved(false);
+        updateMutation.mutate(next);
+    };
 
     const replyMutation = useMutation({
         mutationFn: () => replyAdminTicket(ticketId, reply.trim(), internalNote),
@@ -143,11 +173,6 @@ export default function AdminTicketDetailPage() {
             </div>
         );
     }
-
-    const dirty =
-        status !== ticket.status ||
-        priority !== ticket.priority ||
-        assignee !== (ticket.assignedTo ? String(ticket.assignedTo.id) : '');
 
     const canReply = reply.trim().length >= 3;
 
@@ -216,23 +241,50 @@ export default function AdminTicketDetailPage() {
                 {/* Properties sidebar */}
                 <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-72">
                     <div className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-ink-faint)]">
-                            {m['admin.tickets.properties']()}
-                        </p>
+                        <div className="flex h-4 items-center justify-between gap-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-ink-faint)]">
+                                {m['admin.tickets.properties']()}
+                            </p>
+                            {updateMutation.isPending ? (
+                                <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-faint)]">
+                                    <Spinner className="h-3 w-3" />
+                                    {m['common.states.saving']()}
+                                </span>
+                            ) : (
+                                saved && (
+                                    <span className="inline-flex items-center gap-1 text-xs text-[var(--color-accent)]">
+                                        <Check className="h-3 w-3" />
+                                        {m['common.states.saved']()}
+                                    </span>
+                                )
+                            )}
+                        </div>
                         <Field label={m['admin.tickets.col.status']()}>
-                            <Select value={status} onChange={v => setStatus(v as TicketStatus)} options={statusOptions} disabled={!canUpdate} />
+                            <Select
+                                value={status}
+                                onChange={v => saveProperty({ status: v as TicketStatus })}
+                                options={statusOptions}
+                                disabled={!canUpdate || updateMutation.isPending}
+                            />
                         </Field>
                         <Field label={m['admin.tickets.col.priority']()}>
-                            <Select value={priority} onChange={v => setPriority(v as TicketPriority)} options={priorityOptions} disabled={!canUpdate} />
+                            <Select
+                                value={priority}
+                                onChange={v => saveProperty({ priority: v as TicketPriority })}
+                                options={priorityOptions}
+                                disabled={!canUpdate || updateMutation.isPending}
+                            />
                         </Field>
                         <Field label={m['admin.tickets.col.assignee']()}>
-                            <Select value={assignee} onChange={setAssignee} options={assigneeOptions} disabled={!canUpdate} />
+                            <Select
+                                value={assignee}
+                                onChange={v => saveProperty({ assignee: v })}
+                                options={assigneeOptions}
+                                disabled={!canUpdate || updateMutation.isPending}
+                            />
                         </Field>
                         {canUpdate && (
-                            <Button onClick={() => updateMutation.mutate()} disabled={!dirty || updateMutation.isPending}>
-                                {updateMutation.isPending ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                                {m['common.actions.saveChanges']()}
-                            </Button>
+                            <p className="text-xs text-[var(--color-ink-faint)]">{m['admin.tickets.propertiesAutosave']()}</p>
                         )}
                     </div>
 

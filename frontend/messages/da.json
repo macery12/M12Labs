@@ -2208,7 +2208,6 @@
   "admin.tickets.opened": "Åbnet",
   "admin.tickets.openedBy": "åbnet af {name}",
   "admin.tickets.properties": "Egenskaber",
-  "admin.tickets.saved": "Billetten er opdateret.",
   "admin.tickets.sort.newest": "Nyeste",
   "admin.tickets.sort.oldest": "Ældste",
   "admin.tickets.sort.priority": "Prioritet",
