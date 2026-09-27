@@ -41,7 +41,8 @@ export function RenewalPanel({
     cycles,
 }: {
     model: BillingModel;
-    product: StoreProduct | undefined;
+    /** The page shows its own notice, and no panel, when the plan is gone. */
+    product: StoreProduct;
     cycles: ProductCycle[];
 }) {
     const server = useServer();
@@ -80,7 +81,7 @@ export function RenewalPanel({
     };
 
     const renew = useMutation({
-        mutationFn: () => renewFreeServer(product!.id, server.internalId, coupon?.coupon.id, effectiveDays),
+        mutationFn: () => renewFreeServer(product.id, server.internalId, coupon?.coupon.id, effectiveDays),
         // A renewal moves the renewal date, the server status, and possibly the
         // limits. Reloading is how V1 resynced all of it, and it's still the
         // honest option here.
@@ -99,16 +100,6 @@ export function RenewalPanel({
                         </Button>
                     </Link>
                 </div>
-            </Panel>
-        );
-    }
-
-    if (!product) {
-        return (
-            <Panel title={m['server.billing.renewal']()} icon={CreditCard}>
-                <Notice tone="danger" icon={AlertTriangle}>
-                    {m['server.billing.productMissingRenew']()}
-                </Notice>
             </Panel>
         );
     }

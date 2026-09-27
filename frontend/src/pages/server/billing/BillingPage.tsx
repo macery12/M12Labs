@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, ArrowRight, Clock, CalendarDays, Box, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Clock, CalendarDays, Box, CheckCircle2, LifeBuoy } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { useServer } from '@/components/server/ServerContext';
 import { useFlags } from '@/state/flags';
 import { useBilling } from '@/state/billing';
 import { Spinner } from '@/components/ui/Spinner';
+import { Button } from '@/components/ui/Button';
+import { newTicketLink } from '@/components/tickets/link';
 import { getStoreProduct, getProductBillingCycles } from '@/api/accountBilling';
 import { buildBillingModel, type RenewalSettings, type RenewalState } from './billingModel';
 import { RenewalPanel } from './RenewalPanel';
@@ -51,6 +53,18 @@ export default function BillingPage() {
     });
 
     const settingsPath = `/server/${server.id}/settings`;
+    const ticketsEnabled = useFlags(s => Boolean(s.everest?.tickets.enabled));
+
+    // One message for whatever is wrong with this server's billing. The page
+    // used to stack up to three warnings (two amber, one red) that all said
+    // "the package no longer exists", none with a way to act on it.
+    const problem = !productId
+        ? m['server.billing.problem.noPlan']()
+        : !product
+          ? m['server.billing.problem.missingPlan']()
+          : !server.renewalDate
+            ? m['server.billing.noRenewalDate']()
+            : null;
 
     if (loading) {
         return (
@@ -83,13 +97,37 @@ export default function BillingPage() {
                 </Notice>
             )}
 
-            {!product && <Notice tone="warning">{m['server.billing.productMissing']()}</Notice>}
-            {!server.renewalDate && <Notice tone="warning">{m['server.billing.noRenewalDate']()}</Notice>}
+            {problem && (
+                <Notice tone="warning" icon={AlertTriangle}>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <span>
+                            {problem}
+                            {!ticketsEnabled && ` ${m['server.billing.problem.askAdmin']()}`}
+                        </span>
+                        {ticketsEnabled && (
+                            <Link
+                                className="shrink-0"
+                                to={newTicketLink({
+                                    title: m['server.billing.problem.ticketTitle']({ server: server.name }),
+                                    message: m['server.billing.problem.ticketMessage']({ problem }),
+                                    serverId: server.internalId,
+                                })}
+                            >
+                                <Button size="sm" variant="outline">
+                                    <LifeBuoy className="h-4 w-4" />
+                                    {m['common.actions.contactSupport']()}
+                                </Button>
+                            </Link>
+                        )}
+                    </div>
+                </Notice>
+            )}
 
             {server.renewalDate && <StatusStrip model={model} product={product} money={money} />}
 
             <div className="grid gap-4 lg:grid-cols-2">
-                <RenewalPanel model={model} product={product} cycles={cyclesQ.data ?? []} />
+                {/* With no plan there's nothing to renew; the notice above says so. */}
+                {product && <RenewalPanel model={model} product={product} cycles={cyclesQ.data ?? []} />}
                 <div className="flex flex-col gap-4">
                     <ChangePlanPanel currency={billing.currency.code} />
                     <ChangeEggPanel />

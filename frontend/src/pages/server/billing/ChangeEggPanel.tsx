@@ -146,8 +146,10 @@ export function ChangeEggPanel() {
                         </Notice>
                     )}
 
+                    {/* Red only once there's a change to make; a loud red button
+                        beside the current type read as "something's wrong". */}
                     <Button
-                        variant="danger"
+                        variant={changed ? 'danger' : 'outline'}
                         className="w-full"
                         disabled={!canSubmit || change.isPending}
                         onClick={() => setConfirming(true)}

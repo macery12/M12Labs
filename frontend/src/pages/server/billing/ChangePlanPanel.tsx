@@ -25,6 +25,7 @@ import {
 } from '@/api/serverBilling';
 import type { RenewalSettings } from './billingModel';
 import { Notice } from './parts';
+import { cpuPercentHint, formatMib, formatVcpu } from '@/lib/format';
 
 // A plan change never changes the server's billing cycle. More-expensive plans
 // are paid for now using a server-authoritative prorated quote; equal or cheaper
@@ -242,12 +243,12 @@ export function ChangePlanPanel({ currency }: { currency: string }) {
                                             )}
                                         </div>
                                         <p className="mt-0.5 truncate text-[11px] text-[var(--color-ink-faint)]">
-                                            {m['server.billing.planSpecs']({
-                                                cpu: plan.limits.cpu,
-                                                memory: plan.limits.memory,
-                                                disk: plan.limits.disk,
-                                                databases: plan.limits.database,
-                                                backups: plan.limits.backup,
+                                            {m['server.billing.planSpecsLine']({
+                                                cpu: formatVcpu(plan.limits.cpu),
+                                                memory: formatMib(plan.limits.memory),
+                                                disk: formatMib(plan.limits.disk),
+                                                databases: m['billing.specs.databases']({ count: plan.limits.database }),
+                                                backups: m['billing.specs.backups']({ count: plan.limits.backup }),
                                             })}
                                         </p>
                                     </div>
@@ -325,9 +326,13 @@ export function ChangePlanPanel({ currency }: { currency: string }) {
                                 {m['server.billing.newResources']()}
                             </p>
                             <dl className="space-y-1 text-sm">
-                                <ResourceRow label={m['common.metrics.cpu']()} value={`${selected.limits.cpu}%`} />
-                                <ResourceRow label={m['common.metrics.memory']()} value={`${selected.limits.memory} MB`} />
-                                <ResourceRow label={m['common.metrics.disk']()} value={`${selected.limits.disk} MB`} />
+                                <ResourceRow
+                                    label={m['common.metrics.cpu']()}
+                                    value={formatVcpu(selected.limits.cpu)}
+                                    hint={cpuPercentHint(selected.limits.cpu)}
+                                />
+                                <ResourceRow label={m['common.metrics.memory']()} value={formatMib(selected.limits.memory)} />
+                                <ResourceRow label={m['common.metrics.disk']()} value={formatMib(selected.limits.disk)} />
                                 <ResourceRow label={m['server.billing.databases']()} value={String(selected.limits.database)} />
                                 <ResourceRow label={m['server.billing.backups']()} value={String(selected.limits.backup)} />
                             </dl>
@@ -388,11 +393,11 @@ export function ChangePlanPanel({ currency }: { currency: string }) {
     );
 }
 
-function ResourceRow({ label, value }: { label: string; value: string }) {
+function ResourceRow({ label, value, hint }: { label: string; value: string; hint?: string }) {
     return (
         <div className="flex justify-between">
             <dt className="text-[var(--color-ink-muted)]">{label}</dt>
-            <dd className="font-mono tabular-nums text-[var(--color-ink)]">{value}</dd>
+            <dd title={hint} className="font-mono tabular-nums text-[var(--color-ink)]">{value}</dd>
         </div>
     );
 }
