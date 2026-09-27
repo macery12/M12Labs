@@ -15,6 +15,13 @@ export function webhookConfig(): { enabled: boolean; urlConfigured: boolean } {
     return { enabled: Boolean(cfg?.enabled), urlConfigured: Boolean(cfg?.url) };
 }
 
+// The bootstrap is only re-read on a full reload. After saving a URL, record it
+// there too, so the Event Management tab doesn't keep saying no URL is set.
+export function markWebhookUrlConfigured() {
+    const cfg = window.EverestConfiguration?.webhooks as { url?: boolean } | undefined;
+    if (cfg) cfg.url = true;
+}
+
 // Mounted at the admin `webhooks/*` splat route. When the module is disabled it
 // shows a feature-intro gate; once enabled it renders a left-rail section with
 // the Configuration and Event Management pages.

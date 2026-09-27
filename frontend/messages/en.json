@@ -3139,6 +3139,8 @@
   "admin.webhooks.config.guide.body": "Webhooks send POST requests with JSON payloads. Make sure your endpoint accepts incoming requests and returns a 200 status code.",
   "admin.webhooks.config.guide.title": "Integration guide",
   "admin.webhooks.config.save": "Save webhook URL",
+  "admin.webhooks.config.notConfigured": "Not configured",
+  "admin.webhooks.config.notConfiguredHint": "No webhook URL is saved, so nothing is sent yet. Events you switch on start sending once a URL is saved.",
   "admin.webhooks.config.saveHint": "Changes apply immediately upon saving.",
   "admin.webhooks.config.testNoUrl": "Configure a webhook URL before testing.",
   "admin.webhooks.config.testSent": "Test webhook sent. Check your configured endpoint.",

@@ -1,7 +1,7 @@
 import { m } from '@/i18n/messages';
 import { abs } from '@/lib/base';
 import { useState } from 'react';
-import { Link2, CheckCircle2, AlertTriangle, Send, PowerOff } from 'lucide-react';
+import { Link2, CheckCircle2, CircleDashed, Info, Send, PowerOff } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -9,7 +9,7 @@ import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
 import { updateWebhookSetting, sendTestWebhook } from '@/api/webhooks';
 import { SettingsCard, LabeledField } from '../../email/parts';
-import { webhookConfig } from '../WebhooksSection';
+import { markWebhookUrlConfigured, webhookConfig } from '../WebhooksSection';
 
 // The Everest bootstrap only exposes whether a URL is configured (never the raw
 // value), so the field always starts empty and submitting replaces it.
@@ -48,6 +48,7 @@ export default function ConfigurationPage() {
         setSaving(true);
         try {
             await updateWebhookSetting('url', url.trim());
+            markWebhookUrlConfigured();
             setSavedOnce(true);
             push({ type: 'success', message: m['admin.webhooks.config.urlSaved']() });
         } catch (err) {
@@ -110,6 +111,22 @@ export default function ConfigurationPage() {
                             />
                         </LabeledField>
 
+                        {/* Say plainly when nothing is set up yet: with no URL the page
+                            looked the same as a working one. */}
+                        {!configured && (
+                            <div className="mt-3 flex items-start gap-2 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-2)]/60 px-3 py-2.5">
+                                <CircleDashed className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-ink-faint)]" />
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium text-[var(--color-ink)]">
+                                        {m['admin.webhooks.config.notConfigured']()}
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-[var(--color-ink-faint)]">
+                                        {m['admin.webhooks.config.notConfiguredHint']()}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {configured && (
                             <div className="mt-3 flex items-start gap-2 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2.5">
                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-accent)]" />
@@ -151,10 +168,12 @@ export default function ConfigurationPage() {
                                     ? m['admin.webhooks.config.actions.testing']()
                                     : m['admin.webhooks.config.actions.test']()}
                             </Button>
+                            {/* Turning the module off is rare and confirmed, so it no longer
+                                outweighs everything else on the page as a solid red block. */}
                             <Button
-                                variant="danger"
+                                variant="ghost"
                                 onClick={() => setConfirmDisable(true)}
-                                className="w-full"
+                                className="w-full text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
                             >
                                 <PowerOff className="h-4 w-4" />
                                 {m['admin.webhooks.config.actions.disableModule']()}
@@ -162,10 +181,11 @@ export default function ConfigurationPage() {
                         </div>
                     </SettingsCard>
 
-                    <div className="rounded-[var(--radius-card)] border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-4">
+                    {/* Guidance, not a warning: neutral colours. */}
+                    <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-2)]/60 p-4">
                         <div className="mb-1.5 flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-[var(--color-warning)]" />
-                            <span className="text-sm font-medium text-[var(--color-warning)]">
+                            <Info className="h-4 w-4 text-[var(--color-ink-faint)]" />
+                            <span className="text-sm font-medium text-[var(--color-ink)]">
                                 {m['admin.webhooks.config.guide.title']()}
                             </span>
                         </div>
