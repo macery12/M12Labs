@@ -1,11 +1,12 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { ChevronDown, ChevronUp, Eye, EyeOff, PanelLeft, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, PanelLeft, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
 import { SaveBar } from '@/components/ui/editorChrome';
+import { DragHandle, dropIndicator, useDragReorder } from '@/components/ui/DragReorder';
 import { navCategoryLabel, navItemLabel } from '@/components/shell/navLabels';
 import { useFlags } from '@/state/flags';
 import { useFlashes } from '@/state/flashes';
@@ -78,11 +79,11 @@ const tidy = (layout: NavLayout): NavLayout => ({
     groups: layout.groups.map(g => ({ ...g, label: g.label?.trim() || null })),
 });
 
-function swap<T>(list: T[], index: number, dir: -1 | 1): T[] {
-    const target = index + dir;
-    if (target < 0 || target >= list.length) return list;
+function move<T>(list: T[], from: number, to: number): T[] {
+    if (to < 0 || to >= list.length || from === to) return list;
     const next = list.slice();
-    [next[index], next[target]] = [next[target]!, next[index]!];
+    const [entry] = next.splice(from, 1);
+    next.splice(to, 0, entry!);
     return next;
 }
 
@@ -135,10 +136,11 @@ export default function NavigationSection() {
     const updateGroup = (key: string, patch: Partial<NavLayoutGroup>) =>
         setDraft(d => ({ ...d, groups: d.groups.map(g => (g.key === key ? { ...g, ...patch } : g)) }));
 
-    const moveGroup = (index: number, dir: -1 | 1) => setDraft(d => ({ ...d, groups: swap(d.groups, index, dir) }));
+    const moveGroup = (from: number, to: number) => setDraft(d => ({ ...d, groups: move(d.groups, from, to) }));
+    const groupReorder = useDragReorder(moveGroup);
 
-    const moveItem = (key: string, index: number, dir: -1 | 1) =>
-        setDraft(d => ({ ...d, groups: d.groups.map(g => (g.key === key ? { ...g, items: swap(g.items, index, dir) } : g)) }));
+    const moveItem = (key: string, from: number, to: number) =>
+        setDraft(d => ({ ...d, groups: d.groups.map(g => (g.key === key ? { ...g, items: move(g.items, from, to) } : g)) }));
 
     const moveItemTo = (id: string, to: string) =>
         setDraft(d => ({
@@ -209,102 +211,27 @@ export default function NavigationSection() {
             </p>
 
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                {draft.groups.map((group, gi) => {
-                    const builtIn = BUILT_IN.has(group.key);
-                    return (
-                        <section
-                            key={group.key}
-                            className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/60 p-4"
-                        >
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    id={`nav-group-${group.key}`}
-                                    aria-label={m['admin.navigation.groupName']()}
-                                    value={group.label ?? ''}
-                                    placeholder={builtIn ? navCategoryLabel(group.key) : m['admin.navigation.newGroupPlaceholder']()}
-                                    maxLength={40}
-                                    invalid={!builtIn && !group.label?.trim()}
-                                    disabled={!canEdit}
-                                    onChange={e => updateGroup(group.key, { label: e.target.value })}
-                                    className="h-9"
-                                />
-                                <IconButton label={m['admin.navigation.moveUp']()} onClick={() => moveGroup(gi, -1)} disabled={!canEdit || gi === 0}>
-                                    <ChevronUp className="h-4 w-4" />
-                                </IconButton>
-                                <IconButton label={m['admin.navigation.moveDown']()} onClick={() => moveGroup(gi, 1)} disabled={!canEdit || gi === draft.groups.length - 1}>
-                                    <ChevronDown className="h-4 w-4" />
-                                </IconButton>
-                                {!builtIn && (
-                                    <IconButton label={m['admin.navigation.deleteGroup']()} onClick={() => deleteGroup(group.key)} disabled={!canEdit}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </IconButton>
-                                )}
-                            </div>
-                            <label className="flex items-center justify-between gap-3 text-sm text-[var(--color-ink-muted)]">
-                                <span>{m['admin.navigation.startsFolded']()}</span>
-                                <Switch checked={group.collapsed} disabled={!canEdit} onChange={v => updateGroup(group.key, { collapsed: v })} />
-                            </label>
-
-                            {group.items.length === 0 ? (
-                                <p className="rounded-lg border border-dashed border-[var(--color-border)] px-3 py-4 text-center text-sm text-[var(--color-ink-faint)]">
-                                    {m['admin.navigation.emptyGroup']()}
-                                </p>
-                            ) : (
-                                <ul className="flex flex-col divide-y divide-[var(--color-border)] rounded-lg border border-[var(--color-border)]">
-                                    {group.items.map((id, ii) => {
-                                        const item = ITEMS.get(id);
-                                        if (!item) return null;
-                                        const isHidden = hidden.has(id);
-                                        const locked = ADMIN_NAV_DEFAULTS.unhideable.includes(id);
-                                        const extension = id.startsWith('ext:');
-
-                                        return (
-                                            <li key={id} className="flex flex-wrap items-center gap-2 px-3 py-2">
-                                                {item.icon && <item.icon className={cn('h-4 w-4 shrink-0', isHidden ? 'text-[var(--color-ink-faint)]' : 'text-[var(--color-ink-muted)]')} />}
-                                                <span className={cn('min-w-0 flex-1 truncate text-sm', isHidden ? 'text-[var(--color-ink-faint)] line-through' : 'text-[var(--color-ink)]')}>
-                                                    {navItemLabel(item)}
-                                                </span>
-                                                {extension && (
-                                                    <span className="rounded border border-[var(--color-border)] px-1.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
-                                                        {m['admin.navigation.extensionTag']()}
-                                                    </span>
-                                                )}
-                                                {!live.has(id) && (
-                                                    <span title={m['admin.navigation.offHint']()} className="rounded bg-[var(--color-surface-2)] px-1.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
-                                                        {m['admin.navigation.offTag']()}
-                                                    </span>
-                                                )}
-                                                <div className="flex items-center gap-1">
-                                                    <Select
-                                                        id={`nav-move-${id}`}
-                                                        value={group.key}
-                                                        options={groupOptions}
-                                                        disabled={!canEdit || draft.groups.length < 2}
-                                                        onChange={to => moveItemTo(id, to)}
-                                                        className="h-8 w-36 text-xs"
-                                                    />
-                                                    <IconButton label={m['admin.navigation.moveUp']()} onClick={() => moveItem(group.key, ii, -1)} disabled={!canEdit || ii === 0}>
-                                                        <ChevronUp className="h-4 w-4" />
-                                                    </IconButton>
-                                                    <IconButton label={m['admin.navigation.moveDown']()} onClick={() => moveItem(group.key, ii, 1)} disabled={!canEdit || ii === group.items.length - 1}>
-                                                        <ChevronDown className="h-4 w-4" />
-                                                    </IconButton>
-                                                    <IconButton
-                                                        label={locked ? m['admin.navigation.lockedHint']() : isHidden ? m['admin.navigation.show']() : m['common.actions.hide']()}
-                                                        onClick={() => toggleHidden(id)}
-                                                        disabled={!canEdit || locked}
-                                                    >
-                                                        {isHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                                    </IconButton>
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            )}
-                        </section>
-                    );
-                })}
+                {draft.groups.map((group, gi) => (
+                    <GroupCard
+                        key={group.key}
+                        group={group}
+                        index={gi}
+                        count={draft.groups.length}
+                        name={groupName(group)}
+                        groupOptions={groupOptions}
+                        hidden={hidden}
+                        live={live}
+                        canEdit={canEdit}
+                        groupReorder={groupReorder}
+                        onMoveGroup={moveGroup}
+                        onRename={label => updateGroup(group.key, { label })}
+                        onFold={collapsed => updateGroup(group.key, { collapsed })}
+                        onDelete={() => deleteGroup(group.key)}
+                        onMoveItem={(from, to) => moveItem(group.key, from, to)}
+                        onMoveItemTo={moveItemTo}
+                        onToggleHidden={toggleHidden}
+                    />
+                ))}
             </div>
 
             {canEdit && (
@@ -316,5 +243,202 @@ export default function NavigationSection() {
                 />
             )}
         </form>
+    );
+}
+
+// One group of the layout. Its entries reorder by drag (or the grip's arrow
+// keys) within the group; the per-row group menu moves an entry between groups,
+// which also keeps that possible from a keyboard or a touch screen.
+function GroupCard({
+    group,
+    index,
+    count,
+    name,
+    groupOptions,
+    hidden,
+    live,
+    canEdit,
+    groupReorder,
+    onMoveGroup,
+    onRename,
+    onFold,
+    onDelete,
+    onMoveItem,
+    onMoveItemTo,
+    onToggleHidden,
+}: {
+    group: NavLayoutGroup;
+    index: number;
+    count: number;
+    name: string;
+    groupOptions: { value: string; label: string }[];
+    hidden: Set<string>;
+    live: Set<string>;
+    canEdit: boolean;
+    groupReorder: ReturnType<typeof useDragReorder>;
+    onMoveGroup: (from: number, to: number) => void;
+    onRename: (label: string) => void;
+    onFold: (collapsed: boolean) => void;
+    onDelete: () => void;
+    onMoveItem: (from: number, to: number) => void;
+    onMoveItemTo: (id: string, to: string) => void;
+    onToggleHidden: (id: string) => void;
+}) {
+    const builtIn = BUILT_IN.has(group.key);
+    const label = group.label?.trim() ?? '';
+    // Group names were always-open inputs, and a built-in group's name was only
+    // the input's grey placeholder, so every heading looked disabled. Show the
+    // name as a heading; renaming opens the input. A new group starts open
+    // because it has no name yet.
+    const [editing, setEditing] = useState(!builtIn && !label);
+    const itemReorder = useDragReorder(onMoveItem);
+    const title = label || name;
+
+    return (
+        <section
+            {...groupReorder.rowProps(index)}
+            className={cn(
+                'flex flex-col gap-3 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]/60 p-4',
+                groupReorder.dragIndex === index && 'opacity-50',
+                dropIndicator(groupReorder.dragIndex, groupReorder.overIndex, index),
+            )}
+        >
+            <div className="flex items-center gap-2">
+                <DragHandle
+                    label={m['admin.navigation.reorder']({ name: title })}
+                    hint={m['admin.navigation.reorderGroupHint']()}
+                    upLabel={m['admin.navigation.moveUp']()}
+                    downLabel={m['admin.navigation.moveDown']()}
+                    index={index}
+                    count={count}
+                    disabled={!canEdit}
+                    handleProps={groupReorder.handleProps(index, count)}
+                    onMove={onMoveGroup}
+                />
+                {editing && canEdit ? (
+                    <Input
+                        id={`nav-group-${group.key}`}
+                        aria-label={m['admin.navigation.groupName']()}
+                        value={group.label ?? ''}
+                        placeholder={builtIn ? name : m['admin.navigation.newGroupPlaceholder']()}
+                        maxLength={40}
+                        invalid={!builtIn && !label}
+                        autoFocus
+                        onChange={e => onRename(e.target.value)}
+                        onBlur={() => (builtIn || label) && setEditing(false)}
+                        onKeyDown={e => {
+                            // Enter would submit the whole layout form.
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.currentTarget.blur();
+                            }
+                        }}
+                        className="h-9"
+                    />
+                ) : (
+                    <>
+                        <div className="min-w-0 flex-1">
+                            <h2 className="break-words text-sm font-semibold text-[var(--color-ink)]">{title}</h2>
+                            {builtIn && label && (
+                                <p className="text-xs text-[var(--color-ink-faint)]">{m['admin.navigation.renamedFrom']({ name })}</p>
+                            )}
+                        </div>
+                        {canEdit && (
+                            <IconButton label={m['admin.navigation.rename']({ name: title })} onClick={() => setEditing(true)}>
+                                <Pencil className="h-4 w-4" />
+                            </IconButton>
+                        )}
+                    </>
+                )}
+                {!builtIn && (
+                    <IconButton label={m['admin.navigation.deleteGroup']()} onClick={onDelete} disabled={!canEdit}>
+                        <Trash2 className="h-4 w-4" />
+                    </IconButton>
+                )}
+            </div>
+            <label className="flex items-center justify-between gap-3 text-sm text-[var(--color-ink-muted)]">
+                <span>{m['admin.navigation.startsFolded']()}</span>
+                <Switch checked={group.collapsed} disabled={!canEdit} onChange={onFold} />
+            </label>
+
+            {group.items.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-[var(--color-border)] px-3 py-4 text-center text-sm text-[var(--color-ink-faint)]">
+                    {m['admin.navigation.emptyGroup']()}
+                </p>
+            ) : (
+                <ul className="flex flex-col divide-y divide-[var(--color-border)] rounded-lg border border-[var(--color-border)]">
+                    {group.items.map((id, ii) => {
+                        const item = ITEMS.get(id);
+                        if (!item) return null;
+                        const isHidden = hidden.has(id);
+                        const locked = ADMIN_NAV_DEFAULTS.unhideable.includes(id);
+                        const extension = id.startsWith('ext:');
+                        const off = !live.has(id);
+                        const itemName = navItemLabel(item);
+
+                        return (
+                            <li
+                                key={id}
+                                {...itemReorder.rowProps(ii)}
+                                className={cn(
+                                    'flex items-center gap-2 py-2 pl-1.5 pr-2',
+                                    itemReorder.dragIndex === ii && 'opacity-50',
+                                    dropIndicator(itemReorder.dragIndex, itemReorder.overIndex, ii),
+                                )}
+                            >
+                                <DragHandle
+                                    label={m['admin.navigation.reorder']({ name: itemName })}
+                                    hint={m['admin.navigation.reorderHint']()}
+                                    upLabel={m['admin.navigation.moveUp']()}
+                                    downLabel={m['admin.navigation.moveDown']()}
+                                    index={ii}
+                                    count={group.items.length}
+                                    disabled={!canEdit}
+                                    handleProps={itemReorder.handleProps(ii, group.items.length)}
+                                    onMove={onMoveItem}
+                                />
+                                {item.icon && <item.icon className={cn('h-4 w-4 shrink-0', isHidden ? 'text-[var(--color-ink-faint)]' : 'text-[var(--color-ink-muted)]')} />}
+                                {/* Names wrap rather than truncate ("Custom D…"), and the
+                                    tags sit under the name instead of competing with it. */}
+                                <div className="min-w-0 flex-1">
+                                    <span className={cn('block break-words text-sm', isHidden ? 'text-[var(--color-ink-faint)] line-through' : 'text-[var(--color-ink)]')}>
+                                        {itemName}
+                                    </span>
+                                    {(extension || off) && (
+                                        <span className="mt-0.5 flex flex-wrap gap-1">
+                                            {extension && (
+                                                <span className="rounded border border-[var(--color-border)] px-1.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
+                                                    {m['admin.navigation.extensionTag']()}
+                                                </span>
+                                            )}
+                                            {off && (
+                                                <span title={m['admin.navigation.offHint']()} className="rounded bg-[var(--color-surface-2)] px-1.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
+                                                    {m['admin.navigation.offTag']()}
+                                                </span>
+                                            )}
+                                        </span>
+                                    )}
+                                </div>
+                                <Select
+                                    id={`nav-move-${id}`}
+                                    value={group.key}
+                                    options={groupOptions}
+                                    disabled={!canEdit || groupOptions.length < 2}
+                                    onChange={to => onMoveItemTo(id, to)}
+                                    className="h-8 w-36 shrink-0 whitespace-nowrap px-2.5 text-xs [&>span:first-child]:min-w-0 [&>span:first-child]:truncate"
+                                />
+                                <IconButton
+                                    label={locked ? m['admin.navigation.lockedHint']() : isHidden ? m['admin.navigation.show']() : m['common.actions.hide']()}
+                                    onClick={() => onToggleHidden(id)}
+                                    disabled={!canEdit || locked}
+                                >
+                                    {isHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </IconButton>
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
+        </section>
     );
 }
