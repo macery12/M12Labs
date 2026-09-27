@@ -108,6 +108,13 @@ export default function SmtpPage() {
             .finally(() => setTesting(false));
     };
 
+    // The well-known submission ports each imply one mode: 465 is implicit TLS
+    // ("SSL" here), 587 and 2525 are STARTTLS ("TLS"). The wrong pairing fails as
+    // a vague timeout, so say so before the test does. Other ports are left alone.
+    const EXPECTED_ENCRYPTION: Record<string, string> = { '465': 'ssl', '587': 'tls', '2525': 'tls' };
+    const expected = EXPECTED_ENCRYPTION[form.port.trim()];
+    const mismatch = expected && form.encryption !== expected ? expected : null;
+
     const encryptionOptions = [
         { value: 'none', label: m['admin.email.smtp.encNone']() },
         { value: 'tls', label: 'TLS' },
@@ -155,6 +162,24 @@ export default function SmtpPage() {
                             options={encryptionOptions}
                         />
                     </LabeledField>
+                    {mismatch && (
+                        <div className="col-span-full flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-3 py-2.5 text-sm text-[var(--color-ink)]">
+                            <span className="min-w-0 flex-1">
+                                {m['admin.email.smtp.portMismatch']({
+                                    port: form.port,
+                                    expected: mismatch.toUpperCase(),
+                                    actual: form.encryption ? form.encryption.toUpperCase() : m['admin.email.smtp.encNone'](),
+                                })}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setForm(f => ({ ...f, encryption: mismatch }))}
+                                className="text-sm font-medium text-[var(--brand)] hover:underline"
+                            >
+                                {m['admin.email.smtp.portMismatchFix']({ expected: mismatch.toUpperCase() })}
+                            </button>
+                        </div>
+                    )}
                     <LabeledField
                         label={m['admin.email.smtp.password']()}
                         hint={m['admin.email.smtp.passwordHint']()}

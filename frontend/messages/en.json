@@ -1660,6 +1660,8 @@
   "admin.email.smtp.passwordHint": "Leave blank to keep the existing password.",
   "admin.email.smtp.passwordSaved": "•••••••• (saved)",
   "admin.email.smtp.port": "Port",
+  "admin.email.smtp.portMismatch": "Port {port} normally uses {expected}, but encryption is set to {actual}. A mismatch usually shows up as a timeout or a handshake error.",
+  "admin.email.smtp.portMismatchFix": "Use {expected}",
   "admin.email.smtp.reset": "Reset SMTP settings",
   "admin.email.smtp.title": "SMTP connection",
   "admin.email.smtp.username": "Username",
