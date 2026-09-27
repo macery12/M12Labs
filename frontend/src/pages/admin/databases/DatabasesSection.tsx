@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus, Database, Search } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/cn';
@@ -51,18 +52,19 @@ export default function DatabasesSection() {
     const [query, setQuery] = useState('');
 
     // Auto-select the first host once loaded so the detail pane is never blank
-    // when hosts exist; fall back to the create form on an empty list.
+    // when hosts exist. An empty list gets an empty state, not a form that opened
+    // on its own before anyone asked to add a host.
     useEffect(() => {
-        if (!hosts || selection !== null) return;
+        if (!hosts || hosts.length === 0 || selection !== null) return;
         // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional effect: syncs state to prop/query/filter changes
-        setSelection(hosts.length > 0 ? { mode: 'edit', id: hosts[0]!.id } : { mode: 'new' });
+        setSelection({ mode: 'edit', id: hosts[0]!.id });
     }, [hosts, selection]);
 
-    // A stale edit-selection (e.g. after a delete) collapses to the first host or new.
+    // A stale edit-selection (e.g. after a delete) collapses to the first host or nothing.
     useEffect(() => {
         if (selection?.mode === 'edit' && hosts && !hosts.some(h => h.id === selection.id)) {
             // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional effect: syncs state to prop/query/filter changes
-            setSelection(hosts.length > 0 ? { mode: 'edit', id: hosts[0]!.id } : { mode: 'new' });
+            setSelection(hosts.length > 0 ? { mode: 'edit', id: hosts[0]!.id } : null);
         }
     }, [selection, hosts]);
 
@@ -145,9 +147,26 @@ export default function DatabasesSection() {
 
                 {/* Detail */}
                 <div className="min-w-0 flex-1">
-                    {selection === null ? (
+                    {selection === null && (isLoading || (hosts?.length ?? 0) > 0) ? (
                         <div className="flex items-center justify-center py-20 text-sm text-[var(--color-ink-faint)]">
                             <Spinner className="h-5 w-5" />
+                        </div>
+                    ) : selection === null ? (
+                        <div
+                            className="border border-dashed border-[var(--color-border-strong)]"
+                            style={{ borderRadius: 'var(--radius-card)' }}
+                        >
+                            <EmptyState
+                                icon={Database}
+                                title={m['admin.databases.empty']()}
+                                body={m['admin.databases.emptyBody']()}
+                                action={
+                                    <Button size="sm" onClick={() => setSelection({ mode: 'new' })}>
+                                        <Plus className="h-4 w-4" />
+                                        {m['admin.databases.newHost']()}
+                                    </Button>
+                                }
+                            />
                         </div>
                     ) : (
                         <DatabaseEditor
@@ -158,12 +177,12 @@ export default function DatabasesSection() {
                                 setSelection(
                                     hosts && hosts.length > 1
                                         ? { mode: 'edit', id: hosts.find(h => h.id !== selectedHost?.id)!.id }
-                                        : { mode: 'new' },
+                                        : null,
                                 )
                             }
                             onCancel={() =>
                                 setSelection(
-                                    hosts && hosts.length > 0 ? { mode: 'edit', id: hosts[0]!.id } : { mode: 'new' },
+                                    hosts && hosts.length > 0 ? { mode: 'edit', id: hosts[0]!.id } : null,
                                 )
                             }
                         />

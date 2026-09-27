@@ -218,7 +218,9 @@ export default function DatabaseEditor({
                                 type="password"
                                 value={form.password}
                                 onChange={e => set('password', e.target.value)}
-                                placeholder="••••••••"
+                                // Dots read as a password already filled in. A new host
+                                // shows nothing; an existing one says blank keeps it.
+                                placeholder={isNew ? undefined : m['admin.databases.field.passwordUnchanged']()}
                                 autoComplete="new-password"
                             />
                         </Field>
