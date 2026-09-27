@@ -1776,6 +1776,7 @@
   "admin.features.modules.title": "Optional modules",
   "admin.features.presets.bareMinimum": "Bare minimum",
   "admin.features.presets.defaults": "Restore defaults",
+  "admin.features.openSettings": "Open settings",
   "admin.features.presets.everything": "Enable everything",
   "admin.features.saved": "Features have been updated.",
   "admin.features.state.active": "Active",

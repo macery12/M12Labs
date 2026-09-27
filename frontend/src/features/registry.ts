@@ -24,6 +24,8 @@ export interface FeatureDef {
     descKey: string;
     /** Read the effective on/off state from the bootstrap flags. */
     read: (f: EverestConfiguration) => boolean;
+    /** Where the module is configured, linked from its card while it's on. */
+    settingsPath?: string;
 }
 
 // Optional modules shown in the toggle grid (billing is rendered separately).
@@ -33,6 +35,7 @@ export const MODULE_FEATURES: FeatureDef[] = [
         icon: Boxes,
         labelKey: 'admin.features.items.mods.label',
         descKey: 'admin.features.items.mods.desc',
+        settingsPath: '/admin/marketplace/settings',
         read: f => !!f.mods?.enabled,
     },
     {
@@ -40,6 +43,7 @@ export const MODULE_FEATURES: FeatureDef[] = [
         icon: Mail,
         labelKey: 'admin.features.items.email.label',
         descKey: 'admin.features.items.email.desc',
+        settingsPath: '/admin/email',
         read: f => !!f.email?.module_enabled,
     },
     {
@@ -47,6 +51,7 @@ export const MODULE_FEATURES: FeatureDef[] = [
         icon: Webhook,
         labelKey: 'admin.features.items.webhooks.label',
         descKey: 'admin.features.items.webhooks.desc',
+        settingsPath: '/admin/webhooks',
         read: f => !!f.webhooks?.enabled,
     },
     {
@@ -54,6 +59,7 @@ export const MODULE_FEATURES: FeatureDef[] = [
         icon: Puzzle,
         labelKey: 'admin.features.items.extensions.label',
         descKey: 'admin.features.items.extensions.desc',
+        settingsPath: '/admin/extensions',
         read: f => !!f.extensions?.enabled,
     },
     {
@@ -61,6 +67,7 @@ export const MODULE_FEATURES: FeatureDef[] = [
         icon: LifeBuoy,
         labelKey: 'admin.features.items.tickets.label',
         descKey: 'admin.features.items.tickets.desc',
+        settingsPath: '/admin/tickets',
         read: f => !!f.tickets?.enabled,
     },
 ];
@@ -70,6 +77,7 @@ export const BILLING_FEATURE: FeatureDef = {
     icon: CreditCard,
     labelKey: 'admin.features.items.billing.label',
     descKey: 'admin.features.items.billing.desc',
+    settingsPath: '/admin/billing/settings',
     read: f => !!f.billing?.enabled,
 };
 

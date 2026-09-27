@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import { ToggleRight, CreditCard, SlidersHorizontal, Monitor, Terminal, Check, AlertTriangle } from 'lucide-react';
 import { m, td } from '@/i18n/messages';
@@ -59,6 +60,18 @@ function FeatureToggleRow({ def, checked, onChange }: {
             <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium text-[var(--color-ink)]">{td(def.labelKey)}</span>
                 <span className="mt-0.5 block text-xs text-[var(--color-ink-faint)]">{td(def.descKey)}</span>
+                {/* Several modules also have their switch on their own page; the
+                    card says where the rest of the settings live. Only while on,
+                    because a disabled module's pages are hidden. */}
+                {checked && def.settingsPath && (
+                    <Link
+                        to={def.settingsPath}
+                        onClick={e => e.stopPropagation()}
+                        className="mt-1.5 inline-block text-xs font-medium text-[var(--brand)] hover:underline"
+                    >
+                        {m['admin.features.openSettings']()}
+                    </Link>
+                )}
             </span>
             <Switch checked={checked} onChange={onChange} className="mt-0.5" />
         </label>
