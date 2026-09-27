@@ -2,7 +2,8 @@ import { m } from '@/i18n/messages';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, Copy, Check, ExternalLink, Power, PowerOff, RefreshCw, Trash2 } from 'lucide-react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { ChevronLeft, Copy, Check, ExternalLink, MoreHorizontal, Power, PowerOff, RefreshCw, Trash2 } from 'lucide-react';
 import { useServerView } from './ServerContext';
 import { ServerStatusBadges, usePowerStates } from '@/pages/admin/servers/ServerStatus';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +15,9 @@ import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
 import { suspendServer, unsuspendServer, reinstallServer, deleteServer } from '@/api/adminServers';
 
+const MENU_ITEM =
+    'flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 text-sm text-[var(--color-ink-muted)] outline-none hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)] focus:bg-[var(--color-surface-2)] focus:text-[var(--color-ink)]';
+
 export function ServerHeader() {
     const server = useServerView();
     const navigate = useNavigate();
@@ -22,6 +26,7 @@ export function ServerHeader() {
     const held = useAdminHeld();
     const [copied, setCopied] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [reinstalling, setReinstalling] = useState(false);
 
     const canUpdate = can(held, 'servers.update');
     const canDelete = can(held, 'servers.delete');
@@ -108,20 +113,63 @@ export function ServerHeader() {
                                         <PowerOff className="h-4 w-4" /> {m['admin.infrastructure.server.suspend']()}
                                     </Button>
                                 )}
-                                <Button variant="outline" size="sm" disabled={busy} onClick={() => run(() => reinstallServer(server.id), m['admin.infrastructure.server.reinstalled']())}>
-                                    <RefreshCw className="h-4 w-4" /> {m['admin.infrastructure.server.reinstall']()}
-                                </Button>
                             </>
                         )}
-                        {canDelete && (
-                            <Button variant="ghost" size="sm" onClick={() => setDeleting(true)}>
-                                <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
-                            </Button>
-                        )}
+                        {/* Reinstall and Delete used to sit beside Suspend as one-click
+                            buttons (Reinstall had no confirmation at all). They live
+                            behind a menu now, away from the everyday actions. */}
+                        <DropdownMenu.Root>
+                            <DropdownMenu.Trigger asChild>
+                                <Button variant="outline" size="icon" className="h-9 w-9" aria-label={m['admin.infrastructure.server.moreActions']()} disabled={busy}>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenu.Trigger>
+                            <DropdownMenu.Portal>
+                                <DropdownMenu.Content
+                                    align="end"
+                                    sideOffset={6}
+                                    className="z-50 min-w-44 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-1.5 shadow-xl"
+                                >
+                                    {canUpdate && (
+                                        <DropdownMenu.Item
+                                            onSelect={() => setReinstalling(true)}
+                                            className={MENU_ITEM}
+                                        >
+                                            <RefreshCw className="h-4 w-4" /> {m['admin.infrastructure.server.reinstall']()}
+                                        </DropdownMenu.Item>
+                                    )}
+                                    {canUpdate && canDelete && (
+                                        <DropdownMenu.Separator className="my-1 h-px bg-[var(--color-border)]" />
+                                    )}
+                                    {canDelete && (
+                                        <DropdownMenu.Item
+                                            onSelect={() => setDeleting(true)}
+                                            className={`${MENU_ITEM} text-[var(--color-danger)] focus:text-[var(--color-danger)]`}
+                                        >
+                                            <Trash2 className="h-4 w-4" /> {m['common.actions.delete']()}
+                                        </DropdownMenu.Item>
+                                    )}
+                                </DropdownMenu.Content>
+                            </DropdownMenu.Portal>
+                        </DropdownMenu.Root>
                         {busy && <Spinner className="h-4 w-4" />}
                     </>
                 )}
             </div>
+
+            <ConfirmDialog
+                open={reinstalling}
+                onClose={() => setReinstalling(false)}
+                title={m['admin.infrastructure.server.reinstallTitle']()}
+                body={m['admin.infrastructure.server.reinstallBody']({ name: server.name })}
+                confirmLabel={m['admin.infrastructure.server.reinstall']()}
+                cancelLabel={m['common.actions.cancel']()}
+                busy={busy}
+                onConfirm={async () => {
+                    await run(() => reinstallServer(server.id), m['admin.infrastructure.server.reinstalled']());
+                    setReinstalling(false);
+                }}
+            />
 
             <ConfirmDialog
                 open={deleting}
