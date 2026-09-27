@@ -38,8 +38,21 @@ function Avatar({ actor }: { actor: AdminActivityEntry['actor'] }) {
     );
 }
 
+// The transformer files anything it doesn't recognise under "admin", which on
+// this page is every row, so that badge said nothing. Only the other
+// categories get one, with a label instead of the raw key.
+const CATEGORY_LABELS: Record<string, () => string> = {
+    auth: m['admin.activity.category.auth'],
+    backups: m['admin.activity.category.backups'],
+    billing: m['admin.activity.category.billing'],
+    files: m['admin.activity.category.files'],
+    plugins: m['admin.activity.category.plugins'],
+    server: m['admin.activity.category.server'],
+};
+
 function ActivityRow({ entry, onInspect }: { entry: AdminActivityEntry; onInspect: (e: AdminActivityEntry) => void }) {
     const inspectable = hasActivityDetails(entry);
+    const categoryLabel = entry.category ? CATEGORY_LABELS[entry.category] : undefined;
     const Wrapper = inspectable ? 'button' : 'div';
 
     return (
@@ -64,9 +77,9 @@ function ActivityRow({ entry, onInspect }: { entry: AdminActivityEntry; onInspec
                     <p className="truncate text-sm text-[var(--color-ink)]">
                         {describeActivity(entry)}
                     </p>
-                    {entry.category && (
+                    {categoryLabel && (
                         <span className="hidden shrink-0 rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-ink-muted)] sm:inline">
-                            {entry.category}
+                            {categoryLabel()}
                         </span>
                     )}
                     {entry.isApi && (
