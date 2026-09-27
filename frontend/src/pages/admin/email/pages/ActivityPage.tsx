@@ -185,17 +185,26 @@ export default function ActivityPage() {
                             {logs.data.map(log => (
                                 <tr key={log.id} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-surface-2)]/40">
                                     <Td><StatusChip status={log.status} /></Td>
+                                    {/* The table ran past the card ("AT…" cut off at the right).
+                                        Date over time, and username under the address, keep every
+                                        column visible at the usual content width. */}
                                     <Td className="whitespace-nowrap text-[var(--color-ink-muted)]">
-                                        {new Date(log.created_at).toLocaleString()}
+                                        <span className="block">{new Date(log.created_at).toLocaleDateString()}</span>
+                                        <span className="block text-xs text-[var(--color-ink-faint)]">
+                                            {new Date(log.created_at).toLocaleTimeString()}
+                                        </span>
                                     </Td>
-                                    <Td>
-                                        <span className="text-[var(--color-ink)]">{log.to}</span>
+                                    <Td className="max-w-[16rem]">
+                                        <span className="block truncate text-[var(--color-ink)]" title={log.to}>{log.to}</span>
                                         {log.user && (
-                                            <span className="ml-1.5 text-xs text-[var(--color-ink-faint)]">@{log.user.username}</span>
+                                            <span className="block truncate text-xs text-[var(--color-ink-faint)]">@{log.user.username}</span>
                                         )}
                                     </Td>
-                                    <Td>
-                                        <code className="rounded bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[11px] text-[var(--color-ink-muted)]">
+                                    <Td className="max-w-[14rem]">
+                                        <code
+                                            className="block truncate rounded bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[11px] text-[var(--color-ink-muted)]"
+                                            title={log.template_key || undefined}
+                                        >
                                             {log.template_key || m['admin.email.activity.custom']()}
                                         </code>
                                     </Td>
@@ -203,7 +212,7 @@ export default function ActivityPage() {
                                     <Td className={log.attempt_count > 1 ? 'text-[var(--color-warning)]' : 'text-[var(--color-ink-muted)]'}>
                                         {log.attempt_count}
                                     </Td>
-                                    <Td>
+                                    <Td className="text-right">
                                         <Button variant="ghost" size="sm" onClick={() => setSelected(log.id)}>
                                             {m['admin.email.activity.view']()}
                                         </Button>
@@ -249,8 +258,8 @@ export default function ActivityPage() {
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-    return <th className="px-4 py-3 font-semibold">{children}</th>;
+    return <th className="whitespace-nowrap px-3 py-3 font-semibold">{children}</th>;
 }
 function Td({ children, className }: { children: React.ReactNode; className?: string }) {
-    return <td className={`px-4 py-3 align-middle ${className ?? ''}`}>{children}</td>;
+    return <td className={`px-3 py-2.5 align-middle ${className ?? ''}`}>{children}</td>;
 }
