@@ -907,6 +907,7 @@
   "admin.billing.coupons.unlimited": "Unlimited",
   "admin.billing.coupons.updated": "Coupon updated.",
   "admin.billing.coupons.usage": "Usage",
+  "admin.billing.coupons.unlimitedUses": "No usage limit",
   "admin.billing.coupons.value": "Discount value",
   "admin.billing.coupons.valueFixedDesc": "Fixed amount to discount (e.g. 10 for $10 off).",
   "admin.billing.coupons.valuePercentDesc": "Percentage to discount (e.g. 20 for 20% off).",

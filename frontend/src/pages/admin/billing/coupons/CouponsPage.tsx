@@ -115,9 +115,27 @@ export default function CouponsPage() {
                                     <td className="px-4 py-3 text-sm text-[var(--color-ink)]">
                                         {c.type === 'percentage' ? `${c.value}%` : `${symbol}${c.value}`}
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-[var(--color-ink-muted)]">
-                                        {c.usageCount}
-                                        {c.maxUses ? ` / ${c.maxUses}` : ''}
+                                    {/* Usage always shows its ceiling: a bare "8" didn't say whether
+                                        that was nearly used up or nowhere near. */}
+                                    <td className="px-4 py-3 text-sm tabular-nums text-[var(--color-ink-muted)]">
+                                        {c.maxUses ? (
+                                            <div className="flex w-24 flex-col gap-1">
+                                                <span>
+                                                    {c.usageCount} / {c.maxUses}
+                                                </span>
+                                                <span className="h-1 overflow-hidden rounded-full bg-[var(--color-surface-2)]">
+                                                    <span
+                                                        className={cn(
+                                                            'block h-full rounded-full',
+                                                            c.usageCount >= c.maxUses ? 'bg-[var(--color-danger)]' : c.usageCount / c.maxUses >= 0.8 ? 'bg-[var(--color-warning)]' : 'bg-[var(--brand)]',
+                                                        )}
+                                                        style={{ width: `${Math.min(100, (c.usageCount / c.maxUses) * 100)}%` }}
+                                                    />
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span title={m['admin.billing.coupons.unlimitedUses']()}>{c.usageCount} / ∞</span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3">
                                         <span
