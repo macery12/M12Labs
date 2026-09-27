@@ -314,7 +314,9 @@ export default function AlertEditor({
                 )}
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr,20rem]">
+            {/* The column template was written "[1fr,20rem]"; the comma made it
+                invalid CSS, so the preview always fell below the whole form. */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
                 <div className="flex min-w-0 flex-col gap-6">
                     <Card title={m['admin.alerts.editor.basic']()}>
                         <div className="flex flex-col gap-4">
@@ -405,7 +407,7 @@ export default function AlertEditor({
                     </Card>
                 </div>
 
-                <div className="xl:sticky xl:top-4 xl:h-fit">
+                <div className="lg:sticky lg:top-4 lg:h-fit">
                     <AlertPreview
                         type={form.type}
                         position={form.position}

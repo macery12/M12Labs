@@ -4,6 +4,7 @@ import { Plus, Bell, CheckCircle2, Info, AlertTriangle, XCircle } from 'lucide-r
 import { m, td } from '@/i18n/messages';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { cn } from '@/lib/cn';
 import { getAlerts, type Alert, type AlertType } from '@/api/adminAlerts';
 import AlertEditor from './AlertEditor';
@@ -67,11 +68,12 @@ export default function AlertsSection() {
     const [selection, setSelection] = useState<Selection>(null);
 
     // Auto-select the first alert once loaded so the detail pane is never blank
-    // when content exists; fall back to the create form on an empty list.
+    // when content exists. An empty list shows an empty state with New alert
+    // rather than opening a blank form nobody asked for.
     useEffect(() => {
-        if (!alerts || selection !== null) return;
+        if (!alerts || alerts.length === 0 || selection !== null) return;
         // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional effect: syncs state to prop/query/filter changes
-        setSelection(alerts.length > 0 ? { mode: 'edit', id: alerts[0]!.id } : { mode: 'new' });
+        setSelection({ mode: 'edit', id: alerts[0]!.id });
     }, [alerts, selection]);
 
     const selectedAlert = useMemo(() => {
@@ -83,7 +85,7 @@ export default function AlertsSection() {
     useEffect(() => {
         if (selection?.mode === 'edit' && alerts && !alerts.some(a => a.id === selection.id)) {
             // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional effect: syncs state to prop/query/filter changes
-            setSelection(alerts.length > 0 ? { mode: 'edit', id: alerts[0]!.id } : { mode: 'new' });
+            setSelection(alerts.length > 0 ? { mode: 'edit', id: alerts[0]!.id } : null);
         }
     }, [selection, alerts]);
 
@@ -106,8 +108,9 @@ export default function AlertsSection() {
             </header>
 
             <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-                {/* Rail */}
-                <aside className="w-full shrink-0 lg:w-72">
+                {/* Rail. Hidden while there is nothing to list and nothing open;
+                    the empty state beside it says the same thing. */}
+                <aside className={cn('w-full shrink-0 lg:w-72', alerts?.length === 0 && selection === null && 'hidden')}>
                     <div
                         className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)]"
                         style={{ borderRadius: 'var(--radius-card)' }}
@@ -141,9 +144,26 @@ export default function AlertsSection() {
 
                 {/* Detail */}
                 <div className="min-w-0 flex-1">
-                    {selection === null ? (
+                    {selection === null && (isLoading || (alerts?.length ?? 0) > 0) ? (
                         <div className="flex items-center justify-center py-20 text-sm text-[var(--color-ink-faint)]">
                             <Spinner className="h-5 w-5" />
+                        </div>
+                    ) : selection === null ? (
+                        <div
+                            className="border border-dashed border-[var(--color-border-strong)]"
+                            style={{ borderRadius: 'var(--radius-card)' }}
+                        >
+                            <EmptyState
+                                icon={Bell}
+                                title={m['admin.alerts.emptyTitle']()}
+                                body={m['admin.alerts.emptyBody']()}
+                                action={
+                                    <Button size="sm" onClick={() => setSelection({ mode: 'new' })}>
+                                        <Plus className="h-4 w-4" />
+                                        {m['admin.alerts.newAlert']()}
+                                    </Button>
+                                }
+                            />
                         </div>
                     ) : (
                         <AlertEditor
@@ -154,12 +174,12 @@ export default function AlertsSection() {
                                 setSelection(
                                     alerts && alerts.length > 1
                                         ? { mode: 'edit', id: alerts.find(a => a.id !== selectedAlert?.id)!.id }
-                                        : { mode: 'new' },
+                                        : null,
                                 )
                             }
                             onCancel={() =>
                                 setSelection(
-                                    alerts && alerts.length > 0 ? { mode: 'edit', id: alerts[0]!.id } : { mode: 'new' },
+                                    alerts && alerts.length > 0 ? { mode: 'edit', id: alerts[0]!.id } : null,
                                 )
                             }
                         />

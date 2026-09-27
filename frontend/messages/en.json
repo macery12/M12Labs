@@ -490,6 +490,8 @@
   "admin.alerts.editor.subtitle": "Compose the alert and preview how it appears to users before saving.",
   "admin.alerts.editor.targeting": "User targeting",
   "admin.alerts.empty": "No alerts yet. Create your first one.",
+  "admin.alerts.emptyBody": "Alerts show as banners or in the bell menu, for everyone or for chosen users.",
+  "admin.alerts.emptyTitle": "No alerts yet",
   "admin.alerts.field.content": "Content",
   "admin.alerts.field.contentHint": "The message shown to users (up to 1000 characters).",
   "admin.alerts.field.dismissible": "Dismissible by users",
