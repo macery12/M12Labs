@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Spinner, FullPageSpinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
+import { useSession } from '@/state/session';
 import { firstError } from '@/lib/apiError';
 import { sendTestEmail, type EmailResponse } from '@/api/email';
 import { useEmailSettings } from '../useEmailSettings';
@@ -16,8 +17,10 @@ import { TestResultBanner } from './TestResultBanner';
 export default function TestingPage() {
     const { settings, isLoading } = useEmailSettings();
     const push = useFlashes(s => s.push);
+    const myEmail = useSession(s => s.user?.email);
 
-    const [recipient, setRecipient] = useState('');
+    // Most tests go to yourself, so start with your own address.
+    const [recipient, setRecipient] = useState(() => myEmail ?? '');
     const [sending, setSending] = useState(false);
     const [result, setResult] = useState<EmailResponse | null>(null);
 
