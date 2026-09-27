@@ -13,6 +13,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import ScheduleFormModal from './ScheduleFormModal';
 import { cronExpression } from './cron';
+import { ScheduleTemplates } from './ScheduleTemplates';
 
 export default function SchedulesListPage() {
     const server = useServer();
@@ -75,6 +76,8 @@ export default function SchedulesListPage() {
                 </div>
             ) : isError ? (
                 <p className="py-14 text-center text-sm text-[var(--color-danger)]">{m['server.schedules.loadError']()}</p>
+            ) : schedules.length === 0 && canCreate && canUpdate ? (
+                <ScheduleTemplates onBlank={() => setFormOpen(true)} />
             ) : schedules.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-4 py-14 text-center">
                     <CalendarClock className="h-8 w-8 text-[var(--color-ink-faint)]" />
