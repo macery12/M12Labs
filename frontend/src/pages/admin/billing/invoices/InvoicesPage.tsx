@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Download, RotateCcw, RefreshCw, Ban, Search } from 'lucide-react';
+import * as Dropdown from '@radix-ui/react-dropdown-menu';
+import { ChevronLeft, ChevronRight, Download, Mail, MoreHorizontal, RefreshCw, Ban, Search } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 import { timeAgo, formatBytes } from '@/lib/format';
@@ -180,7 +181,7 @@ export default function InvoicesPage() {
                         <tbody className="divide-y divide-[var(--color-border)]">
                             {items.map(inv => (
                                 <tr key={inv.uuid} className="hover:bg-[var(--color-surface-2)]/40">
-                                    <td className="px-4 py-3 font-mono text-sm text-[var(--color-ink)]">{inv.invoiceNumber}</td>
+                                    <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-[var(--color-ink)]">{inv.invoiceNumber}</td>
                                     <td className="px-4 py-3 text-sm text-[var(--color-ink-muted)]">{inv.user?.email ?? '—'}</td>
                                     <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--color-ink)]">
                                         {inv.currency} {inv.total.toFixed(2)}
@@ -191,50 +192,44 @@ export default function InvoicesPage() {
                                     <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--color-ink-faint)]">
                                         {inv.generatedAt ? timeAgo(inv.generatedAt) : '—'}
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-[var(--color-ink-faint)]">
+                                    <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--color-ink-faint)]">
                                         {inv.dataSizeBytes ? formatBytes(inv.dataSizeBytes) : '—'}
                                     </td>
-                                    <td className="px-4 py-3">
+                                    <td className="whitespace-nowrap px-4 py-3">
                                         <PdfBadge invoice={inv} />
                                     </td>
                                     <td className="px-4 py-3">
-                                        <div className="flex items-center gap-1">
+                                        {/* Download stays one click; the rest were three unlabelled
+                                            icons in three colours, now named in a menu. */}
+                                        <div className="flex items-center justify-end gap-1">
                                             {inv.isDownloadable && (
-                                                <Button variant="ghost" size="icon" aria-label={m['billing.invoices.download']()} onClick={() => download(inv)}>
+                                                <Button variant="ghost" size="icon" aria-label={m['billing.invoices.download']()} title={m['billing.invoices.download']()} onClick={() => download(inv)}>
                                                     <Download className="h-4 w-4" />
                                                 </Button>
                                             )}
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                aria-label={m['admin.billing.invoices.resend']()}
-                                                disabled={busy}
-                                                onClick={() => resend.mutate(inv)}
-                                            >
-                                                <RotateCcw className="h-4 w-4" />
-                                            </Button>
-                                            {inv.status !== 'void' && (
-                                                <>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        aria-label={m['admin.billing.invoices.regenerate']()}
-                                                        disabled={busy}
-                                                        onClick={() => regenerate.mutate(inv)}
-                                                    >
-                                                        <RefreshCw className="h-4 w-4 text-[var(--color-warning)]" />
+                                            <Dropdown.Root>
+                                                <Dropdown.Trigger asChild>
+                                                    <Button variant="ghost" size="icon" aria-label={m['admin.billing.invoices.moreActions']()} disabled={busy}>
+                                                        <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        aria-label={m['admin.billing.invoices.void']()}
-                                                        disabled={busy}
-                                                        onClick={() => setVoidTarget(inv)}
+                                                </Dropdown.Trigger>
+                                                <Dropdown.Portal>
+                                                    <Dropdown.Content
+                                                        align="end"
+                                                        sideOffset={4}
+                                                        className="z-50 min-w-44 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-1 shadow-xl"
                                                     >
-                                                        <Ban className="h-4 w-4 text-[var(--color-danger)]" />
-                                                    </Button>
-                                                </>
-                                            )}
+                                                        <MenuItem icon={Mail} label={m['admin.billing.invoices.resend']()} onSelect={() => resend.mutate(inv)} />
+                                                        {inv.status !== 'void' && (
+                                                            <>
+                                                                <MenuItem icon={RefreshCw} label={m['admin.billing.invoices.regenerate']()} onSelect={() => regenerate.mutate(inv)} />
+                                                                <Dropdown.Separator className="my-1 h-px bg-[var(--color-border)]" />
+                                                                <MenuItem icon={Ban} label={m['admin.billing.invoices.voidAction']()} danger onSelect={() => setVoidTarget(inv)} />
+                                                            </>
+                                                        )}
+                                                    </Dropdown.Content>
+                                                </Dropdown.Portal>
+                                            </Dropdown.Root>
                                         </div>
                                     </td>
                                 </tr>
@@ -282,5 +277,28 @@ export default function InvoicesPage() {
                 onConfirm={() => voidTarget && doVoid.mutate(voidTarget)}
             />
         </div>
+    );
+}
+
+function MenuItem({
+    icon: Icon,
+    label,
+    onSelect,
+    danger,
+}: {
+    icon: typeof Download;
+    label: string;
+    onSelect: () => void;
+    danger?: boolean;
+}) {
+    return (
+        <Dropdown.Item
+            onSelect={onSelect}
+            className={`flex cursor-pointer select-none items-center gap-2 rounded-md px-3 py-2 text-sm outline-none data-[highlighted]:bg-[var(--color-surface-2)] ${
+                danger ? 'text-[var(--color-danger)]' : 'text-[var(--color-ink)]'
+            }`}
+        >
+            <Icon className="h-3.5 w-3.5" /> {label}
+        </Dropdown.Item>
     );
 }
