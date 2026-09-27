@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Copy, History } from 'lucide-react';
 import { m } from '@/i18n/messages';
@@ -80,7 +80,10 @@ export default function StartupPage() {
                 </div>
             </Section>
 
-            <Section eyebrow={m['server.startup.variablesTitle']()} desc={m['server.startup.variablesDesc']()}>
+            <Section
+                eyebrow={m['server.startup.variablesTitle']()}
+                desc={canUpdate ? m['server.startup.variablesAutosave']() : m['server.startup.variablesDesc']()}
+            >
                 {data.variables.length === 0 ? (
                     <p className="text-sm text-[var(--color-ink-muted)]">{m['server.startup.noVariables']()}</p>
                 ) : (
@@ -223,16 +226,27 @@ function VariableField({
     // switch or fixed-choice select.
     const hasVersionHelper = !useSwitch && selectValues.length === 0 && VERSION_HELPER_VARIABLES.has(variable.envVariable);
 
+    // Fields save on blur or toggle. A spinner that vanished was the only sign
+    // anything happened, so a short "Saved" stays where it was.
+    const [justSaved, setJustSaved] = useState(false);
+    useEffect(() => {
+        if (!justSaved) return;
+        const t = setTimeout(() => setJustSaved(false), 2500);
+        return () => clearTimeout(t);
+    }, [justSaved]);
+
     const save = useMutation({
         mutationFn: (next: string) => updateStartupVariable(server.uuid, variable.envVariable, next),
-        onSuccess: ({ invocation }) => {
+        onMutate: () => setJustSaved(false),
+        onSuccess: ({ invocation }, saved) => {
+            setJustSaved(true);
             qc.setQueryData<StartupData>(queryKey as string[], prev =>
                 prev
                     ? {
                           ...prev,
                           invocation,
                           variables: prev.variables.map(v =>
-                              v.envVariable === variable.envVariable ? { ...v, serverValue: value } : v,
+                              v.envVariable === variable.envVariable ? { ...v, serverValue: saved } : v,
                           ),
                       }
                     : prev,
@@ -253,10 +267,19 @@ function VariableField({
 
     return (
         <div className="min-w-0">
-            <div className="mb-2 flex items-center justify-between gap-2">
+            {/* Fixed height, so a row whose Versions button is taller than
+                its neighbours' variable names doesn't push its field down. */}
+            <div className="mb-2 flex h-6 items-center justify-between gap-2">
                 <label className="truncate text-xs font-semibold text-[var(--color-ink)]">{variable.name}</label>
                 <div className="flex shrink-0 items-center gap-2">
-                    {save.isPending && <Spinner className="h-3.5 w-3.5" />}
+                    {save.isPending ? (
+                        <Spinner className="h-3.5 w-3.5" />
+                    ) : justSaved ? (
+                        <span role="status" className="flex items-center gap-1 text-[11px] font-medium text-[var(--color-accent)]">
+                            <Check className="h-3.5 w-3.5" />
+                            {m['common.states.saved']()}
+                        </span>
+                    ) : null}
                     {hasVersionHelper ? (
                         <Button
                             variant="ghost"

@@ -4791,6 +4791,7 @@
   "server.startup.subtitle": "Configure the startup command, Docker image, and egg variables.",
   "server.startup.title": "Startup",
   "server.startup.variablesDesc": "Startup parameters exposed by this server’s egg.",
+  "server.startup.variablesAutosave": "Changes save as you make them and apply the next time the server starts.",
   "server.startup.variablesTitle": "Variables",
   "server.startup.versions.button": "Versions",
   "server.startup.versions.deleteJar": "Delete {jar} before reinstalling",
