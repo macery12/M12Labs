@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { Download, FileJson, Power, Upload } from 'lucide-react';
 import { m } from '@/i18n/messages';
@@ -89,9 +90,17 @@ export default function AdvancedTab() {
                 title={m['admin.billing.integrations.danger.title']()}
                 desc={m['admin.billing.integrations.danger.desc']()}
             >
-                <Button variant="danger" size="sm" className="self-start" onClick={() => setDisableOpen(true)}>
-                    {m['admin.billing.integrations.danger.disable']()}
-                </Button>
+                {/* Said up front, not only in the confirm dialog: the button used
+                    to say nothing about what happens to servers already paid for. */}
+                <p className="text-sm text-[var(--color-ink-muted)]">{m['admin.billing.integrations.danger.disableBody']()}</p>
+                <div className="flex flex-wrap items-center gap-3">
+                    <Button variant="danger" size="sm" onClick={() => setDisableOpen(true)}>
+                        {m['admin.billing.integrations.danger.disable']()}
+                    </Button>
+                    <Link to="/admin/features" className="text-sm text-[var(--brand-bright)] hover:underline">
+                        {m['admin.billing.integrations.danger.featuresLink']()}
+                    </Link>
+                </div>
             </SectionCard>
 
             <ConfirmDialog
