@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Check, Loader2, Trash2, TriangleAlert } from 'lucide-react';
 import { m } from '@/i18n/messages';
@@ -8,21 +8,20 @@ import { firstError } from '@/lib/apiError';
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 // Per-card autosave helper. Each field runs its own mutation and the card head
-// reflects the latest outcome (mirrors V1's AdminBox `status` prop). Errors also
-// surface as a toast so the reason isn't lost when the badge fades.
+// reflects the latest outcome (mirrors V1's AdminBox `status` prop). "Saved"
+// stays until the next change: it faded after two seconds, so anyone who looked
+// up a moment late had no sign the change had landed. Errors also surface as a
+// toast so the reason isn't lost.
 export function useModuleSave() {
     const push = useFlashes(s => s.push);
     const [status, setStatus] = useState<SaveStatus>('idle');
-    const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const run = useCallback(
         async (fn: () => Promise<unknown>) => {
-            if (timer.current) clearTimeout(timer.current);
             setStatus('saving');
             try {
                 await fn();
                 setStatus('saved');
-                timer.current = setTimeout(() => setStatus('idle'), 2000);
             } catch (err) {
                 setStatus('error');
                 push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() });

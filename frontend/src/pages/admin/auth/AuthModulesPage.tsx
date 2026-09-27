@@ -32,6 +32,7 @@ export default function AuthModulesPage() {
                         {m['admin.auth.title']()}
                     </h1>
                     <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.auth.subtitle']()}</p>
+                    <p className="mt-1 text-xs text-[var(--color-ink-faint)]">{m['admin.auth.autosaveNote']()}</p>
                 </div>
                 <Button size="sm" onClick={() => setAdding(true)}>
                     <Plus className="h-4 w-4" />

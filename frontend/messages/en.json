@@ -659,6 +659,7 @@
   "admin.auth.add.enable": "Enable",
   "admin.auth.add.subtitle": "Extend how users sign in and register. Enable a module to configure it.",
   "admin.auth.add.title": "Add an authentication module",
+  "admin.auth.autosaveNote": "Changes save on their own: switches straight away, text fields when you leave them. Each card says when it has saved.",
   "admin.auth.addModule": "Add module",
   "admin.auth.captcha.disabled": "Disabled",
   "admin.auth.captcha.providerHelp": "Choose the captcha provider used on authentication forms.",

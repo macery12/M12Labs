@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { abs } from '@/lib/base';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, Lock, ShieldCheck, DoorOpen, ShieldHalf, MessageCircle, Globe, Info } from 'lucide-react';
+import { UserPlus, Lock, ShieldCheck, DoorOpen, ShieldHalf, MessageCircle, Globe, Info, Copy, Check } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import type { EverestConfiguration } from '@/lib/globals';
 import { Input, Field } from '@/components/ui/Input';
@@ -52,13 +52,44 @@ function HelpText({ children }: { children: React.ReactNode }) {
     return <p className="text-xs text-[var(--color-ink-faint)]">{children}</p>;
 }
 
-function CallbackHint({ url }: { url: string }) {
+// Providers want the full redirect URL, and the bare path used to wrap mid-word
+// ("…/aut henticate") in the narrow card. Show the absolute URL, let it break only
+// after a slash, and copy it in one click. The paths themselves are registered
+// with Discord/Google and never change.
+function CallbackHint({ path }: { path: string }) {
+    const [copied, setCopied] = useState(false);
+    const url = `${window.location.origin}${path}`;
+    const parts = url.split('/');
+
+    const copy = () =>
+        navigator.clipboard?.writeText(url).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        });
+
     return (
         <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/50 px-4 py-3">
             <p className="text-xs text-[var(--color-ink-muted)]">{m['admin.auth.sso.callback']()}</p>
-            <code className="mt-1.5 block break-all rounded-lg bg-[var(--color-canvas)]/60 px-2.5 py-1.5 font-mono text-xs text-[var(--color-ink)]">
-                {url}
-            </code>
+            <div className="mt-1.5 flex items-start gap-2 rounded-lg bg-[var(--color-canvas)]/60 py-1.5 pl-2.5 pr-1.5">
+                <code className="min-w-0 flex-1 break-words py-0.5 font-mono text-xs text-[var(--color-ink)]">
+                    {parts.map((part, i) => (
+                        <Fragment key={i}>
+                            {part}
+                            {i < parts.length - 1 && '/'}
+                            {i < parts.length - 1 && <wbr />}
+                        </Fragment>
+                    ))}
+                </code>
+                <button
+                    type="button"
+                    onClick={copy}
+                    title={copied ? m['common.states.copied']() : m['common.actions.copy']()}
+                    aria-label={copied ? m['common.states.copied']() : m['common.actions.copy']()}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
+                >
+                    {copied ? <Check className="h-3.5 w-3.5 text-[var(--color-accent)]" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+            </div>
         </div>
     );
 }
@@ -319,7 +350,7 @@ function SsoCard({
                 />
                 {!settings.clientSecret && <HelpText>{m['admin.auth.sso.required']()}</HelpText>}
             </Field>
-            <CallbackHint url={callback} />
+            <CallbackHint path={callback} />
         </ModuleCard>
     );
 }
