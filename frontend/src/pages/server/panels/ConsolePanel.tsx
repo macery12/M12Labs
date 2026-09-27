@@ -50,6 +50,8 @@ export function ConsolePanel() {
     const replayLogsRef = useRef<() => void>(() => undefined);
     const instance = useServerSocket(s => s.instance);
     const connected = useServerSocket(s => s.connected);
+    const status = useServerSocket(s => s.status);
+    const serverOffline = status === 'offline' || status === null;
     // Commands commonly contain passwords or tokens. Keep history in memory
     // for this component lifetime only.
     const [history, setHistory] = useState<string[]>([]);
@@ -164,13 +166,23 @@ export function ConsolePanel() {
             flush
             right={
                 <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+                    {/* Green "connected" beside an OFFLINE badge read as a contradiction:
+                        the socket was up, the server wasn't. Say both. */}
                     <span
                         className={cn(
                             'h-1.5 w-1.5 rounded-full',
-                            connected ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-warning)] animate-pulse',
+                            !connected
+                                ? 'bg-[var(--color-warning)] animate-pulse'
+                                : serverOffline
+                                  ? 'bg-[var(--color-ink-faint)]'
+                                  : 'bg-[var(--color-accent)]',
                         )}
                     />
-                    {connected ? m['server.console.connected']() : m['server.console.connecting']()}
+                    {!connected
+                        ? m['server.console.connecting']()
+                        : serverOffline
+                          ? m['server.console.connectedOffline']()
+                          : m['server.console.connected']()}
                 </span>
             }
         >

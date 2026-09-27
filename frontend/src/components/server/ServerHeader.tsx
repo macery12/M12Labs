@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useMatch } from 'react-router-dom';
 import { ChevronLeft, Copy, Check, Play, RotateCcw, Shield, Square } from 'lucide-react';
 import { useServer } from './ServerContext';
 import { useServerSocket } from '@/state/serverSocket';
@@ -25,6 +25,10 @@ export function ServerHeader() {
     const instance = useServerSocket(s => s.instance);
     const connected = useServerSocket(s => s.connected);
     const [copied, setCopied] = useState(false);
+    // The console page has its own Power panel beside the terminal. Where that
+    // rail sits next to the console (xl), header buttons would be a second
+    // Start; below xl the rail drops under the console, so they stay.
+    const onConsole = useMatch({ path: '/server/:id', end: true }) !== null;
 
     const suspended = server.isSuspended;
     const installing = server.isInstalling;
@@ -107,29 +111,29 @@ export function ServerHeader() {
                     </Link>
                 )}
                 {canControl && !suspended && (
-                    <>
+                    <div className={cn('flex items-center gap-2', onConsole && 'xl:hidden')}>
                     <button
                         onClick={() => send('start')}
                         disabled={!isOffline || !connected}
                         className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:cursor-not-allowed disabled:opacity-30"
                     >
-                        <Play className="h-3.5 w-3.5" /> Start
+                        <Play className="h-3.5 w-3.5" /> {m['common.power.start']()}
                     </button>
                     <button
                         onClick={() => send('restart')}
                         disabled={isOffline || !connected}
                         className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-warning)] transition-colors hover:bg-[var(--color-warning)]/20 disabled:cursor-not-allowed disabled:opacity-30"
                     >
-                        <RotateCcw className="h-3.5 w-3.5" /> Restart
+                        <RotateCcw className="h-3.5 w-3.5" /> {m['common.power.restart']()}
                     </button>
                     <button
                         onClick={() => send('stop')}
                         disabled={isOffline || !connected}
                         className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-danger)] transition-colors hover:bg-[var(--color-danger)]/20 disabled:cursor-not-allowed disabled:opacity-30"
                     >
-                        <Square className="h-3.5 w-3.5" /> Stop
+                        <Square className="h-3.5 w-3.5" /> {m['common.power.stop']()}
                     </button>
-                    </>
+                    </div>
                 )}
             </div>
         </div>

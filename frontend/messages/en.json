@@ -4202,6 +4202,7 @@
   "server.billing.viewOrders": "View order history",
   "server.billing.violation": "{resource}: {current} {unit} in use, limit {limit} {unit}",
   "server.console.connected": "connected",
+  "server.console.connectedOffline": "connected · server offline",
   "server.console.connecting": "connecting",
   "server.console.establishing": "establishing console session…",
   "server.console.permissionRequired": "console permission required",
