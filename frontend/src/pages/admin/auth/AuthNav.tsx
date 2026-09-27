@@ -2,6 +2,8 @@ import { NavLink } from 'react-router-dom';
 import { Puzzle, ShieldHalf, UserCheck, type LucideIcon } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
+import { useQuery } from '@tanstack/react-query';
+import { getJGuardPending } from '@/api/adminAuth';
 
 const BASE = '/admin/auth';
 
@@ -10,6 +12,7 @@ interface Item {
     end?: boolean;
     icon: LucideIcon;
     label: string;
+    badge?: number;
 }
 
 // In-page secondary navigation for the auth section. jGuard tabs appear only
@@ -17,12 +20,23 @@ interface Item {
 export function AuthNav() {
     const jguardEnabled = Boolean(window.EverestConfiguration?.auth.modules.jguard.enabled);
 
+    // Accounts waiting for approval, counted on their tab so nobody has to open
+    // it to find out. Same key as the Pending page, which edits this cache on
+    // approve/reject, so the count drops as they're handled.
+    const { data: pending } = useQuery({
+        queryKey: ['admin', 'jguard', 'pending'],
+        queryFn: () => getJGuardPending('pending'),
+        enabled: jguardEnabled,
+        staleTime: 60_000,
+    });
+    const pendingCount = pending?.length ?? 0;
+
     const items: Item[] = [
         { to: BASE, end: true, icon: Puzzle, label: m['admin.auth.nav.modules']() },
         ...(jguardEnabled
             ? [
                   { to: `${BASE}/jguard`, end: true, icon: ShieldHalf, label: m['admin.auth.nav.jguard']() },
-                  { to: `${BASE}/jguard/pending`, end: true, icon: UserCheck, label: m['admin.auth.nav.pending']() },
+                  { to: `${BASE}/jguard/pending`, end: true, icon: UserCheck, label: m['admin.auth.nav.pending'](), badge: pendingCount },
               ]
             : []),
     ];
@@ -45,6 +59,11 @@ export function AuthNav() {
                 >
                     <item.icon className="h-4 w-4 shrink-0" />
                     {item.label}
+                    {(item.badge ?? 0) > 0 && (
+                        <span className="ml-auto rounded-full bg-[var(--color-warning)]/15 px-1.5 text-[10px] font-semibold tabular-nums text-[var(--color-warning)]">
+                            {item.badge}
+                        </span>
+                    )}
                 </NavLink>
             ))}
         </nav>
