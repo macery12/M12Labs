@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { abs } from '@/lib/base';
-import { ShieldHalf, Info } from 'lucide-react';
+import { ShieldHalf, Info, Check } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { Input, Field } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -22,16 +22,30 @@ function formatDelay(minutes: number): string {
 
 export default function JGuardSettingsPage() {
     const { status, run } = useModuleSave();
+    const message = useModuleSave();
     const auth = window.EverestConfiguration?.auth;
     const jguard = auth?.modules.jguard;
 
     const [mode, setMode] = useState<Mode>(jguard?.approval_mode === 'delayed' ? 'delayed' : 'manual');
     const [delay, setDelay] = useState<number>(jguard?.delay ?? 60);
     const [pendingMessage, setPendingMessage] = useState<string>(jguard?.pending_message ?? '');
+    const [savedMessage, setSavedMessage] = useState<string>(jguard?.pending_message ?? '');
     const [confirmDisable, setConfirmDisable] = useState(false);
     const [disabling, setDisabling] = useState(false);
 
     const save = (values: JGuardSettingsValues) => run(() => updateJGuardSettings(values));
+
+    // The message used to save on blur with only a two-second badge in the card
+    // head, far from the textarea, so it read as a field with no save at all. A
+    // paragraph is edited over time, so it gets its own Save and a lasting state.
+    const messageDirty = pendingMessage !== savedMessage;
+    const saveMessage = () => {
+        const next = pendingMessage;
+        message.run(async () => {
+            await updateJGuardSettings({ pending_message: next });
+            setSavedMessage(next);
+        });
+    };
 
     return (
         <div className="flex max-w-2xl flex-col gap-5">
@@ -97,16 +111,31 @@ export default function JGuardSettingsPage() {
                         value={pendingMessage}
                         placeholder={m['admin.auth.jguard.messagePlaceholder']()}
                         onChange={e => setPendingMessage(e.target.value)}
-                        onBlur={() => save({ pending_message: pendingMessage })}
                     />
-                    <p className="text-xs text-[var(--color-ink-faint)]">{m['admin.auth.jguard.messageHelp']()}</p>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                        <p className="min-w-0 flex-1 text-xs text-[var(--color-ink-faint)]">{m['admin.auth.jguard.messageHelp']()}</p>
+                        <div className="flex shrink-0 items-center gap-3">
+                            {messageDirty ? (
+                                <span className="text-xs text-[var(--color-ink-muted)]">{m['admin.auth.jguard.messageUnsaved']()}</span>
+                            ) : (
+                                message.status === 'saved' && (
+                                    <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-accent)]">
+                                        <Check className="h-3.5 w-3.5" />
+                                        {m['admin.auth.saved']()}
+                                    </span>
+                                )
+                            )}
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={saveMessage}
+                                disabled={!messageDirty || message.status === 'saving'}
+                            >
+                                {message.status === 'saving' ? m['common.states.saving']() : m['admin.auth.jguard.messageSave']()}
+                            </Button>
+                        </div>
+                    </div>
                 </Field>
-
-                <div className="border-t border-[var(--color-border)] pt-4">
-                    <Button variant="danger" size="sm" onClick={() => setConfirmDisable(true)}>
-                        {m['admin.auth.jguard.disableButton']()}
-                    </Button>
-                </div>
             </ModuleCard>
 
             <div className="flex items-start gap-2.5 rounded-lg border border-[var(--brand)]/25 bg-[var(--brand)]/8 px-4 py-3">
@@ -116,6 +145,15 @@ export default function JGuardSettingsPage() {
                         ? m['admin.auth.jguard.manualNote']()
                         : m['admin.auth.jguard.delayedNote']({ summary: formatDelay(delay) })}
                 </p>
+            </div>
+
+            {/* Turning the module off is not a setting, so it sits apart from the
+                card instead of among the fields it would switch off. */}
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--color-danger)]/30 px-4 py-3">
+                <p className="min-w-0 flex-1 text-xs text-[var(--color-ink-muted)]">{m['admin.auth.jguard.disableHint']()}</p>
+                <Button variant="danger" size="sm" onClick={() => setConfirmDisable(true)}>
+                    {m['admin.auth.jguard.disableButton']()}
+                </Button>
             </div>
         </div>
     );
