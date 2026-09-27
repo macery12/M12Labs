@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { TrendingUp, Repeat, CalendarClock, Boxes } from 'lucide-react';
 import { getBillingAnalytics, type BillingAnalytics } from '@/api/billing';
+import { legalLinkSet, useBilling } from '@/state/billing';
+import type { BillingConfig } from '@/lib/globals';
 import { Spinner } from '@/components/ui/Spinner';
 import { formatCurrency, timeAgo } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -11,7 +13,7 @@ import { RevenueBars, CompositionBar, RenewalBars, statusColor, processorColor }
 
 const microLabel = 'text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-faint)]';
 
-function buildAttention(data: BillingAnalytics): AttentionItem[] {
+function buildAttention(data: BillingAnalytics, links: BillingConfig['links'] | undefined): AttentionItem[] {
     const items: AttentionItem[] = [];
     const overdue = data.upcomingRenewals.overdue;
     if (overdue.count > 0) {
@@ -37,6 +39,11 @@ function buildAttention(data: BillingAnalytics): AttentionItem[] {
             label: m['admin.billing.overview.attention.exceptions']({ count: data.exceptions7d }),
             to: '/admin/billing/exceptions',
         });
+    }
+    // Checkout makes every customer agree to these, so an unset one is a
+    // broken link in front of each purchase.
+    if (!legalLinkSet(links?.terms) || !legalLinkSet(links?.privacy)) {
+        items.push({ key: 'legal', label: m['admin.billing.overview.attention.legalMissing'](), to: '/admin/billing/settings' });
     }
     if (data.suspendedServers.length > 0) {
         items.push({
@@ -79,6 +86,7 @@ function TopProducts({ products }: { products: BillingAnalytics['topProducts'] }
 }
 
 export default function BillingOverviewPage() {
+    const { billing } = useBilling();
     const { data, isLoading, isError } = useQuery({
         queryKey: ['admin', 'billing', 'analytics'],
         queryFn: getBillingAnalytics,
@@ -108,7 +116,7 @@ export default function BillingOverviewPage() {
             </div>
 
             <StatusLine
-                items={buildAttention(data)}
+                items={buildAttention(data, billing.links)}
                 info={m['admin.billing.overview.mrrLine']({ amount: formatCurrency(data.forecast.next30Days) })}
             />
 

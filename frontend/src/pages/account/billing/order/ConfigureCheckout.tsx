@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/Switch';
 import { Spinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
-import { useBilling } from '@/state/billing';
+import { legalLinkSet, useBilling } from '@/state/billing';
 import {
     getBillingProfile,
     hasCompleteBillingProfile,
@@ -275,8 +275,17 @@ export default function ConfigureCheckout() {
                                         <Switch checked={checkout.legalAgreed} onChange={checkout.setLegalAgreed} />
                                         <span className="text-sm text-[var(--color-ink-muted)]">
                                             {formatTags(m['billing.configure.legal'](), {
-                                                terms: <a href={billing.links.terms} target="_blank" rel="noreferrer" className="text-[var(--brand)] hover:underline" />,
-                                                privacy: <a href={billing.links.privacy} target="_blank" rel="noreferrer" className="text-[var(--brand)] hover:underline" />,
+                                                // An unset link stays plain text; '#' reloaded the checkout.
+                                                terms: legalLinkSet(billing.links.terms) ? (
+                                                    <a href={billing.links.terms} target="_blank" rel="noreferrer" className="text-[var(--brand)] hover:underline" />
+                                                ) : (
+                                                    <span />
+                                                ),
+                                                privacy: legalLinkSet(billing.links.privacy) ? (
+                                                    <a href={billing.links.privacy} target="_blank" rel="noreferrer" className="text-[var(--brand)] hover:underline" />
+                                                ) : (
+                                                    <span />
+                                                ),
                                             })}
                                         </span>
                                     </label>

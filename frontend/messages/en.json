@@ -1160,6 +1160,7 @@
       }
     }
   ],
+  "admin.billing.overview.attention.legalMissing": "Terms or Privacy URL not set",
   "admin.billing.overview.attention.suspended": [
     {
       "declarations": [
@@ -1417,6 +1418,7 @@
   "admin.billing.settings.general.desc": "Store currency, plan-change cooldown, and checkout requirements.",
   "admin.billing.settings.general.title": "General",
   "admin.billing.settings.legal.desc": "Terms and privacy links users must accept before purchase.",
+  "admin.billing.settings.legal.missing": "Checkout asks every customer to agree to your Terms of Service and Privacy Policy. Without both URLs, those links go nowhere.",
   "admin.billing.settings.legal.privacy": "Privacy Policy URL",
   "admin.billing.settings.legal.terms": "Terms of Service URL",
   "admin.billing.settings.legal.title": "Legal document links",

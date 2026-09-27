@@ -21,3 +21,13 @@ export function useBilling() {
 
     return { billing, money, stripeEnabled, paypalEnabled };
 }
+
+/**
+ * Whether a Terms/Privacy link actually points somewhere. Unset links arrive
+ * as '' or the '#' fallback, and checkout still asks customers to agree to
+ * them.
+ */
+export function legalLinkSet(url: string | null | undefined): boolean {
+    const v = url?.trim() ?? '';
+    return v !== '' && v !== '#';
+}

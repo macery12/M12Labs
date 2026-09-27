@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Coins, Gavel } from 'lucide-react';
+import { AlertTriangle, Coins, Gavel } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { useFlashes } from '@/state/flashes';
 import { firstError } from '@/lib/apiError';
-import { useBilling } from '@/state/billing';
+import { legalLinkSet, useBilling } from '@/state/billing';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -160,6 +160,12 @@ export default function GeneralTab() {
                     </Button>
                 }
             >
+                {(!legalLinkSet(billing.links?.terms) || !legalLinkSet(billing.links?.privacy)) && (
+                    <p className="flex items-start gap-2 rounded-lg border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3 text-xs text-[var(--color-warning)]">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        {m['admin.billing.settings.legal.missing']()}
+                    </p>
+                )}
                 <FieldGrid>
                     <FieldRow label={m['admin.billing.settings.legal.terms']()}>
                         <Input value={terms} onChange={e => setTerms(e.target.value)} placeholder="https://…/terms" />
