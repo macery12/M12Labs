@@ -16,6 +16,7 @@ import {
     type Backup,
 } from '@/api/backups';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import BackupRow from './BackupRow';
@@ -142,16 +143,30 @@ export default function BackupsPage() {
                         {m['server.backups.loadError']()}
                     </p>
                 ) : items.length === 0 ? (
-                    <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
-                        <Archive className="h-8 w-8 text-[var(--color-ink-faint)]" />
-                        <p className="text-sm text-[var(--color-ink-muted)]">
-                            {disabled
-                                ? m['server.backups.notAllowed']()
-                                : page > 1
-                                  ? m['server.backups.emptyPage']()
-                                  : m['server.backups.empty']()}
-                        </p>
-                    </div>
+                    disabled || page > 1 ? (
+                        <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
+                            <Archive className="h-8 w-8 text-[var(--color-ink-faint)]" />
+                            <p className="text-sm text-[var(--color-ink-muted)]">
+                                {disabled ? m['server.backups.notAllowed']() : m['server.backups.emptyPage']()}
+                            </p>
+                        </div>
+                    ) : (
+                        // Say what a backup is and how many this server gets, so the
+                        // limit isn't first met as a disabled button.
+                        <EmptyState
+                            icon={Archive}
+                            title={m['server.backups.emptyTitle']()}
+                            body={m['server.backups.emptyBody']({ count: limit })}
+                            action={
+                                canCreate ? (
+                                    <Button size="sm" onClick={() => setCreating(true)}>
+                                        <Plus className="h-4 w-4" />
+                                        {m['server.backups.addBackup']()}
+                                    </Button>
+                                ) : undefined
+                            }
+                        />
+                    )
                 ) : (
                     <ul className="divide-y divide-[var(--color-border)]">
                         {items.map(backup => (

@@ -4237,6 +4237,22 @@
   "server.backups.deleted": "Backup deleted.",
   "server.backups.download": "Download",
   "server.backups.empty": "No backups are currently stored for this server.",
+  "server.backups.emptyTitle": "No backups yet",
+  "server.backups.emptyBody": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "A backup is a snapshot of this server’s files that you can restore later. This server can keep 1 backup.",
+        "countPlural=other": "A backup is a snapshot of this server’s files that you can restore later. This server can keep up to {count} backups."
+      }
+    }
+  ],
   "server.backups.emptyPage": "No more backups to show — try going back a page.",
   "server.backups.errors.nameTooLong": "The backup name must be 191 characters or fewer.",
   "server.backups.failed": "Failed",
