@@ -15,7 +15,8 @@ import { can } from '@/lib/can';
 import { useAdminHeld } from '@/layouts/heldPermissions';
 import { createServer, type CreateServerValues } from '@/api/adminServers';
 import { getServerPresets, type ServerPreset } from '@/api/serverPresets';
-import { getNodes, getDeployableNodes, getNodeAllocations } from '@/api/nodes';
+import { getNodes, getNodeAllocations, type NodeListItem } from '@/api/nodes';
+import { formatNumber } from '@/lib/format';
 import { getNests, getNestEggs, getEgg, firstDockerImage } from '@/api/nests';
 import { getUsers } from '@/api/adminUsers';
 import { PresetManager } from './PresetManager';
@@ -44,11 +45,33 @@ const DEFAULTS: FormShape = {
     cpu: 100,
     io: 500,
     oom_killer: false,
-    allocations: 0,
-    backups: 0,
+    // One allocation (the primary) and one backup, so a new server can be
+    // backed up out of the box. All zeros used to mean no backups at all.
+    allocations: 1,
+    backups: 1,
     databases: 0,
     subusers: 0,
 };
+
+type Shortfall = { kind: 'memory' | 'disk'; used: number; total: number };
+
+/**
+ * Where a node lacks room for the requested server, by the same rule as
+ * automatic placement (FindViableNodesService): allocated + requested must fit
+ * within size × (1 + over-allocation%), and a negative over-allocation is
+ * unlimited. `total` is that limit, so the numbers read as "x of y allowed".
+ */
+function shortfalls(node: NodeListItem, memory: number, disk: number): Shortfall[] {
+    const check = (kind: Shortfall['kind'], used: number, size: number, over: number, add: number): Shortfall[] => {
+        if (over < 0) return [];
+        const total = Math.floor(size * (1 + over / 100));
+        return used + add > total ? [{ kind, used, total }] : [];
+    };
+    return [
+        ...check('memory', node.allocatedMemory, node.memory, node.memoryOverallocate, memory),
+        ...check('disk', node.allocatedDisk, node.disk, node.diskOverallocate, disk),
+    ];
+}
 
 // Mirrors StoreServerRequest / Server::$validationRules — catching these here
 // beats a bare 422 toast with no indication of which field was wrong.
@@ -99,16 +122,10 @@ export default function ServerEditorPage() {
         queryFn: () => getUsers(ownerSearch || undefined),
     });
 
-    // Populate the node picker from the plain node list, NOT the deployable
-    // endpoint: the latter requires memory/disk, hides non-public nodes, and
-    // 400s rather than returning an empty list. Deployability is an advisory
-    // overlay (below), not a precondition for showing the node at all.
+    // Capacity is worked out here from the node list rather than asked of the
+    // deployable endpoint, which leaves out private nodes (so every private
+    // node read "no free capacity") and could only say yes or no.
     const nodesQ = useQuery({ queryKey: ['admin', 'nodes', 'picker'], queryFn: getNodes });
-    const deployableQ = useQuery({
-        queryKey: ['admin', 'deployable-nodes', memory, disk],
-        queryFn: () => getDeployableNodes(Number(memory) || 0, Number(disk) || 0),
-        enabled: Number.isFinite(Number(memory)) && Number.isFinite(Number(disk)),
-    });
 
     const allocQ = useQuery({
         queryKey: ['admin', 'node-allocations', nodeId],
@@ -133,18 +150,25 @@ export default function ServerEditorPage() {
     }, [eggQ.data]);
 
     const freeAllocations = useMemo(() => (allocQ.data ?? []).filter(a => !a.isAssigned), [allocQ.data]);
-    const deployableIds = useMemo(() => new Set((deployableQ.data ?? []).map(n => n.id)), [deployableQ.data]);
+    const requestMemory = Number(memory) || 0;
+    const requestDisk = Number(disk) || 0;
 
     const nodeOptions = useMemo(
         () =>
-            (nodesQ.data ?? []).map(n => ({
-                value: String(n.id),
-                label: n.name,
-                hint: deployableIds.has(n.id)
-                    ? n.fqdn
-                    : `${n.fqdn} · ${m['admin.infrastructure.server.nodeNoCapacity']()}`,
-            })),
-        [nodesQ.data, deployableIds],
+            (nodesQ.data ?? []).map(n => {
+                const short = shortfalls(n, requestMemory, requestDisk)[0];
+                return {
+                    value: String(n.id),
+                    label: n.name,
+                    hint: short
+                        ? `${n.fqdn} · ${m[`admin.infrastructure.server.nodeFull.${short.kind}`]({
+                              used: formatNumber(short.used),
+                              total: formatNumber(short.total),
+                          })}`
+                        : n.fqdn,
+                };
+            }),
+        [nodesQ.data, requestMemory, requestDisk],
     );
 
     const ownerOptions = useMemo(
@@ -155,6 +179,7 @@ export default function ServerEditorPage() {
     const handleOwnerSearch = useCallback((q: string) => setOwnerSearch(q), []);
 
     const selectedNode = (nodesQ.data ?? []).find(n => String(n.id) === nodeId);
+    const selectedShortfalls = selectedNode ? shortfalls(selectedNode, requestMemory, requestDisk) : [];
     const selectedAllocation = freeAllocations.find(a => String(a.id) === allocationId);
     const selectedEgg = (eggsQ.data ?? []).find(e => String(e.id) === eggId);
     const selectedOwner = (usersQ.data ?? []).find(u => String(u.id) === ownerId);
@@ -189,6 +214,9 @@ export default function ServerEditorPage() {
     // First unmet requirement, in form order. Surfacing this beats an enabled
     // Save button whose handler silently bails — that reads as "creation is
     // broken", which is precisely how this form used to fail.
+    const zeroHint = (field: 'allocations' | 'backups' | 'databases' | 'subusers') =>
+        Number(watch(field)) === 0 ? m['admin.infrastructure.server.field.limitZero']() : undefined;
+
     const blockedReason = !watch('name')
         ? m['admin.infrastructure.server.blocked.name']()
         : !ownerId
@@ -526,16 +554,16 @@ export default function ServerEditorPage() {
                                 desc={m['admin.infrastructure.server.group.featureLimitsDesc']()}
                             >
                                 <FieldGrid columns={3}>
-                                    <FieldRow label={m['admin.infrastructure.server.field.allocations']()}>
+                                    <FieldRow label={m['admin.infrastructure.server.field.allocations']()} desc={zeroHint('allocations')}>
                                         <Input type="number" min={0} {...register('allocations', num)} />
                                     </FieldRow>
-                                    <FieldRow label={m['admin.infrastructure.server.field.backups']()}>
+                                    <FieldRow label={m['admin.infrastructure.server.field.backups']()} desc={zeroHint('backups')}>
                                         <Input type="number" min={0} {...register('backups', num)} />
                                     </FieldRow>
-                                    <FieldRow label={m['admin.infrastructure.server.field.databases']()}>
+                                    <FieldRow label={m['admin.infrastructure.server.field.databases']()} desc={zeroHint('databases')}>
                                         <Input type="number" min={0} {...register('databases', num)} />
                                     </FieldRow>
-                                    <FieldRow label={m['admin.infrastructure.server.field.subusers']()}>
+                                    <FieldRow label={m['admin.infrastructure.server.field.subusers']()} desc={zeroHint('subusers')}>
                                         <Input type="number" min={0} {...register('subusers', num)} />
                                     </FieldRow>
                                 </FieldGrid>
@@ -561,11 +589,23 @@ export default function ServerEditorPage() {
                             <SummaryRow label={m['admin.infrastructure.server.field.disk']()} value={`${disk || 0} MiB`} />
                         </dl>
 
-                        {selectedNode && !deployableIds.has(selectedNode.id) && !deployableQ.isLoading && (
-                            <p className="mt-4 flex items-start gap-2 rounded-lg border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3 text-xs text-[var(--color-warning)]">
+                        {selectedShortfalls.length > 0 && (
+                            <div className="mt-4 flex items-start gap-2 rounded-lg border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3 text-xs text-[var(--color-warning)]">
                                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                                {m['admin.infrastructure.server.capacityWarning']()}
-                            </p>
+                                <div className="flex flex-col gap-1.5">
+                                    {selectedShortfalls.map(short => (
+                                        <p key={short.kind}>
+                                            {m[`admin.infrastructure.server.capacity.${short.kind}`]({
+                                                node: selectedNode!.name,
+                                                used: formatNumber(short.used),
+                                                total: formatNumber(short.total),
+                                                add: formatNumber(short.kind === 'memory' ? requestMemory : requestDisk),
+                                            })}
+                                        </p>
+                                    ))}
+                                    <p>{m['admin.infrastructure.server.capacityWarning']()}</p>
+                                </div>
+                            </div>
                         )}
                     </div>
                 </aside>

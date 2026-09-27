@@ -1423,7 +1423,6 @@
   "admin.infrastructure.server.noNodes": "Узлов пока нет. Сначала создайте узел.",
   "admin.infrastructure.server.noPresets": "Пресетов пока нет",
   "admin.infrastructure.server.noUsers": "Подходящих пользователей нет",
-  "admin.infrastructure.server.nodeNoCapacity": "нет свободных ресурсов",
   "admin.infrastructure.server.nodesFailed": "Не удалось загрузить узлы.",
   "admin.infrastructure.server.presetApplied": "Применён «{name}». Все поля ниже по-прежнему можно изменить.",
   "admin.infrastructure.server.presetsFailed": "Не удалось загрузить пресеты.",

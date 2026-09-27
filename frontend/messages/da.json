@@ -1456,7 +1456,6 @@
   "admin.infrastructure.server.noNodes": "Der er ingen noder endnu. Opret først en.",
   "admin.infrastructure.server.noPresets": "Der er endnu ingen forudindstillinger",
   "admin.infrastructure.server.noUsers": "Der er ingen brugere, der matcher",
-  "admin.infrastructure.server.nodeNoCapacity": "ingen ledig kapacitet",
   "admin.infrastructure.server.nodesFailed": "Det var ikke muligt at indlæse noder.",
   "admin.infrastructure.server.presetApplied": "»{name}« er blevet anvendt. Alle felter nedenfor kan stadig redigeres.",
   "admin.infrastructure.server.presetsFailed": "Det var ikke muligt at indlæse forudindstillingerne.",
