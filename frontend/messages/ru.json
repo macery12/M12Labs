@@ -1902,7 +1902,6 @@
   "admin.overview.attention.update": "Обновление до {version}",
   "admin.overview.attention.workers": "Рабочие очереди остановились",
   "admin.overview.fleet.active": "{count} активных",
-  "admin.overview.fleet.allocated": "{memory} из {total} выделено",
   "admin.overview.fleet.installFailed": "{count} установка не удалась",
   "admin.overview.fleet.suspended": "{count} отстранены",
   "admin.overview.kpi.mrr": "Ежемесячная выручка",

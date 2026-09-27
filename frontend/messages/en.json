@@ -2467,7 +2467,23 @@
   "admin.nodes.wingsRs.upgradeUrlInvalid": "Enter a valid https:// URL.",
   "admin.nodes.wingsRs.version": "Version",
   "admin.overview.activity.empty": "No recent admin activity.",
+  "admin.overview.activity.repeated": "×{count}",
   "admin.overview.attention.billing": "{count} billing exceptions",
+  "admin.overview.attention.extensionUpdates": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} extension update available",
+        "countPlural=other": "{count} extension updates available"
+      }
+    }
+  ],
   "admin.overview.attention.installFailed": [
     {
       "declarations": [
@@ -2503,8 +2519,13 @@
   "admin.overview.attention.update": "Update to {version}",
   "admin.overview.attention.workers": "Queue workers stalled",
   "admin.overview.fleet.active": "{count} active",
-  "admin.overview.fleet.allocated": "{memory} of {total} allocated",
+  "admin.overview.fleet.disk": "disk {used} of {total}",
   "admin.overview.fleet.installFailed": "{count} install failed",
+  "admin.overview.fleet.memory": "memory {used} of {total}",
+  "admin.overview.fleet.memoryTotal": "Memory promised to servers across all nodes: {used} of {total}",
+  "admin.overview.fleet.openNode": "Open node",
+  "admin.overview.fleet.overCommitted": "More is promised to servers than this node allows ({resources}). Add capacity, raise its over-allocation, or lower server limits.",
+  "admin.overview.fleet.promised": "{used} of {total} promised to servers",
   "admin.overview.fleet.suspended": "{count} suspended",
   "admin.overview.kpi.mrr": "Monthly revenue",
   "admin.overview.kpi.nodes": "Nodes",

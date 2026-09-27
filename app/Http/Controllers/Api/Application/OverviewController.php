@@ -226,7 +226,9 @@ class OverviewController extends ApplicationApiController
     }
 
     /**
-     * The six most recent administrative activity-log entries, slimmed for the feed.
+     * Recent administrative activity-log entries, slimmed for the feed. The
+     * dashboard shows six rows but merges runs of the same event (editing five
+     * links in a row is one line), so it gets enough entries to fill them.
      */
     private function activity(): array
     {
@@ -234,7 +236,7 @@ class OverviewController extends ApplicationApiController
             ->with('actor')
             ->adminVisible()
             ->orderByDesc('timestamp')
-            ->limit(6)
+            ->limit(20)
             ->get()
             ->map(fn (ActivityLog $log) => [
                 'id' => sha1($log->id),

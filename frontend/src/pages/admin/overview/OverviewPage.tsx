@@ -18,7 +18,10 @@ import {
     ListOrdered,
 } from 'lucide-react';
 import { getAdminOverview, type AdminOverview, type OverviewNode, type OverviewNodeResource } from '@/api/adminOverview';
+import { getExtensions } from '@/api/extensions';
 import { useFlags } from '@/state/flags';
+import { useAdminHeld } from '@/layouts/heldPermissions';
+import { can } from '@/lib/can';
 import { Spinner } from '@/components/ui/Spinner';
 import { formatMib, formatCurrency, timeAgo } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -33,7 +36,7 @@ import {
     StatusLine,
     type AttentionItem,
 } from '../dashboardParts';
-import { describeActivity } from '@/lib/activity';
+import { describeActivity, groupRecentRepeats } from '@/lib/activity';
 
 function QueueCard({
     icon: Icon,
@@ -94,8 +97,8 @@ function NodeBar({ label, resource }: { label: string; resource: OverviewNodeRes
     return (
         <div
             className="flex items-center gap-3"
-            title={m['admin.overview.fleet.allocated']({
-                memory: formatMib(resource.used),
+            title={m['admin.overview.fleet.promised']({
+                used: formatMib(resource.used),
                 total: formatMib(resource.total),
             })}
         >
@@ -150,7 +153,19 @@ function NodeBar({ label, resource }: { label: string; resource: OverviewNodeRes
     );
 }
 
+const overLimit = (r: OverviewNodeResource) => r.limitPercent !== null && r.percent > r.limitPercent;
+
 function NodeRow({ node }: { node: OverviewNode }) {
+    // Red bars alone read as "something is broken" with no way forward. Say
+    // what is over and where to fix it; over 100% within the node's configured
+    // over-allocation is the operator's choice and stays amber and unexplained.
+    const over = [
+        overLimit(node.memory) &&
+            m['admin.overview.fleet.memory']({ used: formatMib(node.memory.used), total: formatMib(node.memory.total) }),
+        overLimit(node.disk) &&
+            m['admin.overview.fleet.disk']({ used: formatMib(node.disk.used), total: formatMib(node.disk.total) }),
+    ].filter((x): x is string => Boolean(x));
+
     return (
         <div className="flex flex-col gap-2 border-t border-[var(--color-border)] pt-3">
             <div className="flex items-center gap-2">
@@ -167,14 +182,37 @@ function NodeRow({ node }: { node: OverviewNode }) {
             </div>
             <NodeBar label={m['admin.overview.node.mem']()} resource={node.memory} />
             <NodeBar label={m['admin.overview.node.disk']()} resource={node.disk} />
+            {over.length > 0 && (
+                <p className="flex flex-wrap items-baseline gap-x-2 text-xs text-[var(--color-danger)]">
+                    <span>{m['admin.overview.fleet.overCommitted']({ resources: over.join(', ') })}</span>
+                    <Link
+                        to={`/admin/infrastructure/nodes/${node.id}`}
+                        className="font-medium text-[var(--brand-bright)] hover:underline"
+                    >
+                        {m['admin.overview.fleet.openNode']()}
+                    </Link>
+                </p>
+            )}
         </div>
     );
 }
 
-function buildAttention(data: AdminOverview, billingEnabled: boolean, ticketsEnabled: boolean): AttentionItem[] {
+function buildAttention(
+    data: AdminOverview,
+    billingEnabled: boolean,
+    ticketsEnabled: boolean,
+    extensionUpdates: number,
+): AttentionItem[] {
     const items: AttentionItem[] = [];
     if (!data.health.version.isLatest && data.health.version.latest) {
         items.push({ key: 'update', label: m['admin.overview.attention.update']({ version: data.health.version.latest }), to: '/admin/settings' });
+    }
+    if (extensionUpdates > 0) {
+        items.push({
+            key: 'extensions',
+            label: m['admin.overview.attention.extensionUpdates']({ count: extensionUpdates }),
+            to: '/admin/extensions?filter=updates',
+        });
     }
     if (data.fleet.nodes.maintenance > 0) {
         items.push({ key: 'maint', label: m['admin.overview.attention.maintenance']({ count: data.fleet.nodes.maintenance }), to: '/admin/infrastructure' });
@@ -200,12 +238,36 @@ export default function OverviewPage() {
     const flags = useFlags(s => s.everest);
     const billingEnabled = flags?.billing.enabled ?? false;
     const ticketsEnabled = flags?.tickets.enabled ?? false;
+    const held = useAdminHeld();
 
     const { data, isLoading, isError, error } = useQuery({
         queryKey: ['admin', 'overview'],
         queryFn: getAdminOverview,
         refetchInterval: 30_000,
     });
+
+    // Update availability comes from the extension catalog, not the overview
+    // aggregate: it needs the repository manifests, which the catalog caches
+    // for five minutes and the polled overview must not fetch. Shares the
+    // Extensions page's cache entry.
+    const extensionsQ = useQuery({
+        queryKey: ['admin', 'extensions'],
+        queryFn: getExtensions,
+        enabled: Boolean(flags?.extensions.enabled) && can(held, 'extensions.read'),
+        staleTime: 5 * 60_000,
+    });
+    const extensionUpdates = extensionsQ.data?.filter(e => e.updateAvailable).length ?? 0;
+
+    // Twenty entries arrive; the same admin doing the same thing within an hour
+    // becomes one row with a count, and the first six rows are shown.
+    const activity = data
+        ? groupRecentRepeats(
+              data.activity,
+              a => `${a.actor}|${a.event}`,
+              a => Date.parse(a.timestamp),
+              60 * 60_000,
+          ).slice(0, 6)
+        : [];
 
     const nodes = data
         ? [...data.fleet.nodes.list].sort(
@@ -236,7 +298,7 @@ export default function OverviewPage() {
             {data && (
                 <>
                     <StatusLine
-                        items={buildAttention(data, billingEnabled, ticketsEnabled)}
+                        items={buildAttention(data, billingEnabled, ticketsEnabled, extensionUpdates)}
                         info={m['admin.overview.status.version']({ version: data.health.version.current })}
                     />
 
@@ -256,7 +318,12 @@ export default function OverviewPage() {
                             sub={m['admin.overview.kpi.nodesCapacity']({
                                 percent: Math.max(data.fleet.capacity.memoryPercent, data.fleet.capacity.diskPercent),
                             })}
-                            tone={data.fleet.nodes.maintenance > 0 ? 'warning' : undefined}
+                            tone={
+                                data.fleet.nodes.maintenance > 0 ||
+                                data.fleet.nodes.list.some(n => overLimit(n.memory) || overLimit(n.disk))
+                                    ? 'warning'
+                                    : undefined
+                            }
                             to="/admin/infrastructure?view=nodes"
                         />
                         <KpiTile
@@ -336,8 +403,8 @@ export default function OverviewPage() {
                                 </Link>
                             )}
                             <p className="mt-4 border-t border-[var(--color-border)] pt-3 font-mono text-xs text-[var(--color-ink-faint)]">
-                                {m['admin.overview.fleet.allocated']({
-                                    memory: formatMib(data.fleet.capacity.memoryUsed),
+                                {m['admin.overview.fleet.memoryTotal']({
+                                    used: formatMib(data.fleet.capacity.memoryUsed),
                                     total: formatMib(data.fleet.capacity.memoryTotal),
                                 })}
                             </p>
@@ -407,14 +474,14 @@ export default function OverviewPage() {
                                     to="/admin/activity"
                                     action={m['admin.overview.link.viewAll']()}
                                 />
-                                {data.activity.length === 0 ? (
+                                {activity.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
                                         <Activity className="h-5 w-5 text-[var(--color-ink-faint)]" />
                                         <p className="text-sm text-[var(--color-ink-muted)]">{m['admin.overview.activity.empty']()}</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col">
-                                        {data.activity.map((a, i) => (
+                                        {activity.map(({ entry: a, count }, i) => (
                                             <div
                                                 key={a.id}
                                                 className={cn(
@@ -426,6 +493,11 @@ export default function OverviewPage() {
                                                     <span className="font-semibold text-[var(--color-ink)]">{a.actor}</span>{' '}
                                                     <span className="text-[var(--color-ink-muted)]">{describeActivity(a)}</span>
                                                 </span>
+                                                {count > 1 && (
+                                                    <span className="shrink-0 rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 font-mono text-[10px] font-medium text-[var(--color-ink-muted)]">
+                                                        {m['admin.overview.activity.repeated']({ count })}
+                                                    </span>
+                                                )}
                                                 <span className="shrink-0 font-mono text-[11px] tabular-nums text-[var(--color-ink-faint)]">
                                                     {timeAgo(a.timestamp)}
                                                 </span>

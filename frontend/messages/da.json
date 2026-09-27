@@ -1935,7 +1935,6 @@
   "admin.overview.attention.update": "Opdatering til {version}",
   "admin.overview.attention.workers": "Køarbejdere gik i stå",
   "admin.overview.fleet.active": "{count} aktive",
-  "admin.overview.fleet.allocated": "{memory} af {total} tildelt",
   "admin.overview.fleet.installFailed": "{count} installationen mislykkedes",
   "admin.overview.fleet.suspended": "{count} suspenderet",
   "admin.overview.kpi.mrr": "Månedlig omsætning",

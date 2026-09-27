@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { activityMessageId, activitySubject, collapseRepeats, describeActivity, humanizeEvent } from './activity';
+import {
+    activityMessageId,
+    activitySubject,
+    collapseRepeats,
+    describeActivity,
+    groupRecentRepeats,
+    humanizeEvent,
+} from './activity';
 
 describe('activityMessageId', () => {
     it('maps colons to dots and hyphens to underscores', () => {
@@ -66,6 +73,50 @@ describe('collapseRepeats', () => {
         expect(collapseRepeats(['!x', '!x'], key)).toEqual([
             { entry: '!x', count: 1 },
             { entry: '!x', count: 1 },
+        ]);
+    });
+});
+
+describe('groupRecentRepeats', () => {
+    type E = { k: string | null; t: number };
+    const group = (items: E[]) =>
+        groupRecentRepeats(items, e => e.k, e => e.t, 60).map(r => [r.entry.k, r.entry.t, r.count]);
+
+    it('merges interleaved repeats inside the window, keeping the newest entry', () => {
+        expect(
+            group([
+                { k: 'upd', t: 100 },
+                { k: 'new', t: 90 },
+                { k: 'upd', t: 80 },
+                { k: 'new', t: 70 },
+            ]),
+        ).toEqual([
+            ['upd', 100, 2],
+            ['new', 90, 2],
+        ]);
+    });
+
+    it('starts a new row once an entry falls outside the window', () => {
+        expect(
+            group([
+                { k: 'upd', t: 200 },
+                { k: 'upd', t: 100 },
+            ]),
+        ).toEqual([
+            ['upd', 200, 1],
+            ['upd', 100, 1],
+        ]);
+    });
+
+    it('never merges entries without a key', () => {
+        expect(
+            group([
+                { k: null, t: 10 },
+                { k: null, t: 10 },
+            ]),
+        ).toEqual([
+            [null, 10, 1],
+            [null, 10, 1],
         ]);
     });
 });

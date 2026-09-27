@@ -1,6 +1,7 @@
 import { m } from '@/i18n/messages';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { Puzzle, RefreshCw, Package, Power, ArrowUpCircle, GitBranch, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
     type Extension,
@@ -91,7 +92,9 @@ export default function ExtensionsOverviewPage() {
     const push = useFlashes(s => s.push);
     const qc = useQueryClient();
 
-    const [filter, setFilter] = useState<Filter>('all');
+    // The Overview's "N extension updates available" links here with ?filter=updates.
+    const [params] = useSearchParams();
+    const [filter, setFilter] = useState<Filter>(() => (params.get('filter') === 'updates' ? 'updates' : 'all'));
     const [search, setSearch] = useState('');
     const [selected, setSelected] = useState<Extension | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

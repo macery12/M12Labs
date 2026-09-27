@@ -51,6 +51,29 @@ export function collapseRepeats<T>(items: T[], key: (item: T) => string | null):
     return out.map(({ entry, count }) => ({ entry, count }));
 }
 
+/**
+ * Like collapseRepeats, but an entry also joins an earlier row with the same
+ * key when it happened within `windowMs` of that row's newest entry, even with
+ * other entries in between. For short newest-first summaries: an admin adding
+ * and editing five links interleaves "created" and "updated", which adjacent
+ * merging leaves as five rows. The row keeps its newest entry and position.
+ */
+export function groupRecentRepeats<T>(
+    items: T[],
+    key: (item: T) => string | null,
+    time: (item: T) => number,
+    windowMs: number,
+): { entry: T; count: number }[] {
+    const out: { entry: T; count: number; key: string | null }[] = [];
+    for (const item of items) {
+        const k = key(item);
+        const row = k === null ? undefined : out.find(r => r.key === k && Math.abs(time(r.entry) - time(item)) <= windowMs);
+        if (row) row.count++;
+        else out.push({ entry: item, count: 1, key: k });
+    }
+    return out.map(({ entry, count }) => ({ entry, count }));
+}
+
 /** 'admin:api-keys:create' → 'activity.event.admin.api_keys.create' */
 export function activityMessageId(event: string): string {
     return `activity.event.${event.replace(/:/g, '.').replace(/-/g, '_')}`;
