@@ -3077,6 +3077,7 @@
   "admin.theme.loadPreset": "Load “{name}”",
   "admin.theme.newPresetName": "New preset name…",
   "admin.theme.off": "off",
+  "admin.theme.presetMakeup": "{brand} on {palette}",
   "admin.theme.presets": "Presets",
   "admin.theme.presetsDesc": "Apply a saved color scheme into the editor, then save. Texture settings aren’t part of a preset.",
   "admin.theme.previewMeta": "Radius {radius} · grid {grid} · aurora {aurora}",

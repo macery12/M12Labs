@@ -55,6 +55,16 @@ function syncWindow(theme: Theme): void {
     window.ThemeConfiguration = { colors: { ...theme.colors }, feel: { ...theme.feel } };
 }
 
+// Built-in presets share names with base palettes ("Slate", "Midnight"), which
+// blurred the two lists. Each preset says what it is made of: its brand colour
+// and the base palette it sits on, matched by colour value.
+function presetMakeup(p: ThemePreset): string | null {
+    const same = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+    const brand = BRAND_SWATCHES.find(s => same(s.hex, p.colors.primary))?.name;
+    const palette = BASE_PALETTES.find(b => same(b.colors.surface, p.colors.surface))?.name;
+    return brand && palette ? m['admin.theme.presetMakeup']({ brand, palette }) : null;
+}
+
 export default function ThemeSection() {
     const qc = useQueryClient();
     const initial = useMemo(() => normalizeTheme(window.ThemeConfiguration), []);
@@ -400,10 +410,15 @@ export default function ThemeSection() {
                                         </div>
                                         <button
                                             onClick={() => loadPresetColors(p.colors)}
-                                            className="min-w-0 flex-1 truncate text-left text-sm font-medium hover:text-[var(--brand)]"
+                                            className="min-w-0 flex-1 text-left hover:text-[var(--brand)]"
                                             title={m['admin.theme.loadPreset']({ name: p.name })}
                                         >
-                                            {p.name}
+                                            <span className="block truncate text-sm font-medium">{p.name}</span>
+                                            {presetMakeup(p) && (
+                                                <span className="block truncate text-[11px] text-[var(--color-ink-faint)]">
+                                                    {presetMakeup(p)}
+                                                </span>
+                                            )}
                                         </button>
                                         {p.is_builtin ? (
                                             <Lock className="h-3.5 w-3.5 shrink-0 text-[var(--color-ink-faint)]" />
