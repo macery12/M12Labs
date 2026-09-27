@@ -15,6 +15,8 @@ import {
 import { can } from '@/lib/can';
 import { useAdminHeld } from '@/layouts/heldPermissions';
 import { cn } from '@/lib/cn';
+import { useQuery } from '@tanstack/react-query';
+import { getBillingExceptions } from '@/api/adminBillingExceptions';
 
 interface Item {
     to: string;
@@ -68,6 +70,18 @@ const GROUPS: Group[] = [
 export function BillingNav() {
     const held = useAdminHeld();
 
+    // Unresolved exceptions, as a count on their nav item: a failed charge or
+    // provisioning error otherwise waits until someone opens the tab. Shares the
+    // page's key prefix, so resolving one updates the badge too.
+    const canSeeExceptions = can(held, 'billing.exceptions');
+    const { data: exceptions } = useQuery({
+        queryKey: ['admin', 'billing', 'exceptions', 'count'],
+        queryFn: () => getBillingExceptions(1, null, 1),
+        enabled: canSeeExceptions,
+        staleTime: 60_000,
+    });
+    const badges: Record<string, number> = { [`${BASE}/exceptions`]: exceptions?.pagination.total ?? 0 };
+
     const groups = GROUPS.map(g => ({
         ...g,
         items: g.items.filter(i => can(held, i.permission)),
@@ -97,6 +111,11 @@ export function BillingNav() {
                             >
                                 <item.icon className="h-4 w-4 shrink-0" />
                                 <span className="whitespace-nowrap">{td(`admin.${item.labelKey}`)}</span>
+                                {(badges[item.to] ?? 0) > 0 && (
+                                    <span className="ml-auto rounded-full bg-[var(--color-danger)]/15 px-1.5 text-[10px] font-semibold tabular-nums text-[var(--color-danger)]">
+                                        {badges[item.to]}
+                                    </span>
+                                )}
                             </NavLink>
                         ))}
                     </div>
