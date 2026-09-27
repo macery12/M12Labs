@@ -6,6 +6,7 @@ import { getApiKeys, deleteApiKey, type AccountApiKey } from '@/api/credentials'
 import { timeAgo } from '@/lib/format';
 import { useFlashes } from '@/state/flashes';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import ApiKeyCreateModal from './ApiKeyCreateModal';
@@ -83,10 +84,19 @@ export default function ApiKeysTab() {
                         {m['account.credentials.api.loadError']()}
                     </p>
                 ) : items.length === 0 ? (
-                    <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
-                        <KeyRound className="h-8 w-8 text-[var(--color-ink-faint)]" />
-                        <p className="text-sm text-[var(--color-ink-muted)]">{m['account.credentials.api.empty']()}</p>
-                    </div>
+                    // Say what the key is for: "No API keys exist" left anyone who
+                    // didn't already know wondering whether they needed one.
+                    <EmptyState
+                        icon={KeyRound}
+                        title={m['account.credentials.api.empty']()}
+                        body={m['account.credentials.api.emptyBody']()}
+                        action={
+                            <Button size="sm" onClick={() => setFormOpen(true)}>
+                                <Plus className="h-4 w-4" />
+                                {m['account.credentials.api.create']()}
+                            </Button>
+                        }
+                    />
                 ) : (
                     <div className="divide-y divide-[var(--color-border)]">
                         {items.map(key => (
