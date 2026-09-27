@@ -1090,6 +1090,8 @@
   "admin.billing.orders.capId": "Capture ID",
   "admin.billing.orders.col.customer": "Customer",
   "admin.billing.orders.col.threat": "Threat",
+  "admin.billing.orders.threatHelp": "Fraud risk from 0 (low) to 100 (high), scored from account age and security, email domain, payment history and how fast orders arrive. Under 25 is low; 50 and over is worth a look. Open an order to see what added to it.",
+  "admin.billing.orders.threatHelpLabel": "What is the threat score?",
   "admin.billing.orders.detail.customer": "Customer",
   "admin.billing.orders.detail.email": "Email",
   "admin.billing.orders.detail.orderInfo": "Order information",

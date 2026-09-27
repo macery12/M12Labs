@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ListFilter, Search, X } from 'lucide-react';
+import * as Popover from '@radix-ui/react-popover';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, ListFilter, Search, X } from 'lucide-react';
 import { m, td } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 import { timeAgo } from '@/lib/format';
@@ -54,7 +55,7 @@ function SortHeader({
     onClick: () => void;
 }) {
     return (
-        <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-ink-muted)]">
+        <th className="px-2.5 py-3 text-left text-xs font-medium text-[var(--color-ink-muted)]">
             <button
                 type="button"
                 onClick={onClick}
@@ -68,7 +69,37 @@ function SortHeader({
 }
 
 function PlainHeader({ label }: { label: string }) {
-    return <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-ink-muted)]">{label}</th>;
+    return <th className="px-2.5 py-3 text-left text-xs font-medium text-[var(--color-ink-muted)]">{label}</th>;
+}
+
+// "Threat 30" meant nothing without knowing the scale or what feeds it.
+function ThreatHeader() {
+    return (
+        <th className="px-2.5 py-3 text-left text-xs font-medium text-[var(--color-ink-muted)]">
+            <span className="inline-flex items-center gap-1">
+                {m['admin.billing.orders.col.threat']()}
+                <Popover.Root>
+                    <Popover.Trigger
+                        aria-label={m['admin.billing.orders.threatHelpLabel']()}
+                        className="rounded text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <Info className="h-3.5 w-3.5" />
+                    </Popover.Trigger>
+                    <Popover.Portal>
+                        <Popover.Content
+                            side="bottom"
+                            align="center"
+                            sideOffset={6}
+                            className="z-50 max-w-xs rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-3 text-xs font-normal leading-relaxed text-[var(--color-ink-muted)] shadow-xl"
+                        >
+                            {m['admin.billing.orders.threatHelp']()}
+                        </Popover.Content>
+                    </Popover.Portal>
+                </Popover.Root>
+            </span>
+        </th>
+    );
 }
 
 const ROW_TINT: Record<OrderStatus, string> = {
@@ -292,17 +323,15 @@ export default function OrdersPage() {
             {/* Table */}
             <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]">
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[960px]">
+                    <table className="w-full min-w-[760px]">
                         <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/40">
                             <tr>
                                 <SortHeader label={m['billing.orders.col.id']()} active={sort === 'id'} desc={sortDesc} onClick={() => toggleSort('id')} />
                                 <PlainHeader label={m['admin.billing.orders.col.customer']()} />
                                 <PlainHeader label={m['billing.orders.col.server']()} />
                                 <PlainHeader label={m['billing.orders.col.product']()} />
-                                <PlainHeader label={m['billing.orders.col.type']()} />
-                                <PlainHeader label={m['billing.orders.col.provider']()} />
                                 <PlainHeader label={m['billing.orders.col.status']()} />
-                                <PlainHeader label={m['admin.billing.orders.col.threat']()} />
+                                <ThreatHeader />
                                 <SortHeader label={m['billing.orders.col.amount']()} active={sort === 'total'} desc={sortDesc} onClick={() => toggleSort('total')} />
                                 <SortHeader label={m['billing.orders.col.created']()} active={sort === 'created_at'} desc={sortDesc} onClick={() => toggleSort('created_at')} />
                             </tr>
@@ -314,17 +343,17 @@ export default function OrdersPage() {
                                     onClick={() => setSelected(order)}
                                     className={cn('cursor-pointer transition-colors', ROW_TINT[order.status] ?? ROW_TINT.expired)}
                                 >
-                                    <td className="px-4 py-3">
+                                    <td className="px-2.5 py-3">
                                         <code className="rounded bg-[var(--color-surface-2)] px-2 py-1 font-mono text-xs text-[var(--color-ink-muted)]">
                                             #{order.id}
                                         </code>
                                     </td>
-                                    <td className="px-4 py-3 text-sm">
+                                    <td className="px-2.5 py-3 text-sm">
                                         {order.username ? (
-                                            <div className="min-w-0">
+                                            <div className="min-w-0 max-w-[9rem]">
                                                 <p className="truncate font-medium text-[var(--color-ink)]">{order.username}</p>
                                                 {order.userEmail && (
-                                                    <p className="truncate text-xs text-[var(--color-ink-faint)]">{order.userEmail}</p>
+                                                    <p className="truncate text-xs text-[var(--color-ink-faint)]" title={order.userEmail}>{order.userEmail}</p>
                                                 )}
                                             </div>
                                         ) : (
@@ -333,31 +362,40 @@ export default function OrdersPage() {
                                             </span>
                                         )}
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-[var(--color-ink)]">
-                                        {order.serverName || order.name || <span className="text-[var(--color-ink-faint)]">—</span>}
+                                    <td className="px-2.5 py-3 text-sm text-[var(--color-ink)]">
+                                        <span className="block max-w-[8rem] truncate" title={order.serverName || order.name || undefined}>
+                                            {order.serverName || order.name || <span className="text-[var(--color-ink-faint)]">—</span>}
+                                        </span>
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-[var(--color-ink-muted)]">
-                                        {order.productName || <span className="text-[var(--color-ink-faint)]">—</span>}
+                                    {/* Type rides under the product: a whole column of
+                                        "New purchase" pushed Created off the right edge. */}
+                                    <td className="px-2.5 py-3 text-sm">
+                                        <span className="block max-w-[8rem] truncate text-[var(--color-ink-muted)]">
+                                            {order.productName || <span className="text-[var(--color-ink-faint)]">—</span>}
+                                        </span>
+                                        <span className="block max-w-[8rem] truncate text-xs text-[var(--color-ink-faint)]">
+                                            {orderTypeLabel(order.type)}
+                                        </span>
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-[var(--color-ink-muted)]">{orderTypeLabel(order.type)}</td>
-                                    <td className="px-4 py-3">
-                                        <ProcessorBadge processor={order.paymentProcessor} />
-                                    </td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-2.5 py-3">
                                         <StatusPill status={order.status} />
                                     </td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-2.5 py-3">
                                         <ThreatPill value={order.threatIndex} />
                                     </td>
-                                    <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-[var(--color-ink)]">
+                                    <td className="whitespace-nowrap px-2.5 py-3 text-sm font-medium text-[var(--color-ink)]">
                                         {money(order.total)}
                                         {order.type === 'ren' && (
                                             <span className="ml-1 text-xs font-normal text-[var(--color-ink-faint)]">
                                                 {m['billing.orders.perMonth']()}
                                             </span>
                                         )}
+                                        {/* The provider rides under the amount it was paid with. */}
+                                        <div className="mt-1">
+                                            <ProcessorBadge processor={order.paymentProcessor} />
+                                        </div>
                                     </td>
-                                    <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--color-ink-faint)]">
+                                    <td className="whitespace-nowrap px-2.5 py-3 text-sm text-[var(--color-ink-faint)]">
                                         {timeAgo(order.createdAt)}
                                     </td>
                                 </tr>
