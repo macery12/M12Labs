@@ -17,6 +17,9 @@ import { getStoreCategories, getCategoryProducts } from '@/api/accountBilling';
 import type { StoreConfiguration, StoreSection, StoreSectionId, StoreSectionData, StoreFeatureItem } from '@/lib/globals';
 import { IconPicker } from '@/components/ui/IconPicker';
 import { useWideContent } from '@/components/shell/shellLayout';
+import { getCatalog, type StorefrontCategory } from '@/api/storefront';
+import { collectCopy, duplicateNames, looksLikePlaceholder } from '@/lib/contentChecks';
+import { ContentIssues, type ContentIssue } from '@/components/ui/ContentIssues';
 import StoreCanvas from '@/pages/account/billing/store/StoreCanvas';
 
 const SECTION_META: Record<StoreSectionId, { titleKey: string; descKey: string }> = {
@@ -65,6 +68,12 @@ export default function StoreEditor() {
     }, [config, push]);
 
     const dirty = useMemo(() => JSON.stringify(config) !== JSON.stringify(saved), [config, saved]);
+
+    const catalogQ = useQuery({ queryKey: ['storefront', 'catalog'], queryFn: getCatalog, staleTime: 60_000 });
+    const issues = useMemo(
+        () => (config?.enabled ? storeIssues(config.sections, catalogQ.data ?? [], setSelectedId) : []),
+        [config, catalogQ.data],
+    );
 
     if (!config) {
         return (
@@ -149,6 +158,8 @@ export default function StoreEditor() {
                 </div>
             </header>
 
+            <ContentIssues issues={issues} />
+
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)]/60 p-5">
                 <span className="min-w-0 flex-1">
                     <span className="block text-base font-semibold text-[var(--color-ink)]">{m['storeAdmin.enabled']()}</span>
@@ -159,7 +170,10 @@ export default function StoreEditor() {
 
             <div
                 className={cn(
-                    'grid grid-cols-1 gap-6 xl:grid-cols-[210px_minmax(0,1fr)_minmax(0,440px)]',
+                    // This editor sits beside the Billing sub-nav, so three columns left
+                    // the section editor ~160px wide. The preview goes underneath
+                    // until the screen is wide enough for all three.
+                    'grid grid-cols-1 gap-6 lg:grid-cols-[200px_minmax(0,1fr)] 2xl:grid-cols-[200px_minmax(0,1fr)_minmax(0,440px)]',
                     !config.enabled && 'pointer-events-none opacity-50',
                 )}
             >
@@ -205,7 +219,7 @@ export default function StoreEditor() {
                 )}
 
                 {/* Right: live, scaled preview of the store page. */}
-                <div className="xl:sticky xl:top-6 xl:self-start">
+                <div className="lg:col-span-2 2xl:sticky 2xl:top-6 2xl:col-span-1 2xl:self-start">
                     <h2 className="mb-1 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
                         {m['storeAdmin.previewLabel']()}
                     </h2>
@@ -219,6 +233,43 @@ export default function StoreEditor() {
             </div>
         </div>
     );
+}
+
+/**
+ * Filler copy in enabled sections, and plans with the same name inside one
+ * category (the store shows a category at a time). Warnings only (D5).
+ */
+function storeIssues(
+    sections: StoreSection[],
+    catalog: StorefrontCategory[],
+    select: (id: StoreSectionId) => void,
+): ContentIssue[] {
+    const issues: ContentIssue[] = [];
+    for (const s of sections) {
+        if (!s.enabled) continue;
+        const section = td(SECTION_META[s.id].titleKey);
+        collectCopy(s.data).forEach((text, i) => {
+            if (looksLikePlaceholder(text)) {
+                issues.push({
+                    key: `${s.id}-${i}`,
+                    message: m['common.contentChecks.placeholder']({ section, text: text.trim() }),
+                    onFix: () => select(s.id),
+                });
+            }
+        });
+        if (s.id === 'catalog') {
+            for (const category of catalog) {
+                for (const name of duplicateNames(category.products.map(p => p.name))) {
+                    issues.push({
+                        key: `catalog-dup-${category.id}-${name}`,
+                        message: m['common.contentChecks.duplicate']({ section, name }),
+                        to: `/admin/billing/products/categories/${category.id}`,
+                    });
+                }
+            }
+        }
+    }
+    return issues;
 }
 
 // Renders the children at a fixed design width, scaled down to fit the preview
