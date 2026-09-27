@@ -1628,6 +1628,8 @@
   "admin.email.resend.dailyLimit": "Daily limit",
   "admin.email.resend.dailyQuota": "Daily quota",
   "admin.email.resend.deleteKey": "Delete saved key",
+  "admin.email.resend.deleteKeyBody": "Email sent through Resend stops until a new key is saved.",
+  "admin.email.resend.deleteKeyTitle": "Delete the saved Resend key?",
   "admin.email.resend.desc": "API access for the Resend transport.",
   "admin.email.resend.keyEnter": "Enter Resend API key",
   "admin.email.resend.keySaved": "Key saved — enter to replace",

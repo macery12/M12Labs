@@ -4,6 +4,7 @@ import { FlaskConical, CalendarDays, CalendarRange } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Meter } from '@/components/ui/Meter';
 import { Spinner, FullPageSpinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
@@ -19,6 +20,7 @@ export default function ResendPage() {
     const { settings, isLoading, save, saving } = useEmailSettings();
     const push = useFlashes(s => s.push);
 
+    const [confirmDelete, setConfirmDelete] = useState(false);
     const [apiKey, setApiKey] = useState('');
     const [plan, setPlan] = useState<ResendPlanKey>('free');
     const [monthly, setMonthly] = useState('');
@@ -131,11 +133,34 @@ export default function ResendPage() {
                         placeholder={settings.resend.api_key ? m['admin.email.resend.keySaved']() : m['admin.email.resend.keyEnter']()}
                     />
                 </LabeledField>
-                <div className="mt-3">
-                    <Button variant="ghost" size="sm" onClick={clearKey} disabled={!settings.resend.api_key || saving}>
-                        {m['admin.email.resend.deleteKey']()}
-                    </Button>
-                </div>
+                {/* Only when there is a key to delete; it deleted on one click, so
+                    it now confirms first. */}
+                {settings.resend.api_key && (
+                    <div className="mt-3">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                            onClick={() => setConfirmDelete(true)}
+                            disabled={saving}
+                        >
+                            {m['admin.email.resend.deleteKey']()}
+                        </Button>
+                    </div>
+                )}
+                <ConfirmDialog
+                    open={confirmDelete}
+                    onClose={() => setConfirmDelete(false)}
+                    title={m['admin.email.resend.deleteKeyTitle']()}
+                    body={m['admin.email.resend.deleteKeyBody']()}
+                    confirmLabel={m['admin.email.resend.deleteKey']()}
+                    cancelLabel={m['common.actions.cancel']()}
+                    busy={saving}
+                    onConfirm={async () => {
+                        await clearKey();
+                        setConfirmDelete(false);
+                    }}
+                />
             </SettingsCard>
 
             <SettingsCard title={m['admin.email.resend.planTitle']()} description={m['admin.email.resend.planDesc']()}>
