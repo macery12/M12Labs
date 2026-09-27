@@ -388,6 +388,37 @@ class SafeReseedingTest extends TestCase
         $this->assertTrue(DB::table('nests')->where('name', 'Steam Games')->exists());
     }
 
+    public function testFreshInstallCreatesEveryBuiltInNestBeforeImportingEggs(): void
+    {
+        DB::table('nests')->delete();
+
+        $this->artisan('db:seed', [
+            '--class' => DatabaseSeeder::class,
+            '--force' => true,
+            '--no-interaction' => true,
+        ])
+            ->expectsOutputToContain('Added 5 missing nests; found 0 existing nests.')
+            ->assertSuccessful();
+
+        $expectedNests = ['Minecraft', 'Rust', 'Source Engine', 'Steam Games', 'Voice Servers'];
+        $this->assertSame(
+            $expectedNests,
+            DB::table('nests')->orderBy('name')->pluck('name')->all(),
+        );
+
+        $expectedEggCount = 0;
+        foreach (EggSeeder::$import as $nestName) {
+            $expectedEggCount += count(glob(database_path('Seeders/eggs/' . Str::kebab($nestName) . '/*.json')));
+
+            $this->assertTrue(
+                Egg::query()->whereHas('nest', fn ($query) => $query->where('name', $nestName))->exists(),
+                sprintf('Expected the fresh %s nest to contain at least one egg.', $nestName),
+            );
+        }
+
+        $this->assertSame($expectedEggCount, Egg::query()->count());
+    }
+
     public function testThemeReseedingAddsMissingPresetsAndPreservesExistingPresetsNonInteractively(): void
     {
         $this->seedThemes();
