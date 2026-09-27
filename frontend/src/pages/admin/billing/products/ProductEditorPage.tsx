@@ -17,8 +17,11 @@ import {
     Archive,
     Database,
     Network,
+    Boxes,
+    Plus,
+    ChevronRight,
 } from 'lucide-react';
-import { getCategory } from '@/api/billingCategories';
+import { getCategory, getCategories } from '@/api/billingCategories';
 import {
     getProduct,
     getBillingCycles,
@@ -233,6 +236,12 @@ export default function ProductEditorPage() {
     };
 
     const backTo = categoryId != null ? `/admin/billing/products/categories/${categoryId}` : '/admin/billing/products';
+
+    // Opened without ?category= (a bookmark, or the Create menu): ask for the
+    // category instead of showing an error with a link away.
+    if (categoryId == null && !editing) {
+        return <CategoryPicker />;
+    }
 
     if (categoryId == null) {
         return (
@@ -474,5 +483,64 @@ export default function ProductEditorPage() {
                 }}
             />
         </form>
+    );
+}
+
+function CategoryPicker() {
+    const [, setParams] = useSearchParams();
+    const navigate = useNavigate();
+    const { data: categories, isLoading } = useQuery({
+        queryKey: ['admin', 'billing', 'categories'],
+        queryFn: getCategories,
+    });
+
+    return (
+        <div className="flex max-w-2xl flex-col gap-5">
+            <div>
+                <Link
+                    to="/admin/billing/products"
+                    className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    {m['admin.billing.products.backToCatalog']()}
+                </Link>
+                <h1 className="mt-1 text-xl font-semibold text-[var(--color-ink)]">{m['admin.billing.products.newTitle']()}</h1>
+            </div>
+            <SectionCard
+                icon={Boxes}
+                title={m['admin.billing.products.pickCategory']()}
+                desc={m['admin.billing.products.pickCategoryDesc']()}
+            >
+                {isLoading ? (
+                    <Spinner className="h-5 w-5" />
+                ) : !categories || categories.length === 0 ? (
+                    <div className="flex flex-col items-start gap-3">
+                        <p className="text-sm text-[var(--color-ink-muted)]">{m['admin.billing.products.pickCategoryEmpty']()}</p>
+                        <Button size="sm" onClick={() => navigate('/admin/billing/products/categories/new')}>
+                            <Plus className="h-4 w-4" /> {m['admin.billing.categories.new']()}
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                        {categories.map(cat => (
+                            <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => setParams({ category: String(cat.id) })}
+                                className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface-2)]/40 px-4 py-3 text-left transition-colors hover:border-[var(--brand)]/50 hover:bg-[var(--color-surface-2)]"
+                            >
+                                <span className="min-w-0">
+                                    <span className="block truncate text-sm font-medium text-[var(--color-ink)]">{cat.name}</span>
+                                    {cat.description && (
+                                        <span className="block truncate text-xs text-[var(--color-ink-faint)]">{cat.description}</span>
+                                    )}
+                                </span>
+                                <ChevronRight className="h-4 w-4 shrink-0 text-[var(--color-ink-faint)]" />
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </SectionCard>
+        </div>
     );
 }
