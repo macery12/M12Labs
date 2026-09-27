@@ -321,10 +321,12 @@ export default function PermissionMatrix({
                         </header>
 
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[34rem] border-collapse text-left">
+                            {/* Fixed layout with set widths, so the action columns line up
+                                from one section to the next whatever each one holds. */}
+                            <table className="w-full min-w-[34rem] table-fixed border-collapse text-left">
                                 <thead>
                                     <tr className="border-b border-[var(--color-border)]">
-                                        <th scope="col" className="w-full px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
+                                        <th scope="col" className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
                                             {m['admin.roles.matrix.resource']()}
                                         </th>
                                         {ACTIONS.map(action => {
@@ -337,7 +339,7 @@ export default function PermissionMatrix({
                                                 <th
                                                     key={action}
                                                     scope="col"
-                                                    className="px-2 py-1.5 text-center text-[11px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]"
+                                                    className="w-20 px-2 py-1.5 text-center text-[11px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]"
                                                 >
                                                     <button
                                                         type="button"
@@ -353,7 +355,7 @@ export default function PermissionMatrix({
                                                 </th>
                                             );
                                         })}
-                                        <th scope="col" className="w-10 px-2 py-1.5">
+                                        <th scope="col" className="w-36 px-2 py-1.5">
                                             <span className="sr-only">{m['admin.roles.matrix.extrasHeader']()}</span>
                                         </th>
                                     </tr>
@@ -361,6 +363,7 @@ export default function PermissionMatrix({
                                 <tbody>
                                     {rows.map(({ groupKey, group, canonical, extras, all }) => {
                                         const rowAll = all.every(id => selected.has(id));
+                                        const extrasOn = extras.filter(k => selected.has(`${groupKey}.${k}`)).length;
                                         // A search hit inside the long tail forces the row open, so a
                                         // matched capability is never hidden behind the collapsed "+N".
                                         const isExpanded =
@@ -415,9 +418,19 @@ export default function PermissionMatrix({
                                                                     return next;
                                                                 })
                                                             }
-                                                            className="inline-flex items-center gap-0.5 rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+                                                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] px-2 py-0.5 text-[11px] font-medium tabular-nums text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
                                                         >
-                                                            +{extras.length}
+                                                            {/* A bare "+11" read as a count of something, not as more
+                                                                permissions hidden in this row. Say so, and say how many of
+                                                                the hidden ones are on so a collapsed row can't hide a grant. */}
+                                                            {isExpanded
+                                                                ? m['admin.roles.matrix.fewer']()
+                                                                : m['admin.roles.matrix.more']({ count: extras.length })}
+                                                            {!isExpanded && extrasOn > 0 && (
+                                                                <span className="rounded bg-[var(--brand-soft)] px-1 text-[var(--color-ink)]">
+                                                                    {m['admin.roles.matrix.moreSelected']({ selected: extrasOn })}
+                                                                </span>
+                                                            )}
                                                             <ChevronDown
                                                                 className={cn(
                                                                     'h-3 w-3 transition-transform',
