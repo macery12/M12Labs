@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Puzzle, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Puzzle } from 'lucide-react';
 import { m } from '@/i18n/messages';
-import { Panel } from '@/components/ui/Panel';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -14,7 +13,7 @@ import { useServerSocket } from '@/state/serverSocket';
 import { useFlashes } from '@/state/flashes';
 import { getEggInfo, getStoreProduct, getStoreCategories, type EggInfo } from '@/api/accountBilling';
 import { changeEgg } from '@/api/serverBilling';
-import { Notice } from './parts';
+import { Notice } from '../billing/parts';
 
 const DELETE_PHRASE = 'DELETE';
 
@@ -64,7 +63,11 @@ async function resolveEggOptions(
 
 // Switch the server's software (egg). Reinstalls the server, so it's gated on
 // the server being stopped and behind an explicit confirmation.
-export function ChangeEggPanel() {
+//
+// A row in Settings → Actions, beside Reinstall. It sat under Billing, where
+// "change what game this is" read as a payment setting (#25); it is the same
+// kind of rebuild as Reinstall and takes the same permission server-side.
+export function ChangeTypeRow() {
     const server = useServer();
     const push = useFlashes(s => s.push);
     const powerState = useServerSocket(s => s.status);
@@ -87,7 +90,7 @@ export function ChangeEggPanel() {
         // than try to patch the cache back into agreement.
         onSuccess: () => window.location.reload(),
         onError: () => {
-            push({ type: 'error', message: m['server.billing.eggChangeError']() });
+            push({ type: 'error', message: m['server.settings.type.eggChangeError']() });
             setConfirming(false);
         },
     });
@@ -115,54 +118,55 @@ export function ChangeEggPanel() {
 
     return (
         <>
-            <Panel title={m['server.billing.changeType']()} icon={Puzzle}>
-                <div className="space-y-3">
-                    <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
-                            {m['server.billing.currentType']()}
+            <div className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-ink)]">
+                            <Puzzle className="h-4 w-4 text-[var(--color-ink-faint)]" />
+                            {m['server.settings.type.changeType']()}
                         </p>
-                        <p className="mt-0.5 text-sm font-medium text-[var(--color-ink)]">{currentEgg?.name ?? '—'}</p>
+                        <p className="text-xs text-[var(--color-ink-faint)]">
+                            {m['server.settings.type.desc']({ type: currentEgg?.name ?? '—' })}
+                        </p>
+                        {!stopped && (
+                            <p className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-warning)]">
+                                <AlertTriangle className="h-3.5 w-3.5" /> {m['server.settings.type.mustBeStopped']()}
+                            </p>
+                        )}
                     </div>
-
-                    <div className="space-y-1.5">
-                        <label
-                            htmlFor="egg-select"
-                            className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]"
-                        >
-                            {m['server.billing.newType']()}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <label htmlFor="egg-select" className="sr-only">
+                            {m['server.settings.type.newType']()}
                         </label>
                         <Select
                             id="egg-select"
                             value={String(targetId)}
                             onChange={value => setSelectedEggId(Number(value))}
                             options={eggs.map(egg => ({ value: String(egg.id), label: egg.name }))}
+                            className="h-10 w-52"
                         />
+                        {/* Red only once there's a change to make; a loud red button
+                            beside the current type read as "something's wrong". */}
+                        <Button
+                            variant={changed ? 'danger' : 'outline'}
+                            disabled={!canSubmit || change.isPending}
+                            onClick={() => setConfirming(true)}
+                        >
+                            {m['server.settings.type.changeTypeAction']()}
+                        </Button>
                     </div>
-
-                    {!stopped && <Notice tone="warning">{m['server.billing.mustBeStopped']()}</Notice>}
-                    {canSubmit && (
-                        <Notice tone="warning" icon={AlertTriangle}>
-                            {m['server.billing.backupWarning']()}
-                        </Notice>
-                    )}
-
-                    {/* Red only once there's a change to make; a loud red button
-                        beside the current type read as "something's wrong". */}
-                    <Button
-                        variant={changed ? 'danger' : 'outline'}
-                        className="w-full"
-                        disabled={!canSubmit || change.isPending}
-                        onClick={() => setConfirming(true)}
-                    >
-                        {m['server.billing.changeTypeAction']()}
-                    </Button>
                 </div>
-            </Panel>
+                {canSubmit && (
+                    <Notice tone="warning" icon={AlertTriangle}>
+                        {m['server.settings.type.backupWarning']()}
+                    </Notice>
+                )}
+            </div>
 
             <Modal
                 open={confirming}
                 onClose={closeDialog}
-                title={m['server.billing.confirmEggTitle']()}
+                title={m['server.settings.type.confirmEggTitle']()}
                 size="sm"
                 footer={
                     <>
@@ -176,22 +180,22 @@ export function ChangeEggPanel() {
                             onClick={() => change.mutate()}
                         >
                             {change.isPending && <Spinner className="h-4 w-4" />}
-                            {m['server.billing.changeTypeAction']()}
+                            {m['server.settings.type.changeTypeAction']()}
                         </Button>
                     </>
                 }
             >
                 <div className="space-y-3">
                     <p className="text-sm text-[var(--color-ink-muted)]">
-                        {m['server.billing.confirmEggBody']({
+                        {m['server.settings.type.confirmEggBody']({
                             from: currentEgg?.name ?? '—',
                             to: targetEgg?.name ?? '—',
                         })}
                     </p>
 
                     <Notice tone="warning" icon={AlertTriangle}>
-                        <p className="font-medium">{m['server.billing.backupHeading']()}</p>
-                        <p className="mt-1">{m['server.billing.backupDetail']()}</p>
+                        <p className="font-medium">{m['server.settings.type.backupHeading']()}</p>
+                        <p className="mt-1">{m['server.settings.type.backupDetail']()}</p>
                     </Notice>
 
                     <div className="rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 p-3">
@@ -199,10 +203,10 @@ export function ChangeEggPanel() {
                             <Switch checked={deleteFiles} onChange={setDeleteFiles} disabled={change.isPending} />
                             <div className="min-w-0">
                                 <p className="text-sm font-medium text-[var(--color-ink)]">
-                                    {m['server.billing.deleteFiles']()}
+                                    {m['server.settings.type.deleteFiles']()}
                                 </p>
                                 <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-                                    {m['server.billing.deleteFilesDetail']()}
+                                    {m['server.settings.type.deleteFilesDetail']()}
                                 </p>
                             </div>
                         </div>
@@ -213,7 +217,7 @@ export function ChangeEggPanel() {
                                     htmlFor="egg-delete-confirm"
                                     className="text-xs font-medium text-[var(--color-danger)]"
                                 >
-                                    {m['server.billing.typeToConfirm']({ phrase: DELETE_PHRASE })}
+                                    {m['server.settings.type.typeToConfirm']({ phrase: DELETE_PHRASE })}
                                 </label>
                                 <Input
                                     id="egg-delete-confirm"
@@ -229,8 +233,8 @@ export function ChangeEggPanel() {
 
                     <p className="text-xs text-[var(--color-ink-muted)]">
                         {deleteFiles
-                            ? m['server.billing.eggOutcomeDelete']()
-                            : m['server.billing.eggOutcomeKeep']()}
+                            ? m['server.settings.type.eggOutcomeDelete']()
+                            : m['server.settings.type.eggOutcomeKeep']()}
                     </p>
                 </div>
             </Modal>

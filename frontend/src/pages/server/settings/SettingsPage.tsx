@@ -15,6 +15,7 @@ import { Input, Field } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ChangeTypeRow } from './ChangeTypeRow';
 
 export default function SettingsPage() {
     const server = useServer();
@@ -190,7 +191,7 @@ function ActionsCard({ canReinstall, billingEnabled }: { canReinstall: boolean; 
     });
 
     return (
-        <SectionCard icon={ServerCog} title={m['server.settings.actions.title']()} desc={m['server.settings.actions.desc']()} danger={billingEnabled}>
+        <SectionCard icon={ServerCog} title={m['server.settings.actions.title']()} desc={m['server.settings.actions.descWithType']()} danger={billingEnabled}>
             <div className="flex flex-col gap-5">
                 {canReinstall && (
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -210,6 +211,9 @@ function ActionsCard({ canReinstall, billingEnabled }: { canReinstall: boolean; 
                         </Button>
                     </div>
                 )}
+
+                {/* Hides itself when this server has only one type to choose from. */}
+                {canReinstall && <ChangeTypeRow />}
 
                 {billingEnabled && (
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-border)] pt-5">

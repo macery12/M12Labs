@@ -12,7 +12,6 @@ import { getStoreProduct, getProductBillingCycles } from '@/api/accountBilling';
 import { buildBillingModel, type RenewalSettings, type RenewalState } from './billingModel';
 import { RenewalPanel } from './RenewalPanel';
 import { ChangePlanPanel } from './ChangePlanPanel';
-import { ChangeEggPanel } from './ChangeEggPanel';
 import { Notice } from './parts';
 
 // Server billing cockpit: renewal state up top, then the actions (renew,
@@ -128,10 +127,8 @@ export default function BillingPage() {
             <div className="grid gap-4 lg:grid-cols-2">
                 {/* With no plan there's nothing to renew; the notice above says so. */}
                 {product && <RenewalPanel model={model} product={product} cycles={cyclesQ.data ?? []} />}
-                <div className="flex flex-col gap-4">
-                    <ChangePlanPanel currency={billing.currency.code} />
-                    <ChangeEggPanel />
-                </div>
+                <ChangePlanPanel currency={billing.currency.code} />
+                {/* Change type lives in Settings → Actions, beside Reinstall (#25). */}
             </div>
         </div>
     );
