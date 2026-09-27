@@ -12,7 +12,6 @@ import {
     Settings,
     Activity,
     CreditCard,
-    Puzzle,
 } from 'lucide-react';
 import { route, type RouteDef } from './registry';
 
@@ -55,7 +54,11 @@ export const serverRoutes: RouteDef[] = [
 
     route('activity/*', { name: 'Activity', icon: Activity, permission: 'activity.*', element: ServerActivityPage }),
     route('billing/*', { name: 'Billing', icon: CreditCard, permission: 'billing.*', condition: f => f.billing.enabled, element: BillingPage }),
-    route('extensions/*', { name: 'Extensions', icon: Puzzle, permission: 'extension.*', condition: f => f.extensions.enabled, element: ExtensionsSection }),
+    // No sidebar entry: every extension page below already has its own, so a
+    // hub listing them again was a page with one card that repeated the nav.
+    // The route stays for direct links and for stale extension URLs, which
+    // redirect here.
+    route('extensions/*', { permission: 'extension.*', condition: f => f.extensions.enabled, element: ExtensionsSection }),
 
     // Pages contributed by installed extensions, promoted into the sidebar
     // category each one declared. The URL keeps the extensions/ext/<id>/ prefix
