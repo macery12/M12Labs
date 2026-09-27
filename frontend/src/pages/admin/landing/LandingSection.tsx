@@ -19,7 +19,7 @@ import type {
     LandingFaqItem,
     LandingTestimonialItem,
 } from '@/lib/globals';
-import { LANDING_ICON_NAMES, resolveIcon } from '@/pages/landing/sections/icons';
+import { IconPicker } from '@/components/ui/IconPicker';
 import { useWideContent } from '@/components/shell/shellLayout';
 import LandingCanvas from '@/pages/landing/LandingCanvas';
 
@@ -468,37 +468,6 @@ function SectionFields({ section, onData }: { section: LandingSection; onData: (
         default:
             return null;
     }
-}
-
-// Compact visual icon grid — replaces the old dropdown so operators can see the
-// glyph they are choosing. Limited to the shared Lucide allowlist.
-function IconPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-    return (
-        <div className="flex flex-wrap gap-1.5">
-            {LANDING_ICON_NAMES.map(n => {
-                const Icon = resolveIcon(n);
-                const active = n === value;
-                return (
-                    <button
-                        key={n}
-                        type="button"
-                        title={n}
-                        aria-label={n}
-                        aria-pressed={active}
-                        onClick={() => onChange(n)}
-                        className={cn(
-                            'flex h-9 w-9 items-center justify-center rounded-lg border transition-colors',
-                            active
-                                ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]'
-                                : 'border-[var(--color-border)] text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)]',
-                        )}
-                    >
-                        <Icon className="h-4 w-4" />
-                    </button>
-                );
-            })}
-        </div>
-    );
 }
 
 function CtaEditor({

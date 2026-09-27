@@ -3604,6 +3604,7 @@
   "common.states.installing": "Installing",
   "common.states.loading": "Loading…",
   "common.states.no": "No",
+  "common.states.noIcon": "No icon",
   "common.states.offline": "Offline",
   "common.states.running": "Running",
   "common.states.saved": "Saved",

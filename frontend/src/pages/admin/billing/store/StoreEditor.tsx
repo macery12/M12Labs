@@ -15,7 +15,7 @@ import { firstError } from '@/lib/apiError';
 import { getStoreConfig, updateStoreConfig } from '@/api/adminStore';
 import { getStoreCategories, getCategoryProducts } from '@/api/accountBilling';
 import type { StoreConfiguration, StoreSection, StoreSectionId, StoreSectionData, StoreFeatureItem } from '@/lib/globals';
-import { LANDING_ICON_NAMES, resolveIcon } from '@/pages/landing/sections/icons';
+import { IconPicker } from '@/components/ui/IconPicker';
 import { useWideContent } from '@/components/shell/shellLayout';
 import StoreCanvas from '@/pages/account/billing/store/StoreCanvas';
 
@@ -494,37 +494,6 @@ function CatalogFields({ data, onData }: { data: StoreSectionData; onData: (data
             </fieldset>
 
             <p className="text-xs text-[var(--color-ink-faint)]">{m['storeAdmin.catalog.note']()}</p>
-        </div>
-    );
-}
-
-// Compact visual icon grid — limited to the shared Lucide allowlist so stored
-// config never references an arbitrary component.
-function IconPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-    return (
-        <div className="flex flex-wrap gap-1.5">
-            {LANDING_ICON_NAMES.map(n => {
-                const Icon = resolveIcon(n);
-                const active = n === value;
-                return (
-                    <button
-                        key={n}
-                        type="button"
-                        title={n}
-                        aria-label={n}
-                        aria-pressed={active}
-                        onClick={() => onChange(n)}
-                        className={cn(
-                            'flex h-9 w-9 items-center justify-center rounded-lg border transition-colors',
-                            active
-                                ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand)]'
-                                : 'border-[var(--color-border)] text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)]',
-                        )}
-                    >
-                        <Icon className="h-4 w-4" />
-                    </button>
-                );
-            })}
         </div>
     );
 }
