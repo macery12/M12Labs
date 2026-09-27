@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { abs } from '@/lib/base';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronUp, ChevronDown, Plus, Trash2, ExternalLink, EyeOff } from 'lucide-react';
 import { m, td } from '@/i18n/messages';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +23,10 @@ import type {
 import { IconPicker } from '@/components/ui/IconPicker';
 import { useWideContent } from '@/components/shell/shellLayout';
 import LandingCanvas from '@/pages/landing/LandingCanvas';
+import { DEFAULTS as FEATURE_DEFAULTS } from '@/pages/landing/sections/Features';
+import { getCatalog, type StorefrontCategory } from '@/api/storefront';
+import { collectCopy, duplicateNames, looksLikePlaceholder } from '@/lib/contentChecks';
+import { ContentIssues, type ContentIssue } from '@/components/ui/ContentIssues';
 
 const SECTION_META: Record<LandingSectionId, { titleKey: string; descKey: string }> = {
     hero: { titleKey: 'landingAdmin.hero.title', descKey: 'landingAdmin.hero.desc' },
@@ -71,6 +76,13 @@ export default function LandingSection() {
     }, [config, push]);
 
     const dirty = useMemo(() => JSON.stringify(config) !== JSON.stringify(saved), [config, saved]);
+
+    // Plans the Pricing section would show, for the duplicate-name check.
+    const catalogQ = useQuery({ queryKey: ['storefront', 'catalog'], queryFn: getCatalog, staleTime: 60_000 });
+    const issues = useMemo(
+        () => (config?.enabled ? contentIssues(config.sections, catalogQ.data ?? [], setSelectedId) : []),
+        [config, catalogQ.data],
+    );
 
     if (!config) {
         return (
@@ -154,6 +166,8 @@ export default function LandingSection() {
                 </div>
             </header>
 
+            <ContentIssues issues={issues} />
+
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)]/60 p-5">
                 <span className="min-w-0 flex-1">
                     <span className="block text-base font-semibold text-[var(--color-ink)]">{m['landingAdmin.enabled']()}</span>
@@ -205,7 +219,7 @@ export default function LandingSection() {
                                 {m['landingAdmin.hiddenNotice']()}
                             </p>
                         )}
-                        <SectionFields section={selected} onData={data => updateData(selectedIndex, data)} />
+                        <SectionFields section={selected} name={name} onData={data => updateData(selectedIndex, data)} />
                     </div>
                 )}
 
@@ -224,6 +238,43 @@ export default function LandingSection() {
             </div>
         </div>
     );
+}
+
+/**
+ * Filler text in enabled sections, and plan names the Pricing section would
+ * show twice. Warnings only (D5): the page still saves.
+ */
+function contentIssues(
+    sections: LandingSection[],
+    catalog: StorefrontCategory[],
+    select: (id: LandingSectionId) => void,
+): ContentIssue[] {
+    const issues: ContentIssue[] = [];
+    for (const s of sections) {
+        if (!s.enabled) continue;
+        const section = td(SECTION_META[s.id].titleKey);
+        collectCopy(s.data).forEach((text, i) => {
+            if (looksLikePlaceholder(text)) {
+                issues.push({
+                    key: `${s.id}-${i}`,
+                    message: m['common.contentChecks.placeholder']({ section, text: text.trim() }),
+                    onFix: () => select(s.id),
+                });
+            }
+        });
+        if (s.id === 'pricing') {
+            const ids = s.data.categoryIds ?? [];
+            const shown = catalog.filter(c => ids.length === 0 || ids.includes(c.id));
+            for (const name of duplicateNames(shown.flatMap(c => c.products.map(p => p.name)))) {
+                issues.push({
+                    key: `pricing-dup-${name}`,
+                    message: m['common.contentChecks.duplicate']({ section, name }),
+                    to: '/admin/billing/products',
+                });
+            }
+        }
+    }
+    return issues;
 }
 
 // Renders the supplied children at a fixed design width, scaled down to fit the
@@ -330,21 +381,32 @@ function SectionListRow({
     );
 }
 
-function SectionFields({ section, onData }: { section: LandingSection; onData: (data: Record<string, unknown>) => void }) {
+function SectionFields({
+    section,
+    name,
+    onData,
+}: {
+    section: LandingSection;
+    name: string;
+    onData: (data: Record<string, unknown>) => void;
+}) {
     const d = section.data;
 
     switch (section.id) {
         case 'hero':
             return (
                 <div className="grid gap-5">
+                    {/* Placeholders are the real default copy, so a blank field shows
+                        exactly what the page will say. */}
+                    <p className="text-xs text-[var(--color-ink-faint)]">{m['landingAdmin.field.defaultsNote']()}</p>
                     <Field label={m['landingAdmin.field.badge']()} hint={m['landingAdmin.field.badgeHelp']()}>
-                        <Input value={d.badge ?? ''} maxLength={120} placeholder={m['landingAdmin.field.fallbackHint']()} onChange={e => onData({ badge: e.target.value })} />
+                        <Input value={d.badge ?? ''} maxLength={120} placeholder={m['landing.eyebrow']()} onChange={e => onData({ badge: e.target.value })} />
                     </Field>
                     <Field label={m['landingAdmin.field.heading']()} hint={m['landingAdmin.field.heroHeadingHelp']()}>
-                        <Input value={d.title ?? ''} maxLength={200} placeholder={m['landingAdmin.field.fallbackHint']()} onChange={e => onData({ title: e.target.value })} />
+                        <Input value={d.title ?? ''} maxLength={200} placeholder={m['landing.heroTitle']()} onChange={e => onData({ title: e.target.value })} />
                     </Field>
                     <Field label={m['landingAdmin.field.subtitle']()} hint={m['landingAdmin.field.subtitleHelp']()}>
-                        <Textarea value={d.subtitle ?? ''} maxLength={600} placeholder={m['landingAdmin.field.fallbackHint']()} onChange={e => onData({ subtitle: e.target.value })} />
+                        <Textarea value={d.subtitle ?? ''} maxLength={600} placeholder={m['landing.subtitle']({ name })} onChange={e => onData({ subtitle: e.target.value })} />
                     </Field>
                     <Field label={m['landingAdmin.field.backgroundImage']()} hint={m['landingAdmin.field.backgroundImageHelp']()}>
                         <Input type="url" value={d.backgroundImage ?? ''} maxLength={500} onChange={e => onData({ backgroundImage: e.target.value })} />
@@ -377,16 +439,26 @@ function SectionFields({ section, onData }: { section: LandingSection; onData: (
                     onChange={next => onData({ items: next })}
                     blank={{ icon: 'Gauge', title: '', body: '' }}
                     addLabel={m['landingAdmin.addFeature']()}
-                    render={(item, update) => (
+                    render={(item, update, index) => (
                         <div className="grid gap-3">
                             <Field label={m['landingAdmin.field.icon']()} hint={m['landingAdmin.field.iconHelp']()}>
                                 <IconPicker value={item.icon} onChange={icon => update({ icon })} />
                             </Field>
                             <Field label={m['landingAdmin.field.heading']()} hint={m['landingAdmin.field.featureHeadingHelp']()}>
-                                <Input value={item.title} maxLength={160} onChange={e => update({ title: e.target.value })} />
+                                <Input
+                                    value={item.title}
+                                    maxLength={160}
+                                    placeholder={FEATURE_DEFAULTS[index] ? td(FEATURE_DEFAULTS[index].titleKey) : undefined}
+                                    onChange={e => update({ title: e.target.value })}
+                                />
                             </Field>
                             <Field label={m['landingAdmin.field.body']()} hint={m['landingAdmin.field.featureBodyHelp']()}>
-                                <Textarea value={item.body} maxLength={800} onChange={e => update({ body: e.target.value })} />
+                                <Textarea
+                                    value={item.body}
+                                    maxLength={800}
+                                    placeholder={FEATURE_DEFAULTS[index] ? td(FEATURE_DEFAULTS[index].bodyKey) : undefined}
+                                    onChange={e => update({ body: e.target.value })}
+                                />
                             </Field>
                         </div>
                     )}
@@ -398,7 +470,7 @@ function SectionFields({ section, onData }: { section: LandingSection; onData: (
             return (
                 <div className="grid gap-5">
                     <Field label={m['landingAdmin.field.heading']()} hint={m['landingAdmin.field.pricingHeadingHelp']()}>
-                        <Input value={d.heading ?? ''} maxLength={200} placeholder={m['landingAdmin.field.fallbackHint']()} onChange={e => onData({ heading: e.target.value })} />
+                        <Input value={d.heading ?? ''} maxLength={200} placeholder={m['landing.pricing.heading']()} onChange={e => onData({ heading: e.target.value })} />
                     </Field>
                     <p className="text-xs text-[var(--color-ink-faint)]">{m['landingAdmin.pricing.note']()}</p>
                 </div>
@@ -509,7 +581,7 @@ function ItemList<T extends object>({
     onChange: (next: T[]) => void;
     blank: T;
     addLabel: string;
-    render: (item: T, update: (patch: Partial<T>) => void) => React.ReactNode;
+    render: (item: T, update: (patch: Partial<T>) => void, index: number) => React.ReactNode;
 }) {
     return (
         <div className="flex flex-col gap-4">
@@ -526,7 +598,7 @@ function ItemList<T extends object>({
                             <Trash2 className="h-4 w-4" />
                         </button>
                     </div>
-                    {render(item, patch => onChange(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it))))}
+                    {render(item, patch => onChange(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it))), i)}
                 </div>
             ))}
             <Button variant="outline" size="sm" className="self-start" onClick={() => onChange([...items, { ...blank }])}>

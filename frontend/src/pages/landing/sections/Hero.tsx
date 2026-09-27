@@ -37,7 +37,9 @@ export default function Hero({ data, name }: Props) {
             className="relative w-full overflow-hidden"
             style={bg ? { backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
         >
-            <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 sm:py-20 lg:grid-cols-2 lg:gap-14">
+            {/* Little bottom padding: the band after the hero brings its own top
+                padding, and the two together left a dead gap under the fold. */}
+            <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-4 pt-16 sm:pb-6 sm:pt-20 lg:grid-cols-2 lg:gap-14">
                 <div>
                     <div className="flex items-center gap-2 font-mono text-[11.5px] font-semibold uppercase tracking-[0.2em] text-[var(--brand-bright)]">
                         <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />

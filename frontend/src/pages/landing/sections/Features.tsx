@@ -11,7 +11,7 @@ interface Props {
 
 // Built-in defaults shown when the section has no meaningful content yet — keeps
 // the original three translated feature cards intact for un-customised panels.
-const DEFAULTS = [
+export const DEFAULTS = [
     { Icon: Gauge, titleKey: 'landing.features.speed.title', bodyKey: 'landing.features.speed.body' },
     { Icon: ShieldCheck, titleKey: 'landing.features.secure.title', bodyKey: 'landing.features.secure.body' },
     { Icon: Boxes, titleKey: 'landing.features.mods.title', bodyKey: 'landing.features.mods.body' },

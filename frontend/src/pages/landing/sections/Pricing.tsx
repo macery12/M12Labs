@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Cpu, MemoryStick, HardDrive } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { useFlags } from '@/state/flags';
+import { cpuPercentHint, formatVcpu } from '@/lib/format';
 import { getCatalog, type StorefrontCategory } from '@/api/storefront';
 import type { LandingSectionData } from '@/lib/globals';
 import Band, { type BandTone } from './Band';
@@ -78,9 +79,8 @@ export default function Pricing({ data, tone }: Props) {
                                             </span>
                                         </div>
                                         <ul className="mt-4 space-y-1.5 text-sm text-[var(--color-ink-muted)]">
-                                            <li className="flex items-center gap-2">
-                                                <Cpu className="h-4 w-4 text-[var(--brand-bright)]" /> {product.limits.cpu}%{' '}
-                                                {m['landing.pricing.cpu']()}
+                                            <li className="flex items-center gap-2" title={cpuPercentHint(product.limits.cpu)}>
+                                                <Cpu className="h-4 w-4 text-[var(--brand-bright)]" /> {formatVcpu(product.limits.cpu)}
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <MemoryStick className="h-4 w-4 text-[var(--brand-bright)]" />{' '}
