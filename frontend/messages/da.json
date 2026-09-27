@@ -213,7 +213,6 @@
   "admin.access.profiles.apiDetailHint": "API-nøgler med denne profil er begrænset til dens aktuelle funktioner.",
   "admin.access.profiles.apiEligible": "API-egnet",
   "admin.access.profiles.assignedKeys": "{count} Application API-nøgler",
-  "admin.access.profiles.assignedUsers": "{count} personer",
   "admin.access.profiles.assignments": "Tildelinger",
   "admin.access.profiles.assignmentsInUse": "Denne profil er i brug. Omfordel alt ovenstående, før den kan slettes.",
   "admin.access.profiles.assignmentsUnused": "Intet bruger denne profil, så den kan slettes.",

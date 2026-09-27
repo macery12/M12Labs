@@ -422,7 +422,21 @@
   "admin.access.profiles.apiDetailHint": "API keys assigned this profile are limited to its current capabilities.",
   "admin.access.profiles.apiEligible": "API eligible",
   "admin.access.profiles.assignedKeys": "{count} Application API keys",
-  "admin.access.profiles.assignedUsers": "{count} people",
+  "admin.access.profiles.assignedPeople": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "1 person",
+        "countPlural=other": "{count} people"
+      }
+    }
+  ],
   "admin.access.profiles.assignments": "Assignments",
   "admin.access.profiles.assignmentsInUse": "This profile is in use. Reassign everything above before it can be deleted.",
   "admin.access.profiles.assignmentsUnused": "Nothing uses this profile, so it can be deleted.",

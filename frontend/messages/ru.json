@@ -213,7 +213,6 @@
   "admin.access.profiles.apiDetailHint": "Ключи API с этим профилем ограничены его текущими возможностями.",
   "admin.access.profiles.apiEligible": "Доступен для API",
   "admin.access.profiles.assignedKeys": "Ключей Application API: {count}",
-  "admin.access.profiles.assignedUsers": "Людей: {count}",
   "admin.access.profiles.assignments": "Назначения",
   "admin.access.profiles.assignmentsInUse": "Профиль используется. Переназначьте всё указанное выше, прежде чем удалять его.",
   "admin.access.profiles.assignmentsUnused": "Профиль нигде не используется, его можно удалить.",

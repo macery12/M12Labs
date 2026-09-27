@@ -55,7 +55,7 @@ function revoke(next: Set<string>, perm: string): void {
 // non-zero, so the numbers are shown up front rather than only in the error.
 function AssignmentsCard({ users, apiKeys }: { users: number; apiKeys: number }) {
     const stats = [
-        { icon: Users, count: users, label: m['admin.access.profiles.assignedUsers']({ count: users }) },
+        { icon: Users, count: users, label: m['admin.access.profiles.assignedPeople']({ count: users }) },
         { icon: KeyRound, count: apiKeys, label: m['admin.access.profiles.assignedKeys']({ count: apiKeys }) },
     ];
 

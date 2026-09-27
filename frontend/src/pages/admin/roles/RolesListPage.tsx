@@ -139,14 +139,13 @@ export default function RolesListPage() {
                                         {m['admin.access.profiles.apiEligible']()}
                                     </span>
                                 )}
-                                {/* In-use counts explain up front why Delete may be refused. */}
-                                {role.assignedUsers !== null && role.assignedUsers > 0 && (
-                                    <span
-                                        title={m['admin.access.profiles.assignedUsers']({ count: role.assignedUsers })}
-                                        className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-2)] px-2 py-0.5"
-                                    >
+                                {/* In-use counts explain up front why Delete may be refused. The
+                                    people count shows on every card, 0 included: showing it only
+                                    on some cards made the rest look unknown rather than unused. */}
+                                {role.assignedUsers !== null && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-2)] px-2 py-0.5">
                                         <Users className="h-3 w-3" />
-                                        {role.assignedUsers}
+                                        {m['admin.access.profiles.assignedPeople']({ count: role.assignedUsers })}
                                     </span>
                                 )}
                                 {role.assignedApiKeys !== null && role.assignedApiKeys > 0 && (
