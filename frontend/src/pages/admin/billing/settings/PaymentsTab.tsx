@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Check, Copy, CreditCard, KeyRound, Wallet, Webhook, type LucideIcon } from 'lucide-react';
+import { Check, Copy, CreditCard, KeyRound, Trash2, Wallet, Webhook, type LucideIcon } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 import { useFlashes } from '@/state/flashes';
@@ -544,7 +544,15 @@ export default function PaymentsTab() {
                                 {stripeConfigured ? m['admin.billing.integrations.stripe.update']() : m['admin.billing.integrations.stripe.add']()}
                             </Button>
                             {stripeConfigured && (
-                                <Button variant="ghost" size="sm" onClick={() => setDeleteKeysOpen(true)}>
+                                // Destructive (checkout stops working), so it reads as one; it
+                                // already asked for confirmation but looked like a neutral link.
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                                    onClick={() => setDeleteKeysOpen(true)}
+                                >
+                                    <Trash2 className="h-4 w-4" />
                                     {m['admin.billing.integrations.stripe.delete']()}
                                 </Button>
                             )}
