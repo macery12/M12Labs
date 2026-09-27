@@ -7,6 +7,7 @@ import { useServer } from '@/components/server/ServerContext';
 import { useFlashes } from '@/state/flashes';
 import { getSubusers, deleteSubuser, type Subuser } from '@/api/subusers';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import SubuserFormModal from './SubuserFormModal';
@@ -57,7 +58,7 @@ export default function UsersListPage() {
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['server.users.title']()}</h1>
-                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.users.subtitle']()}</p>
+                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['server.users.subtitleInvite']()}</p>
                 </div>
                 {canCreate && (
                     <Button onClick={openCreate}>
@@ -75,10 +76,19 @@ export default function UsersListPage() {
                 ) : isError ? (
                     <p className="px-4 py-10 text-center text-sm text-[var(--color-danger)]">{m['server.users.loadError']()}</p>
                 ) : subusers.length === 0 ? (
-                    <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
-                        <Users className="h-8 w-8 text-[var(--color-ink-faint)]" />
-                        <p className="text-sm text-[var(--color-ink-muted)]">{m['server.users.empty']()}</p>
-                    </div>
+                    <EmptyState
+                        icon={Users}
+                        title={m['server.users.empty']()}
+                        body={m['server.users.emptyBody']()}
+                        action={
+                            canCreate ? (
+                                <Button size="sm" onClick={openCreate}>
+                                    <Plus className="h-4 w-4" />
+                                    {m['server.users.add']()}
+                                </Button>
+                            ) : undefined
+                        }
+                    />
                 ) : (
                     <ul className="divide-y divide-[var(--color-border)]">
                         {subusers.map(s => (

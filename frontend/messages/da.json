@@ -3865,7 +3865,6 @@
   "server.users.removeTitle": "Skal brugeren slettes?",
   "server.users.removed": "Brugeren er blevet slettet.",
   "server.users.selectAll": "Alle",
-  "server.users.subtitle": "Giv andre konti begrænset adgang til denne server.",
   "server.users.title": "Brugere",
   "server.users.twoFactorOn": "To-faktor-godkendelse er aktiveret",
   "server.users.updated": "Tilladelserne er opdateret.",

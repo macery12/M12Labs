@@ -5063,6 +5063,7 @@
   "server.users.email": "Email address",
   "server.users.emailPlaceholder": "user@example.com",
   "server.users.empty": "No additional users have access to this server.",
+  "server.users.emptyBody": "Add a friend or co-owner by email. They sign in with their own account and only get the permissions you pick.",
   "server.users.loadError": "Couldn’t load subusers.",
   "server.users.permissionCount": [
     {
@@ -5084,7 +5085,7 @@
   "server.users.removeTitle": "Remove user?",
   "server.users.removed": "User removed.",
   "server.users.selectAll": "All",
-  "server.users.subtitle": "Grant other accounts scoped access to this server.",
+  "server.users.subtitleInvite": "Invite someone to help manage this server, and choose exactly what they can do.",
   "server.users.title": "Users",
   "server.users.twoFactorOn": "Two-factor enabled",
   "server.users.updated": "Permissions updated.",

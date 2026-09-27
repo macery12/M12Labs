@@ -3742,7 +3742,6 @@
   "server.users.removeTitle": "Удалить пользователя?",
   "server.users.removed": "Пользователь удален.",
   "server.users.selectAll": "Все",
-  "server.users.subtitle": "Предоставьте другим учетным записям доступ к этому серверу с ограниченными правами.",
   "server.users.title": "Пользователи",
   "server.users.twoFactorOn": "Включена двухфакторная аутентификация",
   "server.users.updated": "Права доступа обновлены.",
