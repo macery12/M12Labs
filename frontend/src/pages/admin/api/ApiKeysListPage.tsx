@@ -1,12 +1,14 @@
 import { m } from '@/i18n/messages';
 import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Clock3, Info, KeyRound, Plus, ShieldCheck, Trash2, UserRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Clock3, Info, KeyRound, Plus, ShieldCheck, Trash2, TriangleAlert, UserRound } from 'lucide-react';
 import {
     getAdminApiKeys,
     deleteAdminApiKey,
     type AdminApiKey,
 } from '@/api/adminApiKeys';
+import { getApiEligibleAccessProfiles } from '@/api/adminRoles';
 import { timeAgo } from '@/lib/format';
 import { can } from '@/lib/can';
 import { useAdminHeld } from '@/layouts/heldPermissions';
@@ -114,6 +116,16 @@ export default function ApiKeysListPage() {
         placeholderData: keepPreviousData,
     });
 
+    // Same query (and cache) as the create form. Without an API-eligible profile
+    // "New key" opened a form whose only required choice was an empty list.
+    const profilesQuery = useQuery({
+        queryKey: ['admin', 'api-keys', 'access-profiles'],
+        queryFn: getApiEligibleAccessProfiles,
+        enabled: canCreate,
+        staleTime: 30_000,
+    });
+    const noProfiles = canCreate && profilesQuery.isSuccess && profilesQuery.data.length === 0;
+
     const items = data?.items ?? [];
     const pagination = data?.pagination;
 
@@ -139,7 +151,11 @@ export default function ApiKeysListPage() {
                     </p>
                 </div>
                 {canCreate && (
-                    <Button onClick={() => setFormOpen(true)}>
+                    <Button
+                        onClick={() => setFormOpen(true)}
+                        disabledReason={noProfiles ? m['admin.access.keys.noProfilesReason']() : null}
+                        reasonAlign="end"
+                    >
                         <Plus className="h-4 w-4" />
                         {m['admin.api.create']()}
                     </Button>
@@ -150,6 +166,20 @@ export default function ApiKeysListPage() {
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-ink-faint)]" />
                 {m['admin.access.keys.hint']()}
             </p>
+
+            {noProfiles && (
+                <div className="flex flex-wrap items-start gap-2 rounded-lg border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 px-3 py-2.5 text-sm text-[var(--color-ink)]">
+                    <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-warning)]" />
+                    <p className="min-w-0 flex-1">
+                        {m['admin.access.keys.noProfiles']()}{' '}
+                        {can(held, 'roles.read') && (
+                            <Link to="/admin/access/profiles" className="font-medium text-[var(--brand)] hover:underline">
+                                {m['admin.access.keys.noProfilesLink']()}
+                            </Link>
+                        )}
+                    </p>
+                </div>
+            )}
 
             <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-strong)] bg-[var(--color-surface)]">
                 {isLoading ? (
