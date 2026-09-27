@@ -2,9 +2,11 @@
 
 namespace Everest\Http\Controllers\Api\Application\Billing;
 
+use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Everest\Models\Billing\InvoiceSettings;
+use Everest\Services\Billing\InvoicePdfService;
 use Everest\Services\Billing\InvoiceStorageService;
 use Everest\Services\Billing\InvoiceSettingsService;
 use Everest\Http\Controllers\Api\Application\ApplicationApiController;
@@ -16,6 +18,7 @@ class InvoiceSettingsController extends ApplicationApiController
     public function __construct(
         private readonly InvoiceSettingsService $settingsService,
         private readonly InvoiceStorageService $storageService,
+        private readonly InvoicePdfService $pdfService,
     ) {
         parent::__construct();
     }
@@ -62,6 +65,47 @@ class InvoiceSettingsController extends ApplicationApiController
         $settings = $this->settingsService->update(array_filter($data, fn ($v) => $v !== null));
 
         return response()->json($this->transform($settings));
+    }
+
+    /**
+     * Render a sample invoice PDF from the submitted (possibly unsaved) company
+     * details and prefix. The number shown is the one the next real invoice
+     * would get; the sequence itself is not advanced.
+     */
+    public function preview(UpdateInvoiceSettingsRequest $request): Response
+    {
+        $data = $request->validate([
+            'company_name' => 'nullable|string|max:255',
+            'company_address' => 'nullable|string|max:255',
+            'company_city' => 'nullable|string|max:100',
+            'company_state' => 'nullable|string|max:100',
+            'company_zip' => 'nullable|string|max:20',
+            'company_country' => 'nullable|string|max:100',
+            'company_logo_url' => 'nullable|url|max:500',
+            'company_tax_id' => 'nullable|string|max:100',
+            'invoice_prefix' => 'nullable|string|max:20|regex:/^[A-Z0-9\-]+$/',
+            'currency' => 'nullable|string|size:3',
+        ]);
+
+        $settings = $this->settingsService->get();
+        $number = sprintf('%s-%d-%06d', ($data['invoice_prefix'] ?? null) ?: 'INV', (int) date('Y'), $settings->invoice_sequence + 1);
+
+        $pdf = $this->pdfService->renderPreview([
+            'name' => $data['company_name'] ?? null,
+            'address' => $data['company_address'] ?? null,
+            'city' => $data['company_city'] ?? null,
+            'state' => $data['company_state'] ?? null,
+            'zip' => $data['company_zip'] ?? null,
+            'country' => $data['company_country'] ?? null,
+            'logo_url' => $data['company_logo_url'] ?? null,
+            'tax_id' => $data['company_tax_id'] ?? null,
+        ], $number, strtoupper($data['currency'] ?? 'USD'));
+
+        return new Response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="invoice-preview.pdf"',
+            'Cache-Control' => 'no-store',
+        ]);
     }
 
     /**

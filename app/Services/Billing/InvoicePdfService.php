@@ -91,6 +91,52 @@ class InvoicePdfService
     }
 
     /**
+     * Render a sample invoice from company details and numbering that may not
+     * be saved yet, so an admin can see the result of the invoice settings.
+     * Uses the real template with a made-up customer and order; nothing is
+     * stored, cached or numbered.
+     *
+     * @param array{name?: ?string, address?: ?string, city?: ?string, state?: ?string, zip?: ?string, country?: ?string, logo_url?: ?string, tax_id?: ?string} $company
+     */
+    public function renderPreview(array $company, string $invoiceNumber, string $currency): string
+    {
+        $data = [
+            'company' => $company,
+            'invoice_number' => $invoiceNumber,
+            'status' => 'active',
+            'generated_at' => now()->toIso8601String(),
+            'customer' => [
+                'name' => 'Sample Customer',
+                'email' => 'customer@example.com',
+                'billing_address' => [
+                    'first_name' => 'Sample',
+                    'last_name' => 'Customer',
+                    'address_line1' => '1 Example Street',
+                    'city' => 'Springfield',
+                    'postal_code' => '00000',
+                    'country' => 'US',
+                ],
+            ],
+            'order_id' => 1234,
+            'order_type' => 'new',
+            'product_name' => 'Sample plan',
+            'billing_cycle' => 'Monthly',
+            'payment_method' => 'card',
+            'payment_processor' => 'stripe',
+            'transaction_id' => 'sample_txn',
+            'currency' => $currency,
+            'subtotal' => 10.00,
+            'discount' => 0,
+            'total' => 10.00,
+        ];
+
+        $pdf = Pdf::loadView('pdf.invoice', $this->buildViewData($data));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->output();
+    }
+
+    /**
      * Return the full absolute path to the cached PDF file (for email attachment).
      * Returns null if no valid cache exists.
      */

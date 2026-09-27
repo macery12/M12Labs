@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Database, HardDrive, Hash, Plug, Trash2 } from 'lucide-react';
+import { Building2, Database, Eye, HardDrive, Hash, Plug, Trash2 } from 'lucide-react';
 import { m } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 import { formatBytes } from '@/lib/format';
@@ -11,10 +11,13 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
 import { ReadOnlyValue } from '@/components/ui/ReadOnlyValue';
+import { Modal } from '@/components/ui/Modal';
+import { useBilling } from '@/state/billing';
 import {
     getInvoiceSettings,
     updateInvoiceSettings,
     testStorageConnection,
+    previewInvoice,
     type InvoiceSettings,
     type StorageDriver,
 } from '@/api/adminBillingInvoices';
@@ -75,6 +78,30 @@ export default function InvoiceSettingsPage() {
         onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
     });
 
+    // A sample PDF of what these settings produce, from the form as it stands.
+    const { billing } = useBilling();
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    useEffect(() => () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+    }, [previewUrl]);
+    const preview = useMutation({
+        mutationFn: (f: InvoiceSettings) =>
+            previewInvoice({
+                company_name: f.companyName,
+                company_address: f.companyAddress,
+                company_city: f.companyCity,
+                company_state: f.companyState,
+                company_zip: f.companyZip,
+                company_country: f.companyCountry,
+                company_logo_url: f.companyLogoUrl,
+                company_tax_id: f.companyTaxId,
+                invoice_prefix: f.invoicePrefix,
+                currency: billing.currency?.code,
+            }),
+        onSuccess: blob => setPreviewUrl(URL.createObjectURL(blob)),
+        onError: err => push({ type: 'error', message: firstError(err) ?? m['common.states.genericError']() }),
+    });
+
     const testConn = useMutation({
         mutationFn: () => testStorageConnection(),
         onSuccess: res => push({ type: res.ok ? 'success' : 'error', message: res.message || m['admin.billing.invoiceSettings.storage.tested']() }),
@@ -108,9 +135,15 @@ export default function InvoiceSettingsPage() {
             }}
             className="flex flex-col gap-6"
         >
-            <div>
-                <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['admin.billing.invoiceSettings.title']()}</h1>
-                <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.billing.invoiceSettings.subtitle']()}</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h1 className="text-xl font-semibold text-[var(--color-ink)]">{m['admin.billing.invoiceSettings.title']()}</h1>
+                    <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.billing.invoiceSettings.subtitle']()}</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" disabled={preview.isPending} onClick={() => preview.mutate(form)}>
+                    {preview.isPending ? <Spinner className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {m['admin.billing.invoiceSettings.preview']()}
+                </Button>
             </div>
 
             <SectionCard id="company" icon={Building2} title={m['admin.billing.invoiceSettings.company.title']()} desc={m['admin.billing.invoiceSettings.company.desc']()}>
@@ -228,7 +261,25 @@ export default function InvoiceSettingsPage() {
                 )}
             </SectionCard>
 
-            {dirty && <SaveBar dirty={dirty} saving={save.isPending} onDiscard={() => data && setForm(data)} />}
+            {/* Always shown, like the other editors: hidden until dirty, the page
+                looked like it had no way to save at all. */}
+            <SaveBar dirty={dirty} saving={save.isPending} onDiscard={() => data && setForm(data)} />
+
+            <Modal
+                open={previewUrl !== null}
+                onClose={() => setPreviewUrl(null)}
+                title={m['admin.billing.invoiceSettings.previewTitle']()}
+                size="lg"
+            >
+                <p className="mb-3 text-xs text-[var(--color-ink-faint)]">{m['admin.billing.invoiceSettings.previewNote']()}</p>
+                {previewUrl && (
+                    <iframe
+                        src={previewUrl}
+                        title={m['admin.billing.invoiceSettings.previewTitle']()}
+                        className="h-[70vh] w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]"
+                    />
+                )}
+            </Modal>
         </form>
     );
 }

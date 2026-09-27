@@ -179,6 +179,7 @@ Route::middleware([AdminSubject::class])->group(function () {
             Route::put('/', [Application\Billing\InvoiceSettingsController::class, 'update']);
             Route::get('/storage-usage', [Application\Billing\InvoiceSettingsController::class, 'storageUsage']);
             Route::post('/test-connection', [Application\Billing\InvoiceSettingsController::class, 'testConnection']);
+            Route::post('/preview', [Application\Billing\InvoiceSettingsController::class, 'preview']);
         });
 
         // Node pricing multiplier routes

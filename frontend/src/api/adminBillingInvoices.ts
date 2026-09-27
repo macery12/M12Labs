@@ -183,3 +183,12 @@ export async function testStorageConnection(): Promise<ConnectionTestResult> {
     const { data } = await http.post('/api/application/billing/invoice-settings/test-connection');
     return { ok: Boolean(data.ok), message: data.message ?? '' };
 }
+
+// POST /api/application/billing/invoice-settings/preview — a sample invoice PDF
+// rendered from the given (possibly unsaved) company details. Nothing is stored.
+export async function previewInvoice(payload: Record<string, unknown>): Promise<Blob> {
+    const { data } = await http.post('/api/application/billing/invoice-settings/preview', payload, {
+        responseType: 'blob',
+    });
+    return data as Blob;
+}
