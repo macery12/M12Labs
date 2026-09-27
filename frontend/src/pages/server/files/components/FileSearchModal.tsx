@@ -20,18 +20,21 @@ export function FileSearchModal({
     uuid,
     serverId,
     directory,
+    initialPattern = '',
     open,
     onClose,
 }: {
     uuid: string;
     serverId: string;
     directory: string;
+    /** What was typed in the folder filter; mounted per open, so it seeds once. */
+    initialPattern?: string;
     open: boolean;
     onClose: () => void;
 }) {
     const navigate = useNavigate();
     const push = useFlashes(s => s.push);
-    const [pattern, setPattern] = useState('');
+    const [pattern, setPattern] = useState(initialPattern);
     const [glob, setGlob] = useState(true);
     const [regex, setRegex] = useState(false);
     const [caseSensitive, setCaseSensitive] = useState(false);

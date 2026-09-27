@@ -33,6 +33,7 @@ import {
     ArrowDown,
 } from 'lucide-react';
 import { m } from '@/i18n/messages';
+import { cn } from '@/lib/cn';
 import { useServer } from '@/components/server/ServerContext';
 import { can } from '@/lib/can';
 import { formatBytes, timeAgo } from '@/lib/format';
@@ -388,14 +389,27 @@ export default function FileBrowser() {
             <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Breadcrumbs serverId={id} crumbs={crumbs} />
                 <div className="ml-auto flex flex-wrap items-center gap-2">
+                    {/* One search box. Filtering this folder is instant; "All folders"
+                        (Wings-RS only) carries the same term into the deep search,
+                        which used to be a second, unlabelled magnifier at the far end. */}
                     <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-faint)]" />
                         <Input
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             placeholder={m['server.files.searchPlaceholder']()}
-                            className="h-9 w-44 pl-9 text-sm"
+                            className={cn('h-9 pl-9 text-sm', server.isNodeSupercharged ? 'w-64 pr-24' : 'w-48')}
                         />
+                        {server.isNodeSupercharged && (
+                            <button
+                                type="button"
+                                title={m['server.files.search.title']()}
+                                onClick={() => setShowSearch(true)}
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-medium text-[var(--brand)] hover:bg-[var(--color-surface-2)]"
+                            >
+                                {m['server.files.search.everywhere']()}
+                            </button>
+                        )}
                     </div>
                     {canCreate && (
                         <Button variant="secondary" size="sm" onClick={() => setShowNewDir(true)}>
@@ -420,14 +434,9 @@ export default function FileBrowser() {
                         </>
                     )}
                     <SortMenu field={sortField} dir={sortDirection} onSelect={toggleSort} />
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9"
-                        title={gridView ? m['server.files.listView']() : m['server.files.gridView']()}
-                        onClick={() => setGridView(!gridView)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => setGridView(!gridView)}>
                         {gridView ? <ListIcon className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                        {gridView ? m['server.files.listView']() : m['server.files.gridView']()}
                     </Button>
                     {/* Labelled, not a bare icon — the connection drawer (and the
                         Launch SFTP action inside it) was undiscoverable otherwise. */}
@@ -440,17 +449,6 @@ export default function FileBrowser() {
                         >
                             <Network className="h-4 w-4" />
                             {m['server.files.connection.short']()}
-                        </Button>
-                    )}
-                    {server.isNodeSupercharged && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9"
-                            title={m['server.files.search.title']()}
-                            onClick={() => setShowSearch(true)}
-                        >
-                            <Search className="h-4 w-4" />
                         </Button>
                     )}
                 </div>
@@ -749,11 +747,12 @@ export default function FileBrowser() {
                     onClose={() => setArchiveAction(null)}
                 />
             )}
-            {server.isNodeSupercharged && (
+            {server.isNodeSupercharged && showSearch && (
                 <FileSearchModal
                     uuid={uuid}
                     serverId={id}
                     directory={directory}
+                    initialPattern={searchTerm}
                     open={showSearch}
                     onClose={() => setShowSearch(false)}
                 />
@@ -779,7 +778,7 @@ function Breadcrumbs({ serverId, crumbs }: { serverId: string; crumbs: { label: 
                 to={`/server/${serverId}/files`}
                 className="rounded px-1.5 py-0.5 font-medium text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]"
             >
-                {m['server.files.root']()}
+                {m['server.files.home']()}
             </Link>
             {crumbs.map(c => (
                 <span key={c.path} className="flex min-w-0 items-center gap-1">
@@ -847,6 +846,7 @@ function SortMenu({
                 title={m['server.files.sortBy']()}
             >
                 <ArrowDownUp className="h-4 w-4" />
+                {m['server.files.sortValue']({ field: options.find(o => o.value === field)?.label ?? '' })}
                 {dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
             </Dropdown.Trigger>
             <Dropdown.Portal>

@@ -3406,7 +3406,6 @@
   "server.files.rename": "Переименовать",
   "server.files.renameTitle": "Переименовать файл",
   "server.files.renamed": "Файл переименован.",
-  "server.files.root": "контейнер",
   "server.files.search.caseSensitive": "С учетом регистра",
   "server.files.search.glob": "Узор «Глоб»",
   "server.files.search.noResults": "Файлы, соответствующие вашему запросу, не найдены.",

@@ -3529,7 +3529,6 @@
   "server.files.rename": "Omdøb",
   "server.files.renameTitle": "Omdøb fil",
   "server.files.renamed": "Filen er omdøbt.",
-  "server.files.root": "beholder",
   "server.files.search.caseSensitive": "Skrives med store og små bogstaver",
   "server.files.search.glob": "Glob-mønster",
   "server.files.search.noResults": "Der blev ikke fundet nogen filer, der svarer til din søgning.",
