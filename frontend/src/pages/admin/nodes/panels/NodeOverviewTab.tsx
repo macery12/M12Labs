@@ -91,6 +91,32 @@ export function NodeOverviewTab() {
 
     const pct = (used: number, total: number) => (total > 0 ? (used / total) * 100 : null);
 
+    // Three memory numbers used to sit side by side with nothing reconciling
+    // them: host RAM, the node's configured memory, and what servers are
+    // promised. Say when the configured size is larger than the host (5% slack,
+    // since hosts report a little under their nominal size) and why allocation
+    // can be past a 0% over-allocation setting.
+    const MIB = 1024 * 1024;
+    const exceedsHost = (configuredMib: number, hostBytes: number | undefined) =>
+        configuredMib > 0 && !!hostBytes && configuredMib * MIB > hostBytes * 1.05;
+    const capacityNotes = [
+        util &&
+            exceedsHost(node.memory, util.memory.total) &&
+            m['admin.nodes.overview.memoryExceedsHost']({
+                configured: formatMib(node.memory),
+                host: formatBytes(util.memory.total),
+            }),
+        util &&
+            exceedsHost(node.disk, util.disk.total) &&
+            m['admin.nodes.overview.diskExceedsHost']({
+                configured: formatMib(node.disk),
+                host: formatBytes(util.disk.total),
+            }),
+        ((node.memoryOverallocate >= 0 && node.utilization.memory > 100 + node.memoryOverallocate) ||
+            (node.diskOverallocate >= 0 && node.utilization.disk > 100 + node.diskOverallocate)) &&
+            m['admin.nodes.overview.overLimit'](),
+    ].filter((x): x is string => Boolean(x));
+
     return (
         <div className="grid gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">
@@ -158,6 +184,16 @@ export function NodeOverviewTab() {
                             percent={node.utilization.disk}
                         />
                         <Meter icon={Server} label={m['admin.nodes.overview.allocations']()} value={`${node.utilization.allocations}%`} percent={node.utilization.allocations} />
+                        {capacityNotes.length > 0 && (
+                            <ul className="flex flex-col gap-2 border-t border-[var(--color-border)] pt-3">
+                                {capacityNotes.map(note => (
+                                    <li key={note} className="flex gap-2 text-xs text-[var(--color-ink-muted)]">
+                                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--color-warning)]" />
+                                        <span>{note}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
                 </Panel>
 

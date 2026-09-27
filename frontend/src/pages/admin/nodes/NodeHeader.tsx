@@ -90,8 +90,8 @@ export function NodeHeader() {
                     </Button>
                 )}
                 {can(held, 'nodes.delete') && (
-                    <Button variant="ghost" size="sm" onClick={() => setDeleting(true)}>
-                        <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
+                    <Button variant="ghost" size="sm" className="text-[var(--color-danger)]" onClick={() => setDeleting(true)}>
+                        <Trash2 className="h-4 w-4" /> {m['common.actions.delete']()}
                     </Button>
                 )}
             </div>
