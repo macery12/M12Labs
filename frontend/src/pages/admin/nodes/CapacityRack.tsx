@@ -89,9 +89,17 @@ function Meter({ label, data, tone }: { label: string; data: Track; tone: Tone }
                         m['admin.infrastructure.capacity.unlimited']()
                     ) : (
                         <>
-                            {formatMib(data.allocated)}
-                            <span className="text-[var(--color-ink-faint)]"> / {formatMib(data.total)}</span>
-                            <span className="ml-1.5 text-[var(--color-ink-faint)]">{Math.round(data.percent)}%</span>
+                            {/* "14 GB / 9.8 GB" read as used-of-total; say which is which,
+                                one fact per line so the column never wraps mid-phrase. */}
+                            <span className="block">
+                                {m['admin.infrastructure.capacity.promisedOnly']({ allocated: formatMib(data.allocated) })}
+                            </span>
+                            <span className="block text-[var(--color-ink-faint)]">
+                                {m['admin.infrastructure.capacity.availablePct']({
+                                    total: formatMib(data.total),
+                                    percent: Math.round(data.percent),
+                                })}
+                            </span>
                         </>
                     )}
                 </span>

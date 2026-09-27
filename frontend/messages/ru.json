@@ -1585,7 +1585,6 @@
   "admin.infrastructure.summary.inMaintenance": "{count} находятся на техническом обслуживании",
   "admin.infrastructure.summary.memory": "Память",
   "admin.infrastructure.summary.nodes": "Узлы",
-  "admin.infrastructure.summary.ofAllocated": "выделено {size}",
   "admin.infrastructure.summary.servers": "Серверы",
   "admin.infrastructure.summary.standard": "{count} стандартных",
   "admin.infrastructure.summary.supercharged": "С наддувом",

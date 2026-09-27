@@ -160,8 +160,8 @@ function FleetSummary({
             )}
             {showNodes && (
                 <>
-                    <SummaryCell icon={HardDrive} label={m['admin.infrastructure.summary.memory']()} value={formatMib(usedMemory)} sub={m['admin.infrastructure.summary.ofAllocated']({ size: formatMib(totalMemory) })} />
-                    <SummaryCell icon={HardDrive} label={m['admin.infrastructure.summary.disk']()} value={formatMib(usedDisk)} sub={m['admin.infrastructure.summary.ofAllocated']({ size: formatMib(totalDisk) })} />
+                    <SummaryCell icon={HardDrive} label={m['admin.infrastructure.summary.memory']()} value={formatMib(usedMemory)} sub={m['admin.infrastructure.summary.promisedOf']({ size: formatMib(totalMemory) })} />
+                    <SummaryCell icon={HardDrive} label={m['admin.infrastructure.summary.disk']()} value={formatMib(usedDisk)} sub={m['admin.infrastructure.summary.promisedOf']({ size: formatMib(totalDisk) })} />
                 </>
             )}
         </div>

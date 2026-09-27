@@ -36,8 +36,10 @@ export function Badge({
 export function SuperchargedBadge({ wingsType }: { wingsType: WingsType }) {
     if (wingsType !== 'wings-rs') return null;
     return (
-        <Badge tone="accent">
-            <Zap className="h-2.5 w-2.5" /> {m['admin.nodes.supercharged']()}
-        </Badge>
+        <span title={m['admin.nodes.superchargedHint']()}>
+            <Badge tone="accent">
+                <Zap className="h-2.5 w-2.5" /> {m['admin.nodes.supercharged']()}
+            </Badge>
+        </span>
     );
 }

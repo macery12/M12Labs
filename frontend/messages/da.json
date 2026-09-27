@@ -1618,7 +1618,6 @@
   "admin.infrastructure.summary.inMaintenance": "{count} er under vedligeholdelse",
   "admin.infrastructure.summary.memory": "Hukommelse",
   "admin.infrastructure.summary.nodes": "Noder",
-  "admin.infrastructure.summary.ofAllocated": "af {size} er allokeret",
   "admin.infrastructure.summary.servers": "Servere",
   "admin.infrastructure.summary.standard": "{count} standard",
   "admin.infrastructure.summary.supercharged": "Med kompressor",
