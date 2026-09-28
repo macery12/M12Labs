@@ -18,16 +18,18 @@ class AdoptSchemaCommand extends Command
 
     protected $signature = 'p:migrate:adopt
         {--dry-run : Report exactly what would change and write nothing}
-        {--keep-vestigial : Keep the subscriptions and subscription_items tables instead of dropping them}
+        {--keep-vestigial : Keep the dead tables listed in VESTIGIAL_TABLES instead of dropping them}
         {--keep-extra-indexes : Keep indexes this install has that the shipped schema does not}
         {--assume-yes : Answer the confirmation prompts with yes. Required for unattended runs}
         {--force : Reconcile again even though this install has already been adopted}';
 
     /**
-     * Tables the rebuild dropped (D2). Both were Cashier-style leftovers with no
-     * code referencing them; they are only dropped when empty.
+     * Tables this panel no longer has, with no code referencing them; they are
+     * only dropped when empty. The subscription pair were Cashier-style
+     * leftovers the rebuild dropped. The three log tables were dropped later
+     * (2026_09_28_000002): nothing wrote or read them.
      */
-    private const VESTIGIAL_TABLES = ['subscriptions', 'subscription_items'];
+    private const VESTIGIAL_TABLES = ['subscriptions', 'subscription_items', 'api_logs', 'tasks_log', 'audit_logs'];
 
     public function handle(): int
     {

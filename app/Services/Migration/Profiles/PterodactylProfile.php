@@ -111,9 +111,6 @@ class PterodactylProfile extends ImportProfile
 
             'activity_logs' => new TablePlan(table: 'activity_logs', group: TablePlan::GROUP_LOGS),
             'activity_log_subjects' => new TablePlan(table: 'activity_log_subjects', group: TablePlan::GROUP_LOGS),
-            'audit_logs' => new TablePlan(table: 'audit_logs', group: TablePlan::GROUP_LOGS),
-            'api_logs' => new TablePlan(table: 'api_logs', group: TablePlan::GROUP_LOGS),
-            'tasks_log' => new TablePlan(table: 'tasks_log', group: TablePlan::GROUP_LOGS),
         ];
     }
 
@@ -190,6 +187,9 @@ class PterodactylProfile extends ImportProfile
             'notifications' => 'delivered notifications are not carried over',
             'password_resets' => 'pending reset links are invalidated by the move',
             'migrations' => 'migration bookkeeping belongs to this panel',
+            'audit_logs' => 'superseded by the activity log, which is imported; this panel has no audit_logs table',
+            'api_logs' => 'API request logs are not kept by this panel',
+            'tasks_log' => 'run history of the scheduler Pterodactyl replaced in 2017; nothing reads it',
         ];
     }
 

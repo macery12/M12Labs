@@ -26,6 +26,21 @@ $MYSQL_CLI -e "DROP DATABASE IF EXISTS \`$SCRATCH_DB\`;
   CREATE DATABASE \`$SCRATCH_DB\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
   GRANT ALL PRIVILEGES ON \`$SCRATCH_DB\`.* TO '$APP_DB_USER'@'127.0.0.1';"
 
+# A cached config ignores DB_DATABASE, and the build caches it, so this
+# would migrate the real database. Point artisan at a config cache that does
+# not exist, then check where it actually connects before migrating anything.
+export APP_CONFIG_CACHE="/nonexistent/m12-schema-diff-config.php"
+RESOLVED_DB="$(DB_DATABASE="$SCRATCH_DB" php -r '
+    require "vendor/autoload.php";
+    $app = require "bootstrap/app.php";
+    $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+    echo $app["db"]->connection()->getDatabaseName();
+')"
+if [ "$RESOLVED_DB" != "$SCRATCH_DB" ]; then
+    echo "Refusing to migrate: artisan resolved database '$RESOLVED_DB', not '$SCRATCH_DB'." >&2
+    exit 1
+fi
+
 DB_DATABASE="$SCRATCH_DB" php artisan migrate --force --no-interaction
 
 TMP_DUMP="$(mktemp)"
