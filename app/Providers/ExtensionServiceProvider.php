@@ -11,12 +11,15 @@ use Illuminate\Queue\Events\JobQueueing;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\MigrationEnded;
 use Illuminate\Database\Events\MigrationStarted;
+use Illuminate\Database\Events\TransactionRolledBack;
 use Everest\Services\Extensions\ExtensionQueueJournal;
 use Everest\Services\Extensions\ExtensionQueueRegistry;
 use Everest\Services\Extensions\ExtensionHookDispatcher;
 use Everest\Services\Extensions\ExtensionJobDrainService;
+use Everest\Services\Extensions\ExtensionRuntimeSnapshot;
 use Everest\Services\Extensions\ExtensionBindingRegistrar;
 use Everest\Services\Extensions\ExtensionPermissionRegistry;
 use Everest\Services\Extensions\ExtensionOperationLockService;
@@ -52,10 +55,15 @@ class ExtensionServiceProvider extends ServiceProvider
         $this->app->singleton(ExtensionOperationLockService::class);
         $this->app->singleton(ExtensionHookDispatcher::class);
         $this->app->singleton(ExtensionPermissionRegistry::class);
+
+        // One plan per operation, never per process: see ExtensionRuntimeSnapshot.
+        $this->app->scoped(ExtensionRuntimeSnapshot::class);
     }
 
     public function boot(): void
     {
+        $this->invalidateRuntimeSnapshot();
+
         $journal = $this->app->make(ExtensionQueueJournal::class);
 
         Event::listen(JobQueueing::class, fn (JobQueueing $event) => $journal->queueing($event));
@@ -85,18 +93,48 @@ class ExtensionServiceProvider extends ServiceProvider
     }
 
     /**
+     * The snapshot must never outlive the state it was read from.
+     *
+     * The container already drops scoped instances between queue jobs; clearing
+     * it on JobProcessing as well means "fresh per job" does not depend on how
+     * a particular worker command resets its scope. Within one operation, any
+     * write to the plan's tables clears it -- lifecycle code writes through
+     * models, query builders and raw updates alike, and an enable followed by a
+     * read in the same request has to see the enable. A rollback clears it too,
+     * since a plan read mid-transaction may reflect rows that no longer exist.
+     */
+    private function invalidateRuntimeSnapshot(): void
+    {
+        $forget = fn () => $this->app->make(ExtensionRuntimeSnapshot::class)->forget();
+
+        Event::listen(JobProcessing::class, $forget);
+        Event::listen(TransactionRolledBack::class, $forget);
+        Event::listen(QueryExecuted::class, function (QueryExecuted $event): void {
+            $snapshot = $this->app->make(ExtensionRuntimeSnapshot::class);
+
+            if ($snapshot->held() && ExtensionRuntimeSnapshot::invalidatedBy($event->sql)) {
+                $snapshot->forget();
+            }
+        });
+    }
+
+    /**
      * Everything the queue needs to know about the currently enabled packages:
      * one named limiter per declared queue group, and whether the long lane has
      * anything that could reach it.
      *
      * One pass over the runtime plan for both. The plan is a live database read
-     * by design — it is never cached, so that disabling an extension takes
-     * effect in every process at once — which is reason enough not to walk it
-     * twice per request.
+     * by design — never held across operations, so that disabling an extension
+     * takes effect in every process at once.
      *
      * Limiters are registered only for extensions in the plan: one for a
      * disabled extension would never be consulted, and the enabled gate
-     * discards its jobs before the limiter would matter anyway.
+     * discards its jobs before the limiter would matter anyway. Nor on a web
+     * request: a limiter is only consulted by the RateLimited job middleware,
+     * and ExtensionJob::middleware() registers its own from the live
+     * definition right before that. The long-lane sizing still runs everywhere,
+     * because the admin queue page reads `long_lane_in_use` to decide whether
+     * an unstaffed long lane is a fault.
      */
     private function configureExtensionQueues(): void
     {
@@ -111,20 +149,22 @@ class ExtensionServiceProvider extends ServiceProvider
             return;
         }
 
-        foreach ($queues as ['id' => $extensionId, 'queue' => $queue]) {
-            /** @var QueueDefinition $queue */
-            $parsed = $queue->parsedRateLimit();
+        if ($this->app->runningInConsole()) {
+            foreach ($queues as ['id' => $extensionId, 'queue' => $queue]) {
+                /** @var QueueDefinition $queue */
+                $parsed = $queue->parsedRateLimit();
 
-            if ($parsed === null) {
-                continue;
+                if ($parsed === null) {
+                    continue;
+                }
+
+                [$count, $perSeconds] = $parsed;
+
+                RateLimiter::for(
+                    $queue->limiterName($extensionId),
+                    fn () => Limit::perSecond($count, max(1, (int) ceil($perSeconds)))
+                );
             }
-
-            [$count, $perSeconds] = $parsed;
-
-            RateLimiter::for(
-                $queue->limiterName($extensionId),
-                fn () => Limit::perSecond($count, max(1, (int) ceil($perSeconds)))
-            );
         }
 
         // Staff the long lane only while something can reach it. Sized here

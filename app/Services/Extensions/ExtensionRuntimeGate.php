@@ -38,8 +38,8 @@ class ExtensionRuntimeGate
     }
 
     /**
-     * Compatibility entry point for lifecycle callers. Runtime decisions are
-     * read live, so current implementations have no process-local plan to drop.
+     * Compatibility entry point for lifecycle callers: drops the current
+     * operation's plan snapshot. Nothing is held across operations.
      */
     public static function flush(): void
     {

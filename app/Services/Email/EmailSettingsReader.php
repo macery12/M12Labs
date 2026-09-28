@@ -3,28 +3,17 @@
 namespace Everest\Services\Email;
 
 use Everest\Models\Setting;
-use Everest\Services\Security\SecretEncryptionService;
 
 class EmailSettingsReader
 {
+    /**
+     * Through the settings repository, which reads every row once per
+     * operation and is reset between queue jobs -- this used to query each
+     * key on its own, eight SELECTs per page render.
+     */
     public function get(string $key, mixed $default = null): mixed
     {
-        /** @var SecretEncryptionService $secrets */
-        $secrets = app(SecretEncryptionService::class);
-        $normalizedKey = $secrets->normalizeKey($key);
-
-        $setting = Setting::query()->where('key', $normalizedKey)->first();
-        if (!$setting) {
-            return value($default);
-        }
-
-        $value = $setting->value;
-
-        if ($secrets->isSecretKey($normalizedKey)) {
-            $value = $secrets->decryptFromStorage($value);
-        }
-
-        return $value;
+        return Setting::get($key, $default);
     }
 
     public function deliveryEnabled(): bool

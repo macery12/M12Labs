@@ -222,6 +222,7 @@ return [
         Everest\Jobs\DownloadModJob::class => 'mods',
 
         Everest\Jobs\Api\GenerateApiDocsJob::class => 'standard',
+        Everest\Jobs\Webhooks\SendWebhookJob::class => 'standard',
     ],
 
     /*
@@ -351,6 +352,11 @@ return [
         Everest\Jobs\Api\GenerateApiDocsJob::class => [
             'title' => 'Generate API reference',
             'summary' => 'Rebuilds the OpenAPI document behind Admin > API docs from the current routes.',
+        ],
+
+        Everest\Jobs\Webhooks\SendWebhookJob::class => [
+            'title' => 'Send admin webhook',
+            'summary' => 'Posts one activity event to the configured admin webhook URL.',
         ],
     ],
 

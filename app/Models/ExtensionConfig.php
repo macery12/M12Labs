@@ -104,10 +104,15 @@ class ExtensionConfig extends Model
 
     /**
      * Get all enabled extensions for a server.
+     *
+     * Pass $configs (the enabled rows, already loaded) when checking many
+     * servers, so the table is read once instead of once per server.
+     *
+     * @param iterable<self>|null $configs
      */
-    public static function getEnabledForServer(Server $server): array
+    public static function getEnabledForServer(Server $server, ?iterable $configs = null): array
     {
-        $configs = self::where('enabled', true)->get();
+        $configs ??= self::where('enabled', true)->get();
         $enabled = [];
 
         foreach ($configs as $config) {

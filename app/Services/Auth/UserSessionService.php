@@ -88,25 +88,58 @@ class UserSessionService
     }
 
     /**
-     * Update last activity metadata for current request.
+     * How stale last_activity_at may get before a request refreshes it. The
+     * sessions list shows minutes, and the dashboard fans out several API
+     * calls per page, each of which used to write this row.
      */
-    public function updateActivity(User $user, string $sessionId): void
+    public const ACTIVITY_WRITE_INTERVAL_SECONDS = 60;
+
+    /**
+     * Update last activity metadata for current request.
+     *
+     * $known is the row the middleware already read before the request. When
+     * it still describes this session, it is reused -- and written only when
+     * it is more than a minute old or the IP, user agent or device changed.
+     * That turns two SELECTs and two UPDATEs on every authenticated request
+     * into, usually, nothing.
+     */
+    public function updateActivity(User $user, string $sessionId, ?UserSession $known = null): void
     {
-        // Ensure a row exists for this session (handles cache resets/pruned rows) without sending notifications.
-        $session = $this->ensureSessionExists($user, $sessionId);
-        if (!$session) {
+        if ($known !== null && (int) $known->user_id === (int) $user->id && $known->session_id === $sessionId) {
+            $this->refreshKnownSession($known);
+
             return;
         }
 
-        $updated = UserSession::query()
-            ->where('user_id', $user->id)
-            ->where('session_id', $sessionId)
-            ->update([
-                'last_activity_at' => CarbonImmutable::now(),
-                'ip_address' => $this->ip(),
-                'user_agent' => $this->userAgent(),
-            ]);
+        // Ensure a row exists for this session (handles cache resets/pruned
+        // rows) without sending notifications. This also stamps the activity.
+        $this->ensureSessionExists($user, $sessionId);
+    }
 
+    private function refreshKnownSession(UserSession $session): void
+    {
+        $fingerprint = $this->fingerprint($this->currentDeviceId());
+        $fresh = $session->last_activity_at !== null
+            && $session->last_activity_at->greaterThan(CarbonImmutable::now()->subSeconds(self::ACTIVITY_WRITE_INTERVAL_SECONDS));
+
+        if ($fresh
+            && $session->ip_address === $this->ip()
+            && $session->user_agent === $this->userAgent()
+            && $session->device_fingerprint === $fingerprint) {
+            return;
+        }
+
+        // The same fields ensureSessionExists() refreshes. Never revoked_at:
+        // only dirty attributes are written, so a revocation made during this
+        // request is not undone by the copy read before it.
+        $session->forceFill([
+            'device_fingerprint' => $fingerprint,
+            'device_name' => $this->deviceName(),
+            'user_agent' => $this->userAgent(),
+            'ip_address' => $this->ip(),
+            'location' => $this->location(),
+            'last_activity_at' => CarbonImmutable::now(),
+        ])->save();
     }
 
     /**
@@ -387,8 +420,6 @@ class UserSessionService
             })
             ->first();
 
-        $payload = SessionFacade::getHandler()->read($sessionId);
-
         $deviceId = $this->currentDeviceId();
         $fingerprint = $this->fingerprint($deviceId);
         $now = CarbonImmutable::now();
@@ -408,7 +439,9 @@ class UserSessionService
             return $existingSession;
         }
 
-        // If the backing session payload is missing (likely destroyed), do not recreate.
+        // If the backing session payload is missing (likely destroyed), do not
+        // recreate. Only read on this path: an existing row does not need it.
+        $payload = SessionFacade::getHandler()->read($sessionId);
         if (empty($payload)) {
             return null;
         }

@@ -32,6 +32,7 @@ class UpdateUserSessionActivity
     public function handle(Request $request, \Closure $next)
     {
         $user = $request->user();
+        $sessionRecord = null;
         if ($user && $request->hasSession()) {
             $sessionId = $request->session()->getId();
 
@@ -76,7 +77,8 @@ class UpdateUserSessionActivity
             $sessionId = $request->session()->getId();
             /** @var UserSessionService $service */
             $service = app(UserSessionService::class);
-            $service->updateActivity($request->user(), $sessionId);
+            // The row read above, so an unchanged session is not re-read.
+            $service->updateActivity($request->user(), $sessionId, $sessionRecord);
         }
 
         return $response;

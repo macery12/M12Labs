@@ -6,11 +6,18 @@ use Everest\Models\User;
 use Everest\Models\WebhookEvent;
 use Illuminate\Support\Facades\Http;
 use Everest\Exceptions\DisplayException;
+use Everest\Jobs\Webhooks\SendWebhookJob;
 use Everest\Contracts\Repository\ThemeRepositoryInterface;
 use Everest\Contracts\Repository\SettingsRepositoryInterface;
 
 class WebhookEventService
 {
+    /**
+     * A webhook is advisory. Discord answers in well under a second, and a
+     * URL that does not answer in five is not going to.
+     */
+    public const SEND_TIMEOUT_SECONDS = 5;
+
     /**
      * WebhookEventService constructor.
      */
@@ -35,19 +42,38 @@ class WebhookEventService
     }
 
     /**
+     * Whether a webhook URL is set at all. Checked before queueing, so an
+     * install that never configured webhooks queues nothing.
+     */
+    public function configured(): bool
+    {
+        return (string) $this->settings->get('settings::modules:webhooks:url', '') !== '';
+    }
+
+    /**
+     * Queue the webhook for an event, if webhooks are on, a URL is set and
+     * the admin has that event switched on.
+     *
+     * @param array<int, array{name: string, value: string, inline?: bool}> $fields optional Discord embed fields
+     */
+    public function dispatch(int $userId, string $eventKey, array $fields = []): void
+    {
+        if (!config('modules.webhooks.enabled') || !$this->configured()) {
+            return;
+        }
+
+        if (!WebhookEvent::query()->where('key', $eventKey)->where('enabled', true)->exists()) {
+            return;
+        }
+
+        SendWebhookJob::dispatch($userId, $eventKey, $fields);
+    }
+
+    /**
      * Fire the admin:jguard:registered webhook for a newly queued account.
      */
     public function notifyJGuardRegistered(User $user, string $approvalMode, ?\Carbon\Carbon $expiresAt): void
     {
-        if (!config('modules.webhooks.enabled')) {
-            return;
-        }
-
-        $event = WebhookEvent::where('key', 'admin:jguard:registered')->first();
-        if (!$event || !$event->enabled) {
-            return;
-        }
-
         $fields = [
             ['name' => 'Approval Mode', 'value' => ucfirst($approvalMode), 'inline' => true],
         ];
@@ -61,7 +87,7 @@ class WebhookEventService
         }
 
         try {
-            $this->send($user, $event, $fields);
+            $this->dispatch($user->id, 'admin:jguard:registered', $fields);
         } catch (\Exception) {
             // Silently ignored — webhook failure must never block registration.
         }
@@ -107,10 +133,7 @@ class WebhookEventService
             $embed['fields'] = $fields;
         }
 
-        try {
-            Http::post($url, ['embeds' => [$embed]]);
-        } catch (DisplayException $ex) {
-            throw new DisplayException('Unable to send webhook through URL.');
-        }
+        // Throws on a timeout or an error response, so SendWebhookJob retries.
+        Http::timeout(self::SEND_TIMEOUT_SECONDS)->post($url, ['embeds' => [$embed]])->throw();
     }
 }

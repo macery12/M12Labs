@@ -8,17 +8,19 @@ use Everest\Models\Allocation;
 use Everest\Models\Permission;
 use League\Fractal\Resource\Item;
 use Everest\Models\ExtensionConfig;
-use Illuminate\Container\Container;
 use League\Fractal\Resource\Collection;
 use Everest\Transformers\Api\Transformer;
 use League\Fractal\Resource\NullResource;
-use Everest\Services\Servers\StartupCommandService;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class ServerTransformer extends Transformer
 {
     protected array $defaultIncludes = ['allocations', 'variables'];
 
     protected array $availableIncludes = ['egg', 'subusers'];
+
+    /** @var EloquentCollection<int, ExtensionConfig>|null */
+    private ?EloquentCollection $enabledExtensionConfigs = null;
 
     public function getResourceName(): string
     {
@@ -31,36 +33,18 @@ class ServerTransformer extends Transformer
      */
     public function transform(Server $server): array
     {
-        /** @var StartupCommandService $service */
-        $service = Container::getInstance()->make(StartupCommandService::class);
-
         $user = $this->request->user();
 
-        // Check if server supports modpacks by checking for required environment variables
-        $modpacksSupported = false;
-        if ($server->relationLoaded('variables')) {
-            $hasProjectId = false;
-            $hasVersionId = false;
-
-            foreach ($server->variables as $variable) {
-                if ($variable->env_variable === 'PROJECT_ID') {
-                    $hasProjectId = true;
-                }
-                if ($variable->env_variable === 'VERSION_ID') {
-                    $hasVersionId = true;
-                }
-                // Early exit if both found
-                if ($hasProjectId && $hasVersionId) {
-                    break;
-                }
-            }
-
-            $modpacksSupported = $hasProjectId && $hasVersionId;
-        }
+        // Read the relation rather than checking relationLoaded(): transform()
+        // runs before the includes, so on the list endpoint that check was
+        // always false and every server reported no modpack support. The
+        // default `variables` include reuses what this loads.
+        $envVariables = $server->variables->pluck('env_variable');
+        $modpacksSupported = $envVariables->contains('PROJECT_ID') && $envVariables->contains('VERSION_ID');
 
         // Check if any extensions are enabled for this server
         $extensionsEnabled = config('modules.extensions.enabled', false)
-            && !empty(ExtensionConfig::getEnabledForServer($server));
+            && !empty(ExtensionConfig::getEnabledForServer($server, $this->enabledExtensionConfigs()));
 
         return [
             'server_owner' => $user->id === $server->owner_id,
@@ -118,6 +102,18 @@ class ServerTransformer extends Transformer
     }
 
     /**
+     * Enabled extension configs, read once per transformer rather than once
+     * per row -- the list endpoint transforms up to 100 servers with one
+     * instance.
+     *
+     * @return EloquentCollection<int, ExtensionConfig>
+     */
+    private function enabledExtensionConfigs(): EloquentCollection
+    {
+        return $this->enabledExtensionConfigs ??= ExtensionConfig::query()->where('enabled', true)->get();
+    }
+
+    /**
      * Returns the allocations associated with this server.
      */
     public function includeAllocations(Server $server): Collection
@@ -135,11 +131,14 @@ class ServerTransformer extends Transformer
         if (!$user->can(Permission::ACTION_ALLOCATION_READ, $server)) {
             $primary = clone $server->allocation;
             $primary->notes = null;
+            $primary->setRelation('server', $server);
 
             return $this->collection([$primary], $transformer);
         }
 
-        return $this->collection($server->allocations, $transformer);
+        // AllocationTransformer reads `$allocation->server` for is_default;
+        // without the inverse set, that re-fetched this server per allocation.
+        return $this->collection($server->allocations->each->setRelation('server', $server), $transformer);
     }
 
     public function includeVariables(Server $server): Collection|NullResource

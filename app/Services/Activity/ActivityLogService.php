@@ -7,7 +7,6 @@ use Everest\Models\Server;
 use Illuminate\Support\Arr;
 use Webmozart\Assert\Assert;
 use Everest\Models\ActivityLog;
-use Everest\Models\WebhookEvent;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Everest\Models\ActivityLogSubject;
@@ -272,19 +271,19 @@ class ActivityLogService
         return !($activity->actor_type === Server::class && !config('activity.enabled.server'));
     }
 
+    /**
+     * Queued, never sent inline: this runs inside logins and server actions,
+     * and the send used to hold them for up to 30 s on a slow webhook URL.
+     */
     protected function sendWebhook(ActivityLog $activity): void
     {
-        if (!config('modules.webhooks.enabled')) {
+        // actor_type holds the morph alias ('user'), not the class name.
+        if ($activity->actor_type !== (new User())->getMorphClass() || $activity->actor_id === null) {
             return;
         }
 
         try {
-            $user = User::findOrFail($activity->actor_id);
-            $event = WebhookEvent::where('key', $activity->event)->first();
-
-            if ($event) {
-                $this->webhook->send($user, $event);
-            }
+            $this->webhook->dispatch((int) $activity->actor_id, $activity->event);
         } catch (\Exception $ex) {
             // handle exception quietly
         }

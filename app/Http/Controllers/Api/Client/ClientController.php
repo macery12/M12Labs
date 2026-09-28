@@ -30,9 +30,13 @@ class ClientController extends ClientApiController
         $user = $request->user();
         $transformer = new ServerTransformer();
 
-        // Start the query builder and ensure we eager load any requested relationships from the request.
+        // Start the query builder and ensure we eager load any requested relationships from the request,
+        // plus everything the transformer and its default `allocations` include read on every row --
+        // lazily, that was ~7 queries per server, ~350 for a default page of 50. `variables` is
+        // deliberately absent: Server::variables() joins on `$this->id`, which is unset when the
+        // relation is eager-loaded, so it has to stay one query per server.
         $builder = QueryBuilder::for(
-            Server::query()->with($this->getIncludesForTransformer($transformer, ['node', 'groups']))
+            Server::query()->with($this->getIncludesForTransformer($transformer, ['node', 'groups', 'egg', 'transfer', 'allocations']))
         )->allowedFilters(...[
             'uuid',
             'name',

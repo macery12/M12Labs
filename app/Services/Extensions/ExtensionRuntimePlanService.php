@@ -66,13 +66,14 @@ class ExtensionRuntimePlanService
     }
 
     /**
-     * Build a live snapshot of the runtime state.
+     * The live runtime state, read once per operation.
      *
      * This deliberately is not cached in a static or singleton property.
      * Octane workers, queue workers and schedule:work all serve more than one
      * operation in the same process; a process-local snapshot would let an
      * extension continue executing after another process disabled it or marked
-     * its signing key revoked.
+     * its signing key revoked. {@see ExtensionRuntimeSnapshot} holds it for one
+     * request or job instead, and drops it on any write that could change it.
      *
      * @return array{plan: array<string, ExtensionRuntimeEntry>, core: array<int, string>}
      */
@@ -82,6 +83,14 @@ class ExtensionRuntimePlanService
             return ['plan' => [], 'core' => []];
         }
 
+        return app(ExtensionRuntimeSnapshot::class)->remember(fn (): ?array => $this->build());
+    }
+
+    /**
+     * @return array{plan: array<string, ExtensionRuntimeEntry>, core: array<int, string>}|null
+     */
+    private function build(): ?array
+    {
         try {
             // Keep enablement and package state in one database snapshot. Two
             // separate reads leave a window where another worker can disable
@@ -136,7 +145,7 @@ class ExtensionRuntimePlanService
             // A fresh install may run artisan before the tables exist. Failing
             // closed keeps the panel bootable and a later call re-checks the
             // database rather than retaining the failure.
-            return ['plan' => [], 'core' => []];
+            return null;
         }
     }
 
@@ -276,11 +285,14 @@ class ExtensionRuntimePlanService
         return $handlers;
     }
 
+    /**
+     * Drop this operation's snapshot. Writes to the plan's tables already do
+     * this on their own; lifecycle callers still flush explicitly, because a
+     * change the plan reads from disk (a package's files) is not a query.
+     */
     public static function flush(): void
     {
-        // Retained as a compatibility no-op for lifecycle callers and older
-        // extensions. Runtime state is resolved live, so there is no
-        // process-local plan left to invalidate.
+        app(ExtensionRuntimeSnapshot::class)->forget();
     }
 
     /**

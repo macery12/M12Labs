@@ -128,9 +128,9 @@ class SettingsServiceProvider extends ServiceProvider
         $secrets = app(SecretEncryptionService::class);
 
         try {
-            $values = $settings->all()
-                ->mapWithKeys(fn ($setting) => [$setting->key => $setting->value])
-                ->toArray();
+            // Raw values, secrets still encrypted: this also primes the
+            // repository for every Setting::get() in the rest of the request.
+            $values = $settings->loadAll();
         } catch (QueryException $exception) {
             $log->notice(
                 'A query exception was encountered while trying to load settings from the database: ' .
@@ -146,7 +146,9 @@ class SettingsServiceProvider extends ServiceProvider
             $value = Arr::get($values, 'settings::' . $key, $config->get($dotKey));
 
             if ($secrets->isSecretKey('settings::' . $key)) {
-                // Never decrypt secrets during boot; only surface whether a value exists.
+                // Never decrypt secrets during boot; only surface whether a
+                // value exists. Empty values are stored unencrypted, so the
+                // ciphertext answers that on its own.
                 $config->set($dotKey, !empty($value));
                 continue;
             }

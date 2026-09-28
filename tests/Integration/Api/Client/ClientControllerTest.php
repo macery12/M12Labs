@@ -8,6 +8,8 @@ use Everest\Models\Subuser;
 use Everest\Models\AdminRole;
 use Everest\Models\Allocation;
 use Everest\Models\Permission;
+use Everest\Models\EggVariable;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class ClientControllerTest extends ClientApiIntegrationTestCase
@@ -336,6 +338,63 @@ class ClientControllerTest extends ClientApiIntegrationTestCase
         $response->assertJsonCount(1, 'data.0.attributes.relationships.allocations.data');
         $response->assertJsonPath('data.0.attributes.relationships.allocations.data.0.attributes.id', $server->allocation->id);
         $response->assertJsonPath('data.0.attributes.relationships.allocations.data.0.attributes.notes', null);
+    }
+
+    /**
+     * Every relation the transformer reads is eager-loaded, so a bigger page
+     * costs one query per server at most -- the `variables` relation, which
+     * cannot be eager-loaded because it joins on the parent's id. Lazily this
+     * was ~7 per server, ~350 for a default page of 50.
+     */
+    public function testTheServerListDoesNotQueryPerServer(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+        $this->createServerModel(['user_id' => $user->id]);
+
+        $count = function () use ($user): int {
+            $queries = 0;
+            DB::listen(function () use (&$queries) {
+                ++$queries;
+            });
+            $this->actingAs($user)->getJson('/api/client')->assertOk();
+
+            return $queries;
+        };
+
+        $one = $count();
+
+        foreach (range(1, 4) as $ignored) {
+            $this->createServerModel(['user_id' => $user->id]);
+        }
+
+        $this->assertLessThanOrEqual($one + 4, $count());
+    }
+
+    /**
+     * transform() runs before the includes, so a relationLoaded('variables')
+     * check there was always false on the list and no server ever reported
+     * modpack support.
+     */
+    public function testModpackSupportIsReportedOnTheList(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+        $server = $this->createServerModel(['user_id' => $user->id]);
+
+        // The shared seeded egg, and this class does not roll back: remove
+        // them again, or every later test sees two extra variables.
+        $variables = collect(['PROJECT_ID', 'VERSION_ID'])->map(
+            fn (string $env) => EggVariable::factory()->create(['egg_id' => $server->egg_id, 'env_variable' => $env]),
+        );
+
+        try {
+            $this->actingAs($user)->getJson('/api/client')
+                ->assertOk()
+                ->assertJsonPath('data.0.attributes.modpacks_supported', true);
+        } finally {
+            $variables->each->delete();
+        }
     }
 
     public static function filterTypeDataProvider(): array

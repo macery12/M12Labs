@@ -167,6 +167,9 @@ class ExtensionLifecycleStateTest extends IntegrationTestCase
         $newRoot = sodium_crypto_sign_publickey(sodium_crypto_sign_keypair());
         config()->set('extensions.signing.root_public_key', base64_encode($newRoot));
         config()->set('extensions.signing.root_fingerprint', hash('sha256', $newRoot));
+        // A rotated root reaches config on the next boot, i.e. the next
+        // operation; the plan is held for one operation only.
+        $this->app->forgetScopedInstances();
 
         $this->assertFalse(ExtensionRuntimeGate::isEnabled('ext_rotated'));
     }

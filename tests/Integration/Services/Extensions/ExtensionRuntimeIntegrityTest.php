@@ -73,6 +73,9 @@ class ExtensionRuntimeIntegrityTest extends IntegrationTestCase
             'installed_checksum' => hash('sha256', self::TAMPERED_ROUTE),
         ]);
         unset($GLOBALS['integrity_fixture_route']);
+        // The plan is held for one operation. The tamper is caught by the next
+        // request or job, which is the one that would load the bytes.
+        $this->app->forgetScopedInstances();
 
         $this->assertArrayNotHasKey(
             'integrity_fixture',
@@ -104,6 +107,7 @@ class ExtensionRuntimeIntegrityTest extends IntegrationTestCase
         $this->assertSame([self::ROUTE_PATH], $health['integrity']['modifiedFiles']);
 
         File::put(base_path(self::ROUTE_PATH), self::ORIGINAL_ROUTE);
+        $this->app->forgetScopedInstances();
         $this->loadClientRouteFixtures();
 
         $this->assertSame('authentic', $GLOBALS['integrity_fixture_route'] ?? null);

@@ -2,7 +2,9 @@
 
 namespace Everest\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Queue\Events\JobProcessing;
 use Everest\Repositories\Eloquent\EggRepository;
 use Everest\Repositories\Eloquent\NestRepository;
 use Everest\Repositories\Eloquent\NodeRepository;
@@ -63,5 +65,15 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(SubuserRepositoryInterface::class, SubuserRepository::class);
         $this->app->bind(TaskRepositoryInterface::class, TaskRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
+    }
+
+    public function boot(): void
+    {
+        // A long-lived worker boots once and then runs jobs for an hour. Drop
+        // the settings it read before each one, so a change (SMTP, billing
+        // keys) reaches the next job rather than the next worker recycle.
+        // Wired here rather than in SettingsServiceProvider, which is skipped
+        // under APP_ENVIRONMENT_ONLY while the repository is still in use.
+        Event::listen(JobProcessing::class, fn () => SettingsRepository::flushCache());
     }
 }

@@ -18,6 +18,14 @@ interface SettingsRepositoryInterface extends RepositoryInterface
     public function get(string $key, mixed $default): mixed;
 
     /**
+     * Load every setting and prime the cache, returning the stored values
+     * with secrets still encrypted.
+     *
+     * @return array<string, mixed>
+     */
+    public function loadAll(): array;
+
+    /**
      * Remove a key from the database cache.
      */
     public function forget(string $key);
