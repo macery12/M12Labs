@@ -43,6 +43,17 @@ class InstallModpackJob extends Job implements ShouldQueue
     public int $timeout = 3600;
     public int $tries   = 3;
 
+    /**
+     * Retries are kept because an attempt resumes rather than restarts: the
+     * row keeps its phase and batch offsets, mod batches are idempotent, and a
+     * mods-stage resume skips the wipe, loader and overrides. Only transient
+     * node/network failures are retried (shouldRetry()), so the retry needs to
+     * wait for the node rather than fire straight back into the same outage.
+     *
+     * @var array<int, int>
+     */
+    public array $backoff = [60, 300];
+
     private const BATCH_SENTINEL        = 'M12_BATCH_DONE';
     private const OVERRIDES_SENTINEL    = 'OVERRIDES_DONE';
     private const LOADER_SENTINEL       = 'M12_LOADER_DONE';

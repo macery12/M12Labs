@@ -93,9 +93,6 @@ return [
         | order -- invoices before schedules before mail before DNS -- while
         | still scaling processes up when work accumulates.
         |
-        | `high` and `low` are legacy lanes. Nothing routes to them; they are
-        | listed only so anything queued there before the split still drains.
-        |
         | QueueServiceProvider replaces the packaged connection and queue names
         | below with the resolved queue topology during boot. timeout must stay
         | below the connection's retry_after (300), or a job
@@ -103,7 +100,7 @@ return [
         */
         'supervisor-interactive' => [
             'connection' => 'redis',
-            'queue' => ['critical', 'schedules', 'mail', 'standard', 'high', 'low'],
+            'queue' => ['critical', 'schedules', 'mail', 'standard'],
             'balance' => false,
             'minProcesses' => 1,
             'maxProcesses' => 6,
@@ -176,6 +173,13 @@ return [
         | reach. Installing one is a Horizon restart, the same as adding any
         | lane -- Horizon reads its provisioning plan when the command runs.
         |
+        | While something can reach it, the lane auto-balances between one
+        | process and that computed ceiling, rather than holding every process
+        | resident (~75 MB each) for occasional long jobs: the ceiling is only
+        | staffed while jobs are waiting. ExtensionServiceProvider switches
+        | `balance` to `auto` alongside the size, because Horizon rejects a
+        | minProcesses below 1 and an unused lane must stay at zero.
+        |
         | `tries => 3` is only a fallback. Every extension job answers tries()
         | from its verified manifest, which is what actually applies.
         */
@@ -183,6 +187,8 @@ return [
             'connection' => 'redis-long',
             'queue' => ['extensions-long'],
             'balance' => 'simple',
+            'autoScalingStrategy' => 'time',
+            'minProcesses' => 1,
             'processes' => 0,
             'maxTime' => 3600,
             'maxJobs' => 0,

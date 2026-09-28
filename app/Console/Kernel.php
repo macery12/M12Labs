@@ -5,6 +5,7 @@ namespace Everest\Console;
 use Everest\Models\ActivityLog;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Console\PruneCommand;
+use Everest\Jobs\Schedule\RunScheduledSweepJob;
 use Everest\Console\Commands\Billing\CleanupOrdersCommand;
 use Everest\Console\Commands\Billing\ExpireCouponsCommand;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -51,13 +52,21 @@ class Kernel extends ConsoleKernel
     }
 
     /**
+     * Queue a command as a sweep job, named after the command so
+     * `schedule:list` still says which sweep each entry is.
+     *
+     * @param class-string<\Illuminate\Console\Command> $command
+     */
+    private function sweep(Schedule $schedule, string $command): \Illuminate\Console\Scheduling\CallbackEvent
+    {
+        return $schedule->job(new RunScheduledSweepJob($command))->name(class_basename($command));
+    }
+
+    /**
      * Define the application's command schedule.
      */
     protected function schedule(Schedule $schedule): void
     {
-        // https://laravel.com/docs/10.x/upgrade#redis-cache-tags
-        $schedule->command('cache:prune-stale-tags')->hourly();
-
         // Execute scheduled commands for servers every minute, as if there was a normal cron running.
         $schedule->command(ProcessRunnableCommand::class)->everyMinute()->withoutOverlapping();
         $schedule->command(CleanServiceBackupFilesCommand::class)->daily();
@@ -76,9 +85,13 @@ class Kernel extends ConsoleKernel
             $schedule->command(SuspendBillableServersCommand::class)->daily();
             // Run near end of day so scheduled deletions occur after the full renewal date has passed.
             $schedule->command(DeleteScheduledServersCommand::class)->dailyAt('23:55');
-            $schedule->command(CalculateOrderThreatIndexCommand::class)->everyFiveMinutes();
-            $schedule->command(RefreshNodeAvailabilityCommand::class)->everyMinute()->withoutOverlapping();
-            $schedule->command(ApplyScheduledPlanChangesCommand::class)->everyMinute()->withoutOverlapping();
+            // Pure database/cache sweeps: queued into a booted worker rather
+            // than each costing a fresh artisan process every minute. Overlap
+            // is prevented by the job's uniqueness, not withoutOverlapping(),
+            // which would only guard the instant of dispatch.
+            $this->sweep($schedule, CalculateOrderThreatIndexCommand::class)->everyFiveMinutes();
+            $this->sweep($schedule, RefreshNodeAvailabilityCommand::class)->everyMinute();
+            $this->sweep($schedule, ApplyScheduledPlanChangesCommand::class)->everyMinute();
             $schedule->command(ExpireCouponsCommand::class)->twiceDaily(1, 13);
             $schedule->command(ExpirePdfCacheCommand::class)->hourly();        // Evict local 24-h PDF cache
             $schedule->command(ExpireInvoicesCommand::class)->dailyAt('02:00'); // Auto-cleanup data snapshots (if enabled)
@@ -89,8 +102,8 @@ class Kernel extends ConsoleKernel
         // next tick and both dispatched the same emails.
         $schedule->command(ProcessDeferredEmailsCommand::class)->everyFiveMinutes()->withoutOverlapping();
 
-        // Process jGuard delayed activations every minute
-        $schedule->command(ProcessJGuardActivationsCommand::class)->everyMinute()->withoutOverlapping();
+        // Process jGuard delayed activations every minute (queued; see above).
+        $this->sweep($schedule, ProcessJGuardActivationsCommand::class)->everyMinute();
 
         // failed_jobs is append-only and had nothing pruning it. A week is long
         // enough to investigate a failure and short enough that the table stays

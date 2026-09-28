@@ -145,9 +145,10 @@ class QueueTopology
             }
         }
 
-        // Drain names used before the lane topology existed. De-duplicate the
-        // standard lane when it still has its shipped name.
-        $interactive = array_values(array_unique(array_merge($interactive, ['high', 'low', 'standard'])));
+        // Always drain the shipped `standard` name, even when QUEUE_STANDARD
+        // renames the lane, so work queued under the old name still runs. The
+        // legacy `high`/`low` names are gone: nothing ever dispatched to them.
+        $interactive = array_values(array_unique(array_merge($interactive, ['standard'])));
 
         return [
             'supervisor-interactive' => [

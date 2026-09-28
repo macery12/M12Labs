@@ -79,11 +79,13 @@ class HorizonProvisioningReconciler
                 continue;
             }
 
-            // Only a fixed-size supervisor can be judged by its count; an
-            // auto-balanced one moves between its bounds on its own.
+            // Judged by the configured ceiling (`processes` becomes Horizon's
+            // maxProcesses), never by the live count: an auto-balanced pool
+            // moves within its bounds on its own, but a ceiling that no longer
+            // matches the live plan -- a long-running package installed or
+            // removed -- still needs a restart.
             $fixed = (int) ($options['processes'] ?? 0);
-            if ($fixed > 0 && ($options['balance'] ?? null) !== 'auto'
-                && (int) ($running[$name]['maxProcesses'] ?? $fixed) !== $fixed) {
+            if ($fixed > 0 && (int) ($running[$name]['maxProcesses'] ?? $fixed) !== $fixed) {
                 $wrong[] = $name;
             }
         }
@@ -229,7 +231,9 @@ class HorizonProvisioningReconciler
         // Sized from the live plan, not from this process's boot-time config:
         // a web request that just enabled a package booted before it did.
         if (isset($supervisors['supervisor-extensions-long'])) {
-            $supervisors['supervisor-extensions-long']['processes'] = $this->extensionQueues->longLaneProcesses();
+            $processes = $this->extensionQueues->longLaneProcesses();
+            $supervisors['supervisor-extensions-long']['processes'] = $processes;
+            $supervisors['supervisor-extensions-long']['balance'] = $processes > 0 ? 'auto' : 'simple';
         }
 
         return array_filter(

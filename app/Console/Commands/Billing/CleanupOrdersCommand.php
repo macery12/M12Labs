@@ -61,9 +61,11 @@ class CleanupOrdersCommand extends Command
 
         $expiredCount = 0;
 
+        // chunkById, not chunk: expiring rows drops them out of this WHERE, so
+        // an OFFSET-based chunk skipped every other page of stale orders.
         Order::where('status', Order::STATUS_PENDING)
             ->where('created_at', '<', $expiryCutoff)
-            ->chunk(500, function ($stale) use (&$expiredCount) {
+            ->chunkById(500, function ($stale) use (&$expiredCount) {
                 foreach ($stale as $order) {
                     try {
                         $changed = DB::transaction(function () use ($order): bool {

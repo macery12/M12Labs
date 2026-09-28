@@ -122,10 +122,9 @@ return [
     | Which supervisor consumes which lane is config/horizon.php's business;
     | this file only says the lanes exist and what they are called.
     |
-    | `high` and `low` are legacy: the old single systemd unit passed
-    | `--queue=high,standard,low` even though nothing ever dispatched to them.
-    | They are absent here because nothing routes to them, but the interactive
-    | supervisor still drains them so anything queued before the split runs.
+    | The old single systemd unit also passed `--queue=high,standard,low`, but
+    | nothing ever dispatched to `high` or `low`, so they are not lanes and no
+    | supervisor drains them.
     |
     | Changing a lane's *name* is safe; removing a lane is not, unless the
     | Horizon supervisors are updated to drain it first.
@@ -214,6 +213,7 @@ return [
         Everest\Jobs\Billing\GenerateInvoiceJob::class => 'critical',
 
         Everest\Jobs\Schedule\RunTaskJob::class => 'schedules',
+        Everest\Jobs\Schedule\RunScheduledSweepJob::class => 'standard',
 
         Everest\Jobs\Email\SendEmailJob::class => 'mail',
         Everest\Jobs\Email\ProcessDeferredEmailsJob::class => 'mail',
@@ -329,6 +329,11 @@ return [
         Everest\Jobs\Schedule\RunTaskJob::class => [
             'title' => 'Run scheduled task',
             'summary' => 'Runs one step of a server schedule -- a power action, console command or backup -- and queues the next step.',
+        ],
+
+        Everest\Jobs\Schedule\RunScheduledSweepJob::class => [
+            'title' => 'Run scheduled sweep',
+            'summary' => 'Runs one minute-level maintenance sweep (node availability, plan changes, jGuard activations or order threat scores) inside a worker.',
         ],
 
         Everest\Jobs\Email\SendEmailJob::class => [

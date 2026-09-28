@@ -178,6 +178,8 @@ class ExtensionServiceProvider extends ServiceProvider
         config([
             'extensions.queues.long_lane_in_use' => $longProcesses > 0,
             'horizon.defaults.supervisor-extensions-long.processes' => $longProcesses,
+            // Scale between 1 and that ceiling while in use; see config/horizon.php.
+            'horizon.defaults.supervisor-extensions-long.balance' => $longProcesses > 0 ? 'auto' : 'simple',
         ]);
     }
 }

@@ -262,8 +262,6 @@ class QueueTopologyTest extends TestCase
             'custom-schedules',
             'custom-mail',
             'custom-standard',
-            'high',
-            'low',
             'standard',
         ], $supervisors['supervisor-interactive']['queue']);
         $this->assertSame([
@@ -284,13 +282,16 @@ class QueueTopologyTest extends TestCase
      * The legacy lanes predate this topology and nothing routes to them, but a
      * long-lived install can still have jobs sitting on them.
      */
-    public function testLegacyQueuesAreStillDrained(): void
+    public function testTheShippedStandardQueueIsStillDrained(): void
     {
         $consumed = array_merge(...array_values(array_column($this->supervisors(), 'queue')));
 
-        foreach (['high', 'low', 'standard'] as $queue) {
-            $this->assertContains($queue, $consumed, "No supervisor drains [{$queue}]. Anything queued there before the split would be stranded forever.");
-        }
+        $this->assertContains('standard', $consumed, 'No supervisor drains [standard]. Anything queued there under its shipped name would be stranded forever.');
+
+        // Only the old systemd unit ever named these; nothing dispatched to
+        // them, so polling them was a wasted round-trip per cycle.
+        $this->assertNotContains('high', $consumed);
+        $this->assertNotContains('low', $consumed);
     }
 
     public function testSupervisorTimeoutsStayBelowTheirConnectionRetryAfter(): void

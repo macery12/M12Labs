@@ -138,6 +138,40 @@ class CleanupOrdersCommandTest extends TestCase
         $this->assertDatabaseMissing('orders', ['id' => 3]);
     }
 
+    /**
+     * Expiring an order removes it from the query being chunked. An
+     * OFFSET-based chunk then skipped the second page entirely, so a backlog
+     * over 500 stale orders took several runs to clear.
+     */
+    public function testEveryStaleOrderIsHandledInOneRunWhateverTheBacklog(): void
+    {
+        $this->fulfillmentService->shouldNotReceive('fulfillOrder');
+        Schema::table('orders', function (Blueprint $table): void {
+            $table->string('type')->nullable();
+        });
+        // No users table rows: every order belongs to a deleted user, which is
+        // the path that deletes the order outright.
+        Schema::create('users', function (Blueprint $table): void {
+            $table->increments('id');
+        });
+
+        $old = now()->subDays(2);
+        foreach (array_chunk(range(1, 1001), 250) as $ids) {
+            DB::table('orders')->insert(array_map(fn (int $id) => [
+                'id' => $id,
+                'status' => Order::STATUS_PENDING,
+                'user_id' => 9,
+                'server_id' => null,
+                'created_at' => $old,
+                'updated_at' => $old,
+            ], $ids));
+        }
+
+        $this->artisan('p:billing:cleanup-orders')->assertExitCode(0);
+
+        $this->assertSame(0, DB::table('orders')->where('status', Order::STATUS_PENDING)->count());
+    }
+
     public function testStaleCapturedFulfillmentIsResumedByTheScheduledCommand(): void
     {
         $old = now()->subHour();
