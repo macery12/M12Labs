@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import laravel from 'laravel-vite-plugin';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { fileURLToPath, URL } from 'node:url';
-import { extensionAllowlistPlugin } from './build/extensionAllowlist';
+import { extensionAllowlistPlugin } from './build/extensionAllowlist.ts';
 
 const catalogPrefix = 'virtual:m12-i18n-catalog/';
 const resolvedCatalogPrefix = `\0${catalogPrefix}`;
