@@ -57,7 +57,8 @@ class ExtensionPackageUpdateService
                             $prepared['extensionId'],
                             $index === 0 ? 'optimizing' : 'building'
                         );
-                    }
+                    },
+                    incoming: [$prepared['extensionId'] => $prepared['parsedManifest']],
                 );
 
                 $this->progressService->report('update', $prepared['extensionId'], 'registering');
@@ -137,7 +138,8 @@ class ExtensionPackageUpdateService
                             $prepared['extensionId'],
                             $index === 0 ? 'optimizing' : 'building'
                         );
-                    }
+                    },
+                    incoming: [$prepared['extensionId'] => $prepared['parsedManifest']],
                 );
 
                 $this->progressService->report('update', $prepared['extensionId'], 'registering');

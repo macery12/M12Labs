@@ -46,6 +46,8 @@ storage/app/tmp-uninstall/
 storage/app/tmp-update/
 app/Extensions/Packages/
 frontend/src/extensions/packages/
+# Written before each build by ExtensionBuildInputsService; install-specific.
+frontend/src/extensions/installed.json
 frontend/messages/extensions/*
 
 # Extension package test suites, staged into this checkout by the extensions

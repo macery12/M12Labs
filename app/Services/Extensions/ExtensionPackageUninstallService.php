@@ -52,7 +52,8 @@ class ExtensionPackageUninstallService
                             $extensionId,
                             $index === 0 ? 'optimizing' : 'building'
                         );
-                    }
+                    },
+                    outgoing: [$extensionId],
                 );
 
                 $this->progressService->report('uninstall', $extensionId, 'registering');

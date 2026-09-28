@@ -66,7 +66,7 @@ class ExtensionPackageBatchServiceTest extends TestCase
             ->with('two', 2, '2.1.0', $secondHash, false)
             ->andReturn($second);
 
-        $rebuild->expects('rebuild')->once()->with(\Mockery::type('string'), \Mockery::type('callable'));
+        $rebuild->expects('rebuild')->once()->with(\Mockery::type('string'), \Mockery::type('callable'), \Mockery::type('array'));
         $rebuild->expects('rebuild')->once()->with('batch-update rollback');
 
         $update->expects('finalizeUpdate')->once()->with($first)->andReturnUsing(function () use ($settingKey): ExtensionPackage {
@@ -144,7 +144,7 @@ class ExtensionPackageBatchServiceTest extends TestCase
         $update->expects('completeUpdate')->once()->with($prepared);
         $update->shouldNotReceive('rollbackUpdate');
         $update->expects('cleanupPreparedUpdate')->once()->with($prepared);
-        $rebuild->expects('rebuild')->once()->with(\Mockery::type('string'), \Mockery::type('callable'));
+        $rebuild->expects('rebuild')->once()->with(\Mockery::type('string'), \Mockery::type('callable'), \Mockery::type('array'));
 
         $result = $service->batchUpdate([
             ['extensionId' => 'demo', 'repositoryId' => 1],

@@ -8,6 +8,7 @@
         "node": ">=20.19.0"
     },
     "scripts": {
+        "prebuild": "php artisan p:ext:prepare-build",
         "build": "pnpm --filter ./frontend run build",
         "build:frontend": "pnpm --filter ./frontend run build",
         "postbuild": "bash ./scripts/reload-dev-services.sh",

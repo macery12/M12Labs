@@ -14,9 +14,12 @@
 //
 // Runs before every compile (see `build` / `predev` in package.json), so
 // install / uninstall / enable / disable — all of which trigger a panel rebuild —
-// automatically re-merge. Scope is every INSTALLED extension (a pure filesystem
-// scan; no DB coupling). Keys are namespaced `ext.<id>.`, so a disabled
-// extension's keys are inert dead weight rather than a collision risk.
+// automatically re-merge. Scope is the packages the panel listed in
+// src/extensions/installed.json before this build (written by
+// ExtensionBuildInputsService: a database row and verified frontend files), so
+// an orphan directory's keys are left out. Without that file (a dev checkout,
+// CI) every package directory is merged. Keys are namespaced `ext.<id>.`, so a
+// disabled extension's keys are inert dead weight rather than a collision risk.
 //
 // Contract enforced here (and, earlier, by the packaging tool):
 //   - every key in a fragment must be prefixed `ext.<pkgId>.` (pkgId = owning dir)
@@ -42,10 +45,25 @@ function fail(message) {
     process.exit(1);
 }
 
-// Every installed extension package directory (each is a namespace `<id>`).
+// The panel-written build allowlist, or null when there is none. Same contract
+// as build/extensionAllowlist.ts, which the Vite build uses.
+function readAllowlist() {
+    const file = join(uiRoot, 'src', 'extensions', 'installed.json');
+    if (!existsSync(file)) return null;
+
+    const ids = JSON.parse(readFileSync(file, 'utf8'))?.ids;
+    if (!Array.isArray(ids) || !ids.every(id => typeof id === 'string' && /^[a-z0-9_]+$/.test(id))) {
+        fail(`${file} is not a valid extension allowlist`);
+    }
+    return new Set(ids);
+}
+
+const allowlist = readAllowlist();
+
+// Every extension package directory the build may include (each is a namespace `<id>`).
 const packageIds = existsSync(packagesDir)
     ? readdirSync(packagesDir, { withFileTypes: true })
-          .filter(e => e.isDirectory())
+          .filter(e => e.isDirectory() && (allowlist === null || allowlist.has(e.name)))
           .map(e => e.name)
           .sort()
     : [];

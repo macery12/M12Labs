@@ -81,7 +81,8 @@ class ExtensionPackageBatchService
                             $total,
                             $allExtensionIds
                         );
-                    }
+                    },
+                    incoming: array_column($preparedList, 'parsedManifest', 'extensionId'),
                 );
 
                 // Finalize all installs (DB registration) after the rebuild succeeded.
@@ -193,7 +194,8 @@ class ExtensionPackageBatchService
                             $total,
                             $allExtensionIds
                         );
-                    }
+                    },
+                    outgoing: array_column($preparedList, 'extensionId'),
                 );
 
                 // Finalize all uninstalls (DB deletion) after the rebuild succeeded.
@@ -319,7 +321,8 @@ class ExtensionPackageBatchService
                             $total,
                             $allExtensionIds
                         );
-                    }
+                    },
+                    incoming: array_column($preparedList, 'parsedManifest', 'extensionId'),
                 );
 
                 // Finalize all updates (DB records) after the rebuild succeeded.

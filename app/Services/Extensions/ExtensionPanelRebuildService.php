@@ -74,9 +74,22 @@ class ExtensionPanelRebuildService
         ['php', 'artisan', 'event:cache'],
     ];
 
+    /**
+     * Picks up new package code in the workers once the build has succeeded.
+     * The root `postbuild` hook used to do this; the runtime build no longer
+     * goes through the root script, so the rebuild does it itself.
+     *
+     * @var array<int, array<int, string>>
+     */
+    private const RESTART_COMMANDS = [
+        ['php', 'artisan', 'queue:restart'],
+        ['php', 'artisan', 'horizon:terminate'],
+    ];
+
     public function __construct(
         private ExtensionFilesystemOwnershipService $ownershipService,
         private ExtensionOperationLockService $operationLockService,
+        private ExtensionBuildInputsService $buildInputs,
     ) {
     }
 
@@ -87,9 +100,17 @@ class ExtensionPanelRebuildService
      * stage runs, allowing callers to report progress at the correct moment:
      * stage 0 clears the compiled artifacts, stage 1 builds the frontend.
      *
+     * $incoming and $outgoing say which packages this operation just placed or
+     * is removing; see {@see ExtensionBuildInputsService::prepare()}. A plain
+     * rebuild (or a rollback, which restores the committed state) passes
+     * neither.
+     *
+     * @param array<string, Manifest\ExtensionManifest> $incoming
+     * @param list<string> $outgoing
+     *
      * @return array<int, array{command: string, output: string, durationMs: int}>
      */
-    public function rebuild(string $reason, ?callable $onCommandStart = null): array
+    public function rebuild(string $reason, ?callable $onCommandStart = null, array $incoming = [], array $outgoing = []): array
     {
         $lease = ExtensionLockLease::acquire(
             self::BUILD_LOCK,
@@ -105,6 +126,10 @@ class ExtensionPanelRebuildService
         }
 
         try {
+            // Before anything is cleared or built: a refusal here leaves the
+            // panel exactly as it was.
+            $this->buildInputs->prepare($incoming, $outgoing);
+
             return $this->runRebuild($reason, $lease, $onCommandStart);
         } finally {
             $lease->release();
@@ -184,6 +209,7 @@ class ExtensionPanelRebuildService
 
         $this->checkpoint($lease);
         $this->recacheCompiledArtifacts($environment);
+        $this->restartWorkers($environment);
         $this->pruneSnapshots();
         $this->pruneStore($environment);
 
@@ -202,6 +228,25 @@ class ExtensionPanelRebuildService
             try {
                 $process = new Process($command, base_path(), $environment);
                 $process->setTimeout(120);
+                $process->run();
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        }
+    }
+
+    /**
+     * Best effort, like the postbuild hook it replaces: a worker that misses
+     * the signal recycles on its own at maxTime.
+     *
+     * @param array<string, string> $environment
+     */
+    private function restartWorkers(array $environment): void
+    {
+        foreach (self::RESTART_COMMANDS as $command) {
+            try {
+                $process = new Process($command, base_path(), $environment);
+                $process->setTimeout(60);
                 $process->run();
             } catch (\Throwable $exception) {
                 report($exception);
@@ -410,7 +455,12 @@ class ExtensionPanelRebuildService
 
         $this->assertToolchainVersions($pnpm);
 
-        return [$pnpm, 'build'];
+        // The runtime build (merge messages, compile i18n, vite build), called
+        // on the frontend package directly. Not the root `pnpm build`: that one
+        // also runs `tsc -b`, so a type error anywhere blocked every install
+        // although Vite would build fine, and its root `postbuild` hook cleared
+        // and restarted everything a second time from inside the operation.
+        return [$pnpm, '--filter', './frontend', 'run', 'build:runtime'];
     }
 
     /**

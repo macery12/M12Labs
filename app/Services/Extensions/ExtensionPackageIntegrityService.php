@@ -46,6 +46,9 @@ class ExtensionPackageIntegrityService
 {
     private const QUARANTINE_PREFIX = '[runtime-integrity] ';
 
+    /** Manifest paths under this root are frontend sources, read only by a build. */
+    public const FRONTEND_ROOT = 'frontend/';
+
     /**
      * A file changed this recently is hashed every time rather than cached.
      *
@@ -87,7 +90,7 @@ class ExtensionPackageIntegrityService
      */
     public function enforce(ExtensionPackage $package): ?ExtensionManifest
     {
-        $result = $this->inspect($package);
+        $result = $this->inspect($package, self::runtimeFiles());
 
         if (!$result->valid) {
             $this->quarantine($package, $result);
@@ -106,7 +109,66 @@ class ExtensionPackageIntegrityService
             && str_starts_with((string) $package->state_reason, self::QUARANTINE_PREFIX);
     }
 
-    public function inspect(ExtensionPackage $package): ExtensionPackageIntegrityResult
+    /**
+     * Files a request can execute: everything but the frontend sources.
+     *
+     * Frontend `.tsx`/`.json` sources are only ever read by the next build,
+     * never by PHP, yet hashing them was about a third of every cold plan
+     * build. They are verified where they are used instead -- as a hard gate
+     * before each build ({@see ExtensionBuildInputsService}).
+     */
+    public static function runtimeFiles(): \Closure
+    {
+        return static fn (string $path): bool => !str_starts_with($path, self::FRONTEND_ROOT);
+    }
+
+    /** Files only a frontend build reads. */
+    public static function frontendFiles(): \Closure
+    {
+        return static fn (string $path): bool => str_starts_with($path, self::FRONTEND_ROOT);
+    }
+
+    /**
+     * Compare the files a manifest lists against the bytes on disk.
+     *
+     * @param ?\Closure(string): bool $scope which manifest paths to check; all when null
+     *
+     * @return array{missing: list<string>, modified: list<string>}
+     */
+    public function compareFiles(ExtensionManifest $manifest, ?\Closure $scope = null): array
+    {
+        $missing = [];
+        $modified = [];
+
+        foreach ($manifest->files as $file) {
+            $path = (string) $file['path'];
+            if ($scope !== null && !$scope($path)) {
+                continue;
+            }
+
+            $absolute = base_path($path);
+
+            // Install extraction never creates links. Rejecting one here
+            // avoids following a post-install link outside the package.
+            if (is_link($absolute) || !is_file($absolute)) {
+                $missing[] = $path;
+
+                continue;
+            }
+
+            $actual = $this->digest($absolute);
+            if (!is_string($actual) || !hash_equals((string) $file['sha256'], $actual)) {
+                $modified[] = $path;
+            }
+        }
+
+        return ['missing' => $missing, 'modified' => $modified];
+    }
+
+    /**
+     * @param ?\Closure(string): bool $scope which manifest paths to hash; all when null
+     */
+    public function inspect(ExtensionPackage $package, ?\Closure $scope = null): ExtensionPackageIntegrityResult
     {
         try {
             $document = $this->manifestDocument($package);
@@ -143,26 +205,7 @@ class ExtensionPackageIntegrityService
                 );
             }
 
-            $missing = [];
-            $modified = [];
-
-            foreach ($manifest->files as $file) {
-                $path = (string) $file['path'];
-                $absolute = base_path($path);
-
-                // Install extraction never creates links. Rejecting one here
-                // avoids following a post-install link outside the package.
-                if (is_link($absolute) || !is_file($absolute)) {
-                    $missing[] = $path;
-
-                    continue;
-                }
-
-                $actual = $this->digest($absolute);
-                if (!is_string($actual) || !hash_equals((string) $file['sha256'], $actual)) {
-                    $modified[] = $path;
-                }
-            }
+            ['missing' => $missing, 'modified' => $modified] = $this->compareFiles($manifest, $scope);
 
             if ($missing !== [] || $modified !== []) {
                 $first = $missing[0] ?? $modified[0];

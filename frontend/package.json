@@ -12,6 +12,7 @@
         "predev": "node scripts/merge-extension-messages.mjs && node scripts/compile-i18n.mjs",
         "build": "node scripts/merge-extension-messages.mjs && node scripts/compile-i18n.mjs && tsc -b && vite build",
         "build:fast": "vite build",
+        "build:runtime": "node scripts/merge-extension-messages.mjs && node scripts/compile-i18n.mjs && vite build",
         "budget": "node scripts/bundle-report.mjs --check",
         "budget:report": "node scripts/bundle-report.mjs",
         "lint": "eslint src tests scripts/lighthouse-baseline-report.mjs playwright.config.ts vite.config.ts vitest.config.ts lighthouse.config.cjs lighthouse.routes.cjs lighthouserc.cjs lighthouserc.mobile.cjs lighthouserc.baseline.cjs",
