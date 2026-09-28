@@ -8,6 +8,7 @@ use Everest\Events\ActivityLogged;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Everest\Services\Queue\StrayWorkerDetector;
 use Everest\Tests\Integration\Api\Application\ApplicationApiIntegrationTestCase;
 
 /**
@@ -112,6 +113,29 @@ class QueueHealthControllerTest extends ApplicationApiIntegrationTestCase
         $this->getJson('/api/application/queues/failed/' . $uuid)->assertStatus(200);
 
         $this->assertDatabaseHas('failed_jobs', ['uuid' => $uuid]);
+    }
+
+    /**
+     * A worker unit left over from a Jexactyl upgrade drains our lanes with its
+     * own 60 s timeout. It must be critical, because that is what raises the
+     * overview's attention item and fails `p:queue:health` as a monitor.
+     */
+    public function testAStrayQueueWorkerIsACriticalWarning(): void
+    {
+        $this->keyHolding([AdminRole::QUEUES_READ]);
+
+        $this->app->instance(StrayWorkerDetector::class, new class () extends StrayWorkerDetector {
+            public function find(): array
+            {
+                return [['pid' => 4242, 'command' => 'php artisan queue:work', 'queues' => ['high', 'standard'], 'unit' => 'jxctl.service']];
+            }
+        });
+
+        $warnings = collect($this->getJson('/api/application/queues')->assertStatus(200)->json('warnings'))->keyBy('code');
+
+        $this->assertSame('critical', $warnings['stray_queue_worker']['severity'] ?? null);
+        $this->assertStringContainsString('PID 4242, jxctl.service', $warnings['stray_queue_worker']['message']);
+        $this->assertStringContainsString('`systemctl disable --now jxctl.service`', $warnings['stray_queue_worker']['message']);
     }
 
     /**

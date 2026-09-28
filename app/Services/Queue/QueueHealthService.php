@@ -41,6 +41,7 @@ class QueueHealthService
         private QueueWaitEstimator $waits,
         private JobCatalogue $catalogue,
         private SchedulerHeartbeat $scheduler,
+        private StrayWorkerDetector $strays,
         private CacheRepository $cache,
     ) {
     }
@@ -226,6 +227,13 @@ class QueueHealthService
             $warnings[] = ['code' => $problem['code'], 'severity' => 'critical', 'message' => $problem['problem'] . ' ' . $problem['fix']];
         }
 
+        // Ahead of the Horizon check: a leftover worker keeps taking jobs
+        // whether Horizon is up or not, and is the more urgent of the two when
+        // both are true -- it is quietly running work under the wrong limits.
+        foreach ($this->strays->find() as $stray) {
+            $warnings[] = $this->strayWorkerWarning($stray);
+        }
+
         if ($masters === []) {
             $warnings[] = [
                 'code' => 'horizon_not_running',
@@ -274,6 +282,31 @@ class QueueHealthService
         }
 
         return $warnings;
+    }
+
+    /**
+     * Critical, not a warning: this process silently kills any job of ours
+     * that outlives its 60 s default, and the ones it does finish never show
+     * in Horizon's metrics.
+     *
+     * @param array{pid: int, command: string, queues: list<string>, unit: ?string} $stray
+     *
+     * @return array{code: string, severity: string, message: string}
+     */
+    private function strayWorkerWarning(array $stray): array
+    {
+        $queues = $stray['queues'] === [] ? 'the default queue' : '[' . implode(', ', $stray['queues']) . ']';
+        $fix = $stray['unit'] !== null
+            ? "Disable it with `systemctl disable --now {$stray['unit']}`."
+            : 'Stop it, and disable whatever starts it (typically a `pteroq`, `jxctl` or `jexactyl` systemd unit left over from an upgrade).';
+
+        return [
+            'code' => 'stray_queue_worker',
+            'severity' => 'critical',
+            'message' => "A queue worker outside Horizon (PID {$stray['pid']}"
+                . ($stray['unit'] !== null ? ", {$stray['unit']}" : '')
+                . ") is taking jobs from {$queues} without Horizon's timeouts, memory limits or metrics. {$fix}",
+        ];
     }
 
     /**
