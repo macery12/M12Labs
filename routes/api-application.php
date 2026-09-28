@@ -327,6 +327,7 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::get('/repositories', [Application\Extensions\ExtensionsController::class, 'repositories']);
         Route::get('/nests-eggs', [Application\Extensions\ExtensionsController::class, 'getNestsAndEggs']);
         Route::get('/progress', [Application\Extensions\ExtensionsController::class, 'progress']);
+        Route::get('/toolchain', [Application\Extensions\ExtensionsController::class, 'toolchain']);
         Route::put('/settings', [Application\Extensions\ExtensionsController::class, 'settings']);
         Route::post('/refresh', [Application\Extensions\ExtensionsController::class, 'refresh']);
         Route::post('/repositories', [Application\Extensions\ExtensionsController::class, 'storeRepository']);

@@ -84,9 +84,9 @@ export const BILLING_FEATURE: FeatureDef = {
 export const ALL_FEATURES: FeatureDef[] = [...MODULE_FEATURES, BILLING_FEATURE];
 export const FEATURE_KEYS: FeatureKey[] = ALL_FEATURES.map(f => f.key);
 
-// The three modules the panel ships disabled; everything else is on by default.
+// The modules the panel ships disabled; everything else is on by default.
 // Used by the "Restore defaults" preset (mirrors the config() shipping values).
-const DISABLED_BY_DEFAULT: FeatureKey[] = ['mods', 'email', 'webhooks'];
+const DISABLED_BY_DEFAULT: FeatureKey[] = ['mods', 'email', 'webhooks', 'billing'];
 
 export const PRESETS: Record<'bareMinimum' | 'everything' | 'defaults', FeatureFlags> = {
     bareMinimum: Object.fromEntries(FEATURE_KEYS.map(k => [k, false])) as FeatureFlags,

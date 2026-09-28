@@ -33,9 +33,9 @@ class ModsController extends ApplicationApiController
             Setting::set('settings::modules:mods:' . $key, $value);
         }
 
-        // Clear config cache to ensure new settings are loaded
-        // SECURITY: Command name is hardcoded - never use dynamic command names with Artisan::call()
-        \Artisan::call('config:clear');
+        // No config:clear here. SettingsServiceProvider overlays stored settings
+        // onto config on every boot, so the next request already sees these;
+        // clearing only threw away the cached configuration the build writes.
 
         $activitySettings = EmailRedactor::redactSensitivePayload(
             $request->all(),

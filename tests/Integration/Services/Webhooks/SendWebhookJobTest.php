@@ -79,7 +79,9 @@ class SendWebhookJobTest extends IntegrationTestCase
 
         Http::assertSent(fn ($request) => $request->url() === 'https://discord.test/api/webhooks/1/abc'
             && $request['embeds'][0]['title'] === self::EVENT
-            && $request['embeds'][0]['author']['name'] === $this->user->email);
+            && $request['embeds'][0]['author']['name'] === $this->user->email
+            && $request['embeds'][0]['footer']['text'] === 'M12Labs ' . config('app.version')
+            && !str_contains($request['embeds'][0]['footer']['icon_url'], 'githubusercontent'));
     }
 
     /** A failed post has to throw, or the job's retries never happen. */

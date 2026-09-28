@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 | Horizon requires a non-clustered Redis queue and the pcntl/posix extensions.
 | Everest\Providers\QueueServiceProvider refuses to boot the worker if those
 | are missing, rather than letting a supervisor start and quietly process
-| nothing. See docs/queues.md.
+| nothing. `php artisan p:queue:health` reports the same checks.
 |
 | Job *routing* is not configured here -- Horizon supervises workers, it does
 | not decide which queue a job lands on. That map is in config/queue.php.

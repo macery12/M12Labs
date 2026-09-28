@@ -206,7 +206,7 @@ class QueueServiceProvider extends ServiceProvider
                 $output->writeln('');
             }
 
-            $output->writeln('  See docs/queues.md, or run <comment>php artisan p:queue:health</comment> for the full picture.');
+            $output->writeln('  Run <comment>php artisan p:queue:health</comment> for the full picture.');
             $output->writeln('');
 
             // A hard stop is the point: starting anyway is the failure mode

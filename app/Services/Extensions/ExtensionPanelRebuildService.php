@@ -4,6 +4,7 @@ namespace Everest\Services\Extensions;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\Process\Process;
 use Everest\Exceptions\DisplayException;
 use Symfony\Component\Process\ExecutableFinder;
@@ -34,6 +35,9 @@ class ExtensionPanelRebuildService
     private const BUILD_CONTEXT = 'm12labs:extensions:build-context';
     private const BUILD_GENERATION = 'm12labs:extensions:build-generation';
 
+    private const TOOLCHAIN_CACHE_KEY = 'm12labs:extensions:build-toolchain';
+    private const TOOLCHAIN_CACHE_SECONDS = 60;
+
     /**
      * Compiled artifacts that must be discarded once a package's files change.
      *
@@ -55,6 +59,19 @@ class ExtensionPanelRebuildService
         ['php', 'artisan', 'route:clear'],
         ['php', 'artisan', 'view:clear'],
         ['php', 'artisan', 'event:clear'],
+    ];
+
+    /**
+     * Rebuilt once the build has finished, succeeded or not, so the panel
+     * never runs on the cleared state longer than the build itself. Not
+     * `route:cache`: extension routes come from the live runtime plan, and a
+     * cached route table would freeze which extensions are enabled.
+     *
+     * @var array<int, array<int, string>>
+     */
+    private const CACHE_COMMANDS = [
+        ['php', 'artisan', 'config:cache'],
+        ['php', 'artisan', 'event:cache'],
     ];
 
     public function __construct(
@@ -147,6 +164,7 @@ class ExtensionPanelRebuildService
                 if (!$process->isSuccessful()) {
                     $this->checkpoint($lease);
                     $this->restoreAssets($snapshot);
+                    $this->recacheCompiledArtifacts($environment);
 
                     throw new DisplayException(sprintf('M12Labs rebuild failed while running "%s".', implode(' ', $command)), new \RuntimeException($combinedOutput));
                 }
@@ -159,15 +177,36 @@ class ExtensionPanelRebuildService
         } catch (DisplayException $exception) {
             $this->checkpoint($lease);
             $this->restoreAssets($snapshot);
+            $this->recacheCompiledArtifacts($environment);
 
             throw $exception;
         }
 
         $this->checkpoint($lease);
+        $this->recacheCompiledArtifacts($environment);
         $this->pruneSnapshots();
         $this->pruneStore($environment);
 
         return $output;
+    }
+
+    /**
+     * Best effort: a panel without these caches is slower, never broken, so
+     * a failure here must not fail an install whose build succeeded.
+     *
+     * @param array<string, string> $environment
+     */
+    private function recacheCompiledArtifacts(array $environment): void
+    {
+        foreach (self::CACHE_COMMANDS as $command) {
+            try {
+                $process = new Process($command, base_path(), $environment);
+                $process->setTimeout(120);
+                $process->run();
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        }
     }
 
     /**
@@ -412,6 +451,73 @@ class ExtensionPanelRebuildService
                 }
             }
         }
+    }
+
+    /**
+     * Whether this host can run the build an install needs, before anyone
+     * clicks Install. The first install on a host without pnpm used to fail
+     * only once the build started; the Extensions page shows this instead.
+     *
+     * Mirrors getFrontendBuildCommand() and assertToolchainVersions(): the
+     * same executables, the same pins, the same enforcement switch. Cached
+     * briefly, because probing pnpm through corepack takes most of a second.
+     *
+     * @return array{
+     *     ready: bool,
+     *     node: array{found: bool, version: ?string, required: ?string, ok: bool},
+     *     pnpm: array{found: bool, version: ?string, required: ?string, ok: bool},
+     *     disk: array{freeBytes: ?int, requiredBytes: int, ok: bool},
+     * }
+     */
+    public function toolchainStatus(): array
+    {
+        return Cache::remember(self::TOOLCHAIN_CACHE_KEY, self::TOOLCHAIN_CACHE_SECONDS, function (): array {
+            $manifest = json_decode((string) @file_get_contents(base_path('package.json')), true);
+            $manifest = is_array($manifest) ? $manifest : [];
+            $enforced = (bool) config('extensions.build.enforce_toolchain', true);
+            $finder = new ExecutableFinder();
+
+            $pinned = preg_match('/^pnpm@(\d+)\./', (string) ($manifest['packageManager'] ?? ''), $matches) ? $matches[1] : null;
+            $pnpmPath = $finder->find('pnpm');
+            $pnpmVersion = $pnpmPath ? $this->probeVersion([$pnpmPath, '--version']) : null;
+
+            $nodeRequired = preg_match('/>=\s*(\d+\.\d+\.\d+)/', (string) ($manifest['engines']['node'] ?? ''), $matches) ? $matches[1] : null;
+            $nodePath = $finder->find('node');
+            $nodeVersion = $nodePath ? $this->probeVersion([$nodePath, '--version']) : null;
+            $nodeVersion = $nodeVersion !== null ? ltrim($nodeVersion, 'v') : null;
+
+            // A build writes a fresh asset tree next to the hardlinked
+            // snapshot; the output cap is the most it is allowed to write.
+            $required = max(1, (int) config('extensions.build.max_output_bytes', 256 * 1024 * 1024));
+            $free = @disk_free_space(public_path());
+            $free = is_float($free) ? (int) $free : null;
+
+            $status = [
+                'node' => [
+                    'found' => $nodeVersion !== null,
+                    'version' => $nodeVersion,
+                    'required' => $nodeRequired !== null ? '>=' . $nodeRequired : null,
+                    'ok' => $nodeVersion !== null
+                        && (!$enforced || $nodeRequired === null || version_compare($nodeVersion, $nodeRequired, '>=')),
+                ],
+                'pnpm' => [
+                    'found' => $pnpmVersion !== null,
+                    'version' => $pnpmVersion,
+                    'required' => $pinned !== null ? $pinned . '.x' : null,
+                    'ok' => $pnpmVersion !== null
+                        && (!$enforced || $pinned === null || str_starts_with($pnpmVersion, $pinned . '.')),
+                ],
+                'disk' => [
+                    'freeBytes' => $free,
+                    'requiredBytes' => $required,
+                    // Unknown is not a failure: disk_free_space() is often
+                    // disabled, and a build without it still works.
+                    'ok' => $free === null || $free >= $required,
+                ],
+            ];
+
+            return ['ready' => $status['node']['ok'] && $status['pnpm']['ok'] && $status['disk']['ok'], ...$status];
+        });
     }
 
     /**

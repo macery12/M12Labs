@@ -120,8 +120,10 @@ class WebhookEventService
             'color' => $colorInt,
             'timestamp' => now()->toIso8601String(),
             'footer' => [
-                'text' => 'M12Labs v4',
-                'icon_url' => 'https://avatars.githubusercontent.com/u/91636558?s=200&v=4',
+                'text' => 'M12Labs ' . config('app.version'),
+                // The operator's own logo, as the page's favicon uses it,
+                // falling back to the panel's bundled icon on this host.
+                'icon_url' => config('app.logo') ?: rtrim($appUrl, '/') . '/favicons/android-chrome-192x192.png',
             ],
             'author' => [
                 'name' => $user->email,

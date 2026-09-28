@@ -29,5 +29,7 @@
         <env name="SESSION_DRIVER" value="array" />
         <env name="QUEUE_CONNECTION" value="sync" />
         <env name="SKIP_MIGRATIONS" value="true" />
+        <env name="APP_CONFIG_CACHE" value="bootstrap/cache/config.phpunit.php" force="true" />
+        <env name="APP_EVENTS_CACHE" value="bootstrap/cache/events.phpunit.php" force="true" />
     </php>
 </phpunit>

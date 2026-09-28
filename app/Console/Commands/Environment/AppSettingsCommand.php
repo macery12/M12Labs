@@ -10,20 +10,6 @@ class AppSettingsCommand extends Command
 {
     use EnvironmentWriterTrait;
 
-    public const CACHE_DRIVERS = [
-        'redis' => 'Redis (recommended)',
-        'memcached' => 'Memcached',
-        'file' => 'Filesystem',
-    ];
-
-    public const SESSION_DRIVERS = [
-        'redis' => 'Redis (recommended)',
-        'memcached' => 'Memcached',
-        'database' => 'MySQL Database',
-        'file' => 'Filesystem',
-        'cookie' => 'Cookie',
-    ];
-
     protected $description = 'Configure basic environment settings for the Panel.';
 
     protected $signature = 'p:environment:setup
@@ -31,13 +17,13 @@ class AppSettingsCommand extends Command
                             {--author= : The email that services created on this instance should be linked to.}
                             {--url= : The URL that this Panel is running on.}
                             {--timezone= : The timezone to use for Panel times.}
-                            {--cache= : The cache driver backend to use.}
-                            {--session= : The session driver backend to use.}
+                            {--cache= : Deprecated; the cache is always Redis. Only "redis" is accepted.}
+                            {--session= : Deprecated; sessions are always Redis. Only "redis" is accepted.}
                             {--redis-host= : Redis host to use for connections.}
                             {--redis-pass= : Password used to connect to redis.}
                             {--redis-port= : Port to connect to redis over.}
-                            {--settings-ui= : Enable or disable the settings UI.}
-                            {--telemetry= : Enable or disable anonymous telemetry.}';
+                            {--settings-ui= : Enable or disable the settings UI (default: enabled).}
+                            {--telemetry= : Deprecated and ignored; the panel sends no telemetry.}';
 
     protected array $variables = [];
 
@@ -85,36 +71,29 @@ class AppSettingsCommand extends Command
             config('app.timezone')
         );
 
-        $selected = config('cache.default', 'redis');
-        $this->variables['CACHE_DRIVER'] = $this->option('cache') ?? $this->choice(
-            'Cache Driver',
-            self::CACHE_DRIVERS,
-            array_key_exists($selected, self::CACHE_DRIVERS) ? $selected : null
-        );
+        // The cache is not disposable here: it holds extension lifecycle
+        // leases, queue admissions and rate limits, and Horizon only
+        // supervises Redis queues. Every one of these is Redis, so there is
+        // nothing to choose.
+        foreach (['cache' => 'CACHE_DRIVER', 'session' => 'SESSION_DRIVER'] as $option => $variable) {
+            if (!in_array($this->option($option), [null, 'redis'], true)) {
+                $this->output->error("--{$option} only accepts \"redis\"; the panel requires Redis for its cache, sessions and queue.");
 
-        $selected = config('session.driver', 'redis');
-        $this->variables['SESSION_DRIVER'] = $this->option('session') ?? $this->choice(
-            'Session Driver',
-            self::SESSION_DRIVERS,
-            array_key_exists($selected, self::SESSION_DRIVERS) ? $selected : null
-        );
+                return 1;
+            }
+
+            $this->variables[$variable] = 'redis';
+        }
 
         // Horizon can only supervise Redis queues, so allowing another driver
         // here would leave a fresh installation with no queue workers.
         $this->variables['QUEUE_CONNECTION'] = 'redis';
-        $this->output->comment('Queue Driver: Redis (required by Horizon).');
+        $this->output->comment('Cache, sessions and queue: Redis (required).');
 
-        if (!is_null($this->option('settings-ui'))) {
-            $this->variables['APP_ENVIRONMENT_ONLY'] = $this->option('settings-ui') == 'true' ? 'false' : 'true';
-        } else {
-            $this->variables['APP_ENVIRONMENT_ONLY'] = $this->confirm('Enable UI based settings editor?', true) ? 'false' : 'true';
-        }
-
-        $this->output->comment('Please reference https://pterodactyl.io/panel/1.0/additional_configuration.html#telemetry for more detailed information regarding telemetry data and collection.');
-        $this->variables['PTERODACTYL_TELEMETRY_ENABLED'] = $this->option('telemetry') ?? $this->confirm(
-            'Enable sending anonymous telemetry data?',
-            config('everest.telemetry.enabled', true)
-        ) ? 'true' : 'false';
+        // Not asked: a new operator cannot weigh it, and answering "no"
+        // silently turns off the Features page and every admin setting. A
+        // deployment that deliberately locks settings passes --settings-ui=false.
+        $this->variables['APP_ENVIRONMENT_ONLY'] = $this->option('settings-ui') === 'false' ? 'true' : 'false';
 
         // Make sure session cookies are set as "secure" when using HTTPS
         if (str_starts_with($this->variables['APP_URL'], 'https://')) {
@@ -130,20 +109,12 @@ class AppSettingsCommand extends Command
     }
 
     /**
-     * Check if redis is selected, if so, request connection details and verify them.
+     * Request the Redis connection details. Always asked: cache, sessions and
+     * the queue all run on Redis.
      */
     private function checkForRedis()
     {
-        $items = collect($this->variables)->filter(function ($item) {
-            return $item === 'redis';
-        });
-
-        // Redis was not selected, no need to continue.
-        if (count($items) === 0) {
-            return;
-        }
-
-        $this->output->note('You\'ve selected the Redis driver for one or more options, please provide valid connection information below. In most cases you can use the defaults provided unless you have modified your setup.');
+        $this->output->note('Please provide your Redis connection information below. In most cases you can use the defaults provided unless you have modified your setup.');
         $this->variables['REDIS_HOST'] = $this->option('redis-host') ?? $this->ask(
             'Redis Host',
             config('database.redis.default.host')

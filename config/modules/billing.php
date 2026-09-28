@@ -3,8 +3,13 @@
 return [
     /*
      * Enable or disable the billing module.
+     *
+     * Off until an operator chooses it: on, it brings a storefront, player
+     * order links and nine scheduler entries before any payment processor,
+     * product or price exists. Turn it on from Admin > Features (or with
+     * BILLING_ENABLED=true); a value saved there overrides this default.
      */
-    'enabled' => env('BILLING_ENABLED', true),
+    'enabled' => env('BILLING_ENABLED', false),
 
     /*
      * Dedicated key for encrypting invoice snapshots and storage credentials.

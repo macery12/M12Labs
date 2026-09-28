@@ -89,6 +89,8 @@ run_cmd "php artisan config:clear"
 run_cmd "php artisan route:clear"
 run_cmd "php artisan view:clear"
 run_cmd "php artisan event:clear"
+run_cmd "php artisan config:cache"
+run_cmd "php artisan event:cache"
 
 ARTISAN_COMMANDS="$(php artisan list --raw | awk '{print $1}')"
 

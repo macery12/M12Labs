@@ -73,6 +73,8 @@ export function CapabilityApprovalModal({
                     <span>{m['extensions.capabilities.trustNote']()}</span>
                 </div>
 
+                <p className="text-xs leading-relaxed text-[var(--color-ink-muted)]">{m['extensions.capabilities.rebuildNote']()}</p>
+
                 {diff.escalations.length > 0 && (
                     <section>
                         <h3 className="mb-1.5 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">

@@ -1,7 +1,7 @@
 import { m } from '@/i18n/messages';
 import { type ComponentType } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     Server,
     Boxes,
@@ -16,6 +16,8 @@ import {
     Activity,
     Wrench,
     ListOrdered,
+    HardDrive,
+    Plus,
 } from 'lucide-react';
 import { getAdminOverview, type AdminOverview, type OverviewNode, type OverviewNodeResource } from '@/api/adminOverview';
 import { getExtensions } from '@/api/extensions';
@@ -23,6 +25,8 @@ import { useFlags } from '@/state/flags';
 import { useAdminHeld } from '@/layouts/heldPermissions';
 import { can } from '@/lib/can';
 import { Spinner } from '@/components/ui/Spinner';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { formatCurrency, formatMib, formatNumber, timeAgo } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import {
@@ -239,6 +243,7 @@ export default function OverviewPage() {
     const billingEnabled = flags?.billing.enabled ?? false;
     const ticketsEnabled = flags?.tickets.enabled ?? false;
     const held = useAdminHeld();
+    const navigate = useNavigate();
 
     const { data, isLoading, isError, error } = useQuery({
         queryKey: ['admin', 'overview'],
@@ -367,47 +372,67 @@ export default function OverviewPage() {
                                 to="/admin/infrastructure"
                                 action={m['ui.labels.infrastructure']()}
                             />
-                            <div className="mb-3 flex h-2 overflow-hidden rounded-sm bg-[var(--color-surface-2)]">
-                                <div
-                                    className="h-full bg-[var(--color-accent)]"
-                                    style={{ width: `${pct(data.fleet.servers.active, data.fleet.servers.total)}%` }}
+                            {data.fleet.nodes.total === 0 ? (
+                                // A fresh install: a 0/0 bar and an empty node list say
+                                // nothing. Point at the one thing that has to happen first.
+                                <EmptyState
+                                    icon={HardDrive}
+                                    title={m['admin.nodes.empty.title']()}
+                                    body={m['admin.nodes.empty.body']()}
+                                    action={
+                                        can(held, 'nodes.create') ? (
+                                            <Button size="sm" onClick={() => navigate('/admin/infrastructure/nodes/new')}>
+                                                <Plus className="h-4 w-4" />
+                                                {m['ui.labels.newNode']()}
+                                            </Button>
+                                        ) : undefined
+                                    }
                                 />
-                                <div
-                                    className="h-full bg-[var(--color-warning)]"
-                                    style={{ width: `${pct(data.fleet.servers.suspended, data.fleet.servers.total)}%` }}
-                                />
-                                <div
-                                    className="h-full bg-[var(--color-danger)]"
-                                    style={{ width: `${pct(data.fleet.servers.installFailed, data.fleet.servers.total)}%` }}
-                                />
-                            </div>
-                            <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-[var(--color-ink-muted)]">
-                                <LegendDot color="var(--color-accent)" label={m['ui.labels.countActive']({ count: data.fleet.servers.active })} />
-                                <LegendDot color="var(--color-warning)" label={m['admin.overview.fleet.suspended']({ count: data.fleet.servers.suspended })} />
-                                {data.fleet.servers.installFailed > 0 && (
-                                    <LegendDot color="var(--color-danger)" label={m['admin.overview.fleet.installFailed']({ count: data.fleet.servers.installFailed })} />
-                                )}
-                            </div>
+                            ) : (
+                                <>
+                                <div className="mb-3 flex h-2 overflow-hidden rounded-sm bg-[var(--color-surface-2)]">
+                                    <div
+                                        className="h-full bg-[var(--color-accent)]"
+                                        style={{ width: `${pct(data.fleet.servers.active, data.fleet.servers.total)}%` }}
+                                    />
+                                    <div
+                                        className="h-full bg-[var(--color-warning)]"
+                                        style={{ width: `${pct(data.fleet.servers.suspended, data.fleet.servers.total)}%` }}
+                                    />
+                                    <div
+                                        className="h-full bg-[var(--color-danger)]"
+                                        style={{ width: `${pct(data.fleet.servers.installFailed, data.fleet.servers.total)}%` }}
+                                    />
+                                </div>
+                                <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-[var(--color-ink-muted)]">
+                                    <LegendDot color="var(--color-accent)" label={m['ui.labels.countActive']({ count: data.fleet.servers.active })} />
+                                    <LegendDot color="var(--color-warning)" label={m['admin.overview.fleet.suspended']({ count: data.fleet.servers.suspended })} />
+                                    {data.fleet.servers.installFailed > 0 && (
+                                        <LegendDot color="var(--color-danger)" label={m['admin.overview.fleet.installFailed']({ count: data.fleet.servers.installFailed })} />
+                                    )}
+                                </div>
 
-                            <div className="flex flex-col gap-3">
-                                {shownNodes.map(node => (
-                                    <NodeRow key={node.id} node={node} />
-                                ))}
-                            </div>
-                            {nodes.length > shownNodes.length && (
-                                <Link
-                                    to="/admin/infrastructure?view=nodes"
-                                    className="mt-3 block font-mono text-xs text-[var(--brand-bright)] hover:underline"
-                                >
-                                    {m['admin.overview.node.more']({ count: nodes.length - shownNodes.length })}
-                                </Link>
+                                <div className="flex flex-col gap-3">
+                                    {shownNodes.map(node => (
+                                        <NodeRow key={node.id} node={node} />
+                                    ))}
+                                </div>
+                                {nodes.length > shownNodes.length && (
+                                    <Link
+                                        to="/admin/infrastructure?view=nodes"
+                                        className="mt-3 block font-mono text-xs text-[var(--brand-bright)] hover:underline"
+                                    >
+                                        {m['admin.overview.node.more']({ count: nodes.length - shownNodes.length })}
+                                    </Link>
+                                )}
+                                <p className="mt-4 border-t border-[var(--color-border)] pt-3 font-mono text-xs text-[var(--color-ink-faint)]">
+                                    {m['admin.overview.fleet.memoryTotal']({
+                                        used: formatMib(data.fleet.capacity.memoryUsed),
+                                        total: formatMib(data.fleet.capacity.memoryTotal),
+                                    })}
+                                </p>
+                                </>
                             )}
-                            <p className="mt-4 border-t border-[var(--color-border)] pt-3 font-mono text-xs text-[var(--color-ink-faint)]">
-                                {m['admin.overview.fleet.memoryTotal']({
-                                    used: formatMib(data.fleet.capacity.memoryUsed),
-                                    total: formatMib(data.fleet.capacity.memoryTotal),
-                                })}
-                            </p>
                         </section>
 
                         <aside className="flex flex-col gap-4">

@@ -47,5 +47,13 @@ trait EnvironmentWriterTrait
         });
 
         file_put_contents($path, $saveContents);
+
+        // The build caches configuration, and a cached configuration never
+        // reads .env again -- these values would be silently ignored until the
+        // next build. Drop it; the next build writes a fresh one.
+        $cached = app()->getCachedConfigPath();
+        if (is_file($cached)) {
+            @unlink($cached);
+        }
     }
 }

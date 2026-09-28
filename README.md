@@ -15,18 +15,25 @@ M12Labs is a game server management and billing platform, forked from the Jexact
 ## Features
 
 - V2 UI: full frontend rebuild (React + TypeScript on Laravel) with a new theme system and multi-language support
-- Extension system: install, manage, and build extensions, premade or custom, with support for client-side UI, admin pages, background jobs, and dedicated extension databases
+- Extension system: signed extensions installed from the panel, built on a PHP SDK for servers, files, settings and secrets. They can add server and admin pages, hooks, queued and scheduled jobs, and their own database tables, Every install shows the privileges an extension asks for before you approve it.
 - SSO login via Discord and Google, plus Two-Factor Authentication
 - Integrated billing (Stripe + PayPal)
-- AI module: built-in AI help chat (see [Notes](#notes) below)
 - Landing page builder with a public storefront API for plans and servers
 - Per-feature toggles to enable or disable modules panel-wide
 - Migration tooling to import existing Pterodactyl/Jexactyl/JexPanel installs (see [Notes](#notes) below)
 - Authentication and security: session/device management, audit logging
 
+## Requirements
+
+- PHP 8.4 with the `common`, `cli`, `gd`, `mysql`, `mbstring`, `bcmath`, `xml`, `fpm`, `curl` and `zip` extensions
+- MariaDB or MySQL
+- Redis (cache, sessions and the queue all run on it)
+- Node.js 20.19+ and pnpm 10 (extension installs rebuild the interface on the server)
+- systemd, to keep Horizon (the queue worker) running
+- cron, for `php artisan schedule:run` every minute
+
 ## Notes
 
-- **AI module**: right now it's a basic AI help chat. The goal is an assistant that can take actions in the panel, not just answer questions.
 - **Migration tooling**: it works, but still needs more real-world testing. If you're running an existing Pterodactyl, Jexactyl, or JexPanel install, reach out on [Discord](https://discord.gg/fVJZtqKYrc); help testing the importer against a real install is welcome.
 
 ## Useful Links

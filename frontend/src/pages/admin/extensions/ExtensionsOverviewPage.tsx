@@ -27,6 +27,7 @@ import {
 import { BatchActionBar } from './BatchActionBar';
 import { DatabaseChangesModal, type DbModalExtension } from './DatabaseChangesModal';
 import { CapabilityApprovalModal } from './CapabilityApprovalModal';
+import { BuildToolchainRow } from './BuildToolchainRow';
 import { ModifiedFilesModal } from './ModifiedFilesModal';
 import { PackageRequirementsModal } from './PackageRequirementsModal';
 import { UnusedPackagesModal, hasPossiblyUnusedPackages } from './UnusedPackagesModal';
@@ -553,6 +554,8 @@ export default function ExtensionsOverviewPage() {
                             sub={repoIssues > 0 ? m['extensions.summary.withIssues']({ count: repoIssues }) : m['extensions.summary.connected']({ count: repos.filter(r => r.enabled).length })}
                         />
                     </div>
+
+                    <BuildToolchainRow />
 
                     {/* toolbar: segmented filter + search */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

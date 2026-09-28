@@ -19,6 +19,7 @@ use Everest\Services\Extensions\ExtensionPermissionRegistry;
 use Everest\Services\Extensions\ExtensionRuntimePlanService;
 use Everest\Services\Extensions\ExtensionDatabasePlanService;
 use Everest\Services\Extensions\ExtensionPackageBatchService;
+use Everest\Services\Extensions\ExtensionPanelRebuildService;
 use Everest\Traits\Controllers\RespondsWithExtensionEnvelope;
 use Everest\Services\Extensions\ExtensionPackageUpdateService;
 use Everest\Services\Extensions\ExtensionPackageInstallService;
@@ -453,6 +454,16 @@ class ExtensionsController extends ApplicationApiController
         return new JsonResponse([
             'progress' => $this->progressService->current(),
         ]);
+    }
+
+    /**
+     * Whether this host has what an install's frontend rebuild needs -- Node,
+     * the pinned pnpm major and disk headroom -- so the Extensions page can
+     * say so before the first install fails on it.
+     */
+    public function toolchain(GetExtensionsRequest $request, ExtensionPanelRebuildService $rebuild): JsonResponse
+    {
+        return new JsonResponse(['object' => 'extension_toolchain', 'attributes' => $rebuild->toolchainStatus()]);
     }
 
     /**

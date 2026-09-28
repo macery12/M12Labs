@@ -201,6 +201,27 @@ export async function getExtensions(): Promise<Extension[]> {
     return (data.data ?? []) as Extension[];
 }
 
+export interface ToolchainCheck {
+    found: boolean;
+    version: string | null;
+    required: string | null;
+    ok: boolean;
+}
+
+export interface BuildToolchain {
+    ready: boolean;
+    node: ToolchainCheck;
+    pnpm: ToolchainCheck;
+    disk: { freeBytes: number | null; requiredBytes: number; ok: boolean };
+}
+
+// GET /extensions/toolchain — whether this host can run the frontend rebuild
+// every install, update and uninstall triggers.
+export async function getBuildToolchain(): Promise<BuildToolchain> {
+    const { data } = await http.get(`${BASE}/toolchain`);
+    return data.attributes as BuildToolchain;
+}
+
 // GET /extensions/repositories — configured repositories + their health.
 export async function getRepositories(): Promise<Repository[]> {
     const { data } = await http.get(`${BASE}/repositories`);

@@ -4535,5 +4535,12 @@
   "extensions.dbchanges.rows": "{count} row(s)",
   "extensions.dbchanges.unanalysed": "{count} statement(s) in these migrations could not be read, so this list may be incomplete.",
   "common.accessibility.skipToContent": "Skip to content",
-  "common.time.justNow": "just now"
+  "common.time.justNow": "just now",
+  "extensions.capabilities.rebuildNote": "Continuing rebuilds the panel's interface on this server (usually 1–3 minutes) and restarts background workers. Pages keep working during the build.",
+  "extensions.toolchain.title": "Build toolchain",
+  "extensions.toolchain.missing": "{tool} not found",
+  "extensions.toolchain.needs": "needs {required}",
+  "extensions.toolchain.diskFree": "{size} free",
+  "extensions.toolchain.diskUnknown": "Free disk space unknown",
+  "extensions.toolchain.notReady": "Installs, updates and uninstalls rebuild the interface on this server, and will fail until this is fixed."
 }

@@ -26,7 +26,7 @@ class SensitiveSettingsLoggingTest extends TestCase
         $repository = \Mockery::mock(SettingsRepositoryInterface::class);
         $repository->shouldReceive('set')->once();
         $this->app->instance(SettingsRepositoryInterface::class, $repository);
-        Artisan::shouldReceive('call')->once()->with('config:clear');
+        Artisan::shouldReceive('call')->never();
 
         $controller = new PluginsController(
             \Mockery::mock(ModrinthService::class)
@@ -60,7 +60,7 @@ class SensitiveSettingsLoggingTest extends TestCase
         $repository = \Mockery::mock(SettingsRepositoryInterface::class);
         $repository->shouldReceive('set')->once();
         $this->app->instance(SettingsRepositoryInterface::class, $repository);
-        Artisan::shouldReceive('call')->once()->with('config:clear');
+        Artisan::shouldReceive('call')->never();
 
         $controller = new ModsController(
             \Mockery::mock(ModrinthService::class)
