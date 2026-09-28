@@ -1,11 +1,30 @@
+import { lazy, Suspense } from 'react';
+import { m } from '@/i18n/messages';
+import { Terminal as TerminalIcon } from 'lucide-react';
 import { useServer } from '@/components/server/ServerContext';
 import { StatStrip } from './panels/StatStrip';
-import { ConsolePanel } from './panels/ConsolePanel';
+import { Panel } from './panels/Panel';
 import { PowerPanel } from './panels/PowerPanel';
 import { UsagePanel } from './panels/UsagePanel';
 import { InfoPanel } from './panels/InfoPanel';
 import { NetworkPanel } from './panels/NetworkPanel';
 import { ActivityPanel } from './panels/ActivityPanel';
+
+// xterm is most of this page's weight (~90 KB gzip) and it was in the page
+// chunk, so the stat strip and power controls waited on it. The console now
+// loads beside them; the rest of the cockpit renders at once.
+const ConsolePanel = lazy(() => import('./panels/ConsolePanel').then(module => ({ default: module.ConsolePanel })));
+
+/** Same frame as the console, so the grid does not jump when it arrives. */
+function ConsolePlaceholder() {
+    return (
+        <Panel title={m['server.console.title']()} icon={TerminalIcon} className="min-h-[26rem] w-full" flush>
+            <div className="flex h-full items-center justify-center p-2 font-mono text-xs text-[var(--color-ink-faint)]">
+                {m['server.console.establishing']()}
+            </div>
+        </Panel>
+    );
+}
 
 // Static, ops-grade server cockpit: live metric strip, console hero with a
 // right rail (power / usage / info), and a network + activity row beneath.
@@ -23,7 +42,9 @@ export default function ServerOverviewPage() {
 
             <div className="grid gap-4 xl:grid-cols-3">
                 <div className="flex xl:col-span-2">
-                    <ConsolePanel />
+                    <Suspense fallback={<ConsolePlaceholder />}>
+                        <ConsolePanel />
+                    </Suspense>
                 </div>
                 <div className="flex flex-col gap-4">
                     <PowerPanel />

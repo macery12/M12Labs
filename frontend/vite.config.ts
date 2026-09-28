@@ -22,7 +22,7 @@ function generatedCatalogPlugin(): Plugin {
             if (!id.startsWith(resolvedCatalogPrefix)) return null;
 
             const [scope, locale, ...extra] = id.slice(resolvedCatalogPrefix.length).split('/');
-            if (extra.length || !['full', 'public'].includes(scope ?? '') || !/^[A-Za-z0-9_-]+$/.test(locale ?? '')) {
+            if (extra.length || !['full', 'app', 'public'].includes(scope ?? '') || !/^[A-Za-z0-9_-]+$/.test(locale ?? '')) {
                 throw new Error(`Invalid generated locale catalog ${JSON.stringify(id)}`);
             }
             return readFileSync(`${generatedCatalogDirectory}${scope}/${locale}.js`, 'utf8');
@@ -100,6 +100,25 @@ export default defineConfig(({ command }) => ({
     build: {
         emptyOutDir: true,
         target: 'es2022',
+        rolldownOptions: {
+            output: {
+                codeSplitting: {
+                    groups: [
+                        // The framework, pinned to a chunk of its own. Left to the
+                        // automatic split it was merged with shared app modules into
+                        // one ~117 KB gzip chunk whose hash changed on every core
+                        // deploy and every extension install (each is a rebuild), so
+                        // every visitor re-downloaded unchanged React. This only
+                        // changes when the dependencies do.
+                        {
+                            name: 'vendor-react',
+                            test: /node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|@tanstack[\\/](react-query|query-core))[\\/]/,
+                            priority: 20,
+                        },
+                    ],
+                },
+            },
+        },
     },
 
     server: {

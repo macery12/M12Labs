@@ -79,9 +79,14 @@
             if (!in_array($frontendLocale, config('app.locales', ['en']), true)) {
                 $frontendLocale = config('app.fallback_locale', 'en');
             }
-            $localeEntry = Auth::check()
-                ? "virtual:m12-i18n-catalog/full/{$frontendLocale}"
-                : "virtual:m12-i18n-catalog/public/{$frontendLocale}";
+            // Preload the tier the page will load: guests the public shells,
+            // players the app tier, and the admin area the full catalog that
+            // AdminLayout awaits.
+            $localeEntry = match (true) {
+                !Auth::check() => "virtual:m12-i18n-catalog/public/{$frontendLocale}",
+                request()->is('admin', 'admin/*') => "virtual:m12-i18n-catalog/full/{$frontendLocale}",
+                default => "virtual:m12-i18n-catalog/app/{$frontendLocale}",
+            };
             $initialRouteEntry = match (true) {
                 request()->is('auth/login') => 'src/pages/auth/LoginPage.tsx',
                 request()->is('auth/login/checkpoint') => 'src/pages/auth/CheckpointPage.tsx',

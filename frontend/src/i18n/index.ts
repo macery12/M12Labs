@@ -17,7 +17,7 @@ import {
     baseLocale,
     type Locale,
 } from '@/paraglide/runtime';
-import { initializeMessages } from './messages';
+import { initializeMessages, loadedCatalogScope } from './messages';
 
 // Extension UI packages use this stable entrypoint because their message ids do
 // not exist in the core typed catalog until the package is installed.
@@ -115,6 +115,8 @@ document.documentElement.lang = currentLocale;
 // global, admin-driven action today; this is also the seam a future per-user
 // picker would use.
 export async function setLocale(locale: Locale): Promise<void> {
-    await initializeMessages(locale);
+    // The same tier in the new language: a player switching language does not
+    // need the admin catalog, and an admin keeps theirs.
+    await initializeMessages(locale, loadedCatalogScope() ?? 'app');
     setParaglideLocale(locale);
 }

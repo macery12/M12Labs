@@ -1,5 +1,5 @@
 import { baseLocale, type Locale } from '@/paraglide/runtime';
-import { catalogLoaders, publicCatalogLoaders, type RuntimeCatalog } from './generated/catalogLoaders';
+import { appCatalogLoaders, catalogLoaders, publicCatalogLoaders, type RuntimeCatalog } from './generated/catalogLoaders';
 import type { MessageFunctions } from './generated/messageTypes';
 
 type MessageFunction = (inputs?: Record<string, unknown>) => string;
@@ -36,17 +36,34 @@ let loadedLocale: Locale | null = null;
 let loadedScope: CatalogScope | null = null;
 let loadSequence = 0;
 
-export type CatalogScope = 'full' | 'public';
+/**
+ * Nested catalog tiers: `public` (guest shells) ⊂ `app` (signed-in player UI)
+ * ⊂ `full` (everything, including the admin area's copy). Loading a tier
+ * already covered by the active one is a no-op.
+ */
+export type CatalogScope = 'public' | 'app' | 'full';
+
+const scopeRank: Record<CatalogScope, number> = { public: 0, app: 1, full: 2 };
+
+/** Whether the active catalog already covers a tier in this locale. */
+export function catalogCovers(locale: Locale, scope: CatalogScope): boolean {
+    return loadedLocale === locale && loadedScope !== null && scopeRank[loadedScope] >= scopeRank[scope];
+}
+
+/** The tier currently loaded, so a locale switch can keep it. */
+export function loadedCatalogScope(): CatalogScope | null {
+    return loadedScope;
+}
 
 /** Load exactly one compiled locale and atomically replace the active catalog. */
 export async function initializeMessages(locale: Locale, scope: CatalogScope = 'full'): Promise<void> {
-    if (loadedLocale === locale && (loadedScope === 'full' || loadedScope === scope)) return;
+    if (catalogCovers(locale, scope)) return;
 
     const sequence = loadSequence++;
     const startMark = `m12:i18n:${locale}:${sequence}:start`;
     const endMark = `m12:i18n:${locale}:${sequence}:end`;
     performance.mark(startMark, { detail: { locale } });
-    const loaders = scope === 'public' ? publicCatalogLoaders : catalogLoaders;
+    const loaders = scope === 'public' ? publicCatalogLoaders : scope === 'app' ? appCatalogLoaders : catalogLoaders;
     const loader = loaders[locale] ?? loaders[baseLocale];
     const catalog = await loader();
     activeCatalog = catalog;

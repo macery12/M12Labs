@@ -4,7 +4,9 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const frontendDirectory = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const buildDirectory = resolve(frontendDirectory, '../public/build');
+// BUNDLE_BUILD_DIR measures a build written elsewhere (`vite build --outDir`)
+// without replacing the assets the panel is serving.
+const buildDirectory = resolve(process.env.BUNDLE_BUILD_DIR ?? resolve(frontendDirectory, '../public/build'));
 const manifestPath = join(buildDirectory, 'manifest.json');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 const shouldCheck = process.argv.includes('--check');
@@ -12,12 +14,12 @@ const shouldCheck = process.argv.includes('--check');
 const routes = [
     { name: 'Guest landing', entry: 'src/public.tsx', catalog: 'virtual:m12-i18n-catalog/public/en', layout: null, source: null, cap: 345_000 },
     { name: 'Login', entry: 'src/public.tsx', catalog: 'virtual:m12-i18n-catalog/public/en', layout: 'src/layouts/AuthLayout.tsx', source: 'src/pages/auth/LoginPage.tsx', cap: 385_000 },
-    { name: 'Dashboard', entry: 'src/main.tsx', catalog: 'virtual:m12-i18n-catalog/full/en', layout: 'src/layouts/DashboardLayout.tsx', source: 'src/pages/dashboard/DashboardPage.tsx', cap: 360_000 },
-    { name: 'Server overview', entry: 'src/main.tsx', catalog: 'virtual:m12-i18n-catalog/full/en', layout: 'src/layouts/ServerLayout.tsx', source: 'src/pages/server/ServerOverviewPage.tsx', cap: 440_000 },
+    { name: 'Dashboard', entry: 'src/main.tsx', catalog: 'virtual:m12-i18n-catalog/app/en', layout: 'src/layouts/DashboardLayout.tsx', source: 'src/pages/dashboard/DashboardPage.tsx', cap: 360_000 },
+    { name: 'Server overview', entry: 'src/main.tsx', catalog: 'virtual:m12-i18n-catalog/app/en', layout: 'src/layouts/ServerLayout.tsx', source: 'src/pages/server/ServerOverviewPage.tsx', cap: 440_000 },
     {
         name: 'File manager',
         entry: 'src/main.tsx',
-        catalog: 'virtual:m12-i18n-catalog/full/en',
+        catalog: 'virtual:m12-i18n-catalog/app/en',
         layout: 'src/layouts/ServerLayout.tsx',
         source: [
             'src/pages/server/files/FilesSection.tsx',
@@ -96,7 +98,11 @@ for (const row of routeRows) {
     if (row.gzip > row.cap) failures.push(`${row.name} gzip ${row.gzip} exceeds ${row.cap}`);
 }
 if (totalBytes > 7_000_000) failures.push(`Build output ${totalBytes} exceeds 7000000 bytes`);
-if (manifestBytes > 158_000) failures.push(`Manifest ${manifestBytes} exceeds 158000 bytes`);
+// The manifest is read server-side by the @vite directive and never
+// downloaded by a browser; its size only tracks how many files the build
+// emits. Cap that directly: a jump in file count is the thing to notice (a new
+// per-module split, an unintended glob), not the bytes of a JSON index.
+if (buildFiles.length > 420) failures.push(`Build output ${buildFiles.length} files exceeds 420`);
 if (mainCss > 20_000) failures.push(`Main CSS gzip ${mainCss} exceeds 20000 bytes`);
 
 if (failures.length) {

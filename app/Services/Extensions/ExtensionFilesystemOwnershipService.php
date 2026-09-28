@@ -155,6 +155,9 @@ class ExtensionFilesystemOwnershipService
             base_path('frontend/src/i18n/generated'),
             base_path('frontend/src/paraglide'),
             base_path('public/build'),
+            // Checked on its own: a root-run build leaves public/build itself
+            // writable but assets/ root-owned, and Vite then fails emptying it.
+            base_path('public/build/assets'),
         ];
     }
 

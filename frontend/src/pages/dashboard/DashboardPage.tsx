@@ -1,10 +1,10 @@
 import { m } from '@/i18n/messages';
 import { useState } from 'react';
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Server, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getServers } from '@/api/servers';
-import { getServerResources } from '@/api/serverResources';
+import { getServersResources } from '@/api/serverResources';
 import { useSession } from '@/state/session';
 import { useFlags } from '@/state/flags';
 import { cn } from '@/lib/cn';
@@ -33,30 +33,25 @@ export default function DashboardPage() {
         queryFn: () => getServers(scope),
     });
 
-    // Live per-server usage. Centralised here so the cards stay presentational
-    // and the "running" stat can aggregate across all of them. One request per
-    // server per tick, so back the cadence off as the list grows — an admin
-    // browsing every server on the system would otherwise hammer the API.
-    const pollInterval = (servers?.length ?? 0) > 24 ? 60_000 : 10_000;
-    const resourceQueries = useQueries({
-        queries: (servers ?? []).map(s => ({
-            queryKey: ['resources', s.id],
-            queryFn: () => getServerResources(s.id),
-            refetchInterval: pollInterval,
-            enabled: !!servers,
-        })),
+    // Live usage for the whole page in one request, one Wings call per node.
+    // This used to be one query and one timer per card: twenty servers meant
+    // two requests a second from one open tab. Hidden tabs pause it (React
+    // Query's default), and the ids are part of the key so a new page of
+    // servers starts its own poll.
+    const serverIds = (servers ?? []).map(s => s.id);
+    const resourcesQuery = useQuery({
+        queryKey: ['resources', 'batch', serverIds],
+        queryFn: () => getServersResources(serverIds),
+        refetchInterval: 10_000,
+        enabled: serverIds.length > 0,
     });
+    const resources = resourcesQuery.data ?? {};
+    const loaded = serverIds.map(id => resources[id]).filter(r => r != null);
 
-    const running = servers
-        ? resourceQueries.filter(q => q.data?.state === 'running').length
-        : null;
-    const suspended = servers
-        ? resourceQueries.filter(q => q.data?.isSuspended).length
-        : null;
-    const memUsedBytes = servers
-        ? resourceQueries.reduce((sum, q) => sum + (q.data?.memoryBytes ?? 0), 0)
-        : null;
-    const anyResourcesPending = resourceQueries.some(q => q.isPending);
+    const running = servers ? loaded.filter(r => r.state === 'running').length : null;
+    const suspended = servers ? loaded.filter(r => r.isSuspended).length : null;
+    const memUsedBytes = servers ? loaded.reduce((sum, r) => sum + r.memoryBytes, 0) : null;
+    const anyResourcesPending = resourcesQuery.isPending && serverIds.length > 0;
 
     return (
         <div className="flex flex-col gap-6">
@@ -141,12 +136,12 @@ export default function DashboardPage() {
                                 </div>
                             ) : (
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    {servers.map((s, i) => (
+                                    {servers.map(s => (
                                         <LiveServerCard
                                             key={s.uuid}
                                             server={s}
-                                            resources={resourceQueries[i]?.data}
-                                            pending={resourceQueries[i]?.isPending ?? anyResourcesPending}
+                                            resources={resources[s.id] ?? undefined}
+                                            pending={anyResourcesPending}
                                         />
                                     ))}
                                 </div>

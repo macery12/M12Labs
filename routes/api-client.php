@@ -22,6 +22,8 @@ use Everest\Http\Middleware\Api\Client\Server\AuthenticateServerAccess;
 Route::prefix('/')->middleware([SuspendedAccount::class, JGuardPendingAccount::class])->group(function () {
     Route::get('/', [Client\ClientController::class, 'index'])->name('api:client.index');
     Route::get('/permissions', [Client\ClientController::class, 'permissions']);
+    // Registered ahead of /servers/{server} so `resources` is never read as a server id.
+    Route::get('/servers/resources', Client\Servers\ResourceSummaryController::class)->name('api:client.servers.resources');
     Route::get('links', [Client\LinkController::class, 'index']);
     Route::get('/alerts', [Client\AlertController::class, 'index']);
     // Authenticated refresh of the same boolean-only package state embedded in
