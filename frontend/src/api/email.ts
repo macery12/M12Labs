@@ -177,6 +177,8 @@ export interface EmailLogDetail {
 export interface EmailLogFilters {
     status?: string;
     template_key?: string;
+    /** Every type one extension sends, by extension id. */
+    extension?: string;
     recipient?: string;
     only_failures?: boolean;
     date_from?: string;
@@ -211,6 +213,8 @@ export interface EmailTemplateVariable {
     description: string;
     example: string | number | boolean;
     required: boolean;
+    /** Filled in by the panel rather than the extension (recipient details). */
+    provided?: boolean;
 }
 
 // Summary entry returned by the template index — enough to render a card and
@@ -232,36 +236,73 @@ export interface EmailTemplateSource {
 export const getEmailTemplates = (): Promise<{ templates: EmailTemplateSummary[] }> =>
     http.get<{ templates: EmailTemplateSummary[] }>('/api/application/email/templates').then(r => r.data);
 
-export const getEmailTemplateSource = (key: string): Promise<EmailTemplateSource> =>
-    http.get<EmailTemplateSource>(`/api/application/email/templates/${key}/source`).then(r => r.data);
+// A template's endpoints hang off one path: a built-in template by key, an
+// extension's type by extension id and type. The editor takes either.
+export const emailTemplatePath = (key: string): string => `/api/application/email/templates/${key}`;
 
-export const saveEmailTemplateSource = (
-    key: string,
-    content: string,
-): Promise<{ success: boolean; key: string; is_customized: boolean }> =>
-    http
-        .put<{ success: boolean; key: string; is_customized: boolean }>(
-            `/api/application/email/templates/${key}/source`,
-            { content },
-        )
-        .then(r => r.data);
+export const extensionEmailTemplatePath = (extension: string, type: string): string =>
+    `/api/application/email/extensions/${extension}/${type}`;
 
-export const revertEmailTemplate = (
-    key: string,
-): Promise<{ success: boolean; key: string; is_customized: boolean }> =>
-    http
-        .delete<{ success: boolean; key: string; is_customized: boolean }>(
-            `/api/application/email/templates/${key}/source`,
-        )
-        .then(r => r.data);
+export const getEmailTemplateSource = (path: string): Promise<EmailTemplateSource> =>
+    http.get<EmailTemplateSource>(`${path}/source`).then(r => r.data);
+
+export const saveEmailTemplateSource = (path: string, content: string): Promise<{ key: string; is_customized: boolean }> =>
+    http.put<{ key: string; is_customized: boolean }>(`${path}/source`, { content }).then(r => r.data);
+
+export const revertEmailTemplate = (path: string): Promise<{ key: string; is_customized: boolean }> =>
+    http.delete<{ key: string; is_customized: boolean }>(`${path}/source`).then(r => r.data);
 
 // Render the currently-saved template (custom override if one exists, else the
 // default) to HTML with sample data. The preview reflects saved state — the
 // editor refreshes it after a save, mirroring the V1 flow.
-export const getEmailTemplatePreview = (key: string): Promise<string> =>
+export const getEmailTemplatePreview = (path: string): Promise<string> =>
     http
-        .get<string>(`/api/application/email/templates/${key}/preview`, {
+        .get<string>(`${path}/preview`, {
             responseType: 'text',
             transformResponse: r => r,
         })
+        .then(r => r.data);
+
+// ---- Extension emails -------------------------------------------------------
+
+export interface ExtensionEmailType {
+    type: string;
+    /** Log and switch key: `ext:<extension>:<type>`. */
+    key: string;
+    label_key: string;
+    description_key: string | null;
+    /** As declared; placeholders unfilled. Not editable. */
+    subject: string;
+    variables: EmailTemplateVariable[];
+    enabled: boolean;
+    is_customized: boolean;
+}
+
+export interface ExtensionEmails {
+    id: string;
+    name: string;
+    icon: string;
+    /** Installed, enabled and loadable, so it can send right now. */
+    active: boolean;
+    hourly_limit: number;
+    sent_this_hour: number;
+    types: ExtensionEmailType[];
+}
+
+export interface ExtensionEmailsResponse {
+    extensions: ExtensionEmails[];
+    default_hourly_limit: number;
+}
+
+export const getExtensionEmails = (): Promise<ExtensionEmailsResponse> =>
+    http.get<ExtensionEmailsResponse>('/api/application/email/extensions').then(r => r.data);
+
+export const updateExtensionEmailLimit = (extension: string, hourlyLimit: number): Promise<{ id: string; hourly_limit: number }> =>
+    http
+        .put<{ id: string; hourly_limit: number }>(`/api/application/email/extensions/${extension}`, { hourly_limit: hourlyLimit })
+        .then(r => r.data);
+
+export const toggleExtensionEmail = (extension: string, type: string, enabled: boolean): Promise<{ key: string; enabled: boolean }> =>
+    http
+        .put<{ key: string; enabled: boolean }>(`/api/application/email/extensions/${extension}/${type}`, { enabled })
         .then(r => r.data);

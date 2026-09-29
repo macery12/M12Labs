@@ -8,6 +8,7 @@ import {
     ShieldCheck,
     ScrollText,
     FileCode,
+    Puzzle,
     type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -45,7 +46,10 @@ const GROUPS: Group[] = [
     },
     {
         labelKey: 'email.nav.groups.content',
-        items: [{ to: `${BASE}/templates`, icon: FileCode, labelKey: 'email.nav.templates' }],
+        items: [
+            { to: `${BASE}/templates`, icon: FileCode, labelKey: 'email.nav.templates' },
+            { to: `${BASE}/extensions`, icon: Puzzle, labelKey: 'email.nav.extensions' },
+        ],
     },
 ];
 

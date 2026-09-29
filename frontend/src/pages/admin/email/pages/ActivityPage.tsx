@@ -1,5 +1,6 @@
 import { m } from '@/i18n/messages';
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
@@ -7,7 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
 import { FullPageSpinner, Spinner } from '@/components/ui/Spinner';
-import { getEmailLogs, getTemplateKeys, type EmailLogFilters } from '@/api/email';
+import { getEmailLogs, getExtensionEmails, getTemplateKeys, type EmailLogFilters } from '@/api/email';
 import { SettingsCard, StatusChip, LabeledField } from '../parts';
 import { EmailLogDetailModal } from './EmailLogDetailModal';
 import { useEmailSettings } from '../useEmailSettings';
@@ -16,6 +17,7 @@ import { formatDate, formatTime } from '@/lib/format';
 interface Filters {
     status: string;
     template_key: string;
+    extension: string;
     recipient: string;
     only_failures: boolean;
     date_from: string;
@@ -26,6 +28,7 @@ interface Filters {
 const EMPTY: Filters = {
     status: '',
     template_key: '',
+    extension: '',
     recipient: '',
     only_failures: false,
     date_from: '',
@@ -36,17 +39,21 @@ const EMPTY: Filters = {
 // Activity log: a filterable, paginated table of every send attempt with a
 // per-row detail modal.
 export default function ActivityPage() {
-    const [filters, setFilters] = useState<Filters>(EMPTY);
+    // The Extension emails page links here with ?extension=<id>.
+    const [params] = useSearchParams();
+    const [filters, setFilters] = useState<Filters>(() => ({ ...EMPTY, extension: params.get('extension') ?? '' }));
     const [recipientInput, setRecipientInput] = useState('');
     const [showFilters, setShowFilters] = useState(true);
     const [selected, setSelected] = useState<number | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const templatesQ = useQuery({ queryKey: ['admin', 'email', 'templateKeys'], queryFn: getTemplateKeys });
+    const extensionsQ = useQuery({ queryKey: ['admin', 'email', 'extensions'], queryFn: getExtensionEmails });
 
     const apiFilters: EmailLogFilters = {
         ...(filters.status ? { status: filters.status } : {}),
         ...(filters.template_key ? { template_key: filters.template_key } : {}),
+        ...(filters.extension ? { extension: filters.extension } : {}),
         ...(filters.recipient ? { recipient: filters.recipient } : {}),
         ...(filters.only_failures ? { only_failures: true } : {}),
         ...(filters.date_from ? { date_from: filters.date_from } : {}),
@@ -94,6 +101,16 @@ export default function ActivityPage() {
         ...(templatesQ.data?.template_keys ?? []).map(k => ({ value: k, label: k })),
     ];
 
+    const extensions = extensionsQ.data?.extensions ?? [];
+    const extensionOptions = [
+        { value: '', label: m['admin.email.activity.allExtensions']() },
+        ...extensions.map(e => ({ value: e.id, label: e.name })),
+        // Linked to an extension that has since gone: still filter, by id.
+        ...(filters.extension && !extensions.some(e => e.id === filters.extension)
+            ? [{ value: filters.extension, label: filters.extension }]
+            : []),
+    ];
+
     const logs = logsQ.data;
 
     return (
@@ -131,6 +148,15 @@ export default function ActivityPage() {
                                 options={templateOptions}
                             />
                         </LabeledField>
+                        {extensionOptions.length > 1 && (
+                            <LabeledField label={m['ui.labels.extension']()}>
+                                <Select
+                                    value={filters.extension}
+                                    onChange={v => set({ extension: v })}
+                                    options={extensionOptions}
+                                />
+                            </LabeledField>
+                        )}
                         <LabeledField label={m['ui.labels.recipient']()}>
                             <Input
                                 value={recipientInput}

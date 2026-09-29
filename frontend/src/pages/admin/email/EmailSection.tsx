@@ -11,6 +11,7 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const VerificationPage = lazy(() => import('./pages/VerificationPage'));
 const ActivityPage = lazy(() => import('./pages/ActivityPage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
+const ExtensionEmailsPage = lazy(() => import('./pages/ExtensionEmailsPage'));
 
 // Mounted at the admin `email/*` splat route. Owns the email configuration
 // (Overview/Providers/Testing), notifications, verification rules, the
@@ -43,6 +44,7 @@ export default function EmailSection() {
                             <Route path="verification" element={<VerificationPage />} />
                             <Route path="activity" element={<ActivityPage />} />
                             <Route path="templates" element={<TemplatesPage />} />
+                            <Route path="extensions" element={<ExtensionEmailsPage />} />
                         </Routes>
                     </Suspense>
                 </div>

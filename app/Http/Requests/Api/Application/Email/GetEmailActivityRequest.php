@@ -32,6 +32,7 @@ class GetEmailActivityRequest extends ApplicationApiRequest
         return [
             'status' => 'nullable|in:' . implode(',', EmailDelivery::statuses()),
             'template_key' => 'nullable|string',
+            'extension' => ['nullable', 'string', 'regex:/^[a-z][a-z0-9_]{1,63}$/'],
             'recipient' => 'nullable|string',
             'user_id' => 'nullable|integer',
             'only_failures' => 'nullable|boolean',

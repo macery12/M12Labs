@@ -266,6 +266,17 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::get('/templates/{key}/source', [Application\EmailTemplateController::class, 'source'])->where('key', '[a-z0-9_.]+');
         Route::put('/templates/{key}/source', [Application\EmailTemplateController::class, 'update'])->where('key', '[a-z0-9_.]+');
         Route::delete('/templates/{key}/source', [Application\EmailTemplateController::class, 'revert'])->where('key', '[a-z0-9_.]+');
+
+        // Email types declared by installed extensions
+        Route::group(['prefix' => '/extensions', 'where' => ['extension' => '[a-z][a-z0-9_]{1,63}', 'type' => '[a-z][a-z0-9-]{0,31}']], function () {
+            Route::get('/', [Application\EmailExtensionController::class, 'index']);
+            Route::put('/{extension}', [Application\EmailExtensionController::class, 'updateLimit']);
+            Route::put('/{extension}/{type}', [Application\EmailExtensionController::class, 'toggle']);
+            Route::get('/{extension}/{type}/preview', [Application\EmailExtensionController::class, 'preview']);
+            Route::get('/{extension}/{type}/source', [Application\EmailExtensionController::class, 'source']);
+            Route::put('/{extension}/{type}/source', [Application\EmailExtensionController::class, 'update']);
+            Route::delete('/{extension}/{type}/source', [Application\EmailExtensionController::class, 'revert']);
+        });
     });
 
     /*

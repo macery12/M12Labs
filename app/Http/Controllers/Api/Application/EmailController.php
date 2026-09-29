@@ -194,7 +194,9 @@ class EmailController extends ApplicationApiController
      */
     public function getNotificationSettings(GetEmailNotificationSettingsRequest $request): JsonResponse
     {
-        $settings = EmailNotificationSetting::orderBy('category')
+        // Extension types have their own page, grouped by extension.
+        $settings = EmailNotificationSetting::where('template_key', 'not like', 'ext:%')
+            ->orderBy('category')
             ->orderBy('name')
             ->get()
             ->groupBy('category');

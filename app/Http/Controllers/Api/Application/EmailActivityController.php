@@ -32,6 +32,13 @@ class EmailActivityController extends ApplicationApiController
             $query->where('template_key', $request->input('template_key'));
         }
 
+        // Every type one extension sends. The id is validated snake_case, but
+        // `_` is itself a LIKE wildcard, so `foo_bar` would also match `fooxbar`.
+        if ($request->filled('extension')) {
+            // An explicit ESCAPE: MySQL and SQLite disagree on the default.
+            $query->whereRaw("template_key LIKE ? ESCAPE '!'", ['ext:' . str_replace('_', '!_', (string) $request->input('extension')) . ':%']);
+        }
+
         if ($request->filled('recipient')) {
             $query->where('recipient', 'like', '%' . $request->input('recipient') . '%');
         }
