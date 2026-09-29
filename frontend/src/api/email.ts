@@ -6,21 +6,8 @@ import http from '@/lib/http';
 // collections, so payloads stay snake_case.
 
 export type EmailTransport = 'resend' | 'smtp';
-export type EmailStatus = 'queued' | 'sending' | 'sent' | 'deferred' | 'skipped' | 'failed';
+export type EmailStatus = 'queued' | 'sending' | 'sent' | 'skipped' | 'failed';
 export type EmailTestType = 'connection' | 'delivery';
-export type ResendPlanKey = 'free' | 'pro' | 'scale' | 'enterprise';
-
-export interface ResendPlanDefinition {
-    key: ResendPlanKey;
-    name: string;
-    daily_limit: number | null;
-    monthly_limit: number | null;
-    enforce_daily: boolean;
-    enforce_monthly: boolean;
-    allows_custom_limits: boolean;
-    custom_daily_limit?: number | null;
-    custom_monthly_limit?: number | null;
-}
 
 export interface ResendSettings {
     api_key: boolean; // true if a key is stored
@@ -28,27 +15,6 @@ export interface ResendSettings {
     from_name: string;
     reply_to: string;
     domain?: string;
-}
-
-export interface ResendQuotaUsage {
-    daily_sent: number;
-    monthly_sent: number;
-    daily_limit: number | null;
-    monthly_limit: number | null;
-    daily_remaining: number | null;
-    monthly_remaining: number | null;
-    next_daily_reset: string | null;
-    next_monthly_reset: string | null;
-    source?: 'provider' | 'internal';
-    synced_at?: string | null;
-}
-
-export interface ResendRateLimitMeta {
-    limit: string | null;
-    remaining: string | null;
-    reset: string | null;
-    retry_after: string | null;
-    updated_at?: string | null;
 }
 
 export interface SmtpSettings {
@@ -67,10 +33,6 @@ export interface EmailSettings {
     transport: EmailTransport;
     resend: ResendSettings;
     smtp: SmtpSettings;
-    resend_plan: ResendPlanDefinition;
-    resend_plans: ResendPlanDefinition[];
-    resend_usage: ResendQuotaUsage;
-    resend_rate_limit: ResendRateLimitMeta | null;
 }
 
 export interface EmailSettingsUpdate {
@@ -90,9 +52,6 @@ export interface EmailSettingsUpdate {
     smtp_from_email?: string;
     smtp_from_name?: string;
     smtp_reply_to?: string;
-    resend_plan?: ResendPlanKey;
-    resend_custom_monthly_limit?: number | null;
-    resend_custom_daily_limit?: number | null;
 }
 
 export interface EmailError {
@@ -140,7 +99,6 @@ export interface EmailNotificationSetting {
     category: string;
     name: string;
     description: string | null;
-    rate_limit_exempt: boolean;
 }
 
 export interface NotificationSettingsResponse {
@@ -231,50 +189,6 @@ export const getEmailLog = (id: number): Promise<EmailLogDetail> =>
 
 export const getTemplateKeys = (): Promise<{ template_keys: string[] }> =>
     http.get<{ template_keys: string[] }>('/api/application/email/logs/templates').then(r => r.data);
-
-// --- Deferred queue --------------------------------------------------------
-
-export interface DeferredEmail {
-    id: number;
-    user_id: number;
-    template_key: string;
-    recipient: string;
-    data: Record<string, unknown>;
-    correlation_id: string | null;
-    reason: string;
-    scheduled_at: string;
-    sent_at: string | null;
-    attempts: number;
-    created_at: string;
-    updated_at: string;
-    user?: { id: number; email: string; username: string };
-}
-
-export interface DeferredQueueResponse {
-    deferred: PaginatedResponse<DeferredEmail>;
-    stats: {
-        total_queued: number;
-        due_now: number;
-        next_send_time: string | null;
-    };
-}
-
-export const getDeferredQueue = (filters?: {
-    status?: 'due' | 'pending';
-    per_page?: number;
-    page?: number;
-}): Promise<DeferredQueueResponse> =>
-    http.get<DeferredQueueResponse>('/api/application/email/deferred', { params: filters }).then(r => r.data);
-
-export const sendDeferredNow = (id: number): Promise<{ success: boolean; message: string; error?: string }> =>
-    http
-        .post<{ success: boolean; message: string; error?: string }>(
-            `/api/application/email/deferred/${id}/send-now`,
-        )
-        .then(r => r.data);
-
-export const cancelDeferred = (id: number): Promise<{ success: boolean; message: string }> =>
-    http.delete<{ success: boolean; message: string }>(`/api/application/email/deferred/${id}`).then(r => r.data);
 
 // --- Templates -------------------------------------------------------------
 

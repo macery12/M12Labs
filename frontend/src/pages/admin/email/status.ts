@@ -15,7 +15,6 @@ const PRESENTATIONS: Record<string, StatusPresentation> = {
     queued: { labelKey: 'email.status.queued', tone: 'neutral', icon: Hourglass },
     sending: { labelKey: 'email.status.sending', tone: 'warning', icon: Clock },
     sent: { labelKey: 'email.status.sent', tone: 'success', icon: CheckCircle2 },
-    deferred: { labelKey: 'email.status.deferred', tone: 'warning', icon: Clock },
     skipped: { labelKey: 'email.status.skipped', tone: 'neutral', icon: Ban },
     failed: { labelKey: 'email.status.failed', tone: 'danger', icon: XCircle },
 };

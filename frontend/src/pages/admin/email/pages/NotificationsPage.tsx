@@ -10,7 +10,7 @@ import {
     type EmailNotificationSetting,
     type NotificationSettingsResponse,
 } from '@/api/email';
-import { SettingsCard, TonePill } from '../parts';
+import { SettingsCard } from '../parts';
 
 const NOTIF_KEY = ['admin', 'email', 'notifications'] as const;
 
@@ -73,7 +73,6 @@ export default function NotificationsPage() {
             <div>
                 <h2 className="text-lg font-semibold text-[var(--color-ink)]">{m['admin.email.notifications.title']()}</h2>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{m['admin.email.notifications.desc']()}</p>
-                <p className="mt-1 text-xs text-[var(--color-ink-faint)]">{m['admin.email.notifications.exemptNote']()}</p>
             </div>
             {categories.map(([category, items]) => (
                 <SettingsCard key={category} title={categoryLabel(category)}>
@@ -83,7 +82,6 @@ export default function NotificationsPage() {
                                 key={item.id}
                                 item={item}
                                 onToggle={enabled => mutation.mutate({ id: item.id, enabled })}
-                                exemptLabel={m['admin.email.notifications.exempt']()}
                             />
                         ))}
                     </ul>
@@ -96,11 +94,9 @@ export default function NotificationsPage() {
 function Row({
     item,
     onToggle,
-    exemptLabel,
 }: {
     item: EmailNotificationSetting;
     onToggle: (enabled: boolean) => void;
-    exemptLabel: string;
 }) {
     return (
         <li className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
@@ -114,11 +110,6 @@ function Row({
                     >
                         {item.name}
                     </span>
-                    {item.rate_limit_exempt && (
-                        <span title={m['admin.email.notifications.exemptHint']()}>
-                            <TonePill tone="neutral">{exemptLabel}</TonePill>
-                        </span>
-                    )}
                 </div>
                 {item.description && (
                     <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">{item.description}</p>

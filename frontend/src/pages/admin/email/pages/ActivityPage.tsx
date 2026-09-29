@@ -84,7 +84,6 @@ export default function ActivityPage() {
         { value: '', label: m['ui.labels.allStatuses']() },
         { value: 'queued', label: m['admin.email.status.queued']() },
         { value: 'sending', label: m['admin.email.status.sending']() },
-        { value: 'deferred', label: m['admin.email.status.deferred']() },
         { value: 'skipped', label: m['admin.email.status.skipped']() },
         { value: 'sent', label: m['admin.email.status.sent']() },
         { value: 'failed', label: m['admin.email.status.failed']() },

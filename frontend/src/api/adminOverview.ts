@@ -65,8 +65,6 @@ export interface OverviewQueues {
     };
     /** Billing exceptions raised in the last 7 days. */
     billingExceptions: number;
-    /** Deferred emails still awaiting delivery. */
-    deferredEmails: number;
 }
 
 export interface OverviewKpis {
