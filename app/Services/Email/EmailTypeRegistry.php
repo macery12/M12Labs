@@ -61,7 +61,6 @@ class EmailTypeRegistry
         'server.created' => ['userName', 'serverName', 'serverId', 'serverUrl', 'nodeLocation'],
         'server.suspended' => ['userName', 'serverName', 'reason', 'suspendedAt'],
         'server.unsuspended' => ['userName', 'serverName', 'unsuspendedAt'],
-        'server.expiring_soon' => ['userName', 'serverName', 'expiresAt', 'daysRemaining'],
         'billing.payment_received' => ['userName', 'amount', 'currency', 'paymentMethod', 'invoiceId', 'transactionDate', 'isRenewal', 'originalAmount', 'discountAmount', 'couponCode', 'billingDays', 'billingCycle', 'invoiceDownloadUrl'],
         'billing.payment_failed' => ['userName', 'amount', 'currency', 'reason', 'invoiceId', 'retryUrl', 'paymentMethod', 'isRenewal'],
         'billing.server_renewal_notice' => ['userName', 'serverName', 'renewalUrl', 'renewalDate', 'suspensionTime', 'renewalAmount', 'currency', 'billingDays', 'billingCycle'],

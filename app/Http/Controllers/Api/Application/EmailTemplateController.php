@@ -153,17 +153,6 @@ class EmailTemplateController extends ApplicationApiController
                 ['name' => 'unsuspendedAt', 'description' => 'Date/time the server was unsuspended',  'example' => 'April 13, 2026 3:30 PM',  'required' => false],
             ],
         ],
-        'server.expiring_soon' => [
-            'label'    => 'Server Expiring Soon',
-            'category' => 'Server',
-            'view'     => 'emails.server.expiring-soon',
-            'variables' => [
-                ['name' => 'userName',      'description' => "Recipient's display name",       'example' => 'Jane Smith',                  'required' => true],
-                ['name' => 'serverName',    'description' => 'Name of the expiring server',    'example' => 'Survival-Minecraft',          'required' => true],
-                ['name' => 'expiresAt',     'description' => 'Expiration date/time',           'example' => 'April 16, 2026 12:00 PM',    'required' => false],
-                ['name' => 'daysRemaining', 'description' => 'Days remaining before expiry',   'example' => '3',                          'required' => false],
-            ],
-        ],
         'billing.payment_received' => [
             'label'    => 'Payment Received',
             'category' => 'Billing',
@@ -212,15 +201,6 @@ class EmailTemplateController extends ApplicationApiController
                 ['name' => 'currency',       'description' => 'Currency code',                    'example' => 'USD',                          'required' => false],
                 ['name' => 'billingDays',    'description' => 'Number of days in billing cycle',  'example' => '30',                           'required' => false],
                 ['name' => 'billingCycle',   'description' => 'Billing cycle label',              'example' => 'Monthly',                      'required' => false],
-            ],
-        ],
-        'admin.broadcast' => [
-            'label'    => 'Admin Broadcast',
-            'category' => 'Admin',
-            'view'     => 'emails.admin-broadcast',
-            'variables' => [
-                ['name' => 'adminName', 'description' => 'Name of the admin sending the message', 'example' => 'Admin',                       'required' => false],
-                ['name' => 'message',   'description' => 'Broadcast message body',                'example' => 'Scheduled maintenance tonight.', 'required' => true],
             ],
         ],
     ];
@@ -293,12 +273,6 @@ class EmailTemplateController extends ApplicationApiController
             'serverName'    => 'Survival-Minecraft',
             'unsuspendedAt' => 'April 13, 2026 3:30 PM',
         ],
-        'server.expiring_soon' => [
-            'userName'     => 'Jane Smith',
-            'serverName'   => 'Survival-Minecraft',
-            'expiresAt'    => 'April 16, 2026 12:00 PM',
-            'daysRemaining' => 3,
-        ],
         'billing.payment_received' => [
             'userName'        => 'Jane Smith',
             'amount'          => '9.99',
@@ -333,10 +307,6 @@ class EmailTemplateController extends ApplicationApiController
             'currency'      => 'USD',
             'billingDays'   => 30,
             'billingCycle'  => 'Monthly',
-        ],
-        'admin.broadcast' => [
-            'adminName' => 'Admin',
-            'message'   => "We will be performing scheduled maintenance on April 15, 2026 from 2:00 AM to 4:00 AM UTC.\n\nDuring this window, servers may experience brief interruptions. No data will be lost.\n\nThank you for your patience.",
         ],
     ];
 

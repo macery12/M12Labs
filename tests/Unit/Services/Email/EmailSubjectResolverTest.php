@@ -10,7 +10,7 @@ class EmailSubjectResolverTest extends TestCase
     public function testDeliverySubjectsPreserveExistingWording(): void
     {
         $this->assertSame('Welcome to Your Account', EmailSubjectResolver::forDelivery('auth.account_created'));
-        $this->assertSame('Your Server Is Expiring Soon', EmailSubjectResolver::forDelivery('server.expiring_soon'));
+        $this->assertSame('Your Server Has Been Suspended', EmailSubjectResolver::forDelivery('server.suspended'));
         $this->assertSame('Notification', EmailSubjectResolver::forDelivery('unknown.template'));
     }
 
