@@ -12,8 +12,6 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
         return [
             'enabled' => 'boolean',
             'primary' => 'nullable|in:resend,smtp',
-            // The providers page before primary/backup: same thing as primary.
-            'transport' => 'nullable|in:resend,smtp',
             'backup' => 'nullable|in:none,resend,smtp|different:primary',
             'log_retention_days' => 'nullable|integer|min:1|max:3650',
             'api_key' => 'nullable|string|max:255',
@@ -51,9 +49,8 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
             $data['modules:email:enabled'] = $this->input('enabled', false) ? 'true' : 'false';
         }
 
-        $primary = $this->input('primary') ?? $this->input('transport');
-        if ($primary !== null) {
-            $data['modules:email:primary'] = $primary;
+        if ($this->filled('primary')) {
+            $data['modules:email:primary'] = $this->input('primary');
         }
 
         if ($this->has('backup')) {

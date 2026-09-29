@@ -3,9 +3,9 @@ import { td } from '@/i18n/messages';
 import {
     Mail,
     Server,
-    Plug,
     FlaskConical,
     Bell,
+    ShieldCheck,
     ScrollText,
     FileCode,
     type LucideIcon,
@@ -31,8 +31,7 @@ const GROUPS: Group[] = [
         labelKey: 'email.nav.groups.configuration',
         items: [
             { to: BASE, end: true, icon: Mail, labelKey: 'email.nav.overview' },
-            { to: `${BASE}/smtp`, icon: Server, labelKey: 'email.nav.smtp' },
-            { to: `${BASE}/resend`, icon: Plug, labelKey: 'email.nav.resend' },
+            { to: `${BASE}/providers`, icon: Server, labelKey: 'email.nav.providers' },
             { to: `${BASE}/testing`, icon: FlaskConical, labelKey: 'email.nav.testing' },
         ],
     },
@@ -40,6 +39,7 @@ const GROUPS: Group[] = [
         labelKey: 'email.nav.groups.delivery',
         items: [
             { to: `${BASE}/notifications`, icon: Bell, labelKey: 'email.nav.notifications' },
+            { to: `${BASE}/verification`, icon: ShieldCheck, labelKey: 'email.nav.verification' },
             { to: `${BASE}/activity`, icon: ScrollText, labelKey: 'email.nav.activity' },
         ],
     },

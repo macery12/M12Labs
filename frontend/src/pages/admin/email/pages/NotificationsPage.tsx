@@ -1,4 +1,5 @@
 import { m } from '@/i18n/messages';
+import { Lock } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Switch } from '@/components/ui/Switch';
 import { FullPageSpinner } from '@/components/ui/Spinner';
@@ -10,7 +11,7 @@ import {
     type EmailNotificationSetting,
     type NotificationSettingsResponse,
 } from '@/api/email';
-import { SettingsCard } from '../parts';
+import { SettingsCard, TonePill } from '../parts';
 
 const NOTIF_KEY = ['admin', 'email', 'notifications'] as const;
 
@@ -114,8 +115,20 @@ function Row({
                 {item.description && (
                     <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">{item.description}</p>
                 )}
+                {item.locked && (
+                    <p className="mt-0.5 text-xs text-[var(--color-ink-faint)]">{m['admin.email.notifications.lockedHint']()}</p>
+                )}
             </div>
-            <Switch checked={item.enabled} onChange={onToggle} label={item.name} />
+            {/* Password reset and verification are how people get into their
+                accounts; the server refuses to switch them off, so no toggle. */}
+            {item.locked ? (
+                <TonePill tone="neutral">
+                    <Lock className="mr-1 h-3 w-3" />
+                    {m['admin.email.notifications.locked']()}
+                </TonePill>
+            ) : (
+                <Switch checked={item.enabled} onChange={onToggle} label={item.name} />
+            )}
         </li>
     );
 }

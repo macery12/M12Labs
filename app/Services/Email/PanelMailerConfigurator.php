@@ -86,6 +86,24 @@ class PanelMailerConfigurator
     }
 
     /**
+     * What stops each provider from sending, without touching mail config.
+     * For the admin screens: `ready` is whether the primary can send, i.e.
+     * whether password resets can go out at all.
+     *
+     * @return array{ready: bool, smtp: string|null, resend: string|null}
+     */
+    public function status(): array
+    {
+        $errors = $this->resolve()['errors'];
+
+        return [
+            'ready' => !isset($errors[$this->settings->primary()]),
+            'smtp' => $errors['smtp'] ?? null,
+            'resend' => $errors['resend'] ?? null,
+        ];
+    }
+
+    /**
      * Write the current settings into mail config, purging the resolved
      * mailers only when something changed.
      *

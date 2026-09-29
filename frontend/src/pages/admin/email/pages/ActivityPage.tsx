@@ -10,6 +10,7 @@ import { FullPageSpinner, Spinner } from '@/components/ui/Spinner';
 import { getEmailLogs, getTemplateKeys, type EmailLogFilters } from '@/api/email';
 import { SettingsCard, StatusChip, LabeledField } from '../parts';
 import { EmailLogDetailModal } from './EmailLogDetailModal';
+import { useEmailSettings } from '../useEmailSettings';
 import { formatDate, formatTime } from '@/lib/format';
 
 interface Filters {
@@ -107,6 +108,8 @@ export default function ActivityPage() {
                     {showFilters ? m['admin.email.activity.hideFilters']() : m['admin.email.activity.showFilters']()}
                 </Button>
             </div>
+
+            <RetentionCard />
 
             {showFilters && (
                 <SettingsCard
@@ -254,6 +257,41 @@ export default function ActivityPage() {
 
             {selected !== null && <EmailLogDetailModal logId={selected} onClose={() => setSelected(null)} />}
         </div>
+    );
+}
+
+// How long delivery log rows are kept; older ones are pruned nightly.
+function RetentionCard() {
+    const { settings, save, saving } = useEmailSettings();
+    const [days, setDays] = useState<string | null>(null);
+
+    if (!settings) return null;
+
+    const value = days ?? String(settings.log_retention_days);
+    const parsed = Number.parseInt(value, 10);
+    const valid = Number.isInteger(parsed) && parsed >= 1 && parsed <= 3650;
+    const dirty = valid && parsed !== settings.log_retention_days;
+
+    return (
+        <SettingsCard title={m['admin.email.activity.retentionTitle']()} description={m['admin.email.activity.retentionDesc']()}>
+            <div className="flex flex-wrap items-end gap-3">
+                <div className="w-40">
+                    <LabeledField label={m['admin.email.activity.retentionDays']()}>
+                        <Input type="number" min={1} max={3650} value={value} onChange={e => setDays(e.target.value)} />
+                    </LabeledField>
+                </div>
+                <Button
+                    size="sm"
+                    disabled={!dirty || saving}
+                    onClick={async () => {
+                        await save({ log_retention_days: parsed });
+                        setDays(null);
+                    }}
+                >
+                    {m['common.actions.save']()}
+                </Button>
+            </div>
+        </SettingsCard>
     );
 }
 

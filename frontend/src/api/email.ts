@@ -5,17 +5,9 @@ import http from '@/lib/http';
 // a frontend-only port). These endpoints return plain JSON, not Fractal
 // collections, so payloads stay snake_case.
 
-export type EmailTransport = 'resend' | 'smtp';
+export type EmailProvider = 'resend' | 'smtp';
 export type EmailStatus = 'queued' | 'sending' | 'sent' | 'skipped' | 'failed';
 export type EmailTestType = 'connection' | 'delivery';
-
-export interface ResendSettings {
-    api_key: boolean; // true if a key is stored
-    from_email: string;
-    from_name: string;
-    reply_to: string;
-    domain?: string;
-}
 
 export interface SmtpSettings {
     host: string;
@@ -23,35 +15,46 @@ export interface SmtpSettings {
     username: string;
     password_set: boolean;
     encryption: string;
-    from_email: string;
-    from_name: string;
-    reply_to: string;
+}
+
+// What stops each provider from sending, in words the admin can act on; null
+// when it is ready. `ready` is whether the primary can send at all.
+export interface EmailProviderStatus {
+    ready: boolean;
+    smtp: string | null;
+    resend: string | null;
 }
 
 export interface EmailSettings {
     enabled: boolean;
-    transport: EmailTransport;
-    resend: ResendSettings;
+    primary: EmailProvider;
+    backup: EmailProvider | 'none';
+    // One sender for both providers: failover hands the same message on.
+    from_email: string;
+    from_name: string;
+    reply_to: string;
+    log_retention_days: number;
+    resend: { api_key: boolean }; // true if a key is stored
     smtp: SmtpSettings;
+    status: EmailProviderStatus;
 }
 
 export interface EmailSettingsUpdate {
     enabled?: boolean;
-    transport?: EmailTransport;
-    api_key?: string;
-    clear_api_key?: boolean;
+    primary?: EmailProvider;
+    backup?: EmailProvider | 'none';
     from_email?: string;
     from_name?: string;
     reply_to?: string;
+    log_retention_days?: number;
+    api_key?: string;
+    clear_api_key?: boolean;
     smtp_host?: string;
     smtp_port?: string;
     smtp_username?: string;
     smtp_password?: string;
     clear_smtp_password?: boolean;
     smtp_encryption?: string;
-    smtp_from_email?: string;
-    smtp_from_name?: string;
-    smtp_reply_to?: string;
 }
 
 export interface EmailError {
@@ -64,8 +67,8 @@ export interface EmailResponse {
     success: boolean;
     action?: 'connection_test' | 'send_test';
     message_id?: string;
-    transport?: EmailTransport;
-    provider?: EmailTransport;
+    transport?: EmailProvider;
+    provider?: EmailProvider;
     sent_at?: string;
     tested_at?: string;
     recipient?: string;
@@ -99,6 +102,8 @@ export interface EmailNotificationSetting {
     category: string;
     name: string;
     description: string | null;
+    // Password reset and verification: always sent, the toggle can't turn off.
+    locked: boolean;
 }
 
 export interface NotificationSettingsResponse {
@@ -118,6 +123,19 @@ export const updateNotificationSetting = (
             { enabled },
         )
         .then(r => r.data);
+
+// --- Verification rules ----------------------------------------------------
+
+// Which areas a user with an unverified email may open (view) or change
+// (interact) while mail delivery is on. Mirrors EmailVerificationGate.
+export type VerificationArea = 'billing' | 'orders' | 'credentials' | 'tickets';
+export type VerificationRules = Record<VerificationArea, { can_view: boolean; can_interact: boolean }>;
+
+export const getVerificationRules = (): Promise<VerificationRules> =>
+    http.get<VerificationRules>('/api/application/email/verification-rules').then(r => r.data);
+
+export const updateVerificationRules = (rules: VerificationRules): Promise<VerificationRules> =>
+    http.put<VerificationRules>('/api/application/email/verification-rules', rules).then(r => r.data);
 
 // --- Activity log ----------------------------------------------------------
 
@@ -144,21 +162,15 @@ export interface EmailLog {
 
 export interface EmailLogDetail {
     log: EmailLog;
-    sanitized_variables: Record<string, unknown>;
     retry_history: Array<{
         attempt: number;
+        // The provider that took it, or both ("smtp+resend") when a failover
+        // attempt failed on each.
+        provider: string | null;
         timestamp: string;
         status: EmailStatus;
         duration_ms?: number | null;
         error?: string;
-    }>;
-    related_emails: Array<{
-        id: number;
-        to: string;
-        subject: string;
-        template_key: string | null;
-        status: EmailStatus;
-        created_at: string;
     }>;
 }
 

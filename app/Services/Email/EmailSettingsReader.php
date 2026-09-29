@@ -88,31 +88,25 @@ class EmailSettingsReader
 
     public function adminSettings(): array
     {
-        $sender = [
-            'from_email' => $this->fromEmail(),
-            'from_name' => $this->fromName(),
-            'reply_to' => trim((string) $this->get('settings::modules:email:reply_to', '')),
-        ];
-
         return [
             'enabled' => $this->deliveryEnabled(),
             'primary' => $this->primary(),
             'backup' => $this->backup() ?? 'none',
-            // The admin screens still read these two shapes; they go when the
-            // providers page is rebuilt around primary/backup.
-            'transport' => $this->primary(),
+            'from_email' => $this->fromEmail(),
+            'from_name' => $this->fromName(),
+            // What was entered, not the From fallback replyTo() applies.
+            'reply_to' => trim((string) $this->get('settings::modules:email:reply_to', '')),
             'log_retention_days' => $this->logRetentionDays(),
-        ] + $sender + [
             'resend' => [
                 'api_key' => !empty($this->get('settings::modules:email:resend:api_key', '')),
-            ] + $sender,
+            ],
             'smtp' => [
                 'host' => (string) $this->get('settings::modules:email:smtp:host', ''),
                 'port' => (string) $this->get('settings::modules:email:smtp:port', ''),
                 'username' => (string) $this->get('settings::modules:email:smtp:username', ''),
                 'password_set' => !empty($this->get('settings::modules:email:smtp:password', '')),
                 'encryption' => (string) $this->get('settings::modules:email:smtp:encryption', ''),
-            ] + $sender,
+            ],
         ];
     }
 }

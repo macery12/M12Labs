@@ -9,8 +9,8 @@ import { getEmailLog } from '@/api/email';
 import { StatusChip } from '../parts';
 import { formatDateTime } from '@/lib/format';
 
-// Read-only detail view for a single email log entry: metadata, error, sanitized
-// template variables, retry history, and related (same-correlation) emails.
+// Read-only detail view for a single email log entry: metadata, error, and
+// each attempt with the provider that made it.
 export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose: () => void }) {
     const push = useFlashes(s => s.push);
     const { data, isLoading } = useQuery({
@@ -22,7 +22,6 @@ export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose
         if (!data) return;
         const bundle = {
             log: data.log,
-            sanitized_variables: data.sanitized_variables,
             retry_history: data.retry_history,
             timestamp: new Date().toISOString(),
         };
@@ -92,12 +91,6 @@ export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose
                         </Section>
                     )}
 
-                    {Object.keys(data.sanitized_variables).length > 0 && (
-                        <Section title={m['admin.email.detail.variables']()}>
-                            <Code>{JSON.stringify(data.sanitized_variables, null, 2)}</Code>
-                        </Section>
-                    )}
-
                     {data.retry_history.length > 0 && (
                         <Section title={m['admin.email.detail.retryHistory']()}>
                             <ul className="flex flex-col gap-3">
@@ -108,7 +101,10 @@ export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose
                                             <p className="text-sm font-medium text-[var(--color-ink)]">
                                                 {m['admin.email.detail.attemptN']({ n: a.attempt })}
                                             </p>
-                                            <p className="text-xs text-[var(--color-ink-faint)]">{fmt(a.timestamp)}</p>
+                                            <p className="text-xs text-[var(--color-ink-faint)]">
+                                                {fmt(a.timestamp)}
+                                                {a.provider && ` · ${a.provider.toUpperCase()}`}
+                                            </p>
                                             {a.error && (
                                                 <p className="mt-1 rounded bg-[var(--color-danger)]/10 p-2 text-xs text-[var(--color-danger)]">
                                                     {a.error}
@@ -121,26 +117,6 @@ export function EmailLogDetailModal({ logId, onClose }: { logId: number; onClose
                         </Section>
                     )}
 
-                    {data.related_emails.length > 0 && (
-                        <Section title={m['admin.email.detail.related']()}>
-                            <ul className="flex flex-col gap-2">
-                                {data.related_emails.map(e => (
-                                    <li
-                                        key={e.id}
-                                        className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 px-3 py-2"
-                                    >
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm text-[var(--color-ink)]">{e.subject}</p>
-                                            <p className="text-xs text-[var(--color-ink-faint)]">
-                                                {e.to} · {fmt(e.created_at)} · {e.template_key}
-                                            </p>
-                                        </div>
-                                        <StatusChip status={e.status} />
-                                    </li>
-                                ))}
-                            </ul>
-                        </Section>
-                    )}
                 </div>
             )}
         </Modal>

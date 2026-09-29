@@ -66,10 +66,10 @@ class EmailSettingsReaderTest extends TestCase
         $this->assertTrue($settings['enabled']);
         $this->assertSame('resend', $settings['primary']);
         $this->assertSame('smtp', $settings['backup']);
-        $this->assertSame('resend', $settings['transport']);
         $this->assertSame('panel@m12labs.test-suite.net', $settings['from_email']);
-        $this->assertSame('panel@m12labs.test-suite.net', $settings['smtp']['from_email']);
-        $this->assertSame('panel@m12labs.test-suite.net', $settings['resend']['from_email']);
+        $this->assertSame('', $settings['reply_to'], 'What was entered, not the From fallback.');
+        $this->assertArrayNotHasKey('transport', $settings);
+        $this->assertArrayNotHasKey('from_email', $settings['smtp']);
         $this->assertTrue($settings['resend']['api_key']);
         $this->assertTrue($settings['smtp']['password_set']);
         $this->assertStringNotContainsString('re_secret', json_encode($settings));

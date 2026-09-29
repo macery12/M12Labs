@@ -103,9 +103,7 @@ class EmailActivityController extends ApplicationApiController
 
         return response()->json([
             'log' => $log,
-            'sanitized_variables' => [], // Not stored in new structure
             'retry_history' => $retryHistory,
-            'related_emails' => [], // Could be implemented later if needed
         ]);
     }
 

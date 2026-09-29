@@ -114,6 +114,25 @@ class PanelMailerConfiguratorTest extends TestCase
     }
 
     /**
+     * The admin screens show what stops each provider, and whether the primary
+     * (and so password reset) can send at all.
+     */
+    public function testStatusReportsEachProviderWithoutConfiguringAnything(): void
+    {
+        config(['mail.mailers.panel_smtp.host' => null]);
+
+        $status = $this->configurator(['primary' => 'resend', 'backup' => 'smtp'] + self::SMTP + self::SENDER)->status();
+
+        $this->assertFalse($status['ready'], 'Resend is primary and has no key.');
+        $this->assertStringContainsString('No Resend API key', (string) $status['resend']);
+        $this->assertNull($status['smtp']);
+        $this->assertNull(config('mail.mailers.panel_smtp.host'), 'Reading the status must not write mail config.');
+
+        $this->assertTrue($this->configurator(['primary' => 'smtp'] + self::SMTP + self::SENDER)->status()['ready']);
+        $this->assertStringContainsString('No From address', (string) $this->configurator(['primary' => 'smtp'] + self::SMTP)->status()['smtp']);
+    }
+
+    /**
      * Rebuilding the mailer on every send reopened the SMTP connection and
      * forgot which failover member was down.
      */

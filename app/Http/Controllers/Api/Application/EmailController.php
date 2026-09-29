@@ -47,7 +47,7 @@ class EmailController extends ApplicationApiController
      */
     public function getSettings(GetEmailNotificationSettingsRequest $request): JsonResponse
     {
-        return response()->json($this->settings->adminSettings());
+        return response()->json($this->settingsPayload());
     }
 
     public function getVerificationRules(GetEmailNotificationSettingsRequest $request): JsonResponse
@@ -103,7 +103,15 @@ class EmailController extends ApplicationApiController
             ->description('Email settings were updated')
             ->log();
 
-        return response()->json($this->settings->adminSettings());
+        return response()->json($this->settingsPayload());
+    }
+
+    /**
+     * The settings plus what, if anything, stops each provider from sending.
+     */
+    private function settingsPayload(): array
+    {
+        return $this->settings->adminSettings() + ['status' => $this->configurator->status()];
     }
 
     /**

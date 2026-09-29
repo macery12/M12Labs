@@ -1,20 +1,20 @@
 import { m } from '@/i18n/messages';
 import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmailNav } from './EmailNav';
 
 const OverviewPage = lazy(() => import('./pages/OverviewPage'));
-const SmtpPage = lazy(() => import('./pages/SmtpPage'));
-const ResendPage = lazy(() => import('./pages/ResendPage'));
+const ProvidersPage = lazy(() => import('./pages/ProvidersPage'));
 const TestingPage = lazy(() => import('./pages/TestingPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const VerificationPage = lazy(() => import('./pages/VerificationPage'));
 const ActivityPage = lazy(() => import('./pages/ActivityPage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 
 // Mounted at the admin `email/*` splat route. Owns the email configuration
-// (split into Overview/SMTP/Resend/Testing rail items), notifications, and the
-// activity log.
+// (Overview/Providers/Testing), notifications, verification rules, the
+// activity log and templates.
 export default function EmailSection() {
     return (
         <div className="flex flex-col gap-6">
@@ -33,10 +33,14 @@ export default function EmailSection() {
                     <Suspense fallback={<div className="flex justify-center py-16"><Spinner className="h-6 w-6" /></div>}>
                         <Routes>
                             <Route index element={<OverviewPage />} />
-                            <Route path="smtp" element={<SmtpPage />} />
-                            <Route path="resend" element={<ResendPage />} />
+                            <Route path="providers" element={<ProvidersPage />} />
+                            {/* SMTP and Resend were separate pages before providers
+                                became one page with a primary and a backup. */}
+                            <Route path="smtp" element={<Navigate to="/admin/email/providers" replace />} />
+                            <Route path="resend" element={<Navigate to="/admin/email/providers" replace />} />
                             <Route path="testing" element={<TestingPage />} />
                             <Route path="notifications" element={<NotificationsPage />} />
+                            <Route path="verification" element={<VerificationPage />} />
                             <Route path="activity" element={<ActivityPage />} />
                             <Route path="templates" element={<TemplatesPage />} />
                         </Routes>
