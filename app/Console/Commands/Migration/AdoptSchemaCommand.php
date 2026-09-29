@@ -27,9 +27,13 @@ class AdoptSchemaCommand extends Command
      * Tables this panel no longer has, with no code referencing them; they are
      * only dropped when empty. The subscription pair were Cashier-style
      * leftovers the rebuild dropped. The three log tables were dropped later
-     * (2026_09_28_000002): nothing wrote or read them.
+     * (2026_09_28_000002): nothing wrote or read them. The email quota and
+     * deferred-send tables went with the code that used them (2026_09_29_000001).
      */
-    private const VESTIGIAL_TABLES = ['subscriptions', 'subscription_items', 'api_logs', 'tasks_log', 'audit_logs'];
+    private const VESTIGIAL_TABLES = [
+        'subscriptions', 'subscription_items', 'api_logs', 'tasks_log', 'audit_logs',
+        'deferred_emails', 'email_quotas', 'resend_quotas',
+    ];
 
     public function handle(): int
     {
