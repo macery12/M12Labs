@@ -136,6 +136,17 @@ class ExtensionPhpSourceScanner
 
     private const SYMFONY_PROCESS = '~Symfony\\\\(Component\\\\)?Process~';
 
+    /**
+     * Mail sent any way but Sdk\Services\PackageMail. Those sends skip the
+     * operator's switches, the delivery log and the hourly ceiling, and go out
+     * from the panel's own sender address all the same.
+     */
+    private const DIRECT_MAIL_CLASS = '~(Illuminate\\\\(Mail|Notifications|Contracts\\\\Mail)\\\\|Illuminate\\\\Support\\\\Facades\\\\(Mail|Notification)\b|Symfony\\\\Component\\\\Mailer\\\\)~';
+
+    private const DIRECT_MAIL_CALL = '~(?<![\w$>\\\\])\\\\?Mail::|(?<![\w$>\\\\])\\\\?Notification::(route|send|sendNow)\b|(?<![\w$>:\\\\])(?<!function )mail\s*\(~';
+
+    private const DIRECT_MAIL_CONTAINER = '~\b(app|resolve)\s*\(\s*[\'"](mailer|mail\.manager)[\'"]~';
+
     private const PHP_OPEN_TAG = '~<\?(?:php\b|=|\s)~i';
 
     private const BARE_REQUEST = '~function\s+\w+\s*\([^)]*(?<![\w\\\\])(Illuminate\\\\Http\\\\)?Request\s+\$~';
@@ -296,6 +307,10 @@ class ExtensionPhpSourceScanner
             foreach ($matches as $match) {
                 $findings[] = ['advisory', sprintf('%s makes an outbound HTTP call to %s.', $path, $match[2])];
             }
+        }
+
+        if (preg_match(self::DIRECT_MAIL_CLASS, $bare) || preg_match(self::DIRECT_MAIL_CALL, $bare) || preg_match(self::DIRECT_MAIL_CONTAINER, $code)) {
+            $findings[] = ['block', sprintf('%s sends mail directly. Declare the email under capabilities.emails and send it with Sdk\\Services\\PackageMail, so it follows the operator\'s email settings.', $path)];
         }
 
         if (preg_match(self::SYMFONY_PROCESS, $bare)) {

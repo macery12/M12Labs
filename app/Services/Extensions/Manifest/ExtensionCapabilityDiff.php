@@ -55,11 +55,12 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         // stream is here for a different reason than the rest: it is the one
         // surface whose cost is a held PHP worker rather than a request, so an
         // operator needs to see it arrive even though the package could already
-        // serve the same data by polling.
+        // serve the same data by polling. An email type is the package speaking
+        // to the operator's users in the panel's name, from its sender address.
         $escalations = array_values(array_filter(
             $added,
             fn (string $capability): bool => (bool) preg_match(
-                '/^(routes|page|slot|flag|permission|hook|queue|secret|command|migrations|schedule|table|privileged|stream)\b/',
+                '/^(routes|page|slot|flag|permission|hook|queue|secret|command|migrations|schedule|table|privileged|stream|email)\b/',
                 $capability
             )
         ));
@@ -152,6 +153,11 @@ final readonly class ExtensionCapabilityDiff implements \JsonSerializable
         // seconds to fifteen minutes is a different ask, and reads as one.
         foreach ($set->streams as $stream) {
             $flat[sprintf('stream:%s (%ds, %d per user)', $stream->name, $stream->maxSeconds, $stream->maxConcurrentPerUser)] = true;
+        }
+        // The subject is part of the statement: it is the one line of the
+        // message the operator cannot edit, so a changed one reads as new.
+        foreach ($set->emails as $email) {
+            $flat[sprintf('email:%s (subject: %s)', $email->type, $email->subject)] = true;
         }
         // Informational, like a settings field: making one of a package's own
         // classes shared reaches nothing the package could not already reach,

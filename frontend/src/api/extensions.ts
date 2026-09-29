@@ -100,6 +100,8 @@ export interface ExtensionCapabilitySummary {
     slots?: number;
     // Boolean-only package state gates evaluated by the panel.
     flags?: number;
+    // Kinds of email the package sends through the panel's mailer.
+    emails?: number;
 }
 
 export interface Extension {

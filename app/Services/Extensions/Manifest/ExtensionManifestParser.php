@@ -9,6 +9,7 @@ use Everest\Services\Queue\QueueTopology;
 use Everest\Services\Extensions\ExtensionPageManifestService;
 use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\EmailDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
@@ -19,6 +20,7 @@ use Everest\Services\Extensions\Manifest\Definitions\PackageFlagPredicate;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PackageFlagDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\EmailVariableDefinition;
 
 /**
  * Strict manifest v3 parser.
@@ -171,7 +173,137 @@ class ExtensionManifestParser
             slots: $this->parseFrontendSlots($capabilities['slots'] ?? [], $flagNames),
             flags: $flags,
             adminNav: $this->parseNav($capabilities['nav'] ?? null, $extensionId, $adminPages !== []),
+            emails: $this->parseEmails($capabilities['emails'] ?? [], $extensionId),
         );
+    }
+
+    /**
+     * The kinds of email this package sends through the panel's mailer.
+     *
+     * Each names its body template by type (`emails/<type>.twig`, checked by
+     * ExtensionCapabilityFileValidator), the variables the package passes, and
+     * a subject whose placeholders may name only those. Sorted by type so the
+     * approved projection does not depend on the author's ordering.
+     *
+     * @return array<int, EmailDefinition>
+     */
+    private function parseEmails($emails, string $extensionId): array
+    {
+        if ($emails === [] || $emails === null) {
+            return [];
+        }
+
+        if (!is_array($emails) || !array_is_list($emails)) {
+            throw new DisplayException('The manifest "capabilities.emails" section must be a list.');
+        }
+
+        if (count($emails) > ExtensionCapabilityVocabulary::MAX_EMAIL_TYPES) {
+            throw new DisplayException(sprintf('capabilities.emails may declare at most %d email types.', ExtensionCapabilityVocabulary::MAX_EMAIL_TYPES));
+        }
+
+        $definitions = [];
+        $seen = [];
+
+        foreach ($emails as $index => $email) {
+            $where = sprintf('capabilities.emails[%d]', $index);
+
+            if (!is_array($email) || ($email !== [] && array_is_list($email))) {
+                throw new DisplayException(sprintf('%s must be an object.', $where));
+            }
+
+            $this->assertKnownKeys($email, ['type', 'labelKey', 'descriptionKey', 'subject', 'variables'], $where);
+
+            $type = $this->slug($email['type'] ?? '', $where . '.type');
+            if (isset($seen[$type])) {
+                throw new DisplayException(sprintf('Duplicate email type "%s".', $type));
+            }
+            $seen[$type] = true;
+
+            $variables = $this->parseEmailVariables($email['variables'] ?? [], $where . '.variables');
+            $names = array_map(fn (EmailVariableDefinition $v): string => $v->name, $variables);
+
+            $subject = $email['subject'] ?? null;
+            if (!is_string($subject) || trim($subject) === '' || mb_strlen($subject) > 191 || preg_match('/[\r\n]/', $subject)) {
+                throw new DisplayException(sprintf('%s.subject must be one line of up to 191 characters.', $where));
+            }
+
+            preg_match_all(EmailDefinition::SUBJECT_PLACEHOLDER, $subject, $placeholders);
+            foreach ($placeholders[1] as $placeholder) {
+                if (!in_array($placeholder, $names, true) && !in_array($placeholder, ['userName', 'appName'], true)) {
+                    throw new DisplayException(sprintf('%s.subject uses "{{ %s }}", which is not one of its declared variables.', $where, $placeholder));
+                }
+            }
+
+            $definitions[] = new EmailDefinition(
+                type: $type,
+                labelKey: $this->labelKey($email['labelKey'] ?? '', $extensionId, $where . '.labelKey'),
+                descriptionKey: isset($email['descriptionKey'])
+                    ? $this->labelKey($email['descriptionKey'], $extensionId, $where . '.descriptionKey')
+                    : null,
+                subject: trim($subject),
+                variables: $variables,
+            );
+        }
+
+        usort($definitions, fn (EmailDefinition $a, EmailDefinition $b): int => strcmp($a->type, $b->type));
+
+        return $definitions;
+    }
+
+    /**
+     * @return array<int, EmailVariableDefinition>
+     */
+    private function parseEmailVariables($variables, string $where): array
+    {
+        if ($variables === [] || $variables === null) {
+            return [];
+        }
+
+        if (!is_array($variables) || !array_is_list($variables)) {
+            throw new DisplayException(sprintf('%s must be a list.', $where));
+        }
+
+        if (count($variables) > ExtensionCapabilityVocabulary::MAX_EMAIL_VARIABLES) {
+            throw new DisplayException(sprintf('%s may declare at most %d variables.', $where, ExtensionCapabilityVocabulary::MAX_EMAIL_VARIABLES));
+        }
+
+        $definitions = [];
+
+        foreach ($variables as $index => $variable) {
+            $at = sprintf('%s[%d]', $where, $index);
+
+            if (!is_array($variable) || ($variable !== [] && array_is_list($variable))) {
+                throw new DisplayException(sprintf('%s must be an object.', $at));
+            }
+
+            $this->assertKnownKeys($variable, ['name', 'description', 'example', 'required'], $at);
+
+            $name = (string) ($variable['name'] ?? '');
+            if (!preg_match(EmailVariableDefinition::NAME_PATTERN, $name)) {
+                throw new DisplayException(sprintf('%s.name must be a camelCase or snake_case identifier. Got "%s".', $at, $name));
+            }
+            if (in_array($name, EmailDefinition::RESERVED_VARIABLES, true)) {
+                throw new DisplayException(sprintf('%s.name "%s" is provided by the panel and cannot be declared.', $at, $name));
+            }
+            if (isset($definitions[$name])) {
+                throw new DisplayException(sprintf('%s declares variable "%s" more than once.', $where, $name));
+            }
+
+            foreach (['description', 'example'] as $text) {
+                if (isset($variable[$text]) && (!is_string($variable[$text]) || mb_strlen($variable[$text]) > 255)) {
+                    throw new DisplayException(sprintf('%s.%s must be a string of up to 255 characters.', $at, $text));
+                }
+            }
+
+            $definitions[$name] = new EmailVariableDefinition(
+                name: $name,
+                description: (string) ($variable['description'] ?? ''),
+                example: (string) ($variable['example'] ?? ''),
+                required: $this->bool($variable['required'] ?? false, $at . '.required'),
+            );
+        }
+
+        return array_values($definitions);
     }
 
     /**

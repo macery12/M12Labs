@@ -616,6 +616,63 @@ class ExtensionPhpSourceScannerTest extends TestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{0: string}>
+     */
+    public static function directMail(): iterable
+    {
+        yield 'mail facade import' => ["use Illuminate\\Support\\Facades\\Mail;\nclass S { public function run() { Mail::raw('x', fn () => null); } }"];
+        yield 'global Mail alias' => ["class S { public function run() { \\Mail::to('a@b.c')->send(new X()); } }"];
+        yield 'own mailable' => ["use Illuminate\\Mail\\Mailable;\nclass S extends Mailable {}"];
+        yield 'notification class' => ["use Illuminate\\Notifications\\Notification;\nclass S extends Notification {}"];
+        yield 'on-demand notification' => ["class S { public function run() { \\Notification::route('mail', 'a@b.c')->notify(\$n); } }"];
+        yield 'mailer from the container' => ["class S { public function run() { app('mailer')->raw('x', fn () => null); } }"];
+        yield 'symfony mailer' => ["use Symfony\\Component\\Mailer\\Mailer;\nclass S {}"];
+        yield 'php mail()' => ["class S { public function run() { mail('a@b.c', 'hi', 'body'); } }"];
+    }
+
+    /**
+     * Mail sent around PackageMail skips the operator's switches, the
+     * delivery log and the hourly ceiling, and still goes out from the
+     * panel's own address.
+     */
+    #[DataProvider('directMail')]
+    public function testSendingMailDirectlyIsRefused(string $body): void
+    {
+        $this->assertBlocked(
+            [self::SERVICE => "<?php\nnamespace Everest\\Extensions\\Packages\\demo\\Services;\n\n" . $body . "\n"],
+            'sends mail directly',
+        );
+    }
+
+    /** Only the mail surface: a package's own `mail` property or method is fine. */
+    public function testMailNamedThingsThatSendNothingAreAllowed(): void
+    {
+        $this->scan([
+            self::SERVICE => <<<'PHP'
+                <?php
+                namespace Everest\Extensions\Packages\demo\Services;
+
+                use Everest\Extensions\Sdk\Services\PackageMail;
+
+                class DemoService
+                {
+                    private string $mail = '';
+
+                    public function mail(): string { return $this->mail; }
+
+                    public function notify($user): void
+                    {
+                        $this->mail();
+                        PackageMail::for('demo')->send('reply', $user, ['title' => 'mail(me)']);
+                    }
+                }
+                PHP,
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
     /** Every violation at once, so fixing them is not an install-attempt loop. */
     public function testAllViolationsAreReportedTogether(): void
     {

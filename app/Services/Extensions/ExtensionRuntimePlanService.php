@@ -9,6 +9,7 @@ use Everest\Services\Extensions\Manifest\ExtensionManifest;
 use Everest\Services\Extensions\Manifest\ExtensionCapabilitySet;
 use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\EmailDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
@@ -20,6 +21,7 @@ use Everest\Services\Extensions\Manifest\Definitions\PackageFlagPredicate;
 use Everest\Services\Extensions\Manifest\Definitions\PermissionDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PackageFlagDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\EmailVariableDefinition;
 
 /**
  * One entry in the runtime plan: an extension that is allowed to load code, and
@@ -170,6 +172,7 @@ class ExtensionRuntimePlanService
             'bindings' => $entry->capabilities->bindings !== [],
             'streams' => $entry->capabilities->streams !== [],
             'slots' => $entry->capabilities->slots !== [],
+            'emails' => $entry->capabilities->emails !== [],
             default => str_starts_with($capability, 'privileged.')
                 && $entry->capabilities->grantsPrivilege(substr($capability, 11)),
         });
@@ -188,6 +191,17 @@ class ExtensionRuntimePlanService
         $entry = $this->plan()[$extensionId] ?? null;
 
         return $entry?->capabilities->streamNamed($name);
+    }
+
+    /**
+     * A declared email type of an installed, loadable package; null when the
+     * package is disabled, inert, or never declared it.
+     */
+    public function emailFor(string $extensionId, string $type): ?EmailDefinition
+    {
+        $entry = $this->plan()[$extensionId] ?? null;
+
+        return $entry?->capabilities->email($type);
     }
 
     /**
@@ -663,7 +677,58 @@ class ExtensionRuntimePlanService
             ))),
             flags: $hydratedFlags,
             adminNav: $this->hydrateNav($capabilities['nav']['admin'] ?? null),
+            emails: $this->hydrateEmails((array) ($capabilities['emails'] ?? [])),
         );
+    }
+
+    /**
+     * Only email types the parser could have produced survive. The type names
+     * a template file and ends up in the delivery log's key, so a tampered one
+     * drops out, which changes the recomputed hash and makes the package
+     * inert, the same as the other re-checked fields.
+     *
+     * @param array<int, mixed> $emails
+     *
+     * @return array<int, EmailDefinition>
+     */
+    private function hydrateEmails(array $emails): array
+    {
+        $hydrated = [];
+
+        foreach ($emails as $email) {
+            if (!is_array($email)
+                || !is_string($email['type'] ?? null) || !preg_match(ExtensionCapabilityVocabulary::SLUG_PATTERN, $email['type'])
+                || !is_string($email['labelKey'] ?? null)
+                || !is_string($email['subject'] ?? null) || preg_match('/[\r\n]/', $email['subject'])) {
+                continue;
+            }
+
+            $variables = [];
+            foreach ((array) ($email['variables'] ?? []) as $variable) {
+                if (!is_array($variable) || !is_string($variable['name'] ?? null)
+                    || !preg_match(EmailVariableDefinition::NAME_PATTERN, $variable['name'])
+                    || in_array($variable['name'], EmailDefinition::RESERVED_VARIABLES, true)) {
+                    continue;
+                }
+
+                $variables[] = new EmailVariableDefinition(
+                    name: $variable['name'],
+                    description: (string) ($variable['description'] ?? ''),
+                    example: (string) ($variable['example'] ?? ''),
+                    required: (bool) ($variable['required'] ?? false),
+                );
+            }
+
+            $hydrated[] = new EmailDefinition(
+                type: $email['type'],
+                labelKey: $email['labelKey'],
+                descriptionKey: isset($email['descriptionKey']) ? (string) $email['descriptionKey'] : null,
+                subject: $email['subject'],
+                variables: $variables,
+            );
+        }
+
+        return $hydrated;
     }
 
     /**

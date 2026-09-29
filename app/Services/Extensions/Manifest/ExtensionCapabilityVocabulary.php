@@ -44,7 +44,13 @@ final class ExtensionCapabilityVocabulary
         'slots',
         'flags',
         'nav',
+        'emails',
     ];
+
+    /** Email types one package may declare, and variables per type. */
+    public const MAX_EMAIL_TYPES = 32;
+
+    public const MAX_EMAIL_VARIABLES = 32;
 
     /** Maximum named frontend flags one package may publish. */
     public const MAX_FRONTEND_FLAGS = 32;
