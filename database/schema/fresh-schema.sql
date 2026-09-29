@@ -448,24 +448,19 @@ DROP TABLE IF EXISTS `email_deliveries`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `email_deliveries` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` bigint(20) unsigned DEFAULT NULL,
   `correlation_id` char(36) DEFAULT NULL,
   `template_key` varchar(191) DEFAULT NULL,
   `recipient` varchar(191) NOT NULL,
-  `recipient_email` varchar(191) DEFAULT NULL,
   `user_id` int(10) unsigned DEFAULT NULL,
   `subject` varchar(191) NOT NULL,
   `status` varchar(191) NOT NULL DEFAULT 'queued',
   `provider` varchar(191) DEFAULT 'resend',
   `provider_message_id` varchar(191) DEFAULT NULL,
-  `metadata` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`metadata`)),
   `attempts` int(10) unsigned NOT NULL DEFAULT 0,
   `last_attempt_at` timestamp NULL DEFAULT NULL,
   `sent_at` timestamp NULL DEFAULT NULL,
-  `last_message_id` varchar(191) DEFAULT NULL,
   `last_status_code` int(10) unsigned DEFAULT NULL,
   `last_error` text DEFAULT NULL,
-  `tags` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tags`)),
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -473,9 +468,7 @@ CREATE TABLE `email_deliveries` (
   KEY `email_deliveries_user_id_created_at_index` (`user_id`,`created_at`),
   KEY `email_deliveries_template_key_created_at_index` (`template_key`,`created_at`),
   KEY `email_deliveries_status_created_at_index` (`status`,`created_at`),
-  KEY `email_deliveries_tenant_id_index` (`tenant_id`),
   KEY `email_deliveries_recipient_index` (`recipient`),
-  KEY `email_deliveries_recipient_email_index` (`recipient_email`),
   CONSTRAINT `email_deliveries_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -488,14 +481,9 @@ CREATE TABLE `email_delivery_attempts` (
   `attempt_number` int(10) unsigned NOT NULL,
   `provider` varchar(191) DEFAULT NULL,
   `status` varchar(191) NOT NULL,
-  `response_code` int(10) unsigned DEFAULT NULL,
   `status_code` int(10) unsigned DEFAULT NULL,
   `provider_message_id` varchar(191) DEFAULT NULL,
-  `error_message` text DEFAULT NULL,
   `error` text DEFAULT NULL,
-  `raw_response` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`raw_response`)),
-  `response_payload` text DEFAULT NULL,
-  `request_payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`request_payload`)),
   `started_at` timestamp NULL DEFAULT NULL,
   `finished_at` timestamp NULL DEFAULT NULL,
   `duration_ms` int(10) unsigned DEFAULT NULL,
@@ -1005,7 +993,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(191) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=60 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mount_node`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
