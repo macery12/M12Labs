@@ -10,6 +10,7 @@ use Everest\Models\ExtensionPackage;
 use Illuminate\Support\Facades\File;
 use Everest\Exceptions\DisplayException;
 use Everest\Models\ExtensionPackageFile;
+use Everest\Services\Email\ExtensionEmailCleanup;
 use Everest\Exceptions\Service\Extension\ExtensionLockLostException;
 
 class ExtensionPackageUninstallService
@@ -25,6 +26,7 @@ class ExtensionPackageUninstallService
         private ExtensionJobDrainService $drainService,
         private ExtensionSecretStore $secretStore,
         private ExtensionRequirementService $requirementService,
+        private ExtensionEmailCleanup $emailCleanup,
     ) {
     }
 
@@ -199,6 +201,7 @@ class ExtensionPackageUninstallService
 
             return array_merge([
                 'extensionId' => $extensionId,
+                'dropData' => $dropData,
                 'package' => $package,
                 'files' => $files,
                 'rollbackRoot' => $rollbackRoot,
@@ -254,6 +257,18 @@ class ExtensionPackageUninstallService
 
             ExtensionConfig::query()->where('extension_id', $extensionId)->update(['enabled' => false]);
         });
+
+        // After the commit: it deletes files, which a rolled-back transaction
+        // could not put back.
+        if (!empty($prepared['dropData'])) {
+            try {
+                $this->emailCleanup->forget($extensionId);
+            } catch (\Throwable $exception) {
+                // The uninstall itself is committed; a leftover template or
+                // switch is inert without the extension.
+                report($exception);
+            }
+        }
     }
 
     /**

@@ -4,13 +4,14 @@ namespace Everest\Services\Email;
 
 use Everest\Mail\PanelMail;
 use Illuminate\Support\Str;
+use Everest\Mail\ExtensionMail;
 use Everest\Models\EmailDelivery;
 use Illuminate\Support\Facades\Log;
 use Everest\Jobs\Email\SendPanelMailJob;
 
 /**
- * The one way panel mail gets sent: the event listener uses it today, and
- * extension mail will go through it too, so every message gets the same
+ * The one way panel mail gets sent: the event listener and extensions (through
+ * Sdk\Services\PackageMail) both use it, so every message gets the same
  * switches, delivery log and retention.
  *
  * Decides here, at queue time, whether the message goes out at all, and
@@ -22,6 +23,7 @@ class PanelMailer
         private EmailSettingsReader $settings,
         private EmailPolicyService $policy,
         private EmailDeliveryTracker $tracker,
+        private ExtensionMailLimiter $extensionLimiter,
     ) {
     }
 
@@ -54,6 +56,8 @@ class PanelMailer
         $skip = match (true) {
             $this->policy->isBlockedRecipient($recipient) => 'Blocked recipient email',
             !EmailCatalogue::isLocked($mail->key()) && !$this->policy->isTemplateEnabled($mail->key()) => "Email type '{$mail->key()}' is disabled",
+            // Last, so only a message that would otherwise go out counts.
+            $mail instanceof ExtensionMail && !$this->extensionLimiter->attempt($mail->extensionId) => "Extension '{$mail->extensionId}' reached its hourly email limit",
             default => null,
         };
 

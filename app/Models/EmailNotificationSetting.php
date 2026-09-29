@@ -51,6 +51,9 @@ class EmailNotificationSetting extends Model
     {
         $setting = static::where('template_key', $templateKey)->first();
 
-        return $setting ? (bool) $setting->enabled : false;
+        // Built-in types are seeded, so a missing row is a type nobody set up.
+        // An extension's types get a row only once the operator switches one,
+        // and the install approval already covered sending them.
+        return $setting ? (bool) $setting->enabled : str_starts_with($templateKey, 'ext:');
     }
 }

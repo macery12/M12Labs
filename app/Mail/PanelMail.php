@@ -76,9 +76,14 @@ abstract class PanelMail extends Mailable
     public function renderBody(): string
     {
         return $this->renderedHtml ??= app(EmailTemplateRenderer::class)->render(
-            self::viewFor($this->key()),
+            $this->templateView(),
             $this->templateData(),
         );
+    }
+
+    protected function templateView(): string
+    {
+        return self::viewFor($this->key());
     }
 
     public function envelope(): Envelope
