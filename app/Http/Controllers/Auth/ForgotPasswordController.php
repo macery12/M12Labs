@@ -10,11 +10,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\RedirectResponse;
 use Everest\Exceptions\DisplayException;
-use Everest\Services\Email\EmailManager;
 use Illuminate\Validation\Rules\Password;
-use Everest\Models\EmailNotificationSetting;
 use Everest\Services\Users\UserUpdateService;
 use Everest\Services\Auth\PasswordResetService;
+use Everest\Services\Email\EmailSettingsReader;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Everest\Services\Users\UserCredentialRevocationService;
 
@@ -145,12 +144,12 @@ class ForgotPasswordController extends AbstractLoginController
         return response()->json(['success' => true]);
     }
 
+    /**
+     * The reset email cannot be switched off on its own, so this is only
+     * whether the panel sends mail at all.
+     */
     private function isEmailResetEnabled(): bool
     {
-        if (!EmailNotificationSetting::isEnabled('auth.password_reset')) {
-            return false;
-        }
-
-        return EmailManager::isDeliveryEnabled();
+        return app(EmailSettingsReader::class)->deliveryEnabled();
     }
 }

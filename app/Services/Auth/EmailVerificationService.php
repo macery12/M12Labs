@@ -5,7 +5,7 @@ namespace Everest\Services\Auth;
 use Everest\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
-use Everest\Services\Email\EmailManager;
+use Everest\Services\Email\EmailSettingsReader;
 use Everest\Events\Email\EmailVerificationRequested;
 
 class EmailVerificationService
@@ -46,6 +46,6 @@ class EmailVerificationService
 
     private function emailSendingEnabled(): bool
     {
-        return EmailManager::isDeliveryEnabled();
+        return app(EmailSettingsReader::class)->deliveryEnabled();
     }
 }

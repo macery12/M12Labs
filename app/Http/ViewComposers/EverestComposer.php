@@ -4,7 +4,7 @@ namespace Everest\Http\ViewComposers;
 
 use Illuminate\View\View;
 use Everest\Models\Setting;
-use Everest\Services\Email\EmailManager;
+use Everest\Services\Email\EmailSettingsReader;
 use Everest\Services\Billing\StoreConfigService;
 use Everest\Services\Email\EmailVerificationGate;
 use Everest\Services\Billing\InvoiceSettingsService;
@@ -208,6 +208,6 @@ class EverestComposer
 
     private function emailEnabled(): bool
     {
-        return EmailManager::isDeliveryEnabled();
+        return app(EmailSettingsReader::class)->deliveryEnabled();
     }
 }

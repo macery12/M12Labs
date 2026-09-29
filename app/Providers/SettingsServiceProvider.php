@@ -96,7 +96,7 @@ class SettingsServiceProvider extends ServiceProvider
         'modules:extensions:enabled',
 
         // Email module master toggle. Distinct from mail-delivery capability
-        // (EmailManager::isDeliveryEnabled) — this only governs whether the
+        // (EmailSettingsReader::deliveryEnabled) — this only governs whether the
         // Email admin module is surfaced in the panel.
         'modules:email:enabled',
 
