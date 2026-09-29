@@ -170,6 +170,7 @@ class EmailTemplateController extends ApplicationApiController
                 ['name' => 'couponCode',      'description' => 'Coupon code used',                'example' => 'SAVE3',                   'required' => false],
                 ['name' => 'billingDays',     'description' => 'Number of days in billing cycle', 'example' => '30',                      'required' => false],
                 ['name' => 'billingCycle',    'description' => 'Billing cycle label',             'example' => 'Monthly',                 'required' => false],
+                ['name' => 'invoiceDownloadUrl', 'description' => 'Link to download the invoice PDF', 'example' => 'https://example.com/invoices/abc/serve', 'required' => false],
             ],
         ],
         'billing.payment_failed' => [
@@ -286,6 +287,7 @@ class EmailTemplateController extends ApplicationApiController
             'couponCode'      => 'SAVE3',
             'billingDays'     => 30,
             'billingCycle'    => 'Monthly',
+            'invoiceDownloadUrl' => '#preview-invoice',
         ],
         'billing.payment_failed' => [
             'userName'      => 'Jane Smith',

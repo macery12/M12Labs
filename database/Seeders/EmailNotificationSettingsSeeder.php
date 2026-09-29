@@ -4,10 +4,12 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Everest\Services\Email\EmailType;
+use Everest\Services\Email\EmailCatalogue;
 
 /**
- * Default per-template email notification toggles. Extracted from the legacy
- * create_email_notification_settings migration (database-rebuild D4).
+ * Default per-template email notification toggles, one per built-in type in
+ * EmailCatalogue.
  * Idempotent: only inserts template keys that don't exist yet, so admin
  * changes to enabled survive re-seeding.
  */
@@ -17,23 +19,13 @@ class EmailNotificationSettingsSeeder extends Seeder
     {
         $existingKeys = DB::table('email_notification_settings')->pluck('template_key')->all();
 
-        $defaults = [
-            ['template_key' => 'auth.account_created', 'enabled' => true, 'category' => 'auth', 'name' => 'Account Created', 'description' => 'Welcome email sent when a new account is created'],
-            ['template_key' => 'auth.email_verification', 'enabled' => true, 'category' => 'auth', 'name' => 'Email Verification', 'description' => 'Email verification link sent to new users'],
-            ['template_key' => 'auth.password_reset', 'enabled' => true, 'category' => 'auth', 'name' => 'Password Reset Request', 'description' => 'Password reset link sent when requested'],
-            ['template_key' => 'auth.password_changed', 'enabled' => true, 'category' => 'auth', 'name' => 'Password Successfully Changed', 'description' => 'Confirmation email after password change'],
-            ['template_key' => 'auth.new_login', 'enabled' => true, 'category' => 'auth', 'name' => 'New Login Detected', 'description' => 'Alert for new login from unrecognized device/location'],
-            ['template_key' => 'auth.account_locked', 'enabled' => true, 'category' => 'auth', 'name' => 'Account Locked/Suspended', 'description' => 'Notification when account is locked or suspended'],
-            ['template_key' => 'auth.account_unsuspended', 'enabled' => true, 'category' => 'auth', 'name' => 'Account Unsuspended', 'description' => 'Notification when account is unsuspended'],
-            ['template_key' => 'auth.2fa_enabled', 'enabled' => true, 'category' => 'auth', 'name' => '2FA Enabled', 'description' => 'Confirmation when two-factor authentication is enabled'],
-            ['template_key' => 'auth.2fa_disabled', 'enabled' => true, 'category' => 'auth', 'name' => '2FA Disabled', 'description' => 'Alert when two-factor authentication is disabled'],
-            ['template_key' => 'server.created', 'enabled' => true, 'category' => 'server', 'name' => 'Server Created', 'description' => 'Notification when a new server is created'],
-            ['template_key' => 'server.suspended', 'enabled' => true, 'category' => 'server', 'name' => 'Server Suspended', 'description' => 'Notification when a server is suspended'],
-            ['template_key' => 'server.unsuspended', 'enabled' => true, 'category' => 'server', 'name' => 'Server Unsuspended', 'description' => 'Notification when a server is unsuspended'],
-            ['template_key' => 'billing.payment_received', 'enabled' => true, 'category' => 'billing', 'name' => 'Payment Received', 'description' => 'Confirmation when payment is successfully processed'],
-            ['template_key' => 'billing.payment_failed', 'enabled' => true, 'category' => 'billing', 'name' => 'Payment Failed', 'description' => 'Alert when a payment attempt fails'],
-            ['template_key' => 'billing.server_renewal_notice', 'enabled' => true, 'category' => 'billing', 'name' => 'Server Renewal Notice', 'description' => 'Reminder before server expires with renewal link and suspension time'],
-        ];
+        $defaults = array_map(fn (EmailType $type) => [
+            'template_key' => $type->key,
+            'enabled' => true,
+            'category' => $type->category,
+            'name' => $type->name,
+            'description' => $type->description,
+        ], array_values(EmailCatalogue::all()));
 
         $now = now();
         $insert = [];
