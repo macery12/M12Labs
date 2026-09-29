@@ -99,12 +99,6 @@ class EverestComposer
             ],
             'email' => [
                 'enabled' => $this->emailEnabled(),
-                // Master toggle for surfacing the Email admin module in the panel
-                // (independent of whether mail delivery is actually configured).
-                'module_enabled' => boolval(config('modules.email.enabled', false)),
-                'resend' => [
-                    'enabled' => $this->emailEnabled(),
-                ],
                 'verification_rules' => $this->emailVerificationGate->getRules(),
             ],
             'webhooks' => [

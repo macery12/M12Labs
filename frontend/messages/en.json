@@ -1470,8 +1470,6 @@
   "admin.features.help.step4Body": "Changes take effect immediately in the sidebar. Some server-rendered screens pick up the change on the next full page load.",
   "admin.features.help.step4Title": "Save to apply",
   "admin.features.items.billing.desc": "Enable the full billing system: store, orders, invoices, and gateways.",
-  "admin.features.items.email.desc": "Surface the Email admin module for configuring outbound mail.",
-  "admin.features.items.email.label": "Email",
   "admin.features.items.extensions.desc": "Install and manage first- and third-party extensions.",
   "admin.features.items.mods.desc": "Browse and install mods and plugins from within a server.",
   "admin.features.items.tickets.desc": "Built-in support ticketing for your users.",

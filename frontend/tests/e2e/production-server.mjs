@@ -194,7 +194,7 @@ const everestConfiguration = {
     ai: { enabled: true, feature_agent: true, feature_admin_agent: true },
     mods: { enabled: true },
     webhooks: { enabled: true },
-    email: { enabled: true, module_enabled: true },
+    email: { enabled: true },
     extensions: { enabled: true, active: ['node_health_history'] },
 };
 

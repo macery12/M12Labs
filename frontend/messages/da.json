@@ -1420,8 +1420,6 @@
   "admin.features.help.step4Body": "Ændringerne træder i kraft med det samme i sidepanelet. På visse skærmbilleder, der genereres af serveren, vises ændringen først, når siden indlæses fuldt ud næste gang.",
   "admin.features.help.step4Title": "Gem for at anvende",
   "admin.features.items.billing.desc": "Aktivér det fulde faktureringssystem: butik, ordrer, fakturaer og betalingsgateways.",
-  "admin.features.items.email.desc": "Vis e-mailmodulet i administrationen til konfiguration af udgående e-mails.",
-  "admin.features.items.email.label": "E-mail",
   "admin.features.items.extensions.desc": "Installer og administrer udvidelser fra både første- og tredjeparter.",
   "admin.features.items.mods.desc": "Gennemse og installer mods og plugins direkte fra en server.",
   "admin.features.items.tickets.desc": "Indbygget supportsagsfunktion til dine brugere.",

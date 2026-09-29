@@ -18,7 +18,6 @@ class FeaturesController extends ApplicationApiController
      */
     public const FEATURES = [
         'mods' => 'modules.mods.enabled',
-        'email' => 'modules.email.enabled',
         'webhooks' => 'modules.webhooks.enabled',
         'extensions' => 'modules.extensions.enabled',
         'tickets' => 'modules.tickets.enabled',
