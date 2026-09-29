@@ -2,6 +2,9 @@
 
 namespace Everest\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\MassPrunable;
+use Everest\Services\Email\EmailSettingsReader;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -29,6 +32,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class EmailDelivery extends Model
 {
+    use MassPrunable;
+
     public const STATUS_QUEUED = 'queued';
     public const STATUS_SENDING = 'sending';
     public const STATUS_SENT = 'sent';
@@ -74,6 +79,16 @@ class EmailDelivery extends Model
         'last_attempt_at' => 'datetime',
         'sent_at' => 'datetime',
     ];
+
+    /**
+     * The log used to keep every row forever. Rows past the retention set in
+     * Admin -> Email go daily; their attempts go with them through the
+     * foreign key's cascade.
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->where('created_at', '<', now()->subDays(app(EmailSettingsReader::class)->logRetentionDays()));
+    }
 
     /**
      * Get the user associated with this email delivery.

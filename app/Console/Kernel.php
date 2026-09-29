@@ -3,6 +3,7 @@
 namespace Everest\Console;
 
 use Everest\Models\ActivityLog;
+use Everest\Models\EmailDelivery;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Console\PruneCommand;
 use Everest\Jobs\Schedule\RunScheduledSweepJob;
@@ -76,6 +77,10 @@ class Kernel extends ConsoleKernel
         if (config('activity.prune_days')) {
             $schedule->command(PruneCommand::class, ['--model' => [ActivityLog::class]])->daily();
         }
+
+        // The email delivery log keeps Admin -> Email's retention (30 days by
+        // default); it used to grow forever.
+        $schedule->command(PruneCommand::class, ['--model' => [EmailDelivery::class]])->daily();
 
         if (config('modules.billing.enabled')) {
             $schedule->command(CleanupOrdersCommand::class)->hourly()->withoutOverlapping();
