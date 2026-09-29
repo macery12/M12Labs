@@ -11,7 +11,11 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
     {
         return [
             'enabled' => 'boolean',
+            'primary' => 'nullable|in:resend,smtp',
+            // The providers page before primary/backup: same thing as primary.
             'transport' => 'nullable|in:resend,smtp',
+            'backup' => 'nullable|in:none,resend,smtp|different:primary',
+            'log_retention_days' => 'nullable|integer|min:1|max:3650',
             'api_key' => 'nullable|string|max:255',
             'clear_api_key' => 'boolean',
             'from_email' => 'nullable|email|max:255',
@@ -24,9 +28,6 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
             'clear_smtp_password' => 'boolean',
             // Empty string represents no encryption to match UI dropdown default
             'smtp_encryption' => 'nullable|in:,tls,ssl',
-            'smtp_from_email' => 'nullable|email|max:255',
-            'smtp_from_name' => 'nullable|string|max:255',
-            'smtp_reply_to' => 'nullable|email|max:255',
         ];
     }
 
@@ -47,14 +48,20 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
         $data = [];
 
         if ($this->has('enabled')) {
-            $enabledValue = $this->input('enabled', false) ? 'true' : 'false';
-            $data['modules:email:enabled'] = $enabledValue;
-            // Backward compatibility with previous key
-            $data['modules:email:resend:enabled'] = $enabledValue;
+            $data['modules:email:enabled'] = $this->input('enabled', false) ? 'true' : 'false';
         }
 
-        if ($this->has('transport')) {
-            $data['modules:email:transport'] = $this->input('transport');
+        $primary = $this->input('primary') ?? $this->input('transport');
+        if ($primary !== null) {
+            $data['modules:email:primary'] = $primary;
+        }
+
+        if ($this->has('backup')) {
+            $data['modules:email:backup'] = $this->input('backup') ?? 'none';
+        }
+
+        if ($this->has('log_retention_days')) {
+            $data['modules:email:log_retention_days'] = (string) $this->integer('log_retention_days');
         }
 
         // Resend fields
@@ -65,24 +72,12 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
             $data['modules:email:resend:api_key'] = $this->input('api_key', '');
         }
 
-        // The "sender identity" fields (from_email/from_name/reply_to) are exposed
-        // in the UI as a single global identity (Overview page) and are the only
-        // source for a "from" address — neither the SMTP nor Resend sub-page has
-        // its own from field. Mirror them to both transports' keys so the active
-        // transport always has a from address regardless of which one is selected.
-        if ($this->has('from_email')) {
-            $data['modules:email:resend:from_email'] = $this->input('from_email', '');
-            $data['modules:email:smtp:from_email'] = $this->input('from_email', '');
-        }
-
-        if ($this->has('from_name')) {
-            $data['modules:email:resend:from_name'] = $this->input('from_name', '');
-            $data['modules:email:smtp:from_name'] = $this->input('from_name', '');
-        }
-
-        if ($this->has('reply_to')) {
-            $data['modules:email:resend:reply_to'] = $this->input('reply_to', '');
-            $data['modules:email:smtp:reply_to'] = $this->input('reply_to', '');
+        // One sender identity for both providers: failover hands the same
+        // message to the backup, so it can only carry one From address.
+        foreach (['from_email', 'from_name', 'reply_to'] as $field) {
+            if ($this->has($field)) {
+                $data["modules:email:{$field}"] = $this->input($field) ?? '';
+            }
         }
 
         // SMTP fields
@@ -107,18 +102,6 @@ class UpdateEmailSettingsRequest extends ApplicationApiRequest
 
         if ($this->has('smtp_encryption')) {
             $data['modules:email:smtp:encryption'] = $this->input('smtp_encryption', '');
-        }
-
-        if ($this->has('smtp_from_email')) {
-            $data['modules:email:smtp:from_email'] = $this->input('smtp_from_email', '');
-        }
-
-        if ($this->has('smtp_from_name')) {
-            $data['modules:email:smtp:from_name'] = $this->input('smtp_from_name', '');
-        }
-
-        if ($this->has('smtp_reply_to')) {
-            $data['modules:email:smtp:reply_to'] = $this->input('smtp_reply_to', '');
         }
 
         return $data;

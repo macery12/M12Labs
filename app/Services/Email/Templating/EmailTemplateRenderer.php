@@ -198,9 +198,8 @@ class EmailTemplateRenderer
     }
 
     /**
-     * Reply-to wins when the caller resolved one; otherwise fall back through the
-     * configured transport's reply-to, its from address, and finally mail config. Mirrors
-     * what the Blade footer partial used to do inline.
+     * Reply-to wins when the caller passed one; otherwise the panel's sender
+     * identity (its reply-to, else its From address), and finally mail config.
      */
     private function supportEmail(mixed $replyTo): ?string
     {
@@ -208,11 +207,7 @@ class EmailTemplateRenderer
             return $replyTo;
         }
 
-        $transport = $this->settings->transport();
-
-        $resolved = $this->settings->get("settings::modules:email:{$transport}:reply_to")
-            ?: $this->settings->get("settings::modules:email:{$transport}:from_email")
-            ?: config('mail.from.address');
+        $resolved = $this->settings->replyTo() ?: config('mail.from.address');
 
         return is_string($resolved) && $resolved !== '' ? $resolved : null;
     }
