@@ -2,6 +2,8 @@
 
 namespace Everest\Models;
 
+use Everest\Services\Email\EmailCatalogue;
+
 /**
  * Everest\Models\EmailNotificationSetting.
  *
@@ -11,6 +13,7 @@ namespace Everest\Models;
  * @property string $category
  * @property string $name
  * @property string|null $description
+ * @property bool $locked
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  */
@@ -30,12 +33,15 @@ class EmailNotificationSetting extends Model
         'enabled' => 'boolean',
     ];
 
+    protected $appends = ['locked'];
+
     /**
-     * Check if a specific email type is enabled.
+     * A locked type sends regardless of its toggle, and the toggle cannot be
+     * turned off (see EmailCatalogue).
      */
-    public static function isEnabled(string $templateKey): bool
+    public function getLockedAttribute(): bool
     {
-        return self::isTemplateEnabled($templateKey);
+        return EmailCatalogue::isLocked($this->template_key);
     }
 
     /**
@@ -46,15 +52,5 @@ class EmailNotificationSetting extends Model
         $setting = static::where('template_key', $templateKey)->first();
 
         return $setting ? (bool) $setting->enabled : false;
-    }
-
-    /**
-     * Get all enabled email types by category.
-     */
-    public static function getEnabledByCategory(string $category): \Illuminate\Database\Eloquent\Collection
-    {
-        return static::where('category', $category)
-            ->where('enabled', true)
-            ->get();
     }
 }

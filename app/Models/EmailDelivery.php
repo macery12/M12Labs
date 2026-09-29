@@ -19,10 +19,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $attempts
  * @property \Carbon\Carbon|null $last_attempt_at
  * @property \Carbon\Carbon|null $sent_at
- * @property string|null $last_message_id
+ * @property string|null $provider_message_id
  * @property int|null $last_status_code
  * @property string|null $last_error
- * @property array|null $tags
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property User|null $user
@@ -63,10 +62,9 @@ class EmailDelivery extends Model
         'attempts',
         'last_attempt_at',
         'sent_at',
-        'last_message_id',
+        'provider_message_id',
         'last_status_code',
         'last_error',
-        'tags',
     ];
 
     protected $casts = [
@@ -75,7 +73,6 @@ class EmailDelivery extends Model
         'last_status_code' => 'integer',
         'last_attempt_at' => 'datetime',
         'sent_at' => 'datetime',
-        'tags' => 'array',
     ];
 
     /**

@@ -59,7 +59,7 @@ class FailedJobRepositoryTest extends TestCase
     }
 
     private function recordFailure(
-        string $job = 'Everest\\Jobs\\Email\\SendEmailJob',
+        string $job = 'Everest\\Jobs\\Email\\SendPanelMailJob',
         string $queue = 'mail',
         string $exception = "RuntimeException: SMTP connection refused\n#0 /var/www/app.php(1)",
         ?string $failedAt = null,
@@ -85,7 +85,7 @@ class FailedJobRepositoryTest extends TestCase
         $page = $this->repository()->paginate();
 
         $this->assertCount(1, $page['items']);
-        $this->assertSame('Everest\\Jobs\\Email\\SendEmailJob', $page['items'][0]['job']);
+        $this->assertSame('Everest\\Jobs\\Email\\SendPanelMailJob', $page['items'][0]['job']);
         $this->assertSame('mail', $page['items'][0]['queue']);
         $this->assertSame(3, $page['items'][0]['attempts']);
     }
@@ -233,7 +233,7 @@ class FailedJobRepositoryTest extends TestCase
 
         $summary = $this->repository()->summary($uuid);
 
-        $this->assertSame('Everest\\Jobs\\Email\\SendEmailJob', $summary['job']);
+        $this->assertSame('Everest\\Jobs\\Email\\SendPanelMailJob', $summary['job']);
         $this->assertSame('mail', $summary['queue']);
         $this->assertArrayNotHasKey('payload', $summary);
         $this->assertArrayNotHasKey('exception', $summary);

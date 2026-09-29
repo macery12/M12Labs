@@ -41,8 +41,8 @@ class FailedJobRedactorTest extends TestCase
     public function testCredentialsAndPersonalDataAreMaskedByDifferentPasses(): void
     {
         $out = $this->redactor()->redact([
-            'displayName' => 'Everest\\Jobs\\Email\\SendEmailJob',
-            'data' => ['commandName' => 'SendEmailJob', 'api_key' => 'sk-live-abcdef', 'to' => 'ops@example.test'],
+            'displayName' => 'Everest\\Jobs\\Email\\SendPanelMailJob',
+            'data' => ['commandName' => 'SendPanelMailJob', 'api_key' => 'sk-live-abcdef', 'to' => 'ops@example.test'],
         ]);
 
         $this->assertSame('[redacted]', $out['data']['api_key'], 'Credentials are the structural pass.');
@@ -51,7 +51,7 @@ class FailedJobRedactorTest extends TestCase
             $out['data']['to'],
             'Personal data is the engine, and it runs with no module configuring it.'
         );
-        $this->assertSame('SendEmailJob', $out['data']['commandName'], 'Masking is not for everything.');
+        $this->assertSame('SendPanelMailJob', $out['data']['commandName'], 'Masking is not for everything.');
     }
 
     /**
@@ -62,7 +62,7 @@ class FailedJobRedactorTest extends TestCase
     public function testTheSerialisedCommandIsReportedRatherThanPrinted(): void
     {
         $out = $this->redactor()->redact([
-            'data' => ['commandName' => 'Everest\\Jobs\\Email\\SendEmailJob', 'command' => str_repeat('O:24:"payload";', 40)],
+            'data' => ['commandName' => 'Everest\\Jobs\\Email\\SendPanelMailJob', 'command' => str_repeat('O:24:"payload";', 40)],
         ]);
 
         $this->assertStringContainsString('not shown', $out['data']['command']);

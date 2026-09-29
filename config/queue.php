@@ -215,7 +215,7 @@ return [
         Everest\Jobs\Schedule\RunTaskJob::class => 'schedules',
         Everest\Jobs\Schedule\RunScheduledSweepJob::class => 'standard',
 
-        Everest\Jobs\Email\SendEmailJob::class => 'mail',
+        Everest\Jobs\Email\SendPanelMailJob::class => 'mail',
 
         Everest\Jobs\InstallModpackJob::class => 'mods',
         Everest\Jobs\DownloadModJob::class => 'mods',
@@ -335,9 +335,9 @@ return [
             'summary' => 'Runs one minute-level maintenance sweep (node availability, plan changes, jGuard activations or order threat scores) inside a worker.',
         ],
 
-        Everest\Jobs\Email\SendEmailJob::class => [
+        Everest\Jobs\Email\SendPanelMailJob::class => [
             'title' => 'Send email',
-            'summary' => 'Delivers one queued message through the configured mail transport.',
+            'summary' => 'Delivers one queued message through the primary email provider, or the backup when the primary fails.',
         ],
 
         Everest\Jobs\InstallModpackJob::class => [

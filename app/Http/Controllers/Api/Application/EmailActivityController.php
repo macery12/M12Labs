@@ -93,6 +93,7 @@ class EmailActivityController extends ApplicationApiController
         foreach ($delivery->deliveryAttempts as $attempt) {
             $retryHistory[] = [
                 'attempt' => $attempt->attempt_number,
+                'provider' => $attempt->provider,
                 'timestamp' => $attempt->started_at->toIso8601String(),
                 'error' => $attempt->error,
                 'status' => $attempt->status,
@@ -133,7 +134,7 @@ class EmailActivityController extends ApplicationApiController
             'subject' => $delivery['subject'],
             'template_key' => $delivery['template_key'],
             'correlation_id' => $delivery['correlation_id'],
-            'message_id' => $delivery['last_message_id'],
+            'message_id' => $delivery['provider_message_id'],
             'provider' => $delivery['provider'],
             'user_id' => $delivery['user_id'],
             'success' => $delivery['status'] === EmailDelivery::STATUS_SENT,
@@ -141,7 +142,7 @@ class EmailActivityController extends ApplicationApiController
             'attempt_count' => $delivery['attempts'],
             'duration_ms' => null,
             'error' => $delivery['last_error'],
-            'tags' => $delivery['tags'],
+            'tags' => null,
             'metadata' => null,
             'created_at' => $delivery['created_at'],
             'updated_at' => $delivery['updated_at'],
