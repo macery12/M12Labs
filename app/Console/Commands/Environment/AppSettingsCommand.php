@@ -59,17 +59,33 @@ class AppSettingsCommand extends Command
         }
 
         $this->output->comment('The application URL MUST begin with https:// or http:// depending on if you are using SSL or not. If you do not include the scheme your emails and other content will link to the wrong location.');
-        $this->variables['APP_URL'] = $this->option('url') ?? $this->ask(
-            'Application URL',
-            config('app.url', 'https://example.com')
+        $url = $this->validated(
+            $this->option('url'),
+            fn () => $this->ask('Application URL', config('app.url', 'https://example.com')),
+            fn ($value) => is_string($value)
+                && preg_match('#^https?://#i', $value) === 1
+                && filter_var($value, FILTER_VALIDATE_URL) !== false,
+            'The application URL must be a full URL starting with http:// or https://, such as https://panel.example.com.'
         );
+        if ($url === null) {
+            return 1;
+        }
+        $this->variables['APP_URL'] = $url;
 
         $this->output->comment('The timezone should match one of PHP\'s supported timezones. If you are unsure, please reference https://php.net/manual/en/timezones.php.');
-        $this->variables['APP_TIMEZONE'] = $this->option('timezone') ?? $this->anticipate(
-            'Application Timezone',
-            \DateTimeZone::listIdentifiers(),
-            config('app.timezone')
+        // Validated because a bad value is not caught later: every artisan
+        // command, this one included, fatals at boot on an unknown timezone,
+        // leaving hand-editing .env as the only way back.
+        $timezone = $this->validated(
+            $this->option('timezone'),
+            fn () => $this->anticipate('Application Timezone', \DateTimeZone::listIdentifiers(), config('app.timezone')),
+            fn ($value) => is_string($value) && in_array($value, \DateTimeZone::listIdentifiers(\DateTimeZone::ALL_WITH_BC), true),
+            'That is not a PHP timezone identifier. Use a region name such as America/Chicago, Europe/London or UTC.'
         );
+        if ($timezone === null) {
+            return 1;
+        }
+        $this->variables['APP_TIMEZONE'] = $timezone;
 
         // The cache is not disposable here: it holds extension lifecycle
         // leases, queue admissions and rate limits, and Horizon only
@@ -106,6 +122,31 @@ class AppSettingsCommand extends Command
         $this->info($this->console->output());
 
         return 0;
+    }
+
+    /**
+     * Take a value from its option, or ask for it until it is valid. An
+     * invalid option (or an invalid answer with no one to re-ask) returns null
+     * so the command can fail before writing anything.
+     *
+     * @param callable(): mixed $ask
+     * @param callable(mixed): bool $valid
+     */
+    private function validated(?string $option, callable $ask, callable $valid, string $error): ?string
+    {
+        $value = $option ?? $ask();
+
+        while (!$valid($value)) {
+            $this->output->error($error);
+
+            if ($option !== null || !$this->input->isInteractive()) {
+                return null;
+            }
+
+            $value = $ask();
+        }
+
+        return $value;
     }
 
     /**

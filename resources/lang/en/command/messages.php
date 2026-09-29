@@ -17,7 +17,9 @@ return [
         'ask_name_last' => 'Last Name',
         'ask_password' => 'Password',
         'ask_password_tip' => 'If you would like to create an account without a password, re-run this command (CTRL+C) and pass the `--no-password` flag.',
-        'ask_password_help' => 'Passwords must be at least 8 characters in length and contain at least one capital letter and number.',
+        'ask_password_help' => 'Passwords must be at least 12 characters long and contain upper and lowercase letters, a number and a symbol.',
+        'password_required' => 'Pass --password, or --no-password to create the account without one and print a link to set it.',
+        'password_link' => 'This account has no password. Open this link within :minutes minutes to set one:',
         '2fa_help_text' => [
             'This command will disable 2-factor authentication for a user\'s account if it is enabled. This should only be used as an account recovery command if the user is locked out of their account.',
             'If this is not what you wanted to do, press CTRL+C to exit this process.',
@@ -26,9 +28,6 @@ return [
     ],
     'schedule' => [
         'output_line' => 'Dispatching job for first task in `:schedule` (:hash).',
-    ],
-    'maintenance' => [
-        'deleting_service_backup' => 'Deleting service backup file :file.',
     ],
     'server' => [
         'rebuild_failed' => 'Rebuild request for ":name" (#:id) on node ":node" failed with error: :message',

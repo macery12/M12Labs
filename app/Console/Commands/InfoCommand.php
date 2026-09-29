@@ -30,13 +30,13 @@ class InfoCommand extends Command
             ['Panel Version', $this->softwareVersionService->getCurrentVersion()],
             ['Latest Version', $this->softwareVersionService->getLatestPanel() ?? 'no published release'],
             ['Up-to-Date', $this->softwareVersionService->isLatestPanel() ? 'Yes' : $this->formatText('No', 'bg=red')],
-            ['Unique Identifier', $this->config->get('everest.service.author')],
+            ['Egg Author', $this->config->get('everest.service.author')],
         ], 'compact');
 
         $this->output->title('Application Configuration');
         $this->table([], [
-            ['Environment', $this->formatText($this->config->get('app.env'), $this->config->get('app.env') === 'production' ?: 'bg=red')],
-            ['Debug Mode', $this->formatText($this->config->get('app.debug') ? 'Yes' : 'No', !$this->config->get('app.debug') ?: 'bg=red')],
+            ['Environment', $this->formatText($this->config->get('app.env'), $this->config->get('app.env') === 'production' ? '' : 'bg=red')],
+            ['Debug Mode', $this->formatText($this->config->get('app.debug') ? 'Yes' : 'No', $this->config->get('app.debug') ? 'bg=red' : '')],
             ['Installation URL', $this->config->get('app.url')],
             ['Installation Directory', base_path()],
             ['Timezone', $this->config->get('app.timezone')],
@@ -44,8 +44,7 @@ class InfoCommand extends Command
             ['Queue Driver', $this->config->get('queue.default')],
             ['Session Driver', $this->config->get('session.driver')],
             ['Filesystem Driver', $this->config->get('filesystems.default')],
-            ['Default Theme', $this->config->get('themes.active')],
-            ['Proxies', $this->config->get('trustedproxies.proxies')],
+            ['Trusted Proxies', implode(', ', (array) $this->config->get('trustedproxy.proxies')) ?: 'none'],
         ], 'compact');
 
         $this->output->title('Database Configuration');
@@ -64,6 +63,8 @@ class InfoCommand extends Command
      */
     private function formatText(string $value, string $opts = ''): string
     {
-        return sprintf('<%s>%s</>', $opts, $value);
+        // An empty style still has to render as plain text, not as a literal
+        // tag; `true ?: 'bg=red'` used to print `<1>production</>`.
+        return $opts === '' ? $value : sprintf('<%s>%s</>', $opts, $value);
     }
 }

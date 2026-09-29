@@ -66,6 +66,41 @@ class AppSettingsCommandTest extends TestCase
         $this->assertSame('true', self::$written['APP_ENVIRONMENT_ONLY']);
     }
 
+    /**
+     * `APP_TIMEZONE=Chicago` makes every artisan command fatal at boot, this one
+     * included, so a bad value has to be refused before it is written.
+     */
+    public function testAnUnknownTimezoneIsRefused(): void
+    {
+        $this->artisan('p:environment:setup', $this->setupOptions(['--timezone' => 'Chicago']))
+            ->expectsOutputToContain('America/Chicago')
+            ->assertFailed();
+
+        $this->assertSame([], self::$written);
+    }
+
+    public function testAUrlWithoutASchemeIsRefused(): void
+    {
+        $this->artisan('p:environment:setup', $this->setupOptions(['--url' => 'panel.example.com']))
+            ->expectsOutputToContain('https://')
+            ->assertFailed();
+
+        $this->assertSame([], self::$written);
+    }
+
+    public function testAnInteractiveTimezoneIsAskedAgain(): void
+    {
+        $options = $this->setupOptions();
+        unset($options['--timezone']);
+
+        $this->artisan('p:environment:setup', $options)
+            ->expectsQuestion('Application Timezone', 'Chicago')
+            ->expectsQuestion('Application Timezone', 'America/Chicago')
+            ->assertSuccessful();
+
+        $this->assertSame('America/Chicago', self::$written['APP_TIMEZONE']);
+    }
+
     public function testANonRedisDriverIsRefused(): void
     {
         $this->artisan('p:environment:setup', $this->setupOptions(['--cache' => 'file']))->assertFailed();

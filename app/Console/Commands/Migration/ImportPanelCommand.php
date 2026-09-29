@@ -341,7 +341,7 @@ class ImportPanelCommand extends Command
         $this->line('  2. Configure this panel\'s settings (mail, billing, branding) — they are not imported.');
         $this->line('  3. Point each node\'s Wings at this panel and restart it. Node tokens were');
         $this->line('     re-encrypted for this panel, so regenerate each node\'s configuration:');
-        $this->line('       php artisan p:node:configuration');
+        $this->line('       php artisan p:node:configuration <node-id-or-uuid>');
         $this->line('  4. Check a few servers in the UI before letting users back in.');
         $this->line('');
         $this->reportBug();

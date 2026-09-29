@@ -34,6 +34,14 @@ class UninstallExtensionCommand extends Command
         $extensionId = trim((string) $this->argument('extensionId'));
         $dropData = (bool) $this->option('drop-data');
 
+        if (!$this->option('force') && !$this->input->isInteractive()) {
+            // confirm() answers "no" with nobody there to ask; reporting that as
+            // a successful "Cancelled." let scripts believe the removal ran.
+            $this->components->error('Refusing to remove an extension unattended without --force.');
+
+            return self::FAILURE;
+        }
+
         if (!$this->option('force') && !$this->confirm(sprintf('Uninstall extension "%s"?', $extensionId))) {
             $this->components->warn('Cancelled.');
 

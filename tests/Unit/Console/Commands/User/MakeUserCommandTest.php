@@ -7,6 +7,7 @@ use Everest\Tests\TestCase;
 use Everest\Models\AdminRole;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Contracts\Auth\PasswordBroker;
 use Everest\Services\Users\UserCreationService;
 
 class MakeUserCommandTest extends TestCase
@@ -89,6 +90,54 @@ class MakeUserCommandTest extends TestCase
             ->assertFailed();
     }
 
+    public function testAWeakPasswordOptionFailsWithoutCreatingAUser(): void
+    {
+        $creation = \Mockery::mock(UserCreationService::class);
+        $creation->shouldNotReceive('handle');
+        $this->app->instance(UserCreationService::class, $creation);
+
+        $this->artisan('p:user:make', array_merge($this->arguments('false'), ['--password' => 'abc']))
+            ->expectsOutputToContain('at least 12 characters')
+            ->assertFailed();
+    }
+
+    public function testAnUnattendedRunWithoutAPasswordChoiceFails(): void
+    {
+        $creation = \Mockery::mock(UserCreationService::class);
+        $creation->shouldNotReceive('handle');
+        $this->app->instance(UserCreationService::class, $creation);
+
+        $arguments = $this->arguments('false');
+        unset($arguments['--password']);
+
+        $this->artisan('p:user:make', $arguments + ['--no-interaction' => true])
+            ->expectsOutputToContain('--no-password')
+            ->assertFailed();
+    }
+
+    public function testNoPasswordPrintsALinkToSetOne(): void
+    {
+        config()->set('app.url', 'https://panel.example.com/');
+
+        $creation = \Mockery::mock(UserCreationService::class);
+        $creation->shouldReceive('handle')
+            ->once()
+            ->with(\Mockery::on(static fn (array $data): bool => $data['password'] === null))
+            ->andReturn($this->user(false));
+        $this->app->instance(UserCreationService::class, $creation);
+
+        $broker = \Mockery::mock(PasswordBroker::class);
+        $broker->shouldReceive('createToken')->once()->andReturn('reset-token');
+        $this->app->instance(PasswordBroker::class, $broker);
+
+        $arguments = $this->arguments('false');
+        unset($arguments['--password']);
+
+        $this->artisan('p:user:make', $arguments + ['--no-password' => true])
+            ->expectsOutputToContain('https://panel.example.com/auth/password/reset/reset-token?email=cli%40example.com')
+            ->assertSuccessful();
+    }
+
     /**
      * @return array<string, string|bool>
      */
@@ -97,7 +146,7 @@ class MakeUserCommandTest extends TestCase
         return [
             '--email' => 'cli@example.com',
             '--username' => 'cli-user',
-            '--password' => 'Password123',
+            '--password' => 'Correct-Horse-42',
             '--admin' => $admin,
         ];
     }

@@ -125,6 +125,14 @@ class RepairExtensionCommand extends Command
             $this->components->warn($package->state_reason);
         }
 
+        if (!$this->option('force') && !$this->input->isInteractive()) {
+            // confirm() answers "no" with nobody there to ask; reporting that as
+            // a successful "Cancelled." let scripts believe the removal ran.
+            $this->components->error('Refusing to remove an extension unattended without --force.');
+
+            return self::FAILURE;
+        }
+
         if (!$this->option('force') && !$this->confirm(sprintf('Remove extension "%s"?', $extensionId))) {
             $this->components->warn('Cancelled.');
 

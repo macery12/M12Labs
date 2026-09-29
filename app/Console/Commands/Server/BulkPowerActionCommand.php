@@ -94,7 +94,10 @@ class BulkPowerActionCommand extends Command
         $instance = Server::query()->whereNull('status');
 
         if (!empty($nodes) && !empty($servers)) {
-            $instance->whereIn('id', $servers)->orWhereIn('node_id', $nodes);
+            // Grouped: a bare orWhereIn escaped the status filter above, so
+            // suspended and installing servers on the listed nodes were sent
+            // the power action too.
+            $instance->where(fn (Builder $query) => $query->whereIn('id', $servers)->orWhereIn('node_id', $nodes));
         } elseif (empty($nodes) && !empty($servers)) {
             $instance->whereIn('id', $servers);
         } elseif (!empty($nodes) && empty($servers)) {
