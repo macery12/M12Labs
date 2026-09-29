@@ -67,7 +67,6 @@ class GenerateInvoiceJob extends Job implements ShouldQueue, ShouldBeUnique
 
         $invoice = null;
         $invoiceId = (string) $this->orderId;
-        $invoiceDownloadUrl = null;
         $invoiceAbsPath = null;
         $invoiceFileName = null;
 
@@ -82,9 +81,6 @@ class GenerateInvoiceJob extends Job implements ShouldQueue, ShouldBeUnique
 
             $invoiceAbsPath = $pdfService->cachedAbsolutePath($invoice);
             $invoiceFileName = $invoice->invoice_number . '.pdf';
-
-            // Email buttons are browser links, so point directly at the PDF.
-            $invoiceDownloadUrl = url("/api/client/billing/invoices/{$invoice->uuid}/serve");
         } catch (\Throwable $e) {
             Log::error("GenerateInvoiceJob: Invoice generation failed for order {$this->orderId}: " . $e->getMessage(), [
                 'exception' => $e,
@@ -115,7 +111,6 @@ class GenerateInvoiceJob extends Job implements ShouldQueue, ShouldBeUnique
                 discountAmount: $this->discountAmount,
                 couponCode: $this->couponCode,
                 billingDays: $this->billingDays,
-                invoiceDownloadUrl: $invoiceDownloadUrl,
                 // PDF is at a local absolute path; the email listener reads and attaches it
                 invoiceFilePath: $invoiceAbsPath,
                 invoiceFileDisk: null, // local absolute path — no disk lookup needed

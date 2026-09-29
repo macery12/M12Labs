@@ -32,7 +32,6 @@ class PaymentReceivedMail extends PanelMail
         public readonly ?string $couponCode,
         public readonly ?int $billingDays,
         public readonly string $billingCycle,
-        public readonly ?string $invoiceDownloadUrl,
     ) {
     }
 
@@ -51,7 +50,6 @@ class PaymentReceivedMail extends PanelMail
             couponCode: $event->couponCode,
             billingDays: $event->billingDays,
             billingCycle: self::billingCycle($event->billingDays),
-            invoiceDownloadUrl: $event->invoiceDownloadUrl,
         );
 
         if ($event->invoiceFilePath) {

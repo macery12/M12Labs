@@ -23,8 +23,7 @@ class PaymentReceived
         public ?float $discountAmount = null,
         public ?string $couponCode = null,
         public ?int $billingDays = null,
-        // Invoice attachment support
-        public ?string $invoiceDownloadUrl = null,
+        // The invoice PDF, attached to the receipt.
         public ?string $invoiceFilePath = null,
         public ?string $invoiceFileDisk = null,
         public ?string $invoiceFileName = null,

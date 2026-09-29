@@ -240,7 +240,6 @@ class InvoiceController extends ApplicationApiController
             $invoice->refresh();
 
             $invoiceAbsPath = $this->pdfService->cachedAbsolutePath($invoice);
-            $downloadUrl = url("/api/client/billing/invoices/{$invoice->uuid}/serve");
 
             event(new PaymentReceived(
                 user: $order->user,
@@ -255,7 +254,6 @@ class InvoiceController extends ApplicationApiController
                 invoiceId: $invoice->invoice_number,
                 correlationId: Str::uuid()->toString(),
                 isRenewal: $order->type === Order::TYPE_REN,
-                invoiceDownloadUrl: $downloadUrl,
                 invoiceFilePath: $invoiceAbsPath,
                 invoiceFileDisk: null,
                 invoiceFileName: $invoice->invoice_number . '.pdf',
