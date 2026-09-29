@@ -5,51 +5,9 @@ import http from '@/lib/http';
 // a frontend-only port). These endpoints return plain JSON, not Fractal
 // collections, so payloads stay snake_case.
 
-export type EmailTransport = 'resend' | 'smtp';
-export type EmailStatus = 'queued' | 'sending' | 'sent' | 'deferred' | 'skipped' | 'failed';
+export type EmailProvider = 'resend' | 'smtp';
+export type EmailStatus = 'queued' | 'sending' | 'sent' | 'skipped' | 'failed';
 export type EmailTestType = 'connection' | 'delivery';
-export type ResendPlanKey = 'free' | 'pro' | 'scale' | 'enterprise';
-
-export interface ResendPlanDefinition {
-    key: ResendPlanKey;
-    name: string;
-    daily_limit: number | null;
-    monthly_limit: number | null;
-    enforce_daily: boolean;
-    enforce_monthly: boolean;
-    allows_custom_limits: boolean;
-    custom_daily_limit?: number | null;
-    custom_monthly_limit?: number | null;
-}
-
-export interface ResendSettings {
-    api_key: boolean; // true if a key is stored
-    from_email: string;
-    from_name: string;
-    reply_to: string;
-    domain?: string;
-}
-
-export interface ResendQuotaUsage {
-    daily_sent: number;
-    monthly_sent: number;
-    daily_limit: number | null;
-    monthly_limit: number | null;
-    daily_remaining: number | null;
-    monthly_remaining: number | null;
-    next_daily_reset: string | null;
-    next_monthly_reset: string | null;
-    source?: 'provider' | 'internal';
-    synced_at?: string | null;
-}
-
-export interface ResendRateLimitMeta {
-    limit: string | null;
-    remaining: string | null;
-    reset: string | null;
-    retry_after: string | null;
-    updated_at?: string | null;
-}
 
 export interface SmtpSettings {
     host: string;
@@ -57,42 +15,46 @@ export interface SmtpSettings {
     username: string;
     password_set: boolean;
     encryption: string;
-    from_email: string;
-    from_name: string;
-    reply_to: string;
+}
+
+// What stops each provider from sending, in words the admin can act on; null
+// when it is ready. `ready` is whether the primary can send at all.
+export interface EmailProviderStatus {
+    ready: boolean;
+    smtp: string | null;
+    resend: string | null;
 }
 
 export interface EmailSettings {
     enabled: boolean;
-    transport: EmailTransport;
-    resend: ResendSettings;
+    primary: EmailProvider;
+    backup: EmailProvider | 'none';
+    // One sender for both providers: failover hands the same message on.
+    from_email: string;
+    from_name: string;
+    reply_to: string;
+    log_retention_days: number;
+    resend: { api_key: boolean }; // true if a key is stored
     smtp: SmtpSettings;
-    resend_plan: ResendPlanDefinition;
-    resend_plans: ResendPlanDefinition[];
-    resend_usage: ResendQuotaUsage;
-    resend_rate_limit: ResendRateLimitMeta | null;
+    status: EmailProviderStatus;
 }
 
 export interface EmailSettingsUpdate {
     enabled?: boolean;
-    transport?: EmailTransport;
-    api_key?: string;
-    clear_api_key?: boolean;
+    primary?: EmailProvider;
+    backup?: EmailProvider | 'none';
     from_email?: string;
     from_name?: string;
     reply_to?: string;
+    log_retention_days?: number;
+    api_key?: string;
+    clear_api_key?: boolean;
     smtp_host?: string;
     smtp_port?: string;
     smtp_username?: string;
     smtp_password?: string;
     clear_smtp_password?: boolean;
     smtp_encryption?: string;
-    smtp_from_email?: string;
-    smtp_from_name?: string;
-    smtp_reply_to?: string;
-    resend_plan?: ResendPlanKey;
-    resend_custom_monthly_limit?: number | null;
-    resend_custom_daily_limit?: number | null;
 }
 
 export interface EmailError {
@@ -105,8 +67,8 @@ export interface EmailResponse {
     success: boolean;
     action?: 'connection_test' | 'send_test';
     message_id?: string;
-    transport?: EmailTransport;
-    provider?: EmailTransport;
+    transport?: EmailProvider;
+    provider?: EmailProvider;
     sent_at?: string;
     tested_at?: string;
     recipient?: string;
@@ -140,7 +102,8 @@ export interface EmailNotificationSetting {
     category: string;
     name: string;
     description: string | null;
-    rate_limit_exempt: boolean;
+    // Password reset and verification: always sent, the toggle can't turn off.
+    locked: boolean;
 }
 
 export interface NotificationSettingsResponse {
@@ -160,6 +123,19 @@ export const updateNotificationSetting = (
             { enabled },
         )
         .then(r => r.data);
+
+// --- Verification rules ----------------------------------------------------
+
+// Which areas a user with an unverified email may open (view) or change
+// (interact) while mail delivery is on. Mirrors EmailVerificationGate.
+export type VerificationArea = 'billing' | 'orders' | 'credentials' | 'tickets';
+export type VerificationRules = Record<VerificationArea, { can_view: boolean; can_interact: boolean }>;
+
+export const getVerificationRules = (): Promise<VerificationRules> =>
+    http.get<VerificationRules>('/api/application/email/verification-rules').then(r => r.data);
+
+export const updateVerificationRules = (rules: VerificationRules): Promise<VerificationRules> =>
+    http.put<VerificationRules>('/api/application/email/verification-rules', rules).then(r => r.data);
 
 // --- Activity log ----------------------------------------------------------
 
@@ -186,27 +162,23 @@ export interface EmailLog {
 
 export interface EmailLogDetail {
     log: EmailLog;
-    sanitized_variables: Record<string, unknown>;
     retry_history: Array<{
         attempt: number;
+        // The provider that took it, or both ("smtp+resend") when a failover
+        // attempt failed on each.
+        provider: string | null;
         timestamp: string;
         status: EmailStatus;
         duration_ms?: number | null;
         error?: string;
-    }>;
-    related_emails: Array<{
-        id: number;
-        to: string;
-        subject: string;
-        template_key: string | null;
-        status: EmailStatus;
-        created_at: string;
     }>;
 }
 
 export interface EmailLogFilters {
     status?: string;
     template_key?: string;
+    /** Every type one extension sends, by extension id. */
+    extension?: string;
     recipient?: string;
     only_failures?: boolean;
     date_from?: string;
@@ -232,50 +204,6 @@ export const getEmailLog = (id: number): Promise<EmailLogDetail> =>
 export const getTemplateKeys = (): Promise<{ template_keys: string[] }> =>
     http.get<{ template_keys: string[] }>('/api/application/email/logs/templates').then(r => r.data);
 
-// --- Deferred queue --------------------------------------------------------
-
-export interface DeferredEmail {
-    id: number;
-    user_id: number;
-    template_key: string;
-    recipient: string;
-    data: Record<string, unknown>;
-    correlation_id: string | null;
-    reason: string;
-    scheduled_at: string;
-    sent_at: string | null;
-    attempts: number;
-    created_at: string;
-    updated_at: string;
-    user?: { id: number; email: string; username: string };
-}
-
-export interface DeferredQueueResponse {
-    deferred: PaginatedResponse<DeferredEmail>;
-    stats: {
-        total_queued: number;
-        due_now: number;
-        next_send_time: string | null;
-    };
-}
-
-export const getDeferredQueue = (filters?: {
-    status?: 'due' | 'pending';
-    per_page?: number;
-    page?: number;
-}): Promise<DeferredQueueResponse> =>
-    http.get<DeferredQueueResponse>('/api/application/email/deferred', { params: filters }).then(r => r.data);
-
-export const sendDeferredNow = (id: number): Promise<{ success: boolean; message: string; error?: string }> =>
-    http
-        .post<{ success: boolean; message: string; error?: string }>(
-            `/api/application/email/deferred/${id}/send-now`,
-        )
-        .then(r => r.data);
-
-export const cancelDeferred = (id: number): Promise<{ success: boolean; message: string }> =>
-    http.delete<{ success: boolean; message: string }>(`/api/application/email/deferred/${id}`).then(r => r.data);
-
 // --- Templates -------------------------------------------------------------
 
 // A single documented variable that a template can interpolate. Rendered in the
@@ -285,6 +213,8 @@ export interface EmailTemplateVariable {
     description: string;
     example: string | number | boolean;
     required: boolean;
+    /** Filled in by the panel rather than the extension (recipient details). */
+    provided?: boolean;
 }
 
 // Summary entry returned by the template index — enough to render a card and
@@ -306,36 +236,73 @@ export interface EmailTemplateSource {
 export const getEmailTemplates = (): Promise<{ templates: EmailTemplateSummary[] }> =>
     http.get<{ templates: EmailTemplateSummary[] }>('/api/application/email/templates').then(r => r.data);
 
-export const getEmailTemplateSource = (key: string): Promise<EmailTemplateSource> =>
-    http.get<EmailTemplateSource>(`/api/application/email/templates/${key}/source`).then(r => r.data);
+// A template's endpoints hang off one path: a built-in template by key, an
+// extension's type by extension id and type. The editor takes either.
+export const emailTemplatePath = (key: string): string => `/api/application/email/templates/${key}`;
 
-export const saveEmailTemplateSource = (
-    key: string,
-    content: string,
-): Promise<{ success: boolean; key: string; is_customized: boolean }> =>
-    http
-        .put<{ success: boolean; key: string; is_customized: boolean }>(
-            `/api/application/email/templates/${key}/source`,
-            { content },
-        )
-        .then(r => r.data);
+export const extensionEmailTemplatePath = (extension: string, type: string): string =>
+    `/api/application/email/extensions/${extension}/${type}`;
 
-export const revertEmailTemplate = (
-    key: string,
-): Promise<{ success: boolean; key: string; is_customized: boolean }> =>
-    http
-        .delete<{ success: boolean; key: string; is_customized: boolean }>(
-            `/api/application/email/templates/${key}/source`,
-        )
-        .then(r => r.data);
+export const getEmailTemplateSource = (path: string): Promise<EmailTemplateSource> =>
+    http.get<EmailTemplateSource>(`${path}/source`).then(r => r.data);
+
+export const saveEmailTemplateSource = (path: string, content: string): Promise<{ key: string; is_customized: boolean }> =>
+    http.put<{ key: string; is_customized: boolean }>(`${path}/source`, { content }).then(r => r.data);
+
+export const revertEmailTemplate = (path: string): Promise<{ key: string; is_customized: boolean }> =>
+    http.delete<{ key: string; is_customized: boolean }>(`${path}/source`).then(r => r.data);
 
 // Render the currently-saved template (custom override if one exists, else the
 // default) to HTML with sample data. The preview reflects saved state — the
 // editor refreshes it after a save, mirroring the V1 flow.
-export const getEmailTemplatePreview = (key: string): Promise<string> =>
+export const getEmailTemplatePreview = (path: string): Promise<string> =>
     http
-        .get<string>(`/api/application/email/templates/${key}/preview`, {
+        .get<string>(`${path}/preview`, {
             responseType: 'text',
             transformResponse: r => r,
         })
+        .then(r => r.data);
+
+// ---- Extension emails -------------------------------------------------------
+
+export interface ExtensionEmailType {
+    type: string;
+    /** Log and switch key: `ext:<extension>:<type>`. */
+    key: string;
+    label_key: string;
+    description_key: string | null;
+    /** As declared; placeholders unfilled. Not editable. */
+    subject: string;
+    variables: EmailTemplateVariable[];
+    enabled: boolean;
+    is_customized: boolean;
+}
+
+export interface ExtensionEmails {
+    id: string;
+    name: string;
+    icon: string;
+    /** Installed, enabled and loadable, so it can send right now. */
+    active: boolean;
+    hourly_limit: number;
+    sent_this_hour: number;
+    types: ExtensionEmailType[];
+}
+
+export interface ExtensionEmailsResponse {
+    extensions: ExtensionEmails[];
+    default_hourly_limit: number;
+}
+
+export const getExtensionEmails = (): Promise<ExtensionEmailsResponse> =>
+    http.get<ExtensionEmailsResponse>('/api/application/email/extensions').then(r => r.data);
+
+export const updateExtensionEmailLimit = (extension: string, hourlyLimit: number): Promise<{ id: string; hourly_limit: number }> =>
+    http
+        .put<{ id: string; hourly_limit: number }>(`/api/application/email/extensions/${extension}`, { hourly_limit: hourlyLimit })
+        .then(r => r.data);
+
+export const toggleExtensionEmail = (extension: string, type: string, enabled: boolean): Promise<{ key: string; enabled: boolean }> =>
+    http
+        .put<{ key: string; enabled: boolean }>(`/api/application/email/extensions/${extension}/${type}`, { enabled })
         .then(r => r.data);

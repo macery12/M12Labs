@@ -2,6 +2,8 @@
 
 namespace Everest\Models;
 
+use Everest\Services\Email\EmailCatalogue;
+
 /**
  * Everest\Models\EmailNotificationSetting.
  *
@@ -11,7 +13,7 @@ namespace Everest\Models;
  * @property string $category
  * @property string $name
  * @property string|null $description
- * @property bool $rate_limit_exempt
+ * @property bool $locked
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  */
@@ -25,20 +27,21 @@ class EmailNotificationSetting extends Model
         'category',
         'name',
         'description',
-        'rate_limit_exempt',
     ];
 
     protected $casts = [
         'enabled' => 'boolean',
-        'rate_limit_exempt' => 'boolean',
     ];
 
+    protected $appends = ['locked'];
+
     /**
-     * Check if a specific email type is enabled.
+     * A locked type sends regardless of its toggle, and the toggle cannot be
+     * turned off (see EmailCatalogue).
      */
-    public static function isEnabled(string $templateKey): bool
+    public function getLockedAttribute(): bool
     {
-        return self::isTemplateEnabled($templateKey);
+        return EmailCatalogue::isLocked($this->template_key);
     }
 
     /**
@@ -48,26 +51,9 @@ class EmailNotificationSetting extends Model
     {
         $setting = static::where('template_key', $templateKey)->first();
 
-        return $setting ? (bool) $setting->enabled : false;
-    }
-
-    /**
-     * Check if a template is exempt from rate limiting.
-     */
-    public static function isRateLimitExempt(string $templateKey): bool
-    {
-        $setting = static::where('template_key', $templateKey)->first();
-
-        return $setting ? $setting->rate_limit_exempt : false;
-    }
-
-    /**
-     * Get all enabled email types by category.
-     */
-    public static function getEnabledByCategory(string $category): \Illuminate\Database\Eloquent\Collection
-    {
-        return static::where('category', $category)
-            ->where('enabled', true)
-            ->get();
+        // Built-in types are seeded, so a missing row is a type nobody set up.
+        // An extension's types get a row only once the operator switches one,
+        // and the install approval already covered sending them.
+        return $setting ? (bool) $setting->enabled : str_starts_with($templateKey, 'ext:');
     }
 }

@@ -5,6 +5,7 @@ namespace Everest\Services\Extensions\Manifest;
 use Everest\Exceptions\DisplayException;
 use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\EmailDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\FrontendSlotDefinition;
 
 /**
@@ -116,6 +117,25 @@ class ExtensionCapabilityFileValidator
                 if (!isset($paths[$expected])) {
                     throw new DisplayException(sprintf('The manifest declares the %s page "%s" but the package does not ship %s.', $surface, $page->slug, $expected));
                 }
+            }
+        }
+
+        // Both directions and no exceptions: a template renders with nothing
+        // beside it, since the loader only reaches the panel's own email
+        // layout and partials. Anything else under emails/ is either a type
+        // the manifest forgot or a file no one would ever render.
+        $declaredEmails = array_map(
+            fn (EmailDefinition $email): string => $backend . $email->templatePath(),
+            $capabilities->emails,
+        );
+        foreach ($declaredEmails as $index => $expected) {
+            if (!isset($paths[$expected])) {
+                throw new DisplayException(sprintf('The manifest declares the email type "%s" but the package does not ship %s.', $capabilities->emails[$index]->type, $expected));
+            }
+        }
+        foreach (array_keys($paths) as $path) {
+            if (str_starts_with((string) $path, $backend . 'emails/') && !in_array($path, $declaredEmails, true)) {
+                throw new DisplayException(sprintf('The package ships %s but does not declare it under capabilities.emails.', $path));
             }
         }
 

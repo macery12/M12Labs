@@ -4,7 +4,7 @@ namespace Everest\Http\ViewComposers;
 
 use Illuminate\View\View;
 use Everest\Models\Setting;
-use Everest\Services\Email\EmailManager;
+use Everest\Services\Email\EmailSettingsReader;
 use Everest\Services\Billing\StoreConfigService;
 use Everest\Services\Email\EmailVerificationGate;
 use Everest\Services\Billing\InvoiceSettingsService;
@@ -99,12 +99,6 @@ class EverestComposer
             ],
             'email' => [
                 'enabled' => $this->emailEnabled(),
-                // Master toggle for surfacing the Email admin module in the panel
-                // (independent of whether mail delivery is actually configured).
-                'module_enabled' => boolval(config('modules.email.enabled', false)),
-                'resend' => [
-                    'enabled' => $this->emailEnabled(),
-                ],
                 'verification_rules' => $this->emailVerificationGate->getRules(),
             ],
             'webhooks' => [
@@ -208,6 +202,6 @@ class EverestComposer
 
     private function emailEnabled(): bool
     {
-        return EmailManager::isDeliveryEnabled();
+        return app(EmailSettingsReader::class)->deliveryEnabled();
     }
 }

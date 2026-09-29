@@ -61,7 +61,7 @@ class QueueHealthControllerTest extends ApplicationApiIntegrationTestCase
             'uuid' => $uuid,
             'connection' => 'database',
             'queue' => $queue,
-            'payload' => json_encode(['uuid' => $uuid, 'displayName' => 'Everest\\Jobs\\Email\\SendEmailJob']),
+            'payload' => json_encode(['uuid' => $uuid, 'displayName' => 'Everest\\Jobs\\Email\\SendPanelMailJob']),
             'failed_at' => now()->toDateTimeString(),
             'exception' => 'RuntimeException: SMTP connection refused',
         ]);

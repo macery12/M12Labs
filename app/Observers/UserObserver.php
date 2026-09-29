@@ -5,7 +5,7 @@ namespace Everest\Observers;
 use Everest\Events;
 use Everest\Models\User;
 use Illuminate\Support\Str;
-use Everest\Services\Email\EmailManager;
+use Everest\Services\Email\EmailSettingsReader;
 use Everest\Services\Auth\EmailVerificationService;
 
 class UserObserver
@@ -57,6 +57,6 @@ class UserObserver
 
     private function emailSendingEnabled(): bool
     {
-        return EmailManager::isDeliveryEnabled();
+        return app(EmailSettingsReader::class)->deliveryEnabled();
     }
 }

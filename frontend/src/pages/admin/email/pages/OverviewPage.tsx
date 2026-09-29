@@ -1,66 +1,25 @@
 import { m } from '@/i18n/messages';
-import { useEffect, useMemo, useState } from 'react';
-import { Server, Plug } from 'lucide-react';
-import { Input } from '@/components/ui/Input';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, AlertTriangle, PowerOff } from 'lucide-react';
 import { Switch } from '@/components/ui/Switch';
+import { Button } from '@/components/ui/Button';
 import { FullPageSpinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/cn';
-import type { EmailTransport } from '@/api/email';
+import type { EmailProvider, EmailSettings } from '@/api/email';
 import { useEmailSettings } from '../useEmailSettings';
-import { SettingsCard, SaveBar, LabeledField, TonePill } from '../parts';
+import { SettingsCard, TonePill } from '../parts';
 
-interface Sender {
-    fromName: string;
-    fromEmail: string;
-    replyTo: string;
-}
+const providerLabel = (p: EmailProvider) => (p === 'smtp' ? m['admin.email.providers.smtp']() : m['admin.email.providers.resend']());
 
-// Overview: the at-a-glance delivery controls — master enable toggle, active
-// transport, and the global sender identity. SMTP/Resend credentials live on
-// their own rail pages.
+// Overview: the one delivery switch, whether mail can actually go out, and a
+// summary of where it goes. Providers and the sender are edited on their page.
 export default function OverviewPage() {
     const { settings, isLoading, save, saving } = useEmailSettings();
-
-    const [transport, setTransport] = useState<EmailTransport>('smtp');
-    const [sender, setSender] = useState<Sender>({ fromName: '', fromEmail: '', replyTo: '' });
+    const navigate = useNavigate();
     const [togglingEnabled, setTogglingEnabled] = useState(false);
 
-    const initial = useMemo<{ transport: EmailTransport; sender: Sender } | null>(() => {
-        if (!settings) return null;
-        const active = settings.transport === 'smtp' ? settings.smtp : settings.resend;
-        return {
-            transport: settings.transport,
-            sender: {
-                fromName: active.from_name || settings.smtp.from_name || settings.resend.from_name || '',
-                fromEmail: active.from_email || settings.smtp.from_email || settings.resend.from_email || '',
-                replyTo: active.reply_to || settings.smtp.reply_to || settings.resend.reply_to || '',
-            },
-        };
-    }, [settings]);
-
-    useEffect(() => {
-        if (initial) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional effect: syncs state to prop/query/filter changes
-            setTransport(initial.transport);
-            setSender(initial.sender);
-        }
-    }, [initial]);
-
-    const dirty = useMemo(() => {
-        if (!initial) return false;
-        return (
-            transport !== initial.transport ||
-            sender.fromName !== initial.sender.fromName ||
-            sender.fromEmail !== initial.sender.fromEmail ||
-            sender.replyTo !== initial.sender.replyTo
-        );
-    }, [initial, transport, sender]);
-
     if (isLoading || !settings) return <FullPageSpinner />;
-
-    const smtpConfigured = Boolean(settings.smtp.host && settings.smtp.port && settings.smtp.from_email);
-    const resendConfigured = Boolean(settings.resend.api_key && settings.resend.from_email);
-    const activeConfigured = transport === 'smtp' ? smtpConfigured : resendConfigured;
 
     const toggleEnabled = async (next: boolean) => {
         setTogglingEnabled(true);
@@ -71,20 +30,12 @@ export default function OverviewPage() {
         }
     };
 
-    const onSave = () =>
-        save({
-            transport,
-            from_email: sender.fromEmail,
-            from_name: sender.fromName,
-            reply_to: sender.replyTo,
-        });
-
-    const onDiscard = () => {
-        if (initial) {
-            setTransport(initial.transport);
-            setSender(initial.sender);
-        }
-    };
+    const primaryProblem = settings.status[settings.primary];
+    const sender = settings.from_email
+        ? settings.from_name
+            ? `${settings.from_name} <${settings.from_email}>`
+            : settings.from_email
+        : null;
 
     return (
         <div className="flex flex-col gap-5">
@@ -105,103 +56,104 @@ export default function OverviewPage() {
                     </div>
                 }
             >
-                <p className="text-xs text-[var(--color-ink-faint)]">{m['admin.email.overview.deliveryHint']()}</p>
+                <StateBanner settings={settings} problem={primaryProblem} />
             </SettingsCard>
 
-            <SettingsCard title={m['ui.labels.activeTransport']()} description={m['admin.email.overview.transportDesc']()}>
-                <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-                    <TransportTile
-                        icon={Server}
-                        label={m['admin.email.overview.smtp']()}
-                        active={transport === 'smtp'}
-                        configured={smtpConfigured}
-                        configuredLabel={m['ui.states.configured']()}
-                        incompleteLabel={m['admin.email.overview.incomplete']()}
-                        onClick={() => setTransport('smtp')}
-                    />
-                    <TransportTile
-                        icon={Plug}
-                        label={m['admin.email.overview.resend']()}
-                        active={transport === 'resend'}
-                        configured={resendConfigured}
-                        configuredLabel={m['ui.states.configured']()}
-                        incompleteLabel={m['admin.email.overview.incomplete']()}
-                        onClick={() => setTransport('resend')}
-                    />
-                </div>
-                {!activeConfigured && (
-                    <p className="mt-3 text-xs text-[var(--color-warning)]">{m['admin.email.overview.activeIncomplete']()}</p>
-                )}
+            <SettingsCard
+                title={m['admin.email.overview.routingTitle']()}
+                description={m['admin.email.overview.routingDesc']()}
+                right={
+                    <Button variant="secondary" size="sm" onClick={() => navigate('/admin/email/providers')}>
+                        {m['admin.email.overview.manage']()}
+                    </Button>
+                }
+            >
+                <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
+                    <Summary label={m['admin.email.providers.rolePrimary']()}>
+                        <span>{providerLabel(settings.primary)}</span>
+                        <span title={primaryProblem ?? undefined}>
+                            <TonePill tone={primaryProblem ? 'warning' : 'success'}>
+                                {primaryProblem ? m['admin.email.providers.incomplete']() : m['admin.email.providers.ready']()}
+                            </TonePill>
+                        </span>
+                    </Summary>
+                    <Summary label={m['admin.email.providers.roleBackup']()}>
+                        {settings.backup === 'none' ? (
+                            <span className="text-[var(--color-ink-muted)]">{m['admin.email.providers.backupNone']()}</span>
+                        ) : (
+                            <>
+                                <span>{providerLabel(settings.backup)}</span>
+                                <span title={settings.status[settings.backup] ?? undefined}>
+                                    <TonePill tone={settings.status[settings.backup] ? 'warning' : 'success'}>
+                                        {settings.status[settings.backup]
+                                            ? m['admin.email.providers.incomplete']()
+                                            : m['admin.email.providers.ready']()}
+                                    </TonePill>
+                                </span>
+                            </>
+                        )}
+                    </Summary>
+                    <Summary label={m['admin.email.overview.sender']()}>
+                        {sender ? (
+                            <span className="truncate" title={sender}>{sender}</span>
+                        ) : (
+                            <span className="text-[var(--color-warning)]">{m['admin.email.overview.senderMissing']()}</span>
+                        )}
+                    </Summary>
+                </dl>
             </SettingsCard>
-
-            <SettingsCard title={m['admin.email.overview.senderTitle']()} description={m['admin.email.overview.senderDesc']()}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <LabeledField label={m['admin.email.overview.fromName']()}>
-                        <Input
-                            value={sender.fromName}
-                            onChange={e => setSender(s => ({ ...s, fromName: e.target.value }))}
-                            placeholder={m['admin.email.overview.fromNamePlaceholder']()}
-                        />
-                    </LabeledField>
-                    <LabeledField label={m['admin.email.overview.fromEmail']()} required>
-                        <Input
-                            type="email"
-                            value={sender.fromEmail}
-                            onChange={e => setSender(s => ({ ...s, fromEmail: e.target.value }))}
-                            placeholder={m['admin.email.overview.fromEmailPlaceholder']()}
-                        />
-                    </LabeledField>
-                    <LabeledField label={m['admin.email.overview.replyTo']()} hint={m['admin.email.overview.replyToHint']()}>
-                        <Input
-                            type="email"
-                            value={sender.replyTo}
-                            onChange={e => setSender(s => ({ ...s, replyTo: e.target.value }))}
-                            placeholder={m['admin.email.overview.replyToPlaceholder']()}
-                        />
-                    </LabeledField>
-                </div>
-            </SettingsCard>
-
-            <SaveBar dirty={dirty} saving={saving} onDiscard={onDiscard} onSave={onSave} />
         </div>
     );
 }
 
-function TransportTile({
-    icon: Icon,
-    label,
-    active,
-    configured,
-    configuredLabel,
-    incompleteLabel,
-    onClick,
-}: {
-    icon: typeof Server;
-    label: string;
-    active: boolean;
-    configured: boolean;
-    configuredLabel: string;
-    incompleteLabel: string;
-    onClick: () => void;
-}) {
+// Off, can't send (and why), or ready. "Can't send" is the one that matters:
+// with the switch on, password resets still depend on it.
+function StateBanner({ settings, problem }: { settings: EmailSettings; problem: string | null }) {
+    const state = !settings.enabled ? 'off' : problem ? 'broken' : 'ready';
+
+    const { Icon, tone, title, body } = {
+        off: {
+            Icon: PowerOff,
+            tone: 'border-[var(--color-border-strong)] bg-[var(--color-surface-2)]/40',
+            title: m['admin.email.overview.offTitle'](),
+            body: m['admin.email.overview.offBody'](),
+        },
+        broken: {
+            Icon: AlertTriangle,
+            tone: 'border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10',
+            title: m['admin.email.overview.brokenTitle'](),
+            body: m['admin.email.overview.brokenBody']({ reason: problem ?? '' }),
+        },
+        ready: {
+            Icon: CheckCircle2,
+            tone: 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10',
+            title: m['admin.email.overview.readyTitle'](),
+            body:
+                settings.backup === 'none'
+                    ? m['admin.email.overview.readyBody']({ primary: providerLabel(settings.primary) })
+                    : m['admin.email.overview.readyBodyBackup']({
+                          primary: providerLabel(settings.primary),
+                          backup: providerLabel(settings.backup),
+                      }),
+        },
+    }[state];
+
     return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={cn(
-                'flex flex-col items-start gap-2 rounded-lg border px-3 py-3 text-left transition-colors',
-                active
-                    ? 'border-[var(--brand)] bg-[var(--brand)]/10'
-                    : 'border-[var(--color-border-strong)] hover:bg-[var(--color-surface-2)]',
-            )}
-        >
-            <span className="flex items-center gap-2 text-sm font-semibold text-[var(--color-ink)]">
-                <Icon className="h-4 w-4 text-[var(--color-ink-muted)]" />
-                {label}
-            </span>
-            <TonePill tone={configured ? 'success' : 'warning'}>
-                {configured ? configuredLabel : incompleteLabel}
-            </TonePill>
-        </button>
+        <div className={cn('flex items-start gap-3 rounded-lg border p-3 text-sm', tone)}>
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-ink-muted)]" />
+            <div className="min-w-0">
+                <p className="font-semibold text-[var(--color-ink)]">{title}</p>
+                <p className="mt-0.5 text-[var(--color-ink-muted)]">{body}</p>
+            </div>
+        </div>
+    );
+}
+
+function Summary({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <div className="flex min-w-0 flex-col gap-1">
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">{label}</dt>
+            <dd className="flex min-w-0 items-center gap-2 text-sm text-[var(--color-ink)]">{children}</dd>
+        </div>
     );
 }

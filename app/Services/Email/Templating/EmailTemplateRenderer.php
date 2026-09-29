@@ -13,6 +13,14 @@ class EmailTemplateRenderer
 {
     public const OVERRIDE_SUFFIX = '.custom';
 
+    /**
+     * Extension email types render as `emails.extensions.<id>.<type>`. The
+     * template itself ships in the package; the name only exists so the
+     * operator's override lands inside the email tree like any other, where
+     * uninstalling the package does not remove it.
+     */
+    public const EXTENSION_PREFIX = 'extensions';
+
     public function __construct(
         private TwigEnvironmentFactory $factory,
         private EmailSettingsReader $settings,
@@ -36,11 +44,60 @@ class EmailTemplateRenderer
             throw new \RuntimeException("Refusing to render email view with an unsafe name: {$view}");
         }
 
-        $override = $this->overrideSource($name);
+        $source = $this->overrideSource($name) ?? $this->extensionSource($name);
 
-        $twig = $this->factory->make($override !== null ? $name : null, $override);
+        $twig = $this->factory->make($source !== null ? $name : null, $source);
 
         return $twig->render($name, $this->context($data));
+    }
+
+    /**
+     * The view name of an extension's email type.
+     *
+     * @throws \RuntimeException when either part is not a name the manifest parser accepts
+     */
+    public static function extensionView(string $extensionId, string $type): string
+    {
+        if (!preg_match('/^[a-z][a-z0-9_]{1,63}$/', $extensionId) || !preg_match('/^[a-z][a-z0-9-]{0,31}$/', $type)) {
+            throw new \RuntimeException("Refusing to name an extension email template {$extensionId}/{$type}.");
+        }
+
+        return sprintf('emails.%s.%s.%s', self::EXTENSION_PREFIX, $extensionId, $type);
+    }
+
+    /**
+     * The template an extension ships for one of its email types, as the
+     * package installed it; null when it is not on disk.
+     */
+    public function packageSource(string $extensionId, string $type): ?string
+    {
+        $name = TwigEnvironmentFactory::templateName(self::extensionView($extensionId, $type));
+
+        return $name === null ? null : $this->extensionSource($name);
+    }
+
+    /**
+     * Source for `extensions/<id>/<type>.twig`, read from the package that
+     * declared it. Rendered as an in-memory template chained in front of the
+     * email tree, so it can extend the panel's layout and include its partials
+     * but reaches nothing else, exactly like an operator override.
+     */
+    private function extensionSource(string $name): ?string
+    {
+        if (!preg_match('~^' . self::EXTENSION_PREFIX . '/([a-z][a-z0-9_]{1,63})/([a-z][a-z0-9-]{0,31})\.twig$~', $name, $match)) {
+            return null;
+        }
+
+        $root = realpath(app_path('Extensions/Packages'));
+        $path = $root === false ? false : realpath(sprintf('%s/%s/emails/%s.twig', $root, $match[1], $match[2]));
+
+        if ($path === false || !str_starts_with($path, $root . DIRECTORY_SEPARATOR . $match[1] . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        $source = file_get_contents($path);
+
+        return $source === false ? null : $source;
     }
 
     /**
@@ -198,9 +255,8 @@ class EmailTemplateRenderer
     }
 
     /**
-     * Reply-to wins when the caller resolved one; otherwise fall back through the
-     * configured transport's reply-to, its from address, and finally mail config. Mirrors
-     * what the Blade footer partial used to do inline.
+     * Reply-to wins when the caller passed one; otherwise the panel's sender
+     * identity (its reply-to, else its From address), and finally mail config.
      */
     private function supportEmail(mixed $replyTo): ?string
     {
@@ -208,11 +264,7 @@ class EmailTemplateRenderer
             return $replyTo;
         }
 
-        $transport = $this->settings->transport();
-
-        $resolved = $this->settings->get("settings::modules:email:{$transport}:reply_to")
-            ?: $this->settings->get("settings::modules:email:{$transport}:from_email")
-            ?: config('mail.from.address');
+        $resolved = $this->settings->replyTo() ?: config('mail.from.address');
 
         return is_string($resolved) && $resolved !== '' ? $resolved : null;
     }

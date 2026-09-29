@@ -9,7 +9,6 @@ import {
     CircleDollarSign,
     LifeBuoy,
     AlertTriangle,
-    Mail,
     ChevronRight,
     CheckCircle2,
     ArrowUp,
@@ -470,20 +469,9 @@ export default function OverviewPage() {
                                             to="/admin/queues"
                                         />
                                     )}
-                                    {data.queues.deferredEmails > 0 && (
-                                        <QueueCard
-                                            icon={Mail}
-                                            count={data.queues.deferredEmails}
-                                            title={m['admin.overview.queue.emails']()}
-                                            detail={m['admin.overview.queue.emailsSub']()}
-                                            tone="brand"
-                                            to="/admin/email"
-                                        />
-                                    )}
                                     {(!ticketsEnabled || data.queues.tickets.pending === 0) &&
                                         (!billingEnabled || data.queues.billingExceptions === 0) &&
-                                        data.workers.criticalWarnings === 0 &&
-                                        data.queues.deferredEmails === 0 && (
+                                        data.workers.criticalWarnings === 0 && (
                                             <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--color-border-strong)] py-10 text-center">
                                                 <CheckCircle2 className="h-5 w-5 text-[var(--color-accent)]" />
                                                 <p className="text-sm text-[var(--color-ink-muted)]">{m['admin.overview.queue.clear']()}</p>

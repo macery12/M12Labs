@@ -2,26 +2,25 @@
 
 namespace Everest\Http\Controllers\Api\Application;
 
-use Everest\Models\User;
+use Everest\Mail\TestMail;
 use Everest\Models\Setting;
 use Everest\Facades\Activity;
-use Everest\Models\EmailQuota;
 use Everest\Models\EmailDelivery;
 use Illuminate\Http\JsonResponse;
-use Everest\Services\Email\EmailResult;
-use Everest\Services\Email\EmailManager;
+use Illuminate\Support\Facades\Mail;
+use Everest\Services\Email\MailFailure;
 use Everest\Services\Email\EmailRedactor;
+use Everest\Services\Email\EmailCatalogue;
+use Everest\Services\Email\DeliveryReceipt;
 use Everest\Models\EmailNotificationSetting;
 use Everest\Services\Email\EmailPolicyService;
+use Illuminate\Validation\ValidationException;
 use Everest\Services\Email\EmailSettingsReader;
 use Everest\Services\Email\EmailVerificationGate;
-use Everest\Exceptions\Service\Email\ResendException;
+use Everest\Services\Email\PanelMailerConfigurator;
 use Everest\Http\Requests\Api\Application\Email\SendTestEmailRequest;
-use Everest\Http\Requests\Api\Application\Email\GetEmailQuotaInfoRequest;
-use Everest\Http\Requests\Api\Application\Email\GetUserEmailQuotaRequest;
 use Everest\Http\Requests\Api\Application\Email\TestEmailConnectionRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateEmailSettingsRequest;
-use Everest\Http\Requests\Api\Application\Email\UpdateUserEmailQuotaRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateVerificationRulesRequest;
 use Everest\Http\Requests\Api\Application\Email\GetEmailNotificationSettingsRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateEmailNotificationSettingRequest;
@@ -35,10 +34,10 @@ class EmailController extends ApplicationApiController
      * EmailController constructor.
      */
     public function __construct(
-        private EmailManager $emailManager,
         private EmailVerificationGate $verificationGate,
         private EmailSettingsReader $settings,
         private EmailPolicyService $policy,
+        private PanelMailerConfigurator $configurator,
     ) {
         parent::__construct();
     }
@@ -48,7 +47,7 @@ class EmailController extends ApplicationApiController
      */
     public function getSettings(GetEmailNotificationSettingsRequest $request): JsonResponse
     {
-        return response()->json($this->settings->adminSettings());
+        return response()->json($this->settingsPayload());
     }
 
     public function getVerificationRules(GetEmailNotificationSettingsRequest $request): JsonResponse
@@ -69,7 +68,7 @@ class EmailController extends ApplicationApiController
     }
 
     /**
-     * Update the email transport settings (SMTP or Resend).
+     * Update the email settings: providers, sender, delivery switch.
      *
      * @throws \Throwable
      */
@@ -104,51 +103,58 @@ class EmailController extends ApplicationApiController
             ->description('Email settings were updated')
             ->log();
 
-        return response()->json($this->settings->adminSettings());
+        return response()->json($this->settingsPayload());
     }
 
     /**
-     * Send a real delivery test email to a specific recipient.
+     * The settings plus what, if anything, stops each provider from sending.
+     */
+    private function settingsPayload(): array
+    {
+        return $this->settings->adminSettings() + ['status' => $this->configurator->status()];
+    }
+
+    /**
+     * Send a real delivery test email to a specific recipient, through the
+     * same primary-then-backup path real mail takes. Sent now, not queued,
+     * so the admin sees the provider's answer.
      */
     public function sendTest(SendTestEmailRequest $request): JsonResponse
     {
         $recipient = $request->input('to');
+        $primary = $this->settings->primary();
 
         if (!$this->policy->isDeliveryEnabled()) {
-            return $this->formatEmailResult(
-                EmailResult::skipped('disabled'),
-                $this->settings->transport(),
-                self::ACTION_SEND_TEST,
-                $recipient
-            );
+            return $this->skipped('disabled', $primary, $recipient);
         }
 
         if ($this->policy->isBlockedRecipient($recipient)) {
-            return $this->formatEmailResult(
-                EmailResult::blocked('blocked_invalid_recipient'),
-                $this->settings->transport(),
-                self::ACTION_SEND_TEST,
-                $recipient
-            );
+            return $this->skipped('blocked_invalid_recipient', $primary, $recipient);
         }
 
         try {
-            $result = $this->emailManager->sendCustom(
-                to: $recipient,
-                subject: 'Email Delivery Test',
-                html: '<h1>Email Delivery Test</h1><p>This is a real delivery test message from the email system. If you received it, the active email transport can deliver mail end-to-end.</p>'
-            );
+            $providers = $this->configurator->configure();
+            $sent = Mail::mailer(PanelMailerConfigurator::MAILER)->to($recipient)->send(new TestMail());
+        } catch (\Throwable $e) {
+            $failure = MailFailure::from($e);
 
             Activity::event('admin:email:test')
                 ->property('to', $recipient)
-                ->property('message_id', $result->messageId)
-                ->description($result->success ? 'Delivery test email sent successfully' : 'Delivery test email failed')
+                ->description('Delivery test email failed')
                 ->log();
 
-            return $this->formatEmailResult($result, EmailManager::getTransport(), self::ACTION_SEND_TEST, $recipient);
-        } catch (ResendException $e) {
-            return $this->formatExceptionError($e, EmailManager::getTransport(), self::ACTION_SEND_TEST, $recipient);
+            return $this->failed($failure, $primary, self::ACTION_SEND_TEST, $recipient);
         }
+
+        $receipt = DeliveryReceipt::from($sent, $providers);
+
+        Activity::event('admin:email:test')
+            ->property('to', $recipient)
+            ->property('message_id', $receipt->messageId)
+            ->description('Delivery test email sent successfully')
+            ->log();
+
+        return $this->sent($receipt->provider, self::ACTION_SEND_TEST, $receipt->messageId, $recipient);
     }
 
     /**
@@ -156,9 +162,7 @@ class EmailController extends ApplicationApiController
      */
     public function testSmtpConnection(TestEmailConnectionRequest $request): JsonResponse
     {
-        $result = $this->emailManager->testTransport('smtp');
-
-        return $this->formatEmailResult($result, 'smtp', self::ACTION_CONNECTION_TEST);
+        return $this->checkConnection('smtp');
     }
 
     /**
@@ -166,9 +170,23 @@ class EmailController extends ApplicationApiController
      */
     public function testResendConnection(TestEmailConnectionRequest $request): JsonResponse
     {
-        $result = $this->emailManager->testTransport('resend');
+        return $this->checkConnection('resend');
+    }
 
-        return $this->formatEmailResult($result, 'resend', self::ACTION_CONNECTION_TEST);
+    /**
+     * Send a check message to the sender's own address through one provider
+     * alone, so each can be tested whichever of them is primary.
+     */
+    private function checkConnection(string $provider): JsonResponse
+    {
+        try {
+            $mailer = $this->configurator->configureProvider($provider);
+            $sent = Mail::mailer($mailer)->to($this->settings->fromEmail())->send(new TestMail(connectionCheck: true));
+        } catch (\Throwable $e) {
+            return $this->failed(MailFailure::from($e), $provider, self::ACTION_CONNECTION_TEST);
+        }
+
+        return $this->sent($provider, self::ACTION_CONNECTION_TEST, DeliveryReceipt::from($sent, [$provider])->messageId);
     }
 
     /**
@@ -176,7 +194,9 @@ class EmailController extends ApplicationApiController
      */
     public function getNotificationSettings(GetEmailNotificationSettingsRequest $request): JsonResponse
     {
-        $settings = EmailNotificationSetting::orderBy('category')
+        // Extension types have their own page, grouped by extension.
+        $settings = EmailNotificationSetting::where('template_key', 'not like', 'ext:%')
+            ->orderBy('category')
             ->orderBy('name')
             ->get()
             ->groupBy('category');
@@ -194,6 +214,10 @@ class EmailController extends ApplicationApiController
         $setting = EmailNotificationSetting::findOrFail($id);
         $enabled = $request->boolean('enabled');
 
+        if (!$enabled && EmailCatalogue::isLocked($setting->template_key)) {
+            throw ValidationException::withMessages(['enabled' => "'{$setting->name}' cannot be turned off: without it people cannot get back into their accounts."]);
+        }
+
         $setting->enabled = $enabled;
         $setting->save();
 
@@ -209,194 +233,76 @@ class EmailController extends ApplicationApiController
         ]);
     }
 
-    /**
-     * Get email quota information.
-     */
-    public function getQuotaInfo(GetEmailQuotaInfoRequest $request): JsonResponse
+    private function sent(string $provider, string $context, ?string $messageId, ?string $recipient = null): JsonResponse
     {
-        // Get aggregate quota stats across all users
-        $totalQuotas = EmailQuota::selectRaw('
-            plan,
-            COUNT(*) as user_count,
-            SUM(monthly_sent) as total_monthly_sent,
-            SUM(daily_sent) as total_daily_sent,
-            SUM(monthly_overage) as total_overage
-        ')
-            ->groupBy('plan')
-            ->get();
-
-        return response()->json([
-            'quotas_by_plan' => $totalQuotas,
-        ]);
-    }
-
-    /**
-     * Get email quota for a specific user.
-     */
-    public function getUserQuota(GetUserEmailQuotaRequest $request, int $userId): JsonResponse
-    {
-        $user = User::findOrFail($userId);
-        $quota = EmailQuota::where('user_id', $userId)->first();
-
-        if (!$quota) {
-            return response()->json([
-                'user' => [
-                    'id' => $user->id,
-                    'email' => $user->email,
-                    'username' => $user->username,
-                ],
-                'quota' => null,
-            ]);
-        }
-
-        $remaining = $quota->getRemainingQuota();
-
-        return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'username' => $user->username,
-            ],
-            'quota' => [
-                'plan' => $quota->plan,
-                'monthly_limit' => $quota->monthly_limit,
-                'daily_limit' => $quota->daily_limit,
-                'monthly_sent' => $quota->monthly_sent,
-                'daily_sent' => $quota->daily_sent,
-                'monthly_overage' => $quota->monthly_overage,
-                'remaining' => $remaining,
-                'month_reset_at' => $quota->month_reset_at,
-                'day_reset_at' => $quota->day_reset_at,
-            ],
-        ]);
-    }
-
-    /**
-     * Update user email quota plan.
-     */
-    public function updateUserQuota(UpdateUserEmailQuotaRequest $request, int $userId): JsonResponse
-    {
-        $plan = $request->input('plan', 'free');
-
-        $quota = EmailQuota::getOrCreateForUser($userId, $plan);
-
-        $planConfig = EmailQuota::PLANS[$plan];
-        $quota->plan = $plan;
-        $quota->monthly_limit = $planConfig['monthly_limit'];
-        $quota->daily_limit = $planConfig['daily_limit'];
-        $quota->save();
-
-        Activity::event('admin:email:quota:update')
-            ->property('user_id', $userId)
-            ->property('plan', $plan)
-            ->description("Updated email quota plan for user {$userId} to {$plan}")
-            ->log();
-
-        return response()->json([
+        $payload = [
             'success' => true,
-            'quota' => $quota,
-        ]);
-    }
-
-    /**
-     * Normalize an EmailResult into a structured JSON response.
-     */
-    private function formatEmailResult(EmailResult $result, string $transport, string $context, ?string $recipient = null): JsonResponse
-    {
-        if ($result->success) {
-            $payload = [
-                'success' => true,
-                'action' => $context,
-                'transport' => $transport,
-                'provider' => $transport,
-                'message_id' => $result->messageId,
-                'recipient' => $recipient,
-                'status' => $result->status ?? EmailDelivery::STATUS_SENT,
-                'reason' => $result->reason,
-            ];
-
-            if ($this->isTestAction($context)) {
-                $payload['tested_at'] = now()->toIso8601String();
-                $payload['test_type'] = $this->getTestType($context);
-            }
-            if ($context === self::ACTION_SEND_TEST) {
-                $payload['sent_at'] = now()->toIso8601String();
-            }
-
-            return response()->json($payload);
-        }
-
-        $status = $result->statusCode ?? ($result->status === 'skipped' ? 422 : 500);
-
-        return response()->json([
-            'success' => false,
             'action' => $context,
-            'transport' => $transport,
-            'provider' => $transport,
+            'transport' => $provider,
+            'provider' => $provider,
+            'message_id' => $messageId,
             'recipient' => $recipient,
-            'status' => $result->status ?? EmailDelivery::STATUS_FAILED,
-            'reason' => $result->reason,
-            'error' => [
-                'code' => $this->deriveErrorCode($transport, $result, $context),
-                'status' => $status,
-                'message' => $result->error ?? $result->reason ?? 'Email action failed',
-            ],
-        ] + ($this->isTestAction($context) ? [
+            'status' => EmailDelivery::STATUS_SENT,
+            'reason' => null,
             'tested_at' => now()->toIso8601String(),
             'test_type' => $this->getTestType($context),
-        ] : []), $status);
+        ];
+
+        if ($context === self::ACTION_SEND_TEST) {
+            $payload['sent_at'] = now()->toIso8601String();
+        }
+
+        return response()->json($payload);
     }
 
-    private function formatExceptionError(
-        \Throwable $e,
-        string $transport,
-        string $context = self::ACTION_SEND_TEST,
-        ?string $recipient = null,
-    ): JsonResponse {
-        report($e);
+    private function skipped(string $reason, string $provider, string $recipient): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'action' => self::ACTION_SEND_TEST,
+            'transport' => $provider,
+            'provider' => $provider,
+            'recipient' => $recipient,
+            'status' => EmailDelivery::STATUS_SKIPPED,
+            'reason' => $reason,
+            'error' => [
+                'code' => 'EMAIL_DISABLED',
+                'status' => 422,
+                'message' => $reason,
+            ],
+            'tested_at' => now()->toIso8601String(),
+            'test_type' => $this->getTestType(self::ACTION_SEND_TEST),
+        ], 422);
+    }
 
-        $message = $context === self::ACTION_CONNECTION_TEST
-            ? 'Unexpected email provider error during the connection check. Review the provider settings or server logs.'
-            : 'Unexpected email provider error during the delivery test. Review the provider settings or server logs.';
+    private function failed(MailFailure $failure, string $provider, string $context, ?string $recipient = null): JsonResponse
+    {
+        $prefix = strtoupper($provider);
+
+        [$code, $status] = match ($failure->kind) {
+            MailFailure::KIND_CONFIG => [$prefix . '_CONFIG_INVALID', 422],
+            MailFailure::KIND_AUTH => [$prefix . '_AUTH_FAILED', 422],
+            MailFailure::KIND_REJECTED => [$prefix . '_' . strtoupper($context) . '_REJECTED', 422],
+            // The provider, not this request, is what failed.
+            default => [$prefix . '_' . strtoupper($context) . '_FAILED', 502],
+        };
 
         return response()->json([
             'success' => false,
             'action' => $context,
-            'transport' => $transport,
-            'provider' => $transport,
+            'transport' => $provider,
+            'provider' => $provider,
             'recipient' => $recipient,
             'status' => EmailDelivery::STATUS_FAILED,
+            'reason' => $failure->kind,
             'error' => [
-                'code' => strtoupper($transport) . '_UNEXPECTED_ERROR',
-                'status' => 500,
-                'message' => $message,
+                'code' => $code,
+                'status' => $status,
+                'message' => $failure->message,
             ],
-        ] + ($this->isTestAction($context) ? [
             'tested_at' => now()->toIso8601String(),
             'test_type' => $this->getTestType($context),
-        ] : []), 500);
-    }
-
-    private function deriveErrorCode(string $transport, EmailResult $result, string $context): string
-    {
-        if ($result->status === 'skipped' || $result->reason === 'disabled') {
-            return 'EMAIL_DISABLED';
-        }
-
-        if ($result->retryable === false) {
-            return strtoupper($transport) . '_CONFIG_INVALID';
-        }
-
-        if ($result->statusCode && $result->statusCode >= 400 && $result->statusCode < 500) {
-            return strtoupper($transport) . '_AUTH_FAILED';
-        }
-
-        return strtoupper($transport) . '_' . strtoupper($context) . '_FAILED';
-    }
-
-    private function isTestAction(string $context): bool
-    {
-        return in_array($context, [self::ACTION_SEND_TEST, self::ACTION_CONNECTION_TEST], true);
+        ], $status);
     }
 
     private function getTestType(string $context): string

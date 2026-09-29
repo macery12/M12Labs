@@ -179,11 +179,9 @@ export interface EverestConfiguration {
     billing: BillingConfig;
     mods: { enabled: boolean; [k: string]: unknown };
     webhooks: { enabled: boolean; [k: string]: unknown };
-    // `enabled` = mail delivery is configured; `module_enabled` = admin has
-    // surfaced the Email admin module (the feature toggle drives the latter).
+    // `enabled` = the panel sends mail (Admin -> Email's delivery switch).
     email: {
         enabled: boolean;
-        module_enabled?: boolean;
         // EmailVerificationGate::getRules(): which areas an unverified user may
         // view or act in while delivery is on (see lib/emailVerification.ts).
         verification_rules?: Record<string, { can_view: boolean; can_interact: boolean }>;

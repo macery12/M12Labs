@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Boxes, Mail, Webhook, Puzzle, LifeBuoy, CreditCard } from 'lucide-react';
+import { Boxes, Webhook, Puzzle, LifeBuoy, CreditCard } from 'lucide-react';
 import type { EverestConfiguration } from '@/lib/globals';
 
 // Single source of truth for the toggleable optional modules surfaced on the
@@ -8,7 +8,6 @@ import type { EverestConfiguration } from '@/lib/globals';
 // renders it on its own (a "disable billing completely" master switch).
 export type FeatureKey =
     | 'mods'
-    | 'email'
     | 'webhooks'
     | 'extensions'
     | 'tickets'
@@ -37,14 +36,6 @@ export const MODULE_FEATURES: FeatureDef[] = [
         descKey: 'admin.features.items.mods.desc',
         settingsPath: '/admin/marketplace/settings',
         read: f => !!f.mods?.enabled,
-    },
-    {
-        key: 'email',
-        icon: Mail,
-        labelKey: 'admin.features.items.email.label',
-        descKey: 'admin.features.items.email.desc',
-        settingsPath: '/admin/email',
-        read: f => !!f.email?.module_enabled,
     },
     {
         key: 'webhooks',
@@ -86,7 +77,7 @@ export const FEATURE_KEYS: FeatureKey[] = ALL_FEATURES.map(f => f.key);
 
 // The modules the panel ships disabled; everything else is on by default.
 // Used by the "Restore defaults" preset (mirrors the config() shipping values).
-const DISABLED_BY_DEFAULT: FeatureKey[] = ['mods', 'email', 'webhooks', 'billing'];
+const DISABLED_BY_DEFAULT: FeatureKey[] = ['mods', 'webhooks', 'billing'];
 
 export const PRESETS: Record<'bareMinimum' | 'everything' | 'defaults', FeatureFlags> = {
     bareMinimum: Object.fromEntries(FEATURE_KEYS.map(k => [k, false])) as FeatureFlags,
@@ -106,7 +97,6 @@ export function applyFeatureFlags(everest: EverestConfiguration, flags: FeatureF
     return {
         ...everest,
         mods: { ...everest.mods, enabled: flags.mods },
-        email: { ...everest.email, module_enabled: flags.email },
         webhooks: { ...everest.webhooks, enabled: flags.webhooks },
         extensions: { ...everest.extensions, enabled: flags.extensions },
         tickets: { ...everest.tickets, enabled: flags.tickets },

@@ -4,6 +4,7 @@ namespace Everest\Services\Extensions\Manifest;
 
 use Everest\Services\Extensions\Manifest\Definitions\HookDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\PageDefinition;
+use Everest\Services\Extensions\Manifest\Definitions\EmailDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\QueueDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\SecretDefinition;
 use Everest\Services\Extensions\Manifest\Definitions\StreamDefinition;
@@ -38,6 +39,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
      * @param array<int, StreamDefinition> $streams
      * @param array<int, FrontendSlotDefinition> $slots
      * @param array<int, PackageFlagDefinition> $flags
+     * @param array<int, EmailDefinition> $emails
      */
     public function __construct(
         public bool $clientRoutes = false,
@@ -60,7 +62,20 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         public array $flags = [],
         /** The admin sidebar entry the package's admin pages fold under. */
         public ?NavEntryDefinition $adminNav = null,
+        public array $emails = [],
     ) {
+    }
+
+    /** One declared email type, or null when undeclared. */
+    public function email(string $type): ?EmailDefinition
+    {
+        foreach ($this->emails as $email) {
+            if ($email->type === $type) {
+                return $email;
+            }
+        }
+
+        return null;
     }
 
     /** The declared limits for one stream kind, or null when undeclared. */
@@ -197,6 +212,9 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
         if ($this->adminNav !== null) {
             $projection['nav'] = ['admin' => $this->adminNav->jsonSerialize()];
         }
+        if ($this->emails !== []) {
+            $projection['emails'] = array_map(fn (EmailDefinition $e): array => $e->jsonSerialize(), $this->emails);
+        }
 
         return $projection;
     }
@@ -225,6 +243,7 @@ final readonly class ExtensionCapabilitySet implements \JsonSerializable
             'streams' => count($this->streams),
             'slots' => count($this->slots),
             'flags' => count($this->flags),
+            'emails' => count($this->emails),
         ];
     }
 }

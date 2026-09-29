@@ -148,7 +148,7 @@ class FailedJobRepository
             'exception' => $this->redactor->redactText(
                 Str::limit((string) $row->exception, self::MAX_EXCEPTION_CHARS, "\n… trace truncated")
             ),
-            // Masked, never raw: a serialised SendEmailJob carries the message
+            // Masked, never raw: a serialised SendPanelMailJob carries the message
             // body and an invoice job carries billing details.
             'payload' => $this->redactor->redact(is_array($payload) ? $payload : []),
         ];

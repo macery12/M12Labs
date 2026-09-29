@@ -3,7 +3,7 @@
 namespace Everest\Http\Middleware;
 
 use Illuminate\Http\Request;
-use Everest\Services\Email\EmailManager;
+use Everest\Services\Email\EmailSettingsReader;
 use Everest\Services\Email\EmailVerificationGate;
 
 class EnsureEmailIsVerified
@@ -32,6 +32,6 @@ class EnsureEmailIsVerified
 
     private function emailSendingEnabled(): bool
     {
-        return EmailManager::isDeliveryEnabled();
+        return app(EmailSettingsReader::class)->deliveryEnabled();
     }
 }

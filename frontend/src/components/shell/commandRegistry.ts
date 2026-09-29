@@ -108,7 +108,6 @@ export const COMMAND_ACTIONS: CommandAction[] = [
         group: 'open',
         keywords: 'mail message layout',
         permission: 'email.read',
-        condition: f => !!f.email.module_enabled,
     },
     {
         id: 'emailTesting',
@@ -118,7 +117,6 @@ export const COMMAND_ACTIONS: CommandAction[] = [
         group: 'open',
         keywords: 'mail smtp check deliverability',
         permission: 'email.read',
-        condition: f => !!f.email.module_enabled,
     },
     {
         id: 'webhookEvents',

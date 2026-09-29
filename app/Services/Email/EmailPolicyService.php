@@ -36,9 +36,4 @@ class EmailPolicyService
 
         return in_array($domain, $testDomains, true);
     }
-
-    public function validateTemplateData(string $templateKey, array $data): array
-    {
-        return EmailTypeRegistry::validateVariables($templateKey, $data);
-    }
 }

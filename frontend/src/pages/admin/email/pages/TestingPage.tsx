@@ -7,13 +7,16 @@ import { Spinner, FullPageSpinner } from '@/components/ui/Spinner';
 import { useFlashes } from '@/state/flashes';
 import { useSession } from '@/state/session';
 import { firstError } from '@/lib/apiError';
-import { sendTestEmail, type EmailResponse } from '@/api/email';
+import { sendTestEmail, type EmailProvider, type EmailResponse } from '@/api/email';
 import { useEmailSettings } from '../useEmailSettings';
 import { SettingsCard, LabeledField } from '../parts';
-import { TestResultBanner } from './TestResultBanner';
+import { TestResultBanner, resultFromError } from './TestResultBanner';
 
-// Testing: send a real delivery test through the active transport so admins can
-// verify end-to-end delivery and inbox placement.
+const providerLabel = (p: EmailProvider) => (p === 'smtp' ? m['admin.email.providers.smtp']() : m['admin.email.providers.resend']());
+
+// Testing: send a real delivery test through the primary provider (and the
+// backup, if the primary fails) so admins can verify end-to-end delivery and
+// inbox placement.
 export default function TestingPage() {
     const { settings, isLoading } = useEmailSettings();
     const push = useFlashes(s => s.push);
@@ -34,7 +37,11 @@ export default function TestingPage() {
         setSending(true);
         sendTestEmail(recipient.trim())
             .then(setResult)
-            .catch(err => push({ type: 'error', message: firstError(err) ?? m['admin.email.test.failed']() }))
+            .catch(err => {
+                const failed = resultFromError(err);
+                if (failed) setResult(failed);
+                else push({ type: 'error', message: firstError(err) ?? m['admin.email.test.failed']() });
+            })
             .finally(() => setSending(false));
     };
 
@@ -49,7 +56,14 @@ export default function TestingPage() {
         <div className="flex flex-col gap-5">
             <SettingsCard
                 title={m['admin.email.testing.title']()}
-                description={m['admin.email.testing.desc']({ transport: settings.transport === 'smtp' ? m['admin.email.overview.smtp']() : m['admin.email.overview.resend']() })}
+                description={
+                    settings.backup === 'none'
+                        ? m['admin.email.testing.descPrimary']({ primary: providerLabel(settings.primary) })
+                        : m['admin.email.testing.descBackup']({
+                              primary: providerLabel(settings.primary),
+                              backup: providerLabel(settings.backup),
+                          })
+                }
             >
                 <LabeledField label={m['ui.labels.recipient']()}>
                     <div className="flex flex-col gap-3 sm:flex-row">

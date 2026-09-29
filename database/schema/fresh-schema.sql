@@ -332,31 +332,6 @@ CREATE TABLE `databases` (
   CONSTRAINT `databases_server_id_foreign` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `deferred_emails`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `deferred_emails` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` bigint(20) unsigned NOT NULL,
-  `template_key` varchar(191) NOT NULL,
-  `recipient` varchar(191) NOT NULL,
-  `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
-  `correlation_id` varchar(191) DEFAULT NULL,
-  `reason` varchar(191) NOT NULL,
-  `scheduled_at` timestamp NOT NULL,
-  `sent_at` timestamp NULL DEFAULT NULL,
-  `attempts` int(11) NOT NULL DEFAULT 0,
-  `claim_token` char(36) DEFAULT NULL,
-  `claimed_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `deferred_emails_user_id_scheduled_at_index` (`user_id`,`scheduled_at`),
-  KEY `deferred_emails_scheduled_at_index` (`scheduled_at`),
-  KEY `deferred_emails_claim_index` (`sent_at`,`scheduled_at`,`claimed_at`),
-  KEY `deferred_emails_claim_token_index` (`claim_token`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `download_queue`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -473,24 +448,19 @@ DROP TABLE IF EXISTS `email_deliveries`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `email_deliveries` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` bigint(20) unsigned DEFAULT NULL,
   `correlation_id` char(36) DEFAULT NULL,
   `template_key` varchar(191) DEFAULT NULL,
   `recipient` varchar(191) NOT NULL,
-  `recipient_email` varchar(191) DEFAULT NULL,
   `user_id` int(10) unsigned DEFAULT NULL,
   `subject` varchar(191) NOT NULL,
   `status` varchar(191) NOT NULL DEFAULT 'queued',
   `provider` varchar(191) DEFAULT 'resend',
   `provider_message_id` varchar(191) DEFAULT NULL,
-  `metadata` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`metadata`)),
   `attempts` int(10) unsigned NOT NULL DEFAULT 0,
   `last_attempt_at` timestamp NULL DEFAULT NULL,
   `sent_at` timestamp NULL DEFAULT NULL,
-  `last_message_id` varchar(191) DEFAULT NULL,
   `last_status_code` int(10) unsigned DEFAULT NULL,
   `last_error` text DEFAULT NULL,
-  `tags` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tags`)),
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -498,9 +468,7 @@ CREATE TABLE `email_deliveries` (
   KEY `email_deliveries_user_id_created_at_index` (`user_id`,`created_at`),
   KEY `email_deliveries_template_key_created_at_index` (`template_key`,`created_at`),
   KEY `email_deliveries_status_created_at_index` (`status`,`created_at`),
-  KEY `email_deliveries_tenant_id_index` (`tenant_id`),
   KEY `email_deliveries_recipient_index` (`recipient`),
-  KEY `email_deliveries_recipient_email_index` (`recipient_email`),
   CONSTRAINT `email_deliveries_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -513,14 +481,9 @@ CREATE TABLE `email_delivery_attempts` (
   `attempt_number` int(10) unsigned NOT NULL,
   `provider` varchar(191) DEFAULT NULL,
   `status` varchar(191) NOT NULL,
-  `response_code` int(10) unsigned DEFAULT NULL,
   `status_code` int(10) unsigned DEFAULT NULL,
   `provider_message_id` varchar(191) DEFAULT NULL,
-  `error_message` text DEFAULT NULL,
   `error` text DEFAULT NULL,
-  `raw_response` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`raw_response`)),
-  `response_payload` text DEFAULT NULL,
-  `request_payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`request_payload`)),
   `started_at` timestamp NULL DEFAULT NULL,
   `finished_at` timestamp NULL DEFAULT NULL,
   `duration_ms` int(10) unsigned DEFAULT NULL,
@@ -539,48 +502,16 @@ DROP TABLE IF EXISTS `email_notification_settings`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `email_notification_settings` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` bigint(20) unsigned DEFAULT NULL,
   `template_key` varchar(191) NOT NULL,
   `enabled` tinyint(1) NOT NULL DEFAULT 1,
   `category` varchar(191) NOT NULL DEFAULT 'general',
   `name` varchar(191) NOT NULL,
   `description` text DEFAULT NULL,
-  `rate_limit_exempt` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email_notification_settings_template_key_unique` (`template_key`),
-  KEY `email_notification_settings_category_enabled_index` (`category`,`enabled`),
-  KEY `email_notification_settings_tenant_id_index` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `email_quotas`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `email_quotas` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` bigint(20) unsigned DEFAULT NULL,
-  `user_id` bigint(20) unsigned NOT NULL,
-  `plan` varchar(191) NOT NULL DEFAULT 'free',
-  `monthly_limit` int(11) NOT NULL DEFAULT 3000,
-  `daily_limit` int(11) DEFAULT 100,
-  `monthly_sent` int(11) NOT NULL DEFAULT 0,
-  `daily_sent` int(11) NOT NULL DEFAULT 0,
-  `day_sent_count` int(11) NOT NULL DEFAULT 0,
-  `month_sent_count` int(11) NOT NULL DEFAULT 0,
-  `monthly_overage` int(11) NOT NULL DEFAULT 0,
-  `overage_count` int(11) NOT NULL DEFAULT 0,
-  `month_reset_at` date NOT NULL DEFAULT '2026-09-28',
-  `day_reset_at` date NOT NULL DEFAULT '2026-09-28',
-  `period_month` varchar(7) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `email_quotas_user_id_unique` (`user_id`),
-  KEY `email_quotas_tenant_id_index` (`tenant_id`),
-  KEY `email_quotas_month_reset_at_index` (`month_reset_at`),
-  KEY `email_quotas_day_reset_at_index` (`day_reset_at`),
-  KEY `email_quotas_period_month_index` (`period_month`)
+  KEY `email_notification_settings_category_enabled_index` (`category`,`enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `extension_configs`;
@@ -1062,7 +993,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(191) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=60 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mount_node`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1363,20 +1294,6 @@ CREATE TABLE `recovery_tokens` (
   PRIMARY KEY (`id`),
   KEY `recovery_tokens_user_id_foreign` (`user_id`),
   CONSTRAINT `recovery_tokens_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `resend_quotas`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `resend_quotas` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `daily_sent` int(10) unsigned NOT NULL DEFAULT 0,
-  `monthly_sent` int(10) unsigned NOT NULL DEFAULT 0,
-  `day_reset_at` date DEFAULT NULL,
-  `month_reset_at` date DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `schedules`;

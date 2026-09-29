@@ -94,7 +94,7 @@ export const QUICK_TABS: QuickTab[] = [
             { to: '/admin/marketplace', name: 'Marketplace', icon: Boxes, permission: 'mods.read', condition: f => f.mods.enabled },
             { to: '/admin/webhooks', name: 'Webhooks', icon: Webhook, permission: 'webhooks.read', condition: f => f.webhooks.enabled },
             { to: '/admin/extensions', name: 'Extensions', icon: Puzzle, permission: 'extensions.read', condition: f => f.extensions.enabled },
-            { to: '/admin/email', name: 'Email', icon: Mail, permission: 'email.read', condition: f => !!f.email.module_enabled },
+            { to: '/admin/email', name: 'Email', icon: Mail, permission: 'email.read' },
         ],
     },
     {

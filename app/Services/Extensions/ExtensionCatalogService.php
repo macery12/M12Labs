@@ -619,6 +619,7 @@ class ExtensionCatalogService
             'streams' => (int) ($summary['streams'] ?? 0),
             'slots' => (int) ($summary['slots'] ?? 0),
             'flags' => (int) ($summary['flags'] ?? 0),
+            'emails' => (int) ($summary['emails'] ?? 0),
         ];
     }
 

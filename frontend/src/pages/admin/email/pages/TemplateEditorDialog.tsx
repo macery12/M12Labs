@@ -26,6 +26,7 @@ import {
     getEmailTemplatePreview,
     saveEmailTemplateSource,
     revertEmailTemplate,
+    emailTemplatePath,
     type EmailTemplateSummary,
 } from '@/api/email';
 import { TEMPLATES_KEY } from './TemplatesPage';
@@ -42,12 +43,19 @@ export function TemplateEditorDialog({
     template,
     onClose,
     initialView = 'split',
+    endpoint,
+    listKey = TEMPLATES_KEY,
 }: {
     template: EmailTemplateSummary;
     onClose: () => void;
     /** "preview" opens straight on the rendered email (the card's Preview action). */
     initialView?: ViewMode;
+    /** API path of the template; a built-in template's by default. */
+    endpoint?: string;
+    /** The list query to refresh when the customized badge changes. */
+    listKey?: readonly unknown[];
 }) {
+    const path = endpoint ?? emailTemplatePath(template.key);
     const qc = useQueryClient();
     const push = useFlashes(s => s.push);
     const taRef = useRef<HTMLTextAreaElement>(null);
@@ -63,14 +71,14 @@ export function TemplateEditorDialog({
     const dirty = content !== savedContent;
 
     const sourceQ = useQuery({
-        queryKey: ['admin', 'email', 'template-source', template.key],
-        queryFn: () => getEmailTemplateSource(template.key),
+        queryKey: ['admin', 'email', 'template-source', path],
+        queryFn: () => getEmailTemplateSource(path),
         gcTime: 0,
     });
 
     const previewQ = useQuery({
-        queryKey: ['admin', 'email', 'template-preview', template.key],
-        queryFn: () => getEmailTemplatePreview(template.key),
+        queryKey: ['admin', 'email', 'template-preview', path],
+        queryFn: () => getEmailTemplatePreview(path),
         gcTime: 0,
     });
 
@@ -85,11 +93,11 @@ export function TemplateEditorDialog({
     }, [sourceQ.data]);
 
     const saveMut = useMutation({
-        mutationFn: () => saveEmailTemplateSource(template.key, content),
+        mutationFn: () => saveEmailTemplateSource(path, content),
         onSuccess: res => {
             setSavedContent(content);
             setIsCustomized(res.is_customized);
-            qc.invalidateQueries({ queryKey: TEMPLATES_KEY });
+            qc.invalidateQueries({ queryKey: listKey });
             previewQ.refetch(); // reflect the saved changes
             push({ type: 'success', message: m['admin.email.templates.editor.saved']() });
         },
@@ -98,11 +106,11 @@ export function TemplateEditorDialog({
     });
 
     const revertMut = useMutation({
-        mutationFn: () => revertEmailTemplate(template.key),
+        mutationFn: () => revertEmailTemplate(path),
         onSuccess: res => {
             setConfirmRevert(false);
             setIsCustomized(res.is_customized);
-            qc.invalidateQueries({ queryKey: TEMPLATES_KEY });
+            qc.invalidateQueries({ queryKey: listKey });
             sourceQ.refetch(); // reload the (now default) source into the editor
             previewQ.refetch();
             push({ type: 'success', message: m['admin.email.templates.editor.reverted']() });

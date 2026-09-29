@@ -10,7 +10,7 @@ use Everest\Services\Privacy\RedactionMap;
  * Makes a failed job safe to show on the admin page.
  *
  * A failure carries its secrets in two places, and both are handled here. The
- * payload is the obvious one -- a serialised SendEmailJob carries the message
+ * payload is the obvious one -- a serialised SendPanelMailJob carries the message
  * body, an invoice job carries billing details. The exception is the less
  * obvious one and, on this framework version, the more dangerous: Laravel
  * interpolates a query's bindings straight into a QueryException message, so a

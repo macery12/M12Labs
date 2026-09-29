@@ -1,4 +1,5 @@
 import { m, td } from '@/i18n/messages';
+import { isAxiosError } from 'axios';
 import { cn } from '@/lib/cn';
 import type { EmailResponse } from '@/api/email';
 import { getStatusPresentation, type EmailTone } from '../status';
@@ -32,6 +33,19 @@ export function TestResultBanner({ result }: { result: EmailResponse }) {
             {code && <p className="mt-0.5 text-xs text-[var(--color-ink-faint)]">{m['admin.email.test.code']({ code })}</p>}
         </div>
     );
+}
+
+/**
+ * A failed test comes back as a 422 or 502 carrying the same result shape, so
+ * the banner can show the provider's own reason. Anything else (a network
+ * error, a 403) returns null and is left to the caller's toast.
+ */
+export function resultFromError(err: unknown): EmailResponse | null {
+    const data: unknown = isAxiosError(err) ? err.response?.data : null;
+
+    return data && typeof data === 'object' && 'success' in data && data.success === false
+        ? (data as EmailResponse)
+        : null;
 }
 
 const wash: Record<EmailTone, string> = {

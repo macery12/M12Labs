@@ -22,7 +22,7 @@ const DESTINATIONS: {
     { to: '/admin/billing', permission: 'billing.read', condition: flags => flags.billing.enabled },
     { to: '/admin/tickets', permission: 'tickets.read', condition: flags => flags.tickets.enabled },
     { to: '/admin/marketplace', permission: 'mods.read', condition: flags => flags.mods.enabled },
-    { to: '/admin/email', permission: 'email.read', condition: flags => Boolean(flags.email.module_enabled) },
+    { to: '/admin/email', permission: 'email.read' },
     { to: '/admin/webhooks', permission: 'webhooks.read', condition: flags => flags.webhooks.enabled },
     { to: '/admin/extensions', permission: 'extensions.read', condition: flags => flags.extensions.enabled },
     { to: '/admin/theme', permission: 'theme.read' },

@@ -2,6 +2,9 @@
 
 namespace Everest\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\MassPrunable;
+use Everest\Services\Email\EmailSettingsReader;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,10 +22,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $attempts
  * @property \Carbon\Carbon|null $last_attempt_at
  * @property \Carbon\Carbon|null $sent_at
- * @property string|null $last_message_id
+ * @property string|null $provider_message_id
  * @property int|null $last_status_code
  * @property string|null $last_error
- * @property array|null $tags
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property User|null $user
@@ -30,10 +32,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class EmailDelivery extends Model
 {
+    use MassPrunable;
+
     public const STATUS_QUEUED = 'queued';
     public const STATUS_SENDING = 'sending';
     public const STATUS_SENT = 'sent';
-    public const STATUS_DEFERRED = 'deferred';
     public const STATUS_SKIPPED = 'skipped';
     public const STATUS_FAILED = 'failed';
 
@@ -43,7 +46,6 @@ class EmailDelivery extends Model
             self::STATUS_QUEUED,
             self::STATUS_SENDING,
             self::STATUS_SENT,
-            self::STATUS_DEFERRED,
             self::STATUS_SKIPPED,
             self::STATUS_FAILED,
         ];
@@ -65,10 +67,9 @@ class EmailDelivery extends Model
         'attempts',
         'last_attempt_at',
         'sent_at',
-        'last_message_id',
+        'provider_message_id',
         'last_status_code',
         'last_error',
-        'tags',
     ];
 
     protected $casts = [
@@ -77,8 +78,17 @@ class EmailDelivery extends Model
         'last_status_code' => 'integer',
         'last_attempt_at' => 'datetime',
         'sent_at' => 'datetime',
-        'tags' => 'array',
     ];
+
+    /**
+     * The log used to keep every row forever. Rows past the retention set in
+     * Admin -> Email go daily; their attempts go with them through the
+     * foreign key's cascade.
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->where('created_at', '<', now()->subDays(app(EmailSettingsReader::class)->logRetentionDays()));
+    }
 
     /**
      * Get the user associated with this email delivery.
@@ -175,6 +185,6 @@ class EmailDelivery extends Model
      */
     public function isPending(): bool
     {
-        return in_array($this->status, [self::STATUS_QUEUED, self::STATUS_SENDING, self::STATUS_DEFERRED], true);
+        return in_array($this->status, [self::STATUS_QUEUED, self::STATUS_SENDING], true);
     }
 }

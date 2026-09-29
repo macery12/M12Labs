@@ -47,6 +47,7 @@ class ExtensionSignatureService
         'permissions.admin',
         'privileged',
         'streams',
+        'emails',
         'slots',
     ];
 
@@ -318,6 +319,11 @@ class ExtensionSignatureService
         // A held worker for up to an hour, from a package nobody vouched for.
         if ($capabilities->streams !== []) {
             $held[] = 'streams';
+        }
+        // Mail to the operator's users from the operator's address, written
+        // by a package nobody vouched for.
+        if ($capabilities->emails !== []) {
+            $held[] = 'emails';
         }
         // Global layout code runs outside a route the user explicitly chose,
         // so it is at least as executable as a declared page.

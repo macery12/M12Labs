@@ -6,7 +6,9 @@ use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Everest\Services\Email\Templating\EmailTemplateRenderer;
+use Everest\Services\Email\Templating\EmailTemplateOverrides;
 use Everest\Services\Email\Templating\TwigEnvironmentFactory;
+use Everest\Services\Email\Templating\EmailTemplateStorageException;
 use Everest\Http\Requests\Api\Application\Email\RevertEmailTemplateRequest;
 use Everest\Http\Requests\Api\Application\Email\GetEmailTemplateKeysRequest;
 use Everest\Http\Requests\Api\Application\Email\PreviewEmailTemplateRequest;
@@ -14,7 +16,7 @@ use Everest\Http\Requests\Api\Application\Email\UpdateEmailTemplateSourceRequest
 
 class EmailTemplateController extends ApplicationApiController
 {
-    public function __construct(private EmailTemplateRenderer $renderer)
+    public function __construct(private EmailTemplateRenderer $renderer, private EmailTemplateOverrides $overrides)
     {
         parent::__construct();
     }
@@ -153,17 +155,6 @@ class EmailTemplateController extends ApplicationApiController
                 ['name' => 'unsuspendedAt', 'description' => 'Date/time the server was unsuspended',  'example' => 'April 13, 2026 3:30 PM',  'required' => false],
             ],
         ],
-        'server.expiring_soon' => [
-            'label'    => 'Server Expiring Soon',
-            'category' => 'Server',
-            'view'     => 'emails.server.expiring-soon',
-            'variables' => [
-                ['name' => 'userName',      'description' => "Recipient's display name",       'example' => 'Jane Smith',                  'required' => true],
-                ['name' => 'serverName',    'description' => 'Name of the expiring server',    'example' => 'Survival-Minecraft',          'required' => true],
-                ['name' => 'expiresAt',     'description' => 'Expiration date/time',           'example' => 'April 16, 2026 12:00 PM',    'required' => false],
-                ['name' => 'daysRemaining', 'description' => 'Days remaining before expiry',   'example' => '3',                          'required' => false],
-            ],
-        ],
         'billing.payment_received' => [
             'label'    => 'Payment Received',
             'category' => 'Billing',
@@ -212,15 +203,6 @@ class EmailTemplateController extends ApplicationApiController
                 ['name' => 'currency',       'description' => 'Currency code',                    'example' => 'USD',                          'required' => false],
                 ['name' => 'billingDays',    'description' => 'Number of days in billing cycle',  'example' => '30',                           'required' => false],
                 ['name' => 'billingCycle',   'description' => 'Billing cycle label',              'example' => 'Monthly',                      'required' => false],
-            ],
-        ],
-        'admin.broadcast' => [
-            'label'    => 'Admin Broadcast',
-            'category' => 'Admin',
-            'view'     => 'emails.admin-broadcast',
-            'variables' => [
-                ['name' => 'adminName', 'description' => 'Name of the admin sending the message', 'example' => 'Admin',                       'required' => false],
-                ['name' => 'message',   'description' => 'Broadcast message body',                'example' => 'Scheduled maintenance tonight.', 'required' => true],
             ],
         ],
     ];
@@ -293,12 +275,6 @@ class EmailTemplateController extends ApplicationApiController
             'serverName'    => 'Survival-Minecraft',
             'unsuspendedAt' => 'April 13, 2026 3:30 PM',
         ],
-        'server.expiring_soon' => [
-            'userName'     => 'Jane Smith',
-            'serverName'   => 'Survival-Minecraft',
-            'expiresAt'    => 'April 16, 2026 12:00 PM',
-            'daysRemaining' => 3,
-        ],
         'billing.payment_received' => [
             'userName'        => 'Jane Smith',
             'amount'          => '9.99',
@@ -334,10 +310,6 @@ class EmailTemplateController extends ApplicationApiController
             'billingDays'   => 30,
             'billingCycle'  => 'Monthly',
         ],
-        'admin.broadcast' => [
-            'adminName' => 'Admin',
-            'message'   => "We will be performing scheduled maintenance on April 15, 2026 from 2:00 AM to 4:00 AM UTC.\n\nDuring this window, servers may experience brief interruptions. No data will be lost.\n\nThank you for your patience.",
-        ],
     ];
 
     /**
@@ -347,13 +319,12 @@ class EmailTemplateController extends ApplicationApiController
     {
         $templates = [];
         foreach (self::TEMPLATES as $key => $meta) {
-            $customPath = $this->customViewPath($meta['view']);
             $templates[] = [
                 'key'           => $key,
                 'label'         => $meta['label'],
                 'category'      => $meta['category'],
                 'variables'     => $meta['variables'],
-                'is_customized' => file_exists($customPath),
+                'is_customized' => $this->overrides->exists($meta['view']),
             ];
         }
 
@@ -401,12 +372,12 @@ class EmailTemplateController extends ApplicationApiController
             abort(404, 'Template not found.');
         }
 
-        $customPath = $this->customViewPath($meta['view']);
+        $custom = $this->overrides->read($meta['view']);
 
-        if (file_exists($customPath)) {
+        if ($custom !== null) {
             return response()->json([
                 'key'           => $key,
-                'content'       => file_get_contents($customPath),
+                'content'       => $custom,
                 'is_customized' => true,
             ]);
         }
@@ -442,25 +413,6 @@ class EmailTemplateController extends ApplicationApiController
             abort(404, 'Template file not found on disk.');
         }
 
-        $customPath = $this->customViewPath($meta['view']);
-        $customDir  = dirname($customPath);
-
-        if (!is_dir($customDir)) {
-            $parentPerms = fileperms(dirname($customDir));
-            $dirPerms    = ($parentPerms !== false) ? ($parentPerms & 0777) : 0755;
-            if (!mkdir($customDir, $dirPerms, true)) {
-                abort(500, 'Failed to create directory for custom template.');
-            }
-        }
-
-        if (!is_writable($customDir)) {
-            abort(403, 'Custom template directory is not writable. Check server file permissions.');
-        }
-
-        if (file_exists($customPath) && !is_writable($customPath)) {
-            abort(403, 'Custom template file is not writable. Check server file permissions.');
-        }
-
         $content = $request->input('content');
 
         // Compile the candidate before it goes anywhere near disk. A template that does not
@@ -481,8 +433,10 @@ class EmailTemplateController extends ApplicationApiController
             ], 422);
         }
 
-        if (file_put_contents($customPath, $content, LOCK_EX) === false) {
-            abort(500, 'Failed to write custom template file.');
+        try {
+            $this->overrides->save($meta['view'], $content);
+        } catch (EmailTemplateStorageException $e) {
+            abort($e->getCode(), $e->getMessage());
         }
 
         // No cache invalidation needed: Twig's ArrayLoader keys the compiled template on
@@ -491,7 +445,7 @@ class EmailTemplateController extends ApplicationApiController
         Log::info('Email template custom override saved by admin.', [
             'key'      => $key,
             'admin_id' => $request->user()?->id,
-            'file'     => basename($customPath),
+            'file'     => basename($this->overrides->path($meta['view'])),
         ]);
 
         return response()->json([
@@ -512,13 +466,13 @@ class EmailTemplateController extends ApplicationApiController
             abort(404, 'Template not found.');
         }
 
-        $customPath = $this->customViewPath($meta['view']);
+        try {
+            $reverted = $this->overrides->revert($meta['view']);
+        } catch (EmailTemplateStorageException $e) {
+            abort($e->getCode(), $e->getMessage());
+        }
 
-        if (file_exists($customPath)) {
-            if (!unlink($customPath)) {
-                abort(500, 'Failed to remove custom template file.');
-            }
-
+        if ($reverted) {
             Log::info('Email template reverted to default by admin.', [
                 'key'      => $key,
                 'admin_id' => $request->user()?->id,
@@ -544,16 +498,5 @@ class EmailTemplateController extends ApplicationApiController
         }
 
         return resource_path(TwigEnvironmentFactory::TEMPLATE_ROOT) . '/' . $name;
-    }
-
-    /**
-     * Derive the custom override path from a view name.
-     * The custom file is stored next to the original with a ".custom" suffix, e.g.
-     * "account-created.twig.custom". The renderer's loader only resolves ".twig", so an
-     * override is never picked up implicitly and cannot be clobbered by a deploy.
-     */
-    private function customViewPath(string $viewName): string
-    {
-        return $this->viewPath($viewName) . EmailTemplateRenderer::OVERRIDE_SUFFIX;
     }
 }

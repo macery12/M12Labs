@@ -116,7 +116,7 @@ export const adminRoutes: RouteDef[] = [
     route('features', { name: 'Features', icon: ToggleRight, category: 'configuration', permission: 'settings.read', element: FeaturesSection }),
     route('theme', { name: 'Theme', icon: Palette, category: 'configuration', permission: 'theme.read', element: ThemeSection }),
     route('navigation', { name: 'Navigation', icon: PanelLeft, category: 'configuration', permission: 'settings.read', element: NavigationSection }),
-    route('email/*', { name: 'Email', icon: Mail, category: 'configuration', permission: 'email.read', condition: f => !!f.email.module_enabled, element: EmailSection }),
+    route('email/*', { name: 'Email', icon: Mail, category: 'configuration', permission: 'email.read', element: EmailSection }),
     route('webhooks/*', { name: 'Webhooks', icon: Webhook, category: 'configuration', permission: 'webhooks.read', condition: f => f.webhooks.enabled, element: WebhooksSection }),
     route('nests/*', { name: 'Nests', icon: Egg, category: 'configuration', permission: 'nests.read', element: NestsSection }),
     route('databases/*', { name: 'Databases', icon: Database, category: 'configuration', permission: 'databases.read', element: DatabasesSection }),

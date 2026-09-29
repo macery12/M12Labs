@@ -3,94 +3,77 @@
 namespace Everest\Tests\Unit\Services\Email;
 
 use Everest\Tests\TestCase;
-use Everest\Services\Email\ResendPlanResolver;
-use Everest\Services\Email\ResendQuotaService;
-use Everest\Services\Email\EmailSettingsReader;
 
 class EmailSettingsReaderTest extends TestCase
 {
-    public function testItNormalizesDeliveryEnabledAndTransportValues(): void
+    public function testDeliveryEnabledAcceptsTheStoredSpellingsOfTrue(): void
     {
-        $reader = \Mockery::mock(EmailSettingsReader::class)->makePartial();
-        $reader->shouldReceive('get')->with('settings::modules:email:resend:enabled', false)->andReturn(false);
-        $reader->shouldReceive('get')->with('settings::modules:email:enabled', false)->andReturn('true');
-        $reader->shouldReceive('get')->with('settings::modules:email:transport', null)->andReturn('resend');
+        foreach (['true', '1', 'on', true] as $value) {
+            $this->assertTrue((new FakeEmailSettingsReader(['enabled' => $value]))->deliveryEnabled());
+        }
 
-        $this->assertTrue($reader->deliveryEnabled());
-        $this->assertSame('resend', $reader->transport());
+        $this->assertFalse((new FakeEmailSettingsReader(['enabled' => 'false']))->deliveryEnabled());
+        $this->assertFalse((new FakeEmailSettingsReader([]))->deliveryEnabled());
     }
 
-    public function testItBuildsAdminSettingsPayload(): void
+    public function testPrimaryDefaultsToSmtpAndIgnoresUnknownProviders(): void
     {
-        $plan = [
-            'key' => 'free',
-            'name' => 'Free',
-            'daily_limit' => 100,
-            'monthly_limit' => 3000,
-            'enforce_daily' => true,
-            'enforce_monthly' => true,
-            'allows_custom_limits' => false,
-            'custom_daily_limit' => null,
-            'custom_monthly_limit' => null,
-        ];
+        $this->assertSame('smtp', (new FakeEmailSettingsReader([]))->primary());
+        $this->assertSame('resend', (new FakeEmailSettingsReader(['primary' => 'Resend']))->primary());
+        $this->assertSame('smtp', (new FakeEmailSettingsReader(['primary' => 'mailgun']))->primary());
+    }
 
-        $planResolver = \Mockery::mock(ResendPlanResolver::class);
-        $planResolver->shouldReceive('all')->andReturn([$plan]);
-        $planResolver->shouldReceive('activePlan')->andReturn($plan);
-        app()->instance(ResendPlanResolver::class, $planResolver);
+    /**
+     * A backup equal to the primary would only retry the same failure.
+     */
+    public function testBackupIsNullWhenNoneOrTheSameAsThePrimary(): void
+    {
+        $this->assertNull((new FakeEmailSettingsReader([]))->backup());
+        $this->assertNull((new FakeEmailSettingsReader(['backup' => 'none']))->backup());
+        $this->assertNull((new FakeEmailSettingsReader(['primary' => 'smtp', 'backup' => 'smtp']))->backup());
+        $this->assertSame('resend', (new FakeEmailSettingsReader(['primary' => 'smtp', 'backup' => 'resend']))->backup());
+    }
 
-        $quotaService = \Mockery::mock(ResendQuotaService::class);
-        $quotaService->shouldReceive('usage')->andReturn([
-            'plan' => $plan,
-            'usage' => [
-                'daily_sent' => 0,
-                'monthly_sent' => 0,
-                'daily_limit' => $plan['daily_limit'],
-                'monthly_limit' => $plan['monthly_limit'],
-                'daily_remaining' => $plan['daily_limit'],
-                'monthly_remaining' => $plan['monthly_limit'],
-                'next_daily_reset' => null,
-                'next_monthly_reset' => null,
-                'source' => 'provider',
-                'synced_at' => null,
-            ],
-            'rate_limit' => [
-                'limit' => '5',
-                'remaining' => '3',
-                'reset' => '15',
-                'retry_after' => '2',
-                'updated_at' => null,
-            ],
-        ]);
-        app()->instance(ResendQuotaService::class, $quotaService);
+    public function testReplyToFallsBackToTheFromAddress(): void
+    {
+        $this->assertSame('panel@m12labs.test-suite.net', (new FakeEmailSettingsReader(['from_email' => 'panel@m12labs.test-suite.net']))->replyTo());
+        $this->assertSame('help@m12labs.test-suite.net', (new FakeEmailSettingsReader([
+            'from_email' => 'panel@m12labs.test-suite.net',
+            'reply_to' => 'help@m12labs.test-suite.net',
+        ]))->replyTo());
+    }
 
-        $reader = \Mockery::mock(EmailSettingsReader::class)->makePartial();
-        $reader->shouldReceive('transport')->andReturn('smtp');
-        $reader->shouldReceive('deliveryEnabled')->andReturn(true);
-        $reader->shouldReceive('get')->with('settings::modules:email:resend:api_key', '')->andReturn('secret');
-        $reader->shouldReceive('get')->with('settings::modules:email:resend:from_email', '')->andReturn('noreply@example.com');
-        $reader->shouldReceive('get')->with('settings::modules:email:resend:from_name', '')->andReturn('App');
-        $reader->shouldReceive('get')->with('settings::modules:email:resend:reply_to', '')->andReturn('help@example.com');
-        $reader->shouldReceive('get')->with('settings::modules:email:smtp:host', '')->andReturn('smtp.example.com');
-        $reader->shouldReceive('get')->with('settings::modules:email:smtp:port', '')->andReturn('587');
-        $reader->shouldReceive('get')->with('settings::modules:email:smtp:username', '')->andReturn('mailer');
-        $reader->shouldReceive('get')->with('settings::modules:email:smtp:password', '')->andReturn('secret');
-        $reader->shouldReceive('get')->with('settings::modules:email:smtp:encryption', '')->andReturn('tls');
-        $reader->shouldReceive('get')->with('settings::modules:email:smtp:from_email', '')->andReturn('smtp@example.com');
-        $reader->shouldReceive('get')->with('settings::modules:email:smtp:from_name', '')->andReturn('SMTP');
-        $reader->shouldReceive('get')->with('settings::modules:email:smtp:reply_to', '')->andReturn('reply@example.com');
+    public function testLogRetentionDefaultsToThirtyDays(): void
+    {
+        $this->assertSame(30, (new FakeEmailSettingsReader([]))->logRetentionDays());
+        $this->assertSame(30, (new FakeEmailSettingsReader(['log_retention_days' => '0']))->logRetentionDays());
+        $this->assertSame(7, (new FakeEmailSettingsReader(['log_retention_days' => '7']))->logRetentionDays());
+    }
 
-        $settings = $reader->adminSettings();
+    public function testTheAdminPayloadCarriesOneSenderAndNoSecrets(): void
+    {
+        $settings = (new FakeEmailSettingsReader([
+            'enabled' => 'true',
+            'primary' => 'resend',
+            'backup' => 'smtp',
+            'from_email' => 'panel@m12labs.test-suite.net',
+            'from_name' => 'Panel',
+            'resend:api_key' => 're_secret',
+            'smtp:host' => 'smtp.m12labs.test-suite.net',
+            'smtp:password' => 'hunter2',
+        ]))->adminSettings();
 
         $this->assertTrue($settings['enabled']);
-        $this->assertSame('smtp', $settings['transport']);
-        $this->assertTrue($settings['enabled']);
+        $this->assertSame('resend', $settings['primary']);
+        $this->assertSame('smtp', $settings['backup']);
+        $this->assertSame('panel@m12labs.test-suite.net', $settings['from_email']);
+        $this->assertSame('', $settings['reply_to'], 'What was entered, not the From fallback.');
+        $this->assertArrayNotHasKey('transport', $settings);
+        $this->assertArrayNotHasKey('from_email', $settings['smtp']);
         $this->assertTrue($settings['resend']['api_key']);
         $this->assertTrue($settings['smtp']['password_set']);
-        $this->assertSame('noreply@example.com', $settings['resend']['from_email']);
-        $this->assertSame($plan['key'], $settings['resend_plan']['key']);
-        $this->assertSame($plan['daily_limit'], $settings['resend_usage']['daily_limit']);
-        $this->assertSame('provider', $settings['resend_usage']['source']);
-        $this->assertSame('5', $settings['resend_rate_limit']['limit']);
+        $this->assertStringNotContainsString('re_secret', json_encode($settings));
+        $this->assertStringNotContainsString('hunter2', json_encode($settings));
+        $this->assertArrayNotHasKey('resend_plan', $settings);
     }
 }

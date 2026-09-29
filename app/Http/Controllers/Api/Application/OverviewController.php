@@ -8,7 +8,6 @@ use Everest\Models\Server;
 use Everest\Models\Ticket;
 use Illuminate\Support\Arr;
 use Everest\Models\ActivityLog;
-use Everest\Models\DeferredEmail;
 use Illuminate\Http\JsonResponse;
 use Everest\Models\Billing\BillingException;
 use Everest\Services\Queue\QueueHealthService;
@@ -153,8 +152,7 @@ class OverviewController extends ApplicationApiController
     }
 
     /**
-     * Work waiting on an admin: open tickets, recent billing exceptions, and the
-     * deferred-email backlog.
+     * Work waiting on an admin: open tickets and recent billing exceptions.
      */
     private function queues(): array
     {
@@ -171,7 +169,6 @@ class OverviewController extends ApplicationApiController
             'billingExceptions' => BillingException::query()
                 ->where('created_at', '>=', now()->subDays(7))
                 ->count(),
-            'deferredEmails' => DeferredEmail::query()->whereNull('sent_at')->count(),
         ];
     }
 

@@ -47,7 +47,7 @@ final class EmailSandboxPolicy implements SecurityPolicyInterface
     /**
      * Presentation only. `raw` is deliberately excluded -- it would let an operator inject
      * unescaped HTML into an email body, and nothing shipped needs it. `nl2br` covers the
-     * one place that did (admin broadcast), and it escapes before converting newlines.
+     * usual reason for wanting it (multi-line text), and it escapes before converting newlines.
      */
     public const ALLOWED_FILTERS = [
         'abs',

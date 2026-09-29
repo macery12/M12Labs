@@ -2,7 +2,6 @@
 
 namespace Everest\Models;
 
-use Everest\Services\Email\EmailRedactor;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -11,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $delivery_id
  * @property int $attempt_number
+ * @property string|null $provider
  * @property \Carbon\Carbon|null $started_at
  * @property \Carbon\Carbon|null $finished_at
  * @property int|null $duration_ms
@@ -19,11 +19,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $provider_message_id
  * @property int|null $status_code
  * @property string|null $error
- * @property array|null $request_payload
- * @property string|null $response_payload
  * @property string|null $exception_class
  * @property string|null $stacktrace
  * @property \Carbon\Carbon $created_at
+ * @property EmailDelivery $delivery
  */
 class EmailDeliveryAttempt extends Model
 {
@@ -40,6 +39,7 @@ class EmailDeliveryAttempt extends Model
     protected $fillable = [
         'delivery_id',
         'attempt_number',
+        'provider',
         'started_at',
         'finished_at',
         'duration_ms',
@@ -48,8 +48,6 @@ class EmailDeliveryAttempt extends Model
         'provider_message_id',
         'status_code',
         'error',
-        'request_payload',
-        'response_payload',
         'exception_class',
         'stacktrace',
     ];
@@ -63,7 +61,6 @@ class EmailDeliveryAttempt extends Model
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
         'created_at' => 'datetime',
-        'request_payload' => 'array',
     ];
 
     /**
@@ -72,26 +69,6 @@ class EmailDeliveryAttempt extends Model
     public function delivery(): BelongsTo
     {
         return $this->belongsTo(EmailDelivery::class, 'delivery_id');
-    }
-
-    /**
-     * Get sanitized request payload (redact sensitive data).
-     */
-    public function getSanitizedRequestPayload(): ?array
-    {
-        if (!$this->request_payload) {
-            return null;
-        }
-
-        return $this->sanitizePayload($this->request_payload);
-    }
-
-    /**
-     * Sanitize payload by redacting sensitive keys.
-     */
-    private function sanitizePayload(array $payload): array
-    {
-        return EmailRedactor::redactSensitivePayload($payload, ['api_key', 'token', 'password', 'secret', 'authorization']);
     }
 
     /**
