@@ -11,7 +11,6 @@ namespace Everest\Models;
  * @property string $category
  * @property string $name
  * @property string|null $description
- * @property bool $rate_limit_exempt
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  */
@@ -25,12 +24,10 @@ class EmailNotificationSetting extends Model
         'category',
         'name',
         'description',
-        'rate_limit_exempt',
     ];
 
     protected $casts = [
         'enabled' => 'boolean',
-        'rate_limit_exempt' => 'boolean',
     ];
 
     /**
@@ -49,16 +46,6 @@ class EmailNotificationSetting extends Model
         $setting = static::where('template_key', $templateKey)->first();
 
         return $setting ? (bool) $setting->enabled : false;
-    }
-
-    /**
-     * Check if a template is exempt from rate limiting.
-     */
-    public static function isRateLimitExempt(string $templateKey): bool
-    {
-        $setting = static::where('template_key', $templateKey)->first();
-
-        return $setting ? $setting->rate_limit_exempt : false;
     }
 
     /**

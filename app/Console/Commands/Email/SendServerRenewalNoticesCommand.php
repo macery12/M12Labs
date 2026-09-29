@@ -200,7 +200,6 @@ class SendServerRenewalNoticesCommand extends Command
                     EmailDelivery::STATUS_QUEUED,
                     EmailDelivery::STATUS_SENDING,
                     EmailDelivery::STATUS_SENT,
-                    EmailDelivery::STATUS_DEFERRED,
                 ])
                 ->pluck('correlation_id')
                 ->all();

@@ -39,8 +39,10 @@ class ResendService
                     error: $errorFromResponse ?? 'Response missing message ID',
                     statusCode: $statusCode,
                     reason: $reason,
-                    // 429 quota / rate limit should not be retried automatically here
-                    retryable: $statusCode !== 429,
+                    // A 429 (Resend's rate or plan limit) goes back to the job's
+                    // backoff rather than being parked; the panel keeps no queue
+                    // of its own for held-back mail.
+                    retryable: true,
                     meta: $meta
                 );
             }

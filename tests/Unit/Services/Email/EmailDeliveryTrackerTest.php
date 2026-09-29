@@ -143,44 +143,6 @@ class EmailDeliveryTrackerTest extends TestCase
         $this->assertEquals(500, $delivery->last_status_code);
     }
 
-    public function testMarkDeferredUpdatesStatus(): void
-    {
-        $delivery = $this->tracker->startDelivery(
-            correlationId: 'test-' . uniqid(),
-            recipient: 'test@example.com',
-            subject: 'Test',
-            templateKey: 'test.email'
-        );
-
-        $nextAvailable = now()->addHour();
-        $this->tracker->markDeferred($delivery, 'daily_limit', $nextAvailable);
-
-        $delivery->refresh();
-        $this->assertEquals('deferred', $delivery->status);
-        $this->assertStringContainsString('daily_limit', $delivery->last_error);
-    }
-
-    public function testMarkQueuedUpdatesStatus(): void
-    {
-        $delivery = $this->tracker->startDelivery(
-            correlationId: 'test-' . uniqid(),
-            recipient: 'test@example.com',
-            subject: 'Test',
-            templateKey: 'test.email'
-        );
-
-        $delivery->update([
-            'status' => 'deferred',
-            'last_error' => 'Rate limit exceeded',
-        ]);
-
-        $this->tracker->markQueued($delivery);
-
-        $delivery->refresh();
-        $this->assertEquals('queued', $delivery->status);
-        $this->assertNull($delivery->last_error);
-    }
-
     public function testMarkSkippedUpdatesStatus(): void
     {
         $delivery = $this->tracker->startDelivery(

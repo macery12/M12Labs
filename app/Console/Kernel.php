@@ -13,7 +13,6 @@ use Everest\Console\Commands\Billing\ExpireInvoicesCommand;
 use Everest\Console\Commands\Billing\ExpirePdfCacheCommand;
 use Everest\Console\Commands\Queue\ReconcileHorizonCommand;
 use Everest\Console\Commands\Schedule\ProcessRunnableCommand;
-use Everest\Console\Commands\Email\ProcessDeferredEmailsCommand;
 use Everest\Console\Commands\Auth\ProcessJGuardActivationsCommand;
 use Everest\Console\Commands\Billing\DeleteScheduledServersCommand;
 use Everest\Console\Commands\Billing\SuspendBillableServersCommand;
@@ -94,11 +93,6 @@ class Kernel extends ConsoleKernel
             $schedule->command(ExpirePdfCacheCommand::class)->hourly();        // Evict local 24-h PDF cache
             $schedule->command(ExpireInvoicesCommand::class)->dailyAt('02:00'); // Auto-cleanup data snapshots (if enabled)
         }
-
-        // Process deferred emails every 5 minutes. Overlap protection matters
-        // here: without it, a slow run still holding its rows was joined by the
-        // next tick and both dispatched the same emails.
-        $schedule->command(ProcessDeferredEmailsCommand::class)->everyFiveMinutes()->withoutOverlapping();
 
         // Process jGuard delayed activations every minute (queued; see above).
         $this->sweep($schedule, ProcessJGuardActivationsCommand::class)->everyMinute();

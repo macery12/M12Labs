@@ -255,20 +255,10 @@ Route::middleware([AdminSubject::class])->group(function () {
         Route::get('/notifications', [Application\EmailController::class, 'getNotificationSettings']);
         Route::put('/notifications/{id}', [Application\EmailController::class, 'updateNotificationSetting']);
 
-        // Email quota management
-        Route::get('/quotas', [Application\EmailController::class, 'getQuotaInfo']);
-        Route::get('/quotas/user/{userId}', [Application\EmailController::class, 'getUserQuota']);
-        Route::put('/quotas/user/{userId}', [Application\EmailController::class, 'updateUserQuota']);
-
         // Email activity logs
         Route::get('/logs', [Application\EmailActivityController::class, 'index']);
         Route::get('/logs/templates', [Application\EmailActivityController::class, 'getTemplateKeys']);
         Route::get('/logs/{id}', [Application\EmailActivityController::class, 'show']);
-
-        // Deferred email queue
-        Route::get('/deferred', [Application\EmailActivityController::class, 'getDeferredQueue']);
-        Route::post('/deferred/{id}/send-now', [Application\EmailActivityController::class, 'sendDeferredNow']);
-        Route::delete('/deferred/{id}', [Application\EmailActivityController::class, 'cancelDeferred']);
 
         // Email template viewer/editor
         Route::get('/templates', [Application\EmailTemplateController::class, 'index']);

@@ -55,43 +55,6 @@ class EmailDeliveryTracker
     }
 
     /**
-     * Mark a delivery as deferred (rate-limited).
-     */
-    public function markDeferred(
-        EmailDelivery $delivery,
-        string $reason,
-        \Carbon\Carbon $nextAvailableTime,
-    ): void {
-        Log::info('EmailDeliveryTracker: Marking as deferred', [
-            'delivery_id' => $delivery->id,
-            'correlation_id' => $delivery->correlation_id,
-            'reason' => $reason,
-            'next_available_at' => $nextAvailableTime,
-        ]);
-
-        $delivery->update([
-            'status' => EmailDelivery::STATUS_DEFERRED,
-            'last_error' => "Rate limit exceeded: {$reason}. Scheduled for: {$nextAvailableTime->toDateTimeString()}",
-        ]);
-    }
-
-    /**
-     * Mark a deferred delivery as queued again after handing it back to the job queue.
-     */
-    public function markQueued(EmailDelivery $delivery): void
-    {
-        Log::info('EmailDeliveryTracker: Marking as queued', [
-            'delivery_id' => $delivery->id,
-            'correlation_id' => $delivery->correlation_id,
-        ]);
-
-        $delivery->update([
-            'status' => EmailDelivery::STATUS_QUEUED,
-            'last_error' => null,
-        ]);
-    }
-
-    /**
      * Mark a delivery as skipped (email sending disabled or notification type disabled).
      */
     public function markSkipped(EmailDelivery $delivery, string $reason): void

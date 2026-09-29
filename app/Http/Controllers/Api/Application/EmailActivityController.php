@@ -2,14 +2,10 @@
 
 namespace Everest\Http\Controllers\Api\Application;
 
-use Everest\Facades\Activity;
-use Everest\Models\DeferredEmail;
 use Everest\Models\EmailDelivery;
 use Illuminate\Http\JsonResponse;
-use Everest\Http\Requests\Api\Application\Email\GetDeferredQueueRequest;
 use Everest\Http\Requests\Api\Application\Email\GetEmailActivityRequest;
 use Everest\Http\Requests\Api\Application\Email\ViewEmailActivityRequest;
-use Everest\Http\Requests\Api\Application\Email\ManageDeferredEmailRequest;
 use Everest\Http\Requests\Api\Application\Email\GetEmailTemplateKeysRequest;
 
 class EmailActivityController extends ApplicationApiController
@@ -109,111 +105,6 @@ class EmailActivityController extends ApplicationApiController
             'sanitized_variables' => [], // Not stored in new structure
             'retry_history' => $retryHistory,
             'related_emails' => [], // Could be implemented later if needed
-        ]);
-    }
-
-    /**
-     * Get deferred email queue.
-     */
-    public function getDeferredQueue(GetDeferredQueueRequest $request): JsonResponse
-    {
-        $perPage = min((int) $request->input('per_page', 25), 100);
-
-        $query = DeferredEmail::query()
-            ->whereNull('sent_at')
-            ->with('user:id,email,username');
-
-        // Filter by due status
-        if ($request->input('status') === 'due') {
-            $query->where('scheduled_at', '<=', now());
-        } elseif ($request->input('status') === 'pending') {
-            $query->where('scheduled_at', '>', now());
-        }
-
-        $query->orderBy('scheduled_at');
-
-        $deferred = $query->paginate($perPage);
-
-        // Get stats
-        $stats = [
-            'total_queued' => DeferredEmail::whereNull('sent_at')->count(),
-            'due_now' => DeferredEmail::whereNull('sent_at')->where('scheduled_at', '<=', now())->count(),
-            'next_send_time' => DeferredEmail::whereNull('sent_at')
-                ->where('scheduled_at', '>', now())
-                ->min('scheduled_at'),
-        ];
-
-        return response()->json([
-            'deferred' => $deferred,
-            'stats' => $stats,
-        ]);
-    }
-
-    /**
-     * Send a deferred email immediately.
-     */
-    public function sendDeferredNow(ManageDeferredEmailRequest $request, int $id): JsonResponse
-    {
-        $deferred = DeferredEmail::findOrFail($id);
-
-        if ($deferred->sent_at) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Email already sent',
-            ], 400);
-        }
-
-        try {
-            // Send the email using EmailManager
-            // This would typically dispatch a job
-            $deferred->scheduled_at = now(); // Move to front of queue
-            $deferred->save();
-
-            Activity::event('admin:email:deferred:send-now')
-                ->property('deferred_id', $deferred->id)
-                ->property('recipient', $deferred->recipient)
-                ->property('template_key', $deferred->template_key)
-                ->description("Manually triggered deferred email #{$deferred->id}")
-                ->log();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Email moved to front of queue and will be sent shortly.',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Cancel a deferred email.
-     */
-    public function cancelDeferred(ManageDeferredEmailRequest $request, int $id): JsonResponse
-    {
-        $deferred = DeferredEmail::findOrFail($id);
-
-        if ($deferred->sent_at) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Email already sent, cannot cancel',
-            ], 400);
-        }
-
-        $deferred->delete();
-
-        Activity::event('admin:email:deferred:cancel')
-            ->property('deferred_id', $id)
-            ->property('recipient', $deferred->recipient)
-            ->property('template_key', $deferred->template_key)
-            ->description("Cancelled deferred email #{$id}")
-            ->log();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Deferred email cancelled',
         ]);
     }
 

@@ -216,7 +216,6 @@ return [
         Everest\Jobs\Schedule\RunScheduledSweepJob::class => 'standard',
 
         Everest\Jobs\Email\SendEmailJob::class => 'mail',
-        Everest\Jobs\Email\ProcessDeferredEmailsJob::class => 'mail',
 
         Everest\Jobs\InstallModpackJob::class => 'mods',
         Everest\Jobs\DownloadModJob::class => 'mods',
@@ -250,7 +249,7 @@ return [
         ],
         'mail' => [
             'title' => 'Outbound email',
-            'summary' => 'Queued messages and the deferred-send flush.',
+            'summary' => 'Queued outbound messages.',
         ],
         'mods' => [
             'title' => 'Modpack installs',
@@ -339,10 +338,6 @@ return [
         Everest\Jobs\Email\SendEmailJob::class => [
             'title' => 'Send email',
             'summary' => 'Delivers one queued message through the configured mail transport.',
-        ],
-        Everest\Jobs\Email\ProcessDeferredEmailsJob::class => [
-            'title' => 'Flush deferred email',
-            'summary' => 'Releases messages held back by the deferred-send window.',
         ],
 
         Everest\Jobs\InstallModpackJob::class => [

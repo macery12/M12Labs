@@ -97,7 +97,6 @@ class SafeReseedingTest extends TestCase
             $table->string('category')->default('general');
             $table->string('name');
             $table->text('description')->nullable();
-            $table->boolean('rate_limit_exempt')->default(false);
             $table->timestamps();
         });
 

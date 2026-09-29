@@ -5,7 +5,6 @@ namespace Everest\Http\Controllers\Api\Application;
 use Everest\Models\User;
 use Everest\Models\Setting;
 use Everest\Facades\Activity;
-use Everest\Models\EmailQuota;
 use Everest\Models\EmailDelivery;
 use Illuminate\Http\JsonResponse;
 use Everest\Services\Email\EmailResult;
@@ -17,11 +16,8 @@ use Everest\Services\Email\EmailSettingsReader;
 use Everest\Services\Email\EmailVerificationGate;
 use Everest\Exceptions\Service\Email\ResendException;
 use Everest\Http\Requests\Api\Application\Email\SendTestEmailRequest;
-use Everest\Http\Requests\Api\Application\Email\GetEmailQuotaInfoRequest;
-use Everest\Http\Requests\Api\Application\Email\GetUserEmailQuotaRequest;
 use Everest\Http\Requests\Api\Application\Email\TestEmailConnectionRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateEmailSettingsRequest;
-use Everest\Http\Requests\Api\Application\Email\UpdateUserEmailQuotaRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateVerificationRulesRequest;
 use Everest\Http\Requests\Api\Application\Email\GetEmailNotificationSettingsRequest;
 use Everest\Http\Requests\Api\Application\Email\UpdateEmailNotificationSettingRequest;
@@ -206,95 +202,6 @@ class EmailController extends ApplicationApiController
         return response()->json([
             'success' => true,
             'setting' => $setting,
-        ]);
-    }
-
-    /**
-     * Get email quota information.
-     */
-    public function getQuotaInfo(GetEmailQuotaInfoRequest $request): JsonResponse
-    {
-        // Get aggregate quota stats across all users
-        $totalQuotas = EmailQuota::selectRaw('
-            plan,
-            COUNT(*) as user_count,
-            SUM(monthly_sent) as total_monthly_sent,
-            SUM(daily_sent) as total_daily_sent,
-            SUM(monthly_overage) as total_overage
-        ')
-            ->groupBy('plan')
-            ->get();
-
-        return response()->json([
-            'quotas_by_plan' => $totalQuotas,
-        ]);
-    }
-
-    /**
-     * Get email quota for a specific user.
-     */
-    public function getUserQuota(GetUserEmailQuotaRequest $request, int $userId): JsonResponse
-    {
-        $user = User::findOrFail($userId);
-        $quota = EmailQuota::where('user_id', $userId)->first();
-
-        if (!$quota) {
-            return response()->json([
-                'user' => [
-                    'id' => $user->id,
-                    'email' => $user->email,
-                    'username' => $user->username,
-                ],
-                'quota' => null,
-            ]);
-        }
-
-        $remaining = $quota->getRemainingQuota();
-
-        return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'username' => $user->username,
-            ],
-            'quota' => [
-                'plan' => $quota->plan,
-                'monthly_limit' => $quota->monthly_limit,
-                'daily_limit' => $quota->daily_limit,
-                'monthly_sent' => $quota->monthly_sent,
-                'daily_sent' => $quota->daily_sent,
-                'monthly_overage' => $quota->monthly_overage,
-                'remaining' => $remaining,
-                'month_reset_at' => $quota->month_reset_at,
-                'day_reset_at' => $quota->day_reset_at,
-            ],
-        ]);
-    }
-
-    /**
-     * Update user email quota plan.
-     */
-    public function updateUserQuota(UpdateUserEmailQuotaRequest $request, int $userId): JsonResponse
-    {
-        $plan = $request->input('plan', 'free');
-
-        $quota = EmailQuota::getOrCreateForUser($userId, $plan);
-
-        $planConfig = EmailQuota::PLANS[$plan];
-        $quota->plan = $plan;
-        $quota->monthly_limit = $planConfig['monthly_limit'];
-        $quota->daily_limit = $planConfig['daily_limit'];
-        $quota->save();
-
-        Activity::event('admin:email:quota:update')
-            ->property('user_id', $userId)
-            ->property('plan', $plan)
-            ->description("Updated email quota plan for user {$userId} to {$plan}")
-            ->log();
-
-        return response()->json([
-            'success' => true,
-            'quota' => $quota,
         ]);
     }
 

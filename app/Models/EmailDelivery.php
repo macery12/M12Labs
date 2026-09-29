@@ -33,7 +33,6 @@ class EmailDelivery extends Model
     public const STATUS_QUEUED = 'queued';
     public const STATUS_SENDING = 'sending';
     public const STATUS_SENT = 'sent';
-    public const STATUS_DEFERRED = 'deferred';
     public const STATUS_SKIPPED = 'skipped';
     public const STATUS_FAILED = 'failed';
 
@@ -43,7 +42,6 @@ class EmailDelivery extends Model
             self::STATUS_QUEUED,
             self::STATUS_SENDING,
             self::STATUS_SENT,
-            self::STATUS_DEFERRED,
             self::STATUS_SKIPPED,
             self::STATUS_FAILED,
         ];
@@ -175,6 +173,6 @@ class EmailDelivery extends Model
      */
     public function isPending(): bool
     {
-        return in_array($this->status, [self::STATUS_QUEUED, self::STATUS_SENDING, self::STATUS_DEFERRED], true);
+        return in_array($this->status, [self::STATUS_QUEUED, self::STATUS_SENDING], true);
     }
 }
